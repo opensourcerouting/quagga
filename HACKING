@@ -36,6 +36,15 @@ the top, commented out appropriately for the file type.  Just add
 <dollar>Id:<dollar>, replacing <dollar> with $.  See line 2 of HACKING
 for an example; on checkout :$ is expanded to include the value.
 
+Please document fully the proper use of a new function in the header file
+in which it is declared.  And please consult existing headers for
+documentation on how to use existing functions.  In particular, please consult
+these header files:
+
+  lib/log.h	logging levels and usage guidance
+  [more to be added]
+
+
 CHANGELOG
 
 Add a ChangeLog entry whenever changing code, except for minor fixes
