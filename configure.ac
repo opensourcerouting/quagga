@@ -540,7 +540,7 @@ dnl ------------------------------------
 dnl check for broken CMSG_FIRSTHDR macro
 dnl ------------------------------------
 AC_MSG_CHECKING(for broken CMSG_FIRSTHDR)
-AC_TRY_RUN([
+AC_RUN_IFELSE([
 #ifdef SUNOS_5
 #define _XPG4_2
 #define __EXTENSIONS__
@@ -561,7 +561,7 @@ main()
     exit(0);
   exit (1);
 }],[AC_MSG_RESULT(yes - using workaround) AC_DEFINE(HAVE_BROKEN_CMSG_FIRSTHDR,,Broken CMSG_FIRSTHDR)],
-[AC_MSG_RESULT(no)])
+[AC_MSG_RESULT(no)],[AC_MSG_RESULT(no)])
 
 dnl ------------------------------
 dnl check kernel route read method
