@@ -1149,12 +1149,12 @@ AC_CONFIG_FILES([Makefile lib/Makefile zebra/Makefile ripd/Makefile
 	  ospf6d/Makefile isisd/Makefile vtysh/Makefile doc/Makefile 
 	  ospfclient/Makefile tests/Makefile m4/Makefile redhat/Makefile
 	  pkgsrc/Makefile
-	  vtysh/extract.pl redhat/quagga.spec 
+	  redhat/quagga.spec 
 	  lib/version.h
 	  doc/defines.texi
 	  pkgsrc/bgpd.sh pkgsrc/ospf6d.sh pkgsrc/ospfd.sh
 	  pkgsrc/ripd.sh pkgsrc/ripngd.sh pkgsrc/zebra.sh],
-	  [chmod +x vtysh/extract.pl])
+AC_CONFIG_FILES([vtysh/extract.pl],[chmod +x vtysh/extract.pl])
 AC_OUTPUT
 
 echo "
