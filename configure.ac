@@ -1130,9 +1130,9 @@ AC_OUTPUT(Makefile lib/Makefile zebra/Makefile ripd/Makefile
 	  [chmod +x vtysh/extract.pl])
 
 echo "
-zebra configuration
--------------------
-quagga version           : ${PACKAGE_VERSION}
+Quagga configuration
+--------------------
+quagga version          : ${PACKAGE_VERSION}
 host operationg system  : ${host_os}
 source code location    : ${srcdir}
 compiler                : ${CC}
