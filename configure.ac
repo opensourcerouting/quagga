@@ -70,7 +70,7 @@ AC_AIX
 dnl -------
 dnl libtool
 dnl -------
-AM_PROG_LIBTOOL
+AC_PROG_LIBTOOL
 
 dnl ----------------------
 dnl Packages configuration
