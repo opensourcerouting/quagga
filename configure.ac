@@ -139,18 +139,27 @@ AC_ARG_ENABLE(quagga_user,
 AC_ARG_ENABLE(quagga_group,
 [  --enable-group=ARG      group to run Quagga suite as (default quagga)])
 AC_ARG_ENABLE(vty_group,
-[  --enable-vty-group=ARG      set vty sockets to have specified group as owner])
+[  --enable-vty-group=ARG  set vty sockets to have specified group as owner])
 AC_ARG_ENABLE(configfile_mask,
 [  --enable-configfile-mask=ARG  set mask for config files])
 AC_ARG_ENABLE(logfile_mask,
 [  --enable-logfile-mask=ARG     set mask for log files])
 
 AC_ARG_ENABLE(rtadv,
-[  --disable-rtadv         disable IPV6 router advertisement feature])
+[  --disable-rtadv               disable IPV6 router advertisement feature])
 AC_ARG_ENABLE(irdp,
-[  --enable-irdp           enable IRDP server support in zebra])
+[  --enable-irdp                 enable IRDP server support in zebra])
 AC_ARG_ENABLE(capabilities,
 [  --disable-capabilities        disable using POSIX capabilities])
+AC_ARG_ENABLE(gcc_ultra_verbose,
+[  --enable-gcc-ultra-verbose    enable ultra verbose GCC warnings])
+
+if test x"${enable_gcc_ultra_verbose}" = x"yes" ; then
+  CFLAGS="${CFLAGS} -W -Wcast-qual -Wstrict-prototypes"
+  CFLAGS="${CFLAGS} -Wmissing-declarations -Wmissing-noreturn"
+  CFLAGS="${CFLAGS} -Wmissing-format-attribute -Wunreachable-code"
+  CFLAGS="${CFLAGS} -Wpacked -Wpadded"
+fi
 
 if test "${enable_broken_aliases}" = "yes"; then
   if test "${enable_netlink}" = "yes"
