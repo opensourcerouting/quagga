@@ -68,7 +68,7 @@ dnl ----------------------
 dnl Packages configuration
 dnl ----------------------
 AC_ARG_ENABLE(vtysh,
-[  --enable-vtysh,       Make integrated vty shell for Quagga])
+[  --enable-vtysh          include integrated vty shell for Quagga])
 AC_ARG_ENABLE(ipv6,
 [  --disable-ipv6          turn off IPv6 related features and daemons])
 AC_ARG_ENABLE(zebra,
@@ -286,10 +286,18 @@ dnl ---------------------
 case "${enable_vtysh}" in
   "yes") VTYSH="vtysh";
          AC_DEFINE(VTYSH,,VTY shell)
-	 AC_CHECK_LIB(tinfo, tputs, , AC_CHECK_LIB(ncurses, tputs))
+	 AC_PATH_PROG(PERL, perl)
+dnl	 Vtysh uses libreadline, which looks for termcap functions at
+dnl	 configure time.  We follow readline's search order.
+dnl	 The required procedures are in libtermcap on NetBSD, in
+dnl	 [TODO] on Linux, and in [TODO] on Solaris.
+	 AC_CHECK_LIB(termcap, tputs, ,
+	 	AC_CHECK_LIB(tinfo, tputs, ,
+	 	AC_CHECK_LIB(curses, tputs, ,
+	 	AC_CHECK_LIB(ncurses, tputs))))
          AC_CHECK_LIB(readline, main)
          if test $ac_cv_lib_readline_main = no; then
-           AC_MSG_ERROR([vtysh needs libreadline but was not found on your system.])
+           AC_MSG_ERROR([vtysh needs libreadline but was not found and usable on your system.])
          fi
 	 AC_CHECK_HEADER(readline/history.h)
 	 if test $ac_cv_header_readline_history_h = no;then
@@ -1106,8 +1114,10 @@ AC_OUTPUT(Makefile lib/Makefile zebra/Makefile ripd/Makefile
 	  ripngd/Makefile bgpd/Makefile ospfd/Makefile 
 	  ospf6d/Makefile isisd/Makefile vtysh/Makefile doc/Makefile 
 	  ospfclient/Makefile
+	  vtysh/extract.pl
 	  redhat/Makefile redhat/quagga.spec
-	  lib/version.h)
+	  lib/version.h,
+	  [chmod +x vtysh/extract.pl])
 
 echo "
 zebra configuration
