@@ -49,6 +49,12 @@ maintainer who usually maintains that meta-data). Also, CVS meta-data such
 as cvsignore files do not require ChangeLog updates, just a sane commit
 message.
 
+TOOL VERSIONS
+
+Require versions of support tools are listed in INSTALL.quagga.txt.
+Required versions should only be done with due deliberation, as it can
+cause environments to no longer be able to compile quagga.
+
 SHARED LIBRARY VERSIONING
 
 [this section is at the moment just gdt's opinion]
