@@ -177,6 +177,10 @@ num_append(char *s, int len, u_long x)
   return str_append(s,len,t);
 }
 
+/*
+ * XXX warning: `hex_append' defined but not used
+ * Apparently this is used only if HAVE_GLIBC_BACKTRACE is defined.
+ */
 static char *
 hex_append(char *s, int len, u_long x)
 {
