@@ -97,9 +97,6 @@ AC_ARG_WITH(libpam,
 [  --with-libpam           use libpam for PAM support in vtysh])
 AC_ARG_ENABLE(tcp-zebra,
 [  --enable-tcp-zebra      enable TCP/IP socket connection between zebra and protocol daemon])
-dnl Temporary option until OSPF NSSA implementation complete
-AC_ARG_ENABLE(nssa,
-[  --enable-nssa           enable OSPF NSSA option])
 AC_ARG_ENABLE(opaque-lsa,
 [  --enable-opaque-lsa     enable OSPF Opaque-LSA with OSPFAPI support (RFC2370)])
 AC_ARG_ENABLE(ospfapi,
@@ -142,10 +139,6 @@ fi
 
 if test "${enable_tcp_zebra}" = "yes"; then
   AC_DEFINE(HAVE_TCP_ZEBRA,,Use TCP for zebra communication)
-fi
-
-if test "${enable_nssa}" = "yes"; then
-  AC_DEFINE(HAVE_NSSA,,OSPF NSSA)
 fi
 
 if test "${enable_opaque_lsa}" = "yes"; then
