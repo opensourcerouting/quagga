@@ -29,6 +29,9 @@
 #include "sockunion.h"
 #include "log.h"
 #include "sockopt.h"
+#include "privs.h"
+
+extern struct zebra_privs_t ospfd_privs;
 
 #include "ospfd/ospfd.h"
 #include "ospfd/ospf_network.h"
@@ -38,6 +41,8 @@
 #include "ospfd/ospf_lsdb.h"
 #include "ospfd/ospf_neighbor.h"
 #include "ospfd/ospf_packet.h"
+
+
 
 /* Join to the OSPF ALL SPF ROUTERS multicast group. */
 int
@@ -151,12 +156,16 @@ ospf_sock_init (void)
   int ospf_sock;
   int ret, tos, hincl = 1;
 
+  if (ospfd_privs.change (ZPRIVS_RAISE))
+    zlog_err ("ospf_sock_init: could not raise privs");
+    
   ospf_sock = socket (AF_INET, SOCK_RAW, IPPROTO_OSPFIGP);
   if (ospf_sock < 0)
     {
       zlog_warn ("ospf_read_sock_init: socket: %s", strerror (errno));
       return -1;
     }
+    
 
   /* Set precedence field. */
 #ifdef IPTOS_PREC_INTERNETCONTROL
@@ -187,6 +196,9 @@ ospf_sock_init (void)
 #else
 #warning "cannot be able to receive link information on this OS"
 #endif
+
+  if (ospfd_privs.change (ZPRIVS_LOWER))
+    zlog_err ("ospf_sock_init: could not lower privs");
  
   return ospf_sock;
 }

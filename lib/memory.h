@@ -184,6 +184,8 @@ enum
 
   MTYPE_VRF,
   MTYPE_VRF_NAME,
+  
+  MTYPE_PRIVS,
 
   MTYPE_MAX
 };

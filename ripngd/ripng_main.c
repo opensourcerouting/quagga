@@ -31,6 +31,7 @@
 #include "log.h"
 #include "prefix.h"
 #include "if.h"
+#include "privs.h"
 
 #include "ripngd/ripngd.h"
 
@@ -49,9 +50,31 @@ struct option longopts[] =
   { "vty_addr",    required_argument, NULL, 'A'},
   { "vty_port",    required_argument, NULL, 'P'},
   { "retain",      no_argument,       NULL, 'r'},
+  { "user",        required_argument, NULL, 'u'},
   { "version",     no_argument,       NULL, 'v'},
   { 0 }
 };
+
+/* ripngd privileges */
+zebra_capabilities_t _caps_p [] = 
+{
+  ZCAP_RAW,
+  ZCAP_BIND
+};
+
+struct zebra_privs_t ripngd_privs =
+{
+#if defined(ZEBRA_USER)
+  .user = ZEBRA_USER,
+#endif
+#if defined ZEBRA_GROUP
+  .group = ZEBRA_GROUP,
+#endif
+  .caps_p = _caps_p,
+  .cap_num_p = 2,
+  .cap_num_i = 0
+};
+
 
 /* RIPngd program name */
 
@@ -81,6 +104,7 @@ Daemon which manages RIPng.\n\n\
 -A, --vty_addr     Set vty's bind address\n\
 -P, --vty_port     Set vty's port number\n\
 -r, --retain       When program terminates, retain added route by ripngd.\n\
+-u, --user         User and group to run as\n\
 -v, --version      Print program version\n\
 -h, --help         Display this help and exit\n\
 \n\
@@ -155,7 +179,7 @@ main (int argc, char **argv)
 {
   char *p;
   char *vty_addr = NULL;
-  int vty_port = 0;
+  int vty_port = RIPNG_VTY_PORT;
   int daemon_mode = 0;
   char *config_file = NULL;
   char *progname;
@@ -197,13 +221,24 @@ main (int argc, char **argv)
 	  break;
         case 'i':
           pid_file = optarg;
-          break;
+          break; 
 	case 'P':
-	  vty_port = atoi (optarg);
-	  break;
+          /* Deal with atoi() returning 0 on failure, and ripngd not
+             listening on ripngd port... */
+          if (strcmp(optarg, "0") == 0) 
+            {
+              vty_port = 0;
+              break;
+            } 
+          vty_port = atoi (optarg);
+          vty_port = (vty_port ? vty_port : RIPNG_VTY_PORT);
+          break;
 	case 'r':
 	  retain_mode = 1;
 	  break;
+  case 'u':
+    ripngd_privs.group = ripngd_privs.user = optarg;
+    break;
 	case 'v':
 	  print_version (progname);
 	  exit (0);
@@ -220,6 +255,7 @@ main (int argc, char **argv)
   master = thread_master_create ();
 
   /* Library inits. */
+  zprivs_init (&ripngd_privs);
   signal_init ();
   cmd_init (1);
   vty_init ();
@@ -237,8 +273,7 @@ main (int argc, char **argv)
     daemon (0, 0);
 
   /* Create VTY socket */
-  vty_serv_sock (vty_addr,
-		 vty_port ? vty_port : RIPNG_VTY_PORT, RIPNG_VTYSH_PATH);
+  vty_serv_sock (vty_addr, vty_port, RIPNG_VTYSH_PATH);
 
   /* Process id file create. */
   pid_output (pid_file);

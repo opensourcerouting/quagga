@@ -33,6 +33,7 @@
 #include "log.h"
 #include "prefix.h"
 #include "filter.h"
+#include "privs.h"
 
 /* Vty events */
 enum event 
@@ -1776,14 +1777,37 @@ vty_serv_sock_addrinfo (const char *hostname, unsigned short port)
 
 /* Make vty server socket. */
 void
-vty_serv_sock_family (unsigned short port, int family)
+vty_serv_sock_family (const char* addr, unsigned short port, int family)
 {
   int ret;
   union sockunion su;
   int accept_sock;
+  void* naddr=NULL;
 
   memset (&su, 0, sizeof (union sockunion));
   su.sa.sa_family = family;
+  if(addr)
+    switch(family)
+    {
+      case AF_INET:
+        naddr=&su.sin.sin_addr;
+#ifdef HAVE_IPV6
+      case AF_INET6:
+        naddr=&su.sin6.sin6_addr;
+#endif	
+    }
+
+  if(naddr)
+    switch(inet_pton(family,addr,naddr))
+    {
+      case -1:
+        zlog_err("bad address %s",addr);
+	naddr=NULL;
+	break;
+      case 0:
+        zlog_err("error translating address %s: %s",addr,strerror(errno));
+	naddr=NULL;
+    }
 
   /* Make new socket. */
   accept_sock = sockunion_stream_socket (&su);
@@ -1795,9 +1819,10 @@ vty_serv_sock_family (unsigned short port, int family)
   sockopt_reuseport (accept_sock);
 
   /* Bind socket to universal address and given port. */
-  ret = sockunion_bind (accept_sock, &su, port, NULL);
+  ret = sockunion_bind (accept_sock, &su, port, naddr);
   if (ret < 0)
     {
+      zlog_warn("can't bind socket");
       close (accept_sock);	/* Avoid sd leak. */
       return;
     }
@@ -1827,12 +1852,13 @@ vty_serv_un (char *path)
   int sock, len;
   struct sockaddr_un serv;
   mode_t old_mask;
-
+  struct zprivs_ids_t ids;
+  
   /* First of all, unlink existing socket */
   unlink (path);
 
   /* Set umask */
-  old_mask = umask (0077);
+  old_mask = umask (0007);
 
   /* Make UNIX domain socket. */
   sock = socket (AF_UNIX, SOCK_STREAM, 0);
@@ -1869,6 +1895,18 @@ vty_serv_un (char *path)
     }
 
   umask (old_mask);
+
+  zprivs_get_ids(&ids);
+  
+  if (ids.gid_vty > 0)
+    {
+      /* set group of socket */
+      if ( chown (path, -1, ids.gid_vty) )
+        {
+          zlog_err ("vty_serv_un: could chown socket, %s",
+                     strerror (errno) );
+        }
+    }
 
   vty_event (VTYSH_SERV, sock, NULL);
 }
@@ -1966,7 +2004,7 @@ vtysh_read (struct thread *thread)
 
 /* Determine address family to bind. */
 void
-vty_serv_sock (const char *hostname, unsigned short port, char *path)
+vty_serv_sock (const char *addr, unsigned short port, char *path)
 {
   /* If port is set to 0, do not listen on TCP/IP at all! */
   if (port)
@@ -1974,19 +2012,19 @@ vty_serv_sock (const char *hostname, unsigned short port, char *path)
 
 #ifdef HAVE_IPV6
 #ifdef NRL
-      vty_serv_sock_family (port, AF_INET);
-      vty_serv_sock_family (port, AF_INET6);
+      vty_serv_sock_family (addr, port, AF_INET);
+      vty_serv_sock_family (addr, port, AF_INET6);
 #else /* ! NRL */
-      vty_serv_sock_addrinfo (hostname, port);
+      vty_serv_sock_addrinfo (addr, port);
 #endif /* NRL*/
 #else /* ! HAVE_IPV6 */
-      vty_serv_sock_family (port, AF_INET);
+      vty_serv_sock_family (addr,port, AF_INET);
 #endif /* HAVE_IPV6 */
     }
 
 #ifdef VTYSH
   vty_serv_un (path);
-#endif /* VTYSH */
+#endif /* VTYSH */v
 }
 
 /* Close vty interface. */

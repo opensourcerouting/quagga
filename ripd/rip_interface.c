@@ -34,6 +34,7 @@
 #include "zclient.h"
 #include "filter.h"
 #include "sockopt.h"
+#include "privs.h"
 
 #include "zebra/connected.h"
 
@@ -51,6 +52,8 @@ struct message ri_version_msg[] =
   {RI_RIP_VERSION_1_AND_2, "1 2"},
   {0,                      NULL}
 };
+
+extern struct zebra_privs_t ripd_privs;
 
 /* RIP enabled network vector. */
 vector rip_enable_interface;
@@ -173,6 +176,9 @@ rip_interface_multicast_set (int sock, struct interface *ifp)
 	  from.sin_len = sizeof (struct sockaddr_in);
 #endif /* HAVE_SIN_LEN */
 
+    if (ripd_privs.change (ZPRIVS_RAISE))
+      zlog_err ("rip_interface_multicast_set: could not raise privs");
+      
 	  ret = bind (sock, (struct sockaddr *) & from, 
 		      sizeof (struct sockaddr_in));
 	  if (ret < 0)
@@ -180,6 +186,9 @@ rip_interface_multicast_set (int sock, struct interface *ifp)
 	      zlog_warn ("Can't bind socket: %s", strerror (errno));
 	      return;
 	    }
+
+    if (ripd_privs.change (ZPRIVS_LOWER))
+        zlog_err ("rip_interface_multicast_set: could not lower privs");
 
 	  return;
 
@@ -248,7 +257,7 @@ rip_request_interface (struct interface *ifp)
     return;
 
   /* If interface is down, don't send RIP packet. */
-  if (! if_is_up (ifp))
+  if (! if_is_operative (ifp))
     return;
 
   /* Fetch RIP interface information. */
@@ -311,7 +320,7 @@ rip_multicast_join (struct interface *ifp, int sock)
 {
   listnode cnode;
 
-  if (if_is_up (ifp) && if_is_multicast (ifp))
+  if (if_is_operative (ifp) && if_is_multicast (ifp))
     {
       if (IS_RIP_DEBUG_EVENT)
 	zlog_info ("multicast join at %s", ifp->name);
@@ -390,106 +399,6 @@ rip_if_ipv4_address_check (struct interface *ifp)
       }
 						
   return count;
-}
-						
-						
-						
-
-/* Does this address belongs to me ? */
-int
-if_check_address (struct in_addr addr)
-{
-  listnode node;
-
-  for (node = listhead (iflist); node; nextnode (node))
-    {
-      listnode cnode;
-      struct interface *ifp;
-
-      ifp = getdata (node);
-
-      for (cnode = listhead (ifp->connected); cnode; nextnode (cnode))
-	{
-	  struct connected *connected;
-	  struct prefix_ipv4 *p;
-
-	  connected = getdata (cnode);
-	  p = (struct prefix_ipv4 *) connected->address;
-
-	  if (p->family != AF_INET)
-	    continue;
-
-	  if (IPV4_ADDR_CMP (&p->prefix, &addr) == 0)
-	    return 1;
-	}
-    }
-  return 0;
-}
-
-/* is this address from a valid neighbor? (RFC2453 - Sec. 3.9.2) */
-int
-if_valid_neighbor (struct in_addr addr)
-{
-  listnode node;
-  struct connected *connected = NULL;
-  struct prefix_ipv4 *p;
-
-  for (node = listhead (iflist); node; nextnode (node))
-    {
-      listnode cnode;
-      struct interface *ifp;
-
-      ifp = getdata (node);
-
-      for (cnode = listhead (ifp->connected); cnode; nextnode (cnode))
-	{
-	  struct prefix *pxn = NULL; /* Prefix of the neighbor */
-	  struct prefix *pxc = NULL; /* Prefix of the connected network */
-
-	  connected = getdata (cnode);
-
-	  if (if_is_pointopoint (ifp))
-	    {
-	      p = (struct prefix_ipv4 *) connected->address;
-
-	      if (p && p->family == AF_INET)
-		{
-		  if (IPV4_ADDR_SAME (&p->prefix, &addr))
-		    return 1;
-
-		  p = (struct prefix_ipv4 *) connected->destination;
-		  if (p && IPV4_ADDR_SAME (&p->prefix, &addr))
-		    return 1;
-		}
-	    }
-	  else
-	    {
-	      p = (struct prefix_ipv4 *) connected->address;
-
-	      if (p->family != AF_INET)
-		continue;
-
-	      pxn = prefix_new();
-	      pxn->family = AF_INET;
-	      pxn->prefixlen = 32;
-	      pxn->u.prefix4 = addr;
-	      
-	      pxc = prefix_new();
-	      prefix_copy(pxc, (struct prefix *) p);
-	      apply_mask(pxc);
-	  
-	      if (prefix_match (pxc, pxn)) 
-		{
-		  prefix_free (pxn);
-		  prefix_free (pxc);
-		  return 1;
-		}
-	      prefix_free(pxc);
-	      prefix_free(pxn);
-	    }
-	}
-    }
-  return 0;
 }
 
 /* Inteface link down message processing. */
@@ -705,7 +614,7 @@ rip_if_down(struct interface *ifp)
 	      {
 		/* All redistributed routes but static and system */
 		if ((rinfo->ifindex == ifp->ifindex) &&
-		    (rinfo->type != ZEBRA_ROUTE_STATIC) &&
+		    /* (rinfo->type != ZEBRA_ROUTE_STATIC) && */
 		    (rinfo->type != ZEBRA_ROUTE_SYSTEM))
 		  rip_redistribute_delete (rinfo->type,rinfo->sub_type,
 					   (struct prefix_ipv4 *)&rp->p,
@@ -1008,7 +917,7 @@ rip_enable_apply (struct interface *ifp)
   if (if_is_loopback (ifp))
     return;
 
-  if (! if_is_up (ifp))
+  if (! if_is_operative (ifp))
     return;
 
   ri = ifp->info;
@@ -1961,6 +1870,7 @@ rip_if_init ()
 
   /* Install commands. */
   install_element (CONFIG_NODE, &interface_cmd);
+  install_element (CONFIG_NODE, &no_interface_cmd);
   install_default (INTERFACE_NODE);
   install_element (INTERFACE_NODE, &interface_desc_cmd);
   install_element (INTERFACE_NODE, &no_interface_desc_cmd);

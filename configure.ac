@@ -4,7 +4,7 @@
 ##
 ##  Copyright (c) 1996, 97, 98, 99, 2000 Kunihiro Ishiguro <kunihiro@zebra.org>
 ##
-AC_PREREQ(2.53)
+AC_PREREQ(2.13)
 
 AC_INIT(lib/zebra.h)
 AM_INIT_AUTOMAKE(zebra, 0.94)
@@ -87,11 +87,23 @@ dnl Temporary option until OSPF NSSA implementation complete
 AC_ARG_ENABLE(nssa,
 [  --enable-nssa           enable OSPF NSSA option])
 AC_ARG_ENABLE(opaque-lsa,
-[  --enable-opaque-lsa     enable OSPF Opaque-LSA support (RFC2370)])
+[  --enable-opaque-lsa     enable OSPF Opaque-LSA with OSPFAPI support (RFC2370)])
+AC_ARG_ENABLE(ospfapi,
+[  --disable-ospfapi       do not build OSPFAPI to access the OSPF LSA Database, 
+                          (this is the default if --enable-opaque-lsa is not set)])
+AC_ARG_ENABLE(ospfclient,
+[  --disable-ospfclient    do not build OSPFAPI client for OSPFAPI, 
+                          (this is the default if --disable-ospfapi is set)])
 AC_ARG_ENABLE(ospf-te,
 [  --enable-ospf-te        enable Traffic Engineering Extension to OSPF])
 AC_ARG_ENABLE(multipath,
 [  --enable-multipath=ARG  enable multipath function, ARG must be digit])
+AC_ARG_ENABLE(zebra_user,
+[  --enable-user=ARG       user to run zebra suite as (default zebra)])
+AC_ARG_ENABLE(zebra_group,
+[  --enable-group=ARG      group to run zebra suite as (default zebra)])
+AC_ARG_ENABLE(vty_group,
+[  --enable-vty-group=ARG      set vty sockets to have specified group as owner])
 
 dnl AC_ARG_ENABLE(rtadv,
 dnl [  --enable-rtadv          enable IPV6 router advertisment option])
@@ -126,6 +138,27 @@ fi
 dnl if test "${enable_rtadv}" = "yes"; then
 dnl   AC_DEFINE(HAVE_RTADV)
 dnl fi
+
+if test "${enable_user}" = "yes" ; then
+  enable_user="zebra"
+elif test "${enable_user}" = "no"; then
+  enable_user="root"
+fi
+AC_DEFINE_UNQUOTED(ZEBRA_USER, "${enable_user}", Zebra User)
+
+if test "${enable_group}" = "yes" ; then
+  enable_group="zebra"
+elif test "${enable_group}" = "no"; then
+  enable_group="root"
+fi
+AC_DEFINE_UNQUOTED(ZEBRA_GROUP, "${enable_group}", Zebra Group)
+
+if test x"${enable_vty_group}" = x"yes" ; then
+  AC_MSG_ERROR([--enable-vty-group requires a group as argument])
+fi
+if test x"${enable_vty_group}" != x"no"; then
+  AC_DEFINE_UNQUOTED(VTY_GROUP, "${enable_vty_group}", VTY Sockets Group)
+fi
 
 changequote(, )dnl
 
@@ -209,7 +242,11 @@ case "${enable_vtysh}" in
 	 if test $ac_cv_header_readline_history_h = no;then
            AC_MSG_ERROR([readline is too old to have readline/history.h, please update to the latest readline library.])
 	 fi
-         ;;
+	 AC_CHECK_LIB(readline, rl_completion_matches)
+         if test $ac_cv_lib_readline_rl_completion_matches = no; then
+           AC_DEFINE(rl_completion_matches,completion_matches,Old readline)
+	 fi
+	 ;;
   "no" ) VTYSH="";;
   *    ) ;;
 esac
@@ -217,6 +254,25 @@ esac
 dnl ----------
 dnl PAM module
 dnl ----------
+if test "$with_libpam" = "yes"; then
+  AC_CHECK_HEADER(security/pam_misc.h)
+  if test "$ac_cv_header_security_pam_misc_h" = yes; then
+    AC_DEFINE(HAVE_PAM_MISC_H,,Have pam_misc.h)
+    AC_DEFINE(PAM_CONV_FUNC,misc_conv,Have misc_conv)
+    pam_conv_func="misc_conv"
+  fi
+  AC_CHECK_HEADER(security/openpam.h)
+  if test "$ac_cv_header_security_openpam_h" = yes; then
+    AC_DEFINE(HAVE_OPENPAM_H,,Have openpam.h)
+    AC_DEFINE(PAM_CONV_FUNC,openpam_ttyconv,Have openpam_ttyconv)
+    pam_conv_func="openpam_ttyconv"
+  fi
+  if test -z "$ac_cv_header_security_pam_misc_h$ac_cv_header_security_openpam_h" ; then
+    AC_MSG_WARN([*** pam support will not be built ***])
+    with_libpam="no"
+  fi
+fi
+
 if test "$with_libpam" = "yes"; then
 dnl took this test from proftpd's configure.in and suited to our needs
 dnl -------------------------------------------------------------------------
@@ -226,7 +282,7 @@ dnl of the PAM library.  Prior to 0.72 release, the Linux PAM shared library
 dnl omitted requiring libdl linking information. PAM-0.72 or better ships
 dnl with RedHat 6.2 and Debian 2.2 or better.
 AC_CHECK_LIB(pam, pam_start,
-  [AC_CHECK_LIB(pam, misc_conv,
+  [AC_CHECK_LIB(pam, $pam_conv_func,
     [AC_DEFINE(USE_PAM,,Use PAM for authentication)
      LIBPAM="-lpam"],
     [AC_DEFINE(USE_PAM,,Use PAM for authentication)
@@ -235,7 +291,7 @@ AC_CHECK_LIB(pam, pam_start,
   ],
 
   [AC_CHECK_LIB(pam, pam_end,
-    [AC_CHECK_LIB(pam, misc_conv,
+    [AC_CHECK_LIB(pam, $pam_conv_func,
       [AC_DEFINE(USE_PAM)
        LIBPAM="-lpam -ldl"],
       [AC_DEFINE(USE_PAM)
@@ -534,6 +590,18 @@ else
   OSPFD="ospfd"
 fi
 
+OSPFCLIENT=""
+if test "${enable_opaque_lsa}" = "yes"; then
+  if test "${enable_ospfapi}" != "no";then
+    AC_DEFINE(SUPPORT_OSPF_API,,OSPFAPI)
+
+    if test "${enable_ospfclient}" != "no";then
+      OSPFCLIENT="ospfclient"
+    fi
+  fi
+
+fi
+
 case "${enable_ripngd}" in
   "yes") RIPNGD="ripngd";;
   "no" ) RIPNGD="";;
@@ -559,6 +627,8 @@ AC_SUBST(OSPF6D)
 AC_SUBST(VTYSH)
 AC_SUBST(INCLUDES)
 AC_SUBST(CURSES)
+AC_SUBST(OSPFCLIENT)
+AC_SUBST(OSPFAPI)
 AC_CHECK_LIB(c, inet_ntop, [AC_DEFINE(HAVE_INET_NTOP,,inet_ntop)])
 AC_CHECK_LIB(c, inet_pton, [AC_DEFINE(HAVE_INET_PTON,,inet_pton)])
 AC_CHECK_LIB(crypt, crypt)
@@ -587,33 +657,66 @@ dnl check SNMP library
 dnl ------------------
 if test "${enable_snmp}" = "yes";then
 dnl  AC_CHECK_LIB(snmp, asn_parse_int, HAVE_SNMP=yes)
-  old_libs="${LIBS}"
-  LIBS="-L/usr/local/lib"
-  unset ac_cv_lib_snmp_asn_parse_int
-  AC_CHECK_LIB(snmp, asn_parse_int, HAVE_SNMP=yes, )
   if test "${HAVE_SNMP}" = ""; then
+    old_libs="${LIBS}"
+    LIBS="-L/usr/lib"
     unset ac_cv_lib_snmp_asn_parse_int
-    AC_CHECK_LIB(crypto, main, [NEED_CRYPTO=yes ], )
-	if test "${NEED_CRYPTO}" = ""; then 
-		AC_CHECK_LIB(snmp, asn_parse_int, [HAVE_SNMP=yes; NEED_CRYPTO=yes ],)
-	else
-	    AC_CHECK_LIB(snmp, asn_parse_int, [HAVE_SNMP=yes; NEED_CRYPTO=yes;LIBS="$LIBS -lcrypto" ],,"-lcrypto")
-	fi
+    AC_CHECK_LIB(crypto, main, NEED_CRYPTO=yes, )
+    if test "${NEED_CRYPTO}" = ""; then
+      AC_CHECK_LIB(netsnmp, asn_parse_int, [HAVE_NETSNMP=yes; HAVE_SNMP=yes ])
+    else
+      AC_CHECK_LIB(netsnmp, asn_parse_int, [HAVE_NETSNMP=yes; HAVE_SNMP=yes; NEED_CRYPTO=yes;LIBS="$LIBS -lcrypto" ],,"-lcrypto")
+    fi
+    LIBS="${old_libs}"
   fi
-  LIBS="${old_libs}"
+  if test "${HAVE_SNMP}" = ""; then
+    old_libs="${LIBS}"
+    LIBS="-L/usr/lib"
+    unset ac_cv_lib_snmp_asn_parse_int
+    AC_CHECK_LIB(snmp, asn_parse_int, HAVE_SNMP=yes, )
+    if test "${HAVE_SNMP}" = ""; then
+      unset ac_cv_lib_snmp_asn_parse_int
+      AC_CHECK_LIB(crypto, main, NEED_CRYPTO=yes, )
+      if test "${NEED_CRYPTO}" = "yes"; then 
+        AC_CHECK_LIB(snmp, asn_parse_int, [HAVE_SNMP=yes; NEED_CRYPTO=yes; LIBS="$LIBS -lcrypto" ],,"-lcrypto")
+      fi
+    fi
+    LIBS="${old_libs}"
+  fi
 
   if test "${HAVE_SNMP}" = ""; then
-	old_libs="${LIBS}"
-	LIBS="-L/usr/local/lib"
-	AC_CHECK_LIB(snmp, asn_parse_int, HAVE_SNMP=yes)
-	LIBS="${old_libs}"
+    old_libs="${LIBS}"
+    LIBS="-L/usr/local/lib"
+    unset ac_cv_lib_snmp_asn_parse_int
+    AC_CHECK_LIB(snmp, asn_parse_int, HAVE_SNMP=yes)
+    if test "${HAVE_SNMP}" = ""; then
+      unset ac_cv_lib_snmp_asn_parse_int
+      AC_CHECK_LIB(crypto, main, NEED_CRYPTO=yes, )
+      if test "${NEED_CRYPTO}" = "yes"; then
+        AC_CHECK_LIB(snmp, asn_parse_int, [HAVE_SNMP=yes; NEED_CRYPTO=yes; LIBS="$LIBS -lcrypto" ],,"-lcrypto")
+      fi
+    fi
+    LIBS="${old_libs}"
   fi
+
   if test "${HAVE_SNMP}" = "yes"; then
-    for ac_snmp in /usr/include/ucd-snmp/asn1.h /usr/local/include/ucd-snmp/asn1.h /dev/null
+    for ac_snmp in /usr/include/net-snmp/library/asn1.h /usr/include/ucd-snmp/asn1.h /usr/local/include/ucd-snmp/asn1.h /dev/null
     do
       test -f "${ac_snmp}" && break
     done
+
     case ${ac_snmp} in
+      /usr/include/net-snmp/*)
+                  AC_DEFINE(HAVE_SNMP,,SNMP)
+		  AC_DEFINE(HAVE_NETSNMP,,SNMP)
+                  AC_DEFINE(UCD_COMPATIBLE,,SNMP)
+                  CFLAGS="${CFLAGS} -I/usr/include/net-snmp -I/usr/include/net-snmp/library"
+		  if test "${HAVE_NETSNMP}" = "yes"; then
+		        LIBS="${LIBS} -lnetsnmp"
+		  else
+			LIBS="${LIBS} -lsnmp"
+		  fi
+                  ;;
       /usr/include/ucd-snmp/*) 
                   AC_DEFINE(HAVE_SNMP,,SNMP)
                   CFLAGS="${CFLAGS} -I/usr/include/ucd-snmp"
@@ -749,6 +852,28 @@ AC_TRY_COMPILE([#include <sys/resource.h>
  AC_DEFINE(HAVE_RUSAGE,,rusage)],
  AC_MSG_RESULT(no))
 
+dnl -------------------
+dnl capabilities checks
+dnl -------------------
+AC_MSG_CHECKING(whether prctl PR_SET_KEEPCAPS is available)
+AC_TRY_COMPILE([#include <sys/prctl.h>],[prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0);],
+  [AC_MSG_RESULT(yes)
+   AC_DEFINE(HAVE_PR_SET_KEEPCAPS,,prctl)
+   zebra_ac_keepcaps="yes"],
+   AC_MSG_RESULT(no)
+)
+if test x"${zebra_ac_keepcaps}" = x"yes"; then
+  AC_CHECK_HEADERS(sys/capability.h)
+fi
+if test x"${ac_cv_header_sys_capability_h}" = x"yes"; then
+  AC_CHECK_LIB(cap, cap_init, 
+    [AC_DEFINE(HAVE_LCAPS,1,Capabilities)
+     LIBCAP="-lcap"
+    ]
+  )
+fi
+AC_SUBST(LIBCAP)
+
 dnl -------------
 dnl check version
 dnl -------------
@@ -756,28 +881,55 @@ file="${srcdir}/lib/version.h"
 VERSION=`sed -ne 's/^#.*ZEBRA_VERSION.*\"\([^\"]*\)\"$/\1/p' $file`
 AC_SUBST(VERSION)
 
-dnl ------------------------------
-dnl set paths for process id files
-dnl ------------------------------
-AC_CACHE_CHECK(pid file directory,ac_piddir,
-[for ZEBRA_PID_DIR in /var/run	dnl
-                   /var/adm	dnl
-                   /etc		dnl
-                   /dev/null;
-do
-  test -d $ZEBRA_PID_DIR && break
-done
-ac_piddir=$ZEBRA_PID_DIR
-if test $ZEBRA_PID_DIR = "/dev/null"; then
-  echo "PID DIRECTORY NOT FOUND!"
-fi])
-AC_DEFINE_UNQUOTED(PATH_ZEBRA_PID, "$ac_piddir/zebra.pid",zebra PID)
-AC_DEFINE_UNQUOTED(PATH_RIPD_PID, "$ac_piddir/ripd.pid",ripd PID)
-AC_DEFINE_UNQUOTED(PATH_RIPNGD_PID, "$ac_piddir/ripngd.pid",ripngd PID)
-AC_DEFINE_UNQUOTED(PATH_BGPD_PID, "$ac_piddir/bgpd.pid",bgpd PID)
-AC_DEFINE_UNQUOTED(PATH_OSPFD_PID, "$ac_piddir/ospfd.pid",ospfd PID)
-AC_DEFINE_UNQUOTED(PATH_OSPF6D_PID, "$ac_piddir/ospf6d.pid",ospf6d PID)
+dnl ----------
+dnl configure date
+dnl ----------
+CONFDATE=`date '+%Y%m%d'`
+AC_SUBST(CONFDATE)
 
+dnl ------------------------------
+dnl set paths for state directory
+dnl ------------------------------
+if test "${prefix}" = "NONE"; then
+  zebra_statedir_prefix="";
+else
+  zebra_statedir_prefix=${prefix}
+fi
+if test "${localstatedir}" = '${prefix}/var'; then
+  AC_CACHE_CHECK(state directory,ac_statedir,
+  [for ZEBRA_STATE_DIR in ${zebra_statedir_prefix}/var/run dnl
+			${zebra_statedir_prefix}/var/adm dnl
+			${zebra_statedir_prefix}/etc dnl
+			/var/run	dnl
+                        /var/adm	dnl
+                        /etc		dnl
+                        /dev/null;
+  do
+    test -d $ZEBRA_STATE_DIR && break
+  done
+  zebra_statedir=$ZEBRA_STATE_DIR])
+else
+  zebra_statedir=${localstatedir}
+  AC_MSG_CHECKING(directory to use for state file)
+  AC_MSG_RESULT(${zebra_statedir})
+fi
+if test $zebra_statedir = "/dev/null"; then
+    echo "STATE DIRECTORY NOT FOUND!"
+fi
+
+AC_DEFINE_UNQUOTED(PATH_ZEBRA_PID, "$zebra_statedir/zebra.pid",zebra PID)
+AC_DEFINE_UNQUOTED(PATH_RIPD_PID, "$zebra_statedir/ripd.pid",ripd PID)
+AC_DEFINE_UNQUOTED(PATH_RIPNGD_PID, "$zebra_statedir/ripngd.pid",ripngd PID)
+AC_DEFINE_UNQUOTED(PATH_BGPD_PID, "$zebra_statedir/bgpd.pid",bgpd PID)
+AC_DEFINE_UNQUOTED(PATH_OSPFD_PID, "$zebra_statedir/ospfd.pid",ospfd PID)
+AC_DEFINE_UNQUOTED(PATH_OSPF6D_PID, "$zebra_statedir/ospf6d.pid",ospf6d PID)
+AC_DEFINE_UNQUOTED(ZEBRA_SERV_PATH, "$zebra_statedir/zserv.api",zebra api socket)
+AC_DEFINE_UNQUOTED(ZEBRA_VTYSH_PATH, "$zebra_statedir/zebra.vty",zebra vty socket)
+AC_DEFINE_UNQUOTED(RIP_VTYSH_PATH, "$zebra_statedir/ripd.vty",rip vty socket)
+AC_DEFINE_UNQUOTED(RIPNG_VTYSH_PATH, "$zebra_statedir/ripngd.vty",ripng vty socket)
+AC_DEFINE_UNQUOTED(BGP_VTYSH_PATH, "$zebra_statedir/bgpd.vty",bgpd vty socket)
+AC_DEFINE_UNQUOTED(OSPF_VTYSH_PATH, "$zebra_statedir/ospfd.vty",ospfd vty socket)
+AC_DEFINE_UNQUOTED(OSPF6_VTYSH_PATH, "$zebra_statedir/ospf6d.vty",ospf6d vty socket)
 
 dnl ---------------------------
 dnl Check htonl works correctly
@@ -798,7 +950,11 @@ ac_cv_htonl_works=yes,
 ac_cv_htonl_works=no)])
 AC_MSG_RESULT($ac_cv_htonl_works)
 
-AC_OUTPUT(Makefile lib/Makefile zebra/Makefile ripd/Makefile ripngd/Makefile bgpd/Makefile ospfd/Makefile ospf6d/Makefile vtysh/Makefile doc/Makefile)
+AC_OUTPUT(Makefile lib/Makefile zebra/Makefile ripd/Makefile 
+	  ripngd/Makefile bgpd/Makefile ospfd/Makefile 
+	  ospf6d/Makefile vtysh/Makefile doc/Makefile 
+	  ospfclient/Makefile
+	  redhat/zebra.spec)
 
 echo "
 zebra configuration
@@ -808,5 +964,5 @@ host operationg system  : ${host_os}
 source code location    : ${srcdir}
 compiler                : ${CC}
 compiler flags          : ${CFLAGS}
-directory for pid files : ${ac_piddir}
+directory for state files : ${zebra_statedir}
 "

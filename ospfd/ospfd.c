@@ -53,6 +53,7 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #include "ospfd/ospf_ase.h"
 
 
+
 /* OSPF process wide configuration. */
 static struct ospf_master ospf_master;
 
@@ -516,9 +517,6 @@ ospf_area_free (struct ospf_area *area)
   ospf_lsdb_delete_all (area->lsdb);
   ospf_lsdb_free (area->lsdb);
 
-#ifdef HAVE_OPAQUE_LSA
-  ospf_opaque_type10_lsa_term (area);
-#endif /* HAVE_OPAQUE_LSA */
   ospf_lsa_unlock (area->router_lsa_self);
   
   route_table_finish (area->ranges);
@@ -637,7 +635,7 @@ ospf_network_set (struct ospf *ospf, struct prefix_ipv4 *p,
   struct ospf_area *area;
   struct route_node *rn;
   struct external_info *ei;
-  int ret = OSPF_AREA_ID_FORMAT_DECIMAL;
+  int ret = OSPF_AREA_ID_FORMAT_ADDRESS;
 
   rn = route_node_get (ospf->networks, (struct prefix *)p);
   if (rn->info)
@@ -704,7 +702,25 @@ ospf_network_unset (struct ospf *ospf, struct prefix_ipv4 *p,
   return 1;
 }
 
-
+/* Check whether interface matches given network
+ * returns: 1, true. 0, false
+ */
+int 
+ospf_network_match_iface(struct connected *co, struct prefix *net)
+{
+  /* Behaviour to match both Cisco where:
+   *   iface address lies within network specified -> ospf
+   * and zebra 0.9[2ish-3]:
+   *   PtP special case: network specified == iface peer addr -> ospf
+   */
+  return (
+          ((ifc_pointopoint (co) && 
+            IPV4_ADDR_SAME ( &(co->destination->u.prefix4), &(net->u.prefix4)))
+   		  || prefix_match (net, co->address)) 
+  		  ? 1 : 0
+  		 );
+}
+
 void
 ospf_network_run (struct ospf *ospf, struct prefix *p, struct ospf_area *area)
 {
@@ -736,19 +752,21 @@ ospf_network_run (struct ospf *ospf, struct prefix *p, struct ospf_area *area)
 	{
 	  struct connected *co = getdata (cn);
 	  struct prefix *addr;
+	  
+          if (CHECK_FLAG(co->flags,ZEBRA_IFA_SECONDARY))
+            continue;
 
-	  if (if_is_pointopoint (ifp))
+	  if (ifc_pointopoint (co))
 	    addr = co->destination;
 	  else 
 	    addr = co->address;
 
-	  if (p->family == co->address->family &&
-	      ! ospf_if_is_configured (ospf, &(addr->u.prefix4)))
-	    if ((if_is_pointopoint (ifp) &&
-		 IPV4_ADDR_SAME (&(addr->u.prefix4), &(p->u.prefix4))) ||
-		prefix_match (p, addr)) 
+	  if (p->family == co->address->family 
+	      && ! ospf_if_is_configured (ospf, &(addr->u.prefix4))
+	      && ospf_network_match_iface(co,p))
 	    {
-	        struct ospf_interface *oi;
+		struct ospf_interface *oi;
+		assert(co);
 		
 		oi = ospf_if_new (ospf, ifp, co->address);
 		oi->connected = co;
@@ -799,7 +817,7 @@ ospf_network_run (struct ospf *ospf, struct prefix *p, struct ospf_area *area)
 
 		ospf_area_add_if (oi->area, oi);
 
-		if (if_is_up (ifp)) 
+		if (if_is_operative (ifp)) 
 		  ospf_if_up (oi);
 
 		break;
@@ -873,10 +891,7 @@ ospf_if_update (struct ospf *ospf)
 	      if (rn->info == NULL)
 		continue;
 	      
-	      if ((oi->type == OSPF_IFTYPE_POINTOPOINT
-		   && IPV4_ADDR_SAME (&(co->destination->u.prefix4),
-				      &(rn->p.u.prefix4)))
-		  || prefix_match (&(rn->p), co->address))
+	      if (ospf_network_match_iface(co,&rn->p))
 		{
 		  found = 1;
 		  route_unlock_node (rn);
@@ -1032,7 +1047,7 @@ int
 ospf_area_stub_set (struct ospf *ospf, struct in_addr area_id)
 {
   struct ospf_area *area;
-  int format = OSPF_AREA_ID_FORMAT_DECIMAL;
+  int format = OSPF_AREA_ID_FORMAT_ADDRESS;
 
   area = ospf_area_get (ospf, area_id, format);
   if (ospf_area_vlink_count (ospf, area))
@@ -1065,7 +1080,7 @@ int
 ospf_area_no_summary_set (struct ospf *ospf, struct in_addr area_id)
 {
   struct ospf_area *area;
-  int format = OSPF_AREA_ID_FORMAT_DECIMAL;
+  int format = OSPF_AREA_ID_FORMAT_ADDRESS;
 
   area = ospf_area_get (ospf, area_id, format);
   area->no_summary = 1;
@@ -1092,7 +1107,7 @@ int
 ospf_area_nssa_set (struct ospf *ospf, struct in_addr area_id)
 {
   struct ospf_area *area;
-  int format = OSPF_AREA_ID_FORMAT_DECIMAL;
+  int format = OSPF_AREA_ID_FORMAT_ADDRESS;
 
   area = ospf_area_get (ospf, area_id, format);
   if (ospf_area_vlink_count (ospf, area))

@@ -33,6 +33,8 @@
 #include "connected.h"
 #include "table.h"
 #include "rib.h"
+#include "thread.h"
+#include "privs.h"
 
 #include "zebra/zserv.h"
 #include "zebra/redistribute.h"
@@ -66,6 +68,8 @@ struct message nlmsg_str[] =
 
 extern int rtm_table_default;
 
+extern struct zebra_privs_t zserv_privs;
+
 /* Make socket for Linux netlink interface. */
 static int
 netlink_socket (struct nlsock *nl, unsigned long groups)
@@ -97,6 +101,9 @@ netlink_socket (struct nlsock *nl, unsigned long groups)
   snl.nl_groups = groups;
 
   /* Bind the socket to the netlink structure for anything. */
+  if ( zserv_privs.change(ZPRIVS_RAISE) )
+    zlog (NULL, LOG_ERR, "Can't raise privileges");
+    
   ret = bind (sock, (struct sockaddr *) &snl, sizeof snl);
   if (ret < 0)
     {
@@ -105,6 +112,9 @@ netlink_socket (struct nlsock *nl, unsigned long groups)
       close (sock);
       return -1;
     }
+    
+  if ( zserv_privs.change(ZPRIVS_LOWER) )
+    zlog (NULL, LOG_ERR, "Can't lower privileges");
 
   /* multiple netlink sockets will have different nl_pid */
   namelen = sizeof snl;
@@ -120,6 +130,39 @@ netlink_socket (struct nlsock *nl, unsigned long groups)
   nl->snl = snl;
   nl->sock = sock;
   return ret;
+}
+
+int set_netlink_blocking(struct nlsock *nl, int *flags)
+{
+
+  /* Change socket flags for blocking I/O.  */
+  if((*flags = fcntl(nl->sock, F_GETFL, 0)) < 0) 
+    {
+      zlog (NULL, LOG_ERR, "%s:%i F_GETFL error: %s", 
+              __FUNCTION__, __LINE__, strerror (errno));
+      return -1;
+    }
+  *flags &= ~O_NONBLOCK;
+  if(fcntl(nl->sock, F_SETFL, *flags) < 0) 
+    {
+      zlog (NULL, LOG_ERR, "%s:%i F_SETFL error: %s", 
+              __FUNCTION__, __LINE__, strerror (errno));
+      return -1;
+    }
+  return 0;
+}
+
+int set_netlink_nonblocking(struct nlsock *nl, int *flags)
+{  
+  /* Restore socket flags for nonblocking I/O */
+  *flags |= O_NONBLOCK;
+  if(fcntl(nl->sock, F_SETFL, *flags) < 0) 
+    {
+      zlog (NULL, LOG_ERR, "%s:%i F_SETFL error: %s", 
+              __FUNCTION__, __LINE__, strerror (errno));
+      return -1;
+    }
+  return 0;
 }
 
 /* Get type specified information from netlink. */
@@ -152,6 +195,12 @@ netlink_request (int family, int type, struct nlsock *nl)
   req.nlh.nlmsg_pid = 0;
   req.nlh.nlmsg_seq = ++nl->seq;
   req.g.rtgen_family = family;
+
+  /* linux appears to check capabilities on every message 
+   * have to raise caps for every message sent
+   */
+  if ( zserv_privs.change(ZPRIVS_RAISE) )
+    zlog (NULL, LOG_ERR, "Can't raise privileges");
  
   ret = sendto (nl->sock, (void*) &req, sizeof req, 0, 
 		(struct sockaddr*) &snl, sizeof snl);
@@ -160,6 +209,10 @@ netlink_request (int family, int type, struct nlsock *nl)
       zlog (NULL, LOG_ERR, "%s sendto failed: %s", nl->name, strerror (errno));
       return -1;
     }
+
+  if ( zserv_privs.change(ZPRIVS_LOWER) )
+    zlog (NULL, LOG_ERR, "Can't lower privileges");
+    
   return 0;
 }
 
@@ -181,7 +234,13 @@ netlink_parse_info (int (*filter) (struct sockaddr_nl *, struct nlmsghdr *),
       struct msghdr msg = { (void*)&snl, sizeof snl, &iov, 1, NULL, 0, 0};
       struct nlmsghdr *h;
 
+      if ( zserv_privs.change(ZPRIVS_RAISE) )
+        zlog (NULL, LOG_ERR, "Can't raise privileges");
+        
       status = recvmsg (nl->sock, &msg, 0);
+      
+      if ( zserv_privs.change(ZPRIVS_LOWER) )
+        zlog (NULL, LOG_ERR, "Can't lower privileges");
 
       if (status < 0)
 	{
@@ -244,11 +303,26 @@ netlink_parse_info (int (*filter) (struct sockaddr_nl *, struct nlmsghdr *),
 			nl->name);
 		  return -1;
 		}
-	      zlog (NULL, LOG_ERR, "%s error: %s, type=%s(%u), seq=%u, pid=%d",
-		    nl->name, strerror (-err->error),
-		    lookup (nlmsg_str, err->msg.nlmsg_type),
-		    err->msg.nlmsg_type, err->msg.nlmsg_seq,
+	      
+	      /* Deal with Error Noise  - MAG*/
+	      {
+		int loglvl = LOG_ERR;
+		int errnum = err->error;
+		int msg_type = err->msg.nlmsg_type;
+		
+		if (nl == &netlink_cmd 
+		    && (-errnum == ENODEV || -errnum == ESRCH)
+		    && (msg_type == RTM_NEWROUTE 
+			|| msg_type == RTM_DELROUTE)) 
+		    loglvl = LOG_DEBUG;
+
+		zlog (NULL, loglvl, "%s error: %s, type=%s(%u), "
+		      "seq=%u, pid=%d",
+		      nl->name, strerror (-errnum),
+		      lookup (nlmsg_str, msg_type),
+		      msg_type, err->msg.nlmsg_seq,
 		    err->msg.nlmsg_pid);
+	      }
 	      /*
 	      ret = -1;
 	      continue;
@@ -388,6 +462,7 @@ netlink_interface_addr (struct sockaddr_nl *snl, struct nlmsghdr *h)
   void *broad = NULL;
   u_char flags = 0;
   char *label = NULL;
+  int peeronly = 0;
 
   ifa = NLMSG_DATA (h);
 
@@ -416,39 +491,55 @@ netlink_interface_addr (struct sockaddr_nl *snl, struct nlmsghdr *h)
       return -1;
     }
 
-  if (tb[IFA_ADDRESS] == NULL)
-    tb[IFA_ADDRESS] = tb[IFA_LOCAL];
-
-  if (ifp->flags & IFF_POINTOPOINT)
+  if (IS_ZEBRA_DEBUG_KERNEL)	/* remove this line to see initial ifcfg */
     {
+      char buf[BUFSIZ];
+      zlog_info ("netlink_interface_addr %s %s/%d:",
+		 lookup (nlmsg_str, h->nlmsg_type),
+		 ifp->name, ifa->ifa_prefixlen);
       if (tb[IFA_LOCAL])
-	{
-	  addr = RTA_DATA (tb[IFA_LOCAL]);
-	  if (tb[IFA_ADDRESS]) 
-	    broad = RTA_DATA (tb[IFA_ADDRESS]);
-	  else
-	    broad = NULL;
-	}
-      else
-	{
-	  if (tb[IFA_ADDRESS])
-	    addr = RTA_DATA (tb[IFA_ADDRESS]);
-	  else
-	    addr = NULL;
-	}
-    }
-  else
-    {
+	zlog_info ("  IFA_LOCAL     %s", inet_ntop (ifa->ifa_family,
+		  RTA_DATA (tb[IFA_LOCAL]), buf, BUFSIZ));
       if (tb[IFA_ADDRESS])
-	addr = RTA_DATA (tb[IFA_ADDRESS]);
-      else
-	addr = NULL;
-
+	zlog_info ("  IFA_ADDRESS   %s", inet_ntop (ifa->ifa_family,
+		  RTA_DATA (tb[IFA_ADDRESS]), buf, BUFSIZ));
       if (tb[IFA_BROADCAST])
-	broad = RTA_DATA(tb[IFA_BROADCAST]);
-      else
-	broad = NULL;
+	zlog_info ("  IFA_BROADCAST %s", inet_ntop (ifa->ifa_family,
+		  RTA_DATA (tb[IFA_BROADCAST]), buf, BUFSIZ));
+      if (tb[IFA_LABEL] && strcmp (ifp->name, RTA_DATA (tb[IFA_LABEL])))
+	zlog_info ("  IFA_LABEL     %s", RTA_DATA (tb[IFA_LABEL]));
     }
+
+  /* peer or broadcast network? */
+  if (ifa->ifa_family == AF_INET)
+    peeronly = if_is_pointopoint (ifp) ||
+	       ifa->ifa_prefixlen >= IPV4_MAX_PREFIXLEN - 1;
+#ifdef HAVE_IPV6
+  if (ifa->ifa_family == AF_INET6) {
+    peeronly = if_is_pointopoint (ifp) ||
+	       ifa->ifa_prefixlen >= IPV6_MAX_PREFIXLEN - 1;
+  }
+#endif /* HAVE_IPV6*/
+  if (!(tb[IFA_LOCAL] && tb[IFA_ADDRESS])) {
+  	/* FIXME: IPv6 Appears to have only IFA_ADDRESS */
+  	peeronly=0;
+  }
+
+  /* network. prefixlen applies to IFA_ADDRESS rather than IFA_LOCAL */
+  if (tb[IFA_ADDRESS] && !peeronly)
+    addr = RTA_DATA (tb[IFA_ADDRESS]);
+  else if (tb[IFA_LOCAL])
+    addr = RTA_DATA (tb[IFA_LOCAL]);
+  else
+    addr = NULL;
+
+  /* broadcast/peer */
+  if (tb[IFA_BROADCAST])
+    broad = RTA_DATA (tb[IFA_BROADCAST]);
+  else if (tb[IFA_ADDRESS] && peeronly)
+    broad = RTA_DATA (tb[IFA_ADDRESS]);		/* peer address specified */
+  else
+    broad = NULL;
 
   /* Flags. */
   if (ifa->ifa_flags & IFA_F_SECONDARY)
@@ -787,16 +878,16 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 	  ifp->mtu = *(int *)RTA_DATA (tb[IFLA_MTU]);
 	  ifp->metric = 1;
 
-	  if (if_is_up (ifp))
+	  if (if_is_operative (ifp))
 	    {
 	      ifp->flags = ifi->ifi_flags & 0x0000fffff;
-	      if (! if_is_up (ifp))
+	      if (! if_is_operative (ifp))
 		if_down (ifp);
 	    }
 	  else
 	    {
 	      ifp->flags = ifi->ifi_flags & 0x0000fffff;
-	      if (if_is_up (ifp))
+	      if (if_is_operative (ifp))
 		if_up (ifp);
 	    }
 	}
@@ -854,7 +945,19 @@ int
 interface_lookup_netlink ()
 {
   int ret;
-
+  int flags;
+  int snb_ret;
+ 
+  /* 
+   * Change netlink socket flags to blocking to ensure we get 
+   * a reply via nelink_parse_info
+   */ 
+  snb_ret = set_netlink_blocking(&netlink_cmd, &flags);
+  if(snb_ret < 0) 
+     zlog (NULL, LOG_WARNING, 
+             "%s:%i Warning: Could not set netlink socket to blocking.", 
+             __FUNCTION__, __LINE__);
+  
   /* Get interface information. */
   ret = netlink_request (AF_PACKET, RTM_GETLINK, &netlink_cmd);
   if (ret < 0)
@@ -881,6 +984,9 @@ interface_lookup_netlink ()
     return ret;
 #endif /* HAVE_IPV6 */
 
+  /* restore socket flags */   
+  if(snb_ret == 0)
+    set_netlink_nonblocking(&netlink_cmd, &flags);
   return 0;
 }
 
@@ -890,7 +996,19 @@ int
 netlink_route_read ()
 {
   int ret;
-
+  int flags;
+  int snb_ret;
+  
+  /* 
+   * Change netlink socket flags to blocking to ensure we get 
+   * a reply via nelink_parse_info
+   */ 
+  snb_ret = set_netlink_blocking(&netlink_cmd, &flags);
+  if(snb_ret < 0) 
+     zlog (NULL, LOG_WARNING, 
+             "%s:%i Warning: Could not set netlink socket to blocking.", 
+             __FUNCTION__, __LINE__);
+  
   /* Get IPv4 routing table. */
   ret = netlink_request (AF_INET, RTM_GETROUTE, &netlink_cmd);
   if (ret < 0)
@@ -909,6 +1027,9 @@ netlink_route_read ()
     return ret;
 #endif /* HAVE_IPV6 */
 
+  /* restore flags */
+  if(snb_ret == 0)
+    set_netlink_nonblocking(&netlink_cmd, &flags);
   return 0;
 }
 
@@ -992,6 +1113,7 @@ netlink_talk (struct nlmsghdr *n, struct nlsock *nl)
   struct iovec iov = { (void*) n, n->nlmsg_len };
   struct msghdr msg = {(void*) &snl, sizeof snl, &iov, 1, NULL, 0, 0};
   int flags = 0;
+  int snb_ret;
   
   memset (&snl, 0, sizeof snl);
   snl.nl_family = AF_NETLINK;
@@ -1007,7 +1129,12 @@ netlink_talk (struct nlmsghdr *n, struct nlsock *nl)
 	      n->nlmsg_seq);
 
   /* Send message to netlink interface. */
+  if ( zserv_privs.change(ZPRIVS_RAISE) )
+        zlog (NULL, LOG_ERR, "Can't raise privileges");
   status = sendmsg (nl->sock, &msg, 0);
+  if ( zserv_privs.change(ZPRIVS_LOWER) )
+        zlog (NULL, LOG_ERR, "Can't lower privileges");
+        
   if (status < 0)
     {
       zlog (NULL, LOG_ERR, "netlink_talk sendmsg() error: %s",
@@ -1019,17 +1146,11 @@ netlink_talk (struct nlmsghdr *n, struct nlsock *nl)
    * Change socket flags for blocking I/O. 
    * This ensures we wait for a reply in netlink_parse_info().
    */
-  if((flags = fcntl(nl->sock, F_GETFL, 0)) < 0) 
-    {
-      zlog (NULL, LOG_ERR, "%s:%i F_GETFL error: %s", 
-              __FUNCTION__, __LINE__, strerror (errno));
-    }
-  flags &= ~O_NONBLOCK;
-  if(fcntl(nl->sock, F_SETFL, flags) < 0) 
-    {
-      zlog (NULL, LOG_ERR, "%s:%i F_SETFL error: %s", 
-              __FUNCTION__, __LINE__, strerror (errno));
-    }
+  snb_ret = set_netlink_blocking(nl, &flags);
+  if(snb_ret < 0) 
+     zlog (NULL, LOG_WARNING, 
+             "%s:%i Warning: Could not set netlink socket to blocking.", 
+             __FUNCTION__, __LINE__);
 
   /* 
    * Get reply from netlink socket. 
@@ -1038,12 +1159,8 @@ netlink_talk (struct nlmsghdr *n, struct nlsock *nl)
   status = netlink_parse_info (netlink_talk_filter, nl);
   
   /* Restore socket flags for nonblocking I/O */
-  flags |= O_NONBLOCK;
-  if(fcntl(nl->sock, F_SETFL, flags) < 0) 
-    {
-      zlog (NULL, LOG_ERR, "%s:%i F_SETFL error: %s", 
-              __FUNCTION__, __LINE__, strerror (errno));
-    }
+  if(snb_ret == 0)
+     set_netlink_nonblocking(nl, &flags);
   
   return status;
 }
@@ -1448,7 +1565,6 @@ kernel_address_delete_ipv4 (struct interface *ifp, struct connected *ifc)
   return netlink_address (RTM_DELADDR, AF_INET, ifp, ifc);
 }
 
-#include "thread.h"
 
 extern struct thread_master *master;
 

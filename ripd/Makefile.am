@@ -17,7 +17,7 @@ noinst_HEADERS = \
 ripd_SOURCES = \
 	rip_main.c $(librip_a_SOURCES)
 
-ripd_LDADD = ../lib/libzebra.a
+ripd_LDADD = ../lib/libzebra.a @LIBCAP@
 
 sysconf_DATA = ripd.conf.sample
 

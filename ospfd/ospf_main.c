@@ -36,6 +36,7 @@
 #include "stream.h"
 #include "log.h"
 #include "memory.h"
+#include "privs.h"
 
 #include "ospfd/ospfd.h"
 #include "ospfd/ospf_interface.h"
@@ -46,6 +47,28 @@
 #include "ospfd/ospf_dump.h"
 #include "ospfd/ospf_zebra.h"
 #include "ospfd/ospf_vty.h"
+
+/* ospfd privileges */
+zebra_capabilities_t _caps_p [] = 
+{
+  ZCAP_RAW,
+  ZCAP_BIND,
+  ZCAP_BROADCAST,
+  CAP_NET_ADMIN
+};
+
+struct zebra_privs_t ospfd_privs =
+{
+#if defined(ZEBRA_USER)
+  .user = ZEBRA_USER,
+#endif
+#if defined ZEBRA_GROUP
+  .group = ZEBRA_GROUP,
+#endif
+  .caps_p = _caps_p,
+  .cap_num_p = sizeof(_caps_p)/sizeof(_caps_p[0]),
+  .cap_num_i = 0
+};
 
 /* Configuration filename and directory. */
 char config_current[] = OSPF_DEFAULT_CONFIG;
@@ -61,6 +84,7 @@ struct option longopts[] =
   { "help",        no_argument,       NULL, 'h'},
   { "vty_addr",    required_argument, NULL, 'A'},
   { "vty_port",    required_argument, NULL, 'P'},
+  { "user",        required_argument, NULL, 'u'},
   { "version",     no_argument,       NULL, 'v'},
   { 0 }
 };
@@ -88,6 +112,7 @@ Daemon which manages OSPF.\n\n\
 -i, --pid_file     Set process identifier file name\n\
 -A, --vty_addr     Set vty's bind address\n\
 -P, --vty_port     Set vty's port number\n\
+-u, --user         User and group to run as\n\
 -v, --version      Print program version\n\
 -h, --help         Display this help and exit\n\
 \n\
@@ -170,7 +195,7 @@ main (int argc, char **argv)
 {
   char *p;
   char *vty_addr = NULL;
-  int vty_port = 0;
+  int vty_port = OSPF_VTY_PORT;
   int daemon_mode = 0;
   char *config_file = NULL;
   char *progname;
@@ -222,8 +247,19 @@ main (int argc, char **argv)
           pid_file = optarg;
           break;
 	case 'P':
-	  vty_port = atoi (optarg);
-	  break;
+          /* Deal with atoi() returning 0 on failure, and ospfd not
+             listening on ospfd port... */
+          if (strcmp(optarg, "0") == 0) 
+            {
+              vty_port = 0;
+              break;
+            } 
+          vty_port = atoi (optarg);
+          vty_port = (vty_port ? vty_port : OSPF_VTY_PORT);
+  	  break;
+  case 'u':
+    ospfd_privs.group = ospfd_privs.user = optarg;
+    break;
 	case 'v':
 	  print_version (progname);
 	  exit (0);
@@ -241,6 +277,7 @@ main (int argc, char **argv)
   master = om->master;
 
   /* Library inits. */
+  zprivs_init (&ospfd_privs);
   signal_init ();
   cmd_init (1);
   debug_init ();
@@ -280,8 +317,7 @@ main (int argc, char **argv)
   pid_output (pid_file);
 
   /* Create VTY socket */
-  vty_serv_sock (vty_addr,
-		 vty_port ? vty_port : OSPF_VTY_PORT, OSPF_VTYSH_PATH);
+  vty_serv_sock (vty_addr, vty_port, OSPF_VTYSH_PATH);
 
   /* Print banner. */
   zlog (NULL, LOG_INFO, "OSPFd (%s) starts", ZEBRA_VERSION);

@@ -37,11 +37,12 @@
 #include "distribute.h"
 #include "plist.h"
 #include "routemap.h"
-#include "if_rmap.h"
+#include "privs.c"
 
 #include "ripngd/ripngd.h"
 #include "ripngd/ripng_route.h"
 #include "ripngd/ripng_debug.h"
+#include "ripngd/ripng_ifrmap.h"
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 
@@ -57,6 +58,8 @@ enum
   ripng_split_horizon,
   ripng_no_split_horizon
 };
+
+extern struct zebra_privs_t ripngd_privs;
 
 /* Prototypes. */
 void
@@ -153,12 +156,19 @@ ripng_make_socket (void)
 #endif /* SIN6_LEN */
   ripaddr.sin6_port = htons (RIPNG_PORT_DEFAULT);
 
+  if (ripngd_privs.change (ZPRIVS_RAISE))
+      zlog_err ("ripng_make_socket: could not raise privs");
+  
   ret = bind (sock, (struct sockaddr *) &ripaddr, sizeof (ripaddr));
   if (ret < 0)
     {
       zlog (NULL, LOG_ERR, "Can't bind ripng socket: %s.", strerror (errno));
       return ret;
     }
+    
+  if (ripngd_privs.change (ZPRIVS_LOWER))
+      zlog_err ("ripng_make_socket: could not lower privs");
+
   return sock;
 }
 
@@ -2178,8 +2188,8 @@ DEFUN (show_ipv6_protocols, show_ipv6_protocols_cmd,
 }
 
 /* Please be carefull to use this command. */
-DEFUN (default_information_originate,
-       default_information_originate_cmd,
+DEFUN (ripng_default_information_originate,
+       ripng_default_information_originate_cmd,
        "default-information originate",
        "Default route information\n"
        "Distribute default route\n")
@@ -2194,8 +2204,8 @@ DEFUN (default_information_originate,
   return CMD_SUCCESS;
 }
 
-DEFUN (no_default_information_originate,
-       no_default_information_originate_cmd,
+DEFUN (no_ripng_default_information_originate,
+       no_ripng_default_information_originate_cmd,
        "no default-information originate",
        NO_STR
        "Default route information\n"
@@ -2494,8 +2504,8 @@ ripng_init ()
   install_element (RIPNG_NODE, &no_ripng_garbage_timer_cmd);
 #endif /* 0 */
 
-  install_element (RIPNG_NODE, &default_information_originate_cmd);
-  install_element (RIPNG_NODE, &no_default_information_originate_cmd);
+  install_element (RIPNG_NODE, &ripng_default_information_originate_cmd);
+  install_element (RIPNG_NODE, &no_ripng_default_information_originate_cmd);
 
   ripng_if_init ();
   ripng_debug_init ();
@@ -2520,7 +2530,7 @@ ripng_init ()
   route_map_add_hook (ripng_routemap_update);
   route_map_delete_hook (ripng_routemap_update);
 
-  if_rmap_init (RIPNG_NODE);
+  if_rmap_init ();
   if_rmap_hook_add (ripng_if_rmap_update);
   if_rmap_hook_delete (ripng_if_rmap_update);
 }

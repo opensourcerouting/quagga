@@ -7,7 +7,7 @@
 AC_PREREQ(2.13)
 
 AC_INIT(lib/zebra.h)
-AM_INIT_AUTOMAKE(zebra, 0.93)
+AM_INIT_AUTOMAKE(zebra, 0.94)
 AM_CONFIG_HEADER(config.h)
 
 dnl -----------------------------------
@@ -87,11 +87,23 @@ dnl Temporary option until OSPF NSSA implementation complete
 AC_ARG_ENABLE(nssa,
 [  --enable-nssa           enable OSPF NSSA option])
 AC_ARG_ENABLE(opaque-lsa,
-[  --enable-opaque-lsa     enable OSPF Opaque-LSA support (RFC2370)])
+[  --enable-opaque-lsa     enable OSPF Opaque-LSA with OSPFAPI support (RFC2370)])
+AC_ARG_ENABLE(ospfapi,
+[  --disable-ospfapi       do not build OSPFAPI to access the OSPF LSA Database, 
+                          (this is the default if --enable-opaque-lsa is not set)])
+AC_ARG_ENABLE(ospfclient,
+[  --disable-ospfclient    do not build OSPFAPI client for OSPFAPI, 
+                          (this is the default if --disable-ospfapi is set)])
 AC_ARG_ENABLE(ospf-te,
 [  --enable-ospf-te        enable Traffic Engineering Extension to OSPF])
 AC_ARG_ENABLE(multipath,
 [  --enable-multipath=ARG  enable multipath function, ARG must be digit])
+AC_ARG_ENABLE(zebra_user,
+[  --enable-user=ARG       user to run zebra suite as (default zebra)])
+AC_ARG_ENABLE(zebra_group,
+[  --enable-group=ARG      group to run zebra suite as (default zebra)])
+AC_ARG_ENABLE(vty_group,
+[  --enable-vty-group=ARG      set vty sockets to have specified group as owner])
 
 dnl AC_ARG_ENABLE(rtadv,
 dnl [  --enable-rtadv          enable IPV6 router advertisment option])
@@ -102,30 +114,51 @@ if test "${enable_broken_aliases}" = "yes"; then
     echo "Sorry, you can't use netlink with broken aliases"
     exit 1
   fi
-  AC_DEFINE(HAVE_BROKEN_ALIASES)
+  AC_DEFINE(HAVE_BROKEN_ALIASES,,Broken Alias)
   enable_netlink=no
 fi
 
 if test "${enable_tcp_zebra}" = "yes"; then
-  AC_DEFINE(HAVE_TCP_ZEBRA)
+  AC_DEFINE(HAVE_TCP_ZEBRA,,Use TCP for zebra communication)
 fi
 
 if test "${enable_nssa}" = "yes"; then
-  AC_DEFINE(HAVE_NSSA)
+  AC_DEFINE(HAVE_NSSA,,OSPF NSSA)
 fi
 
 if test "${enable_opaque_lsa}" = "yes"; then
-  AC_DEFINE(HAVE_OPAQUE_LSA)
+  AC_DEFINE(HAVE_OPAQUE_LSA,,OSPF Opaque LSA)
 fi
 
 if test "${enable_ospf_te}" = "yes"; then
-  AC_DEFINE(HAVE_OPAQUE_LSA)
-  AC_DEFINE(HAVE_OSPF_TE)
+  AC_DEFINE(HAVE_OPAQUE_LSA,,OSPF Opaque LSA)
+  AC_DEFINE(HAVE_OSPF_TE,,OSPF TE)
 fi
 
 dnl if test "${enable_rtadv}" = "yes"; then
 dnl   AC_DEFINE(HAVE_RTADV)
 dnl fi
+
+if test "${enable_user}" = "yes" ; then
+  enable_user="zebra"
+elif test "${enable_user}" = "no"; then
+  enable_user="root"
+fi
+AC_DEFINE_UNQUOTED(ZEBRA_USER, "${enable_user}", Zebra User)
+
+if test "${enable_group}" = "yes" ; then
+  enable_group="zebra"
+elif test "${enable_group}" = "no"; then
+  enable_group="root"
+fi
+AC_DEFINE_UNQUOTED(ZEBRA_GROUP, "${enable_group}", Zebra Group)
+
+if test x"${enable_vty_group}" = x"yes" ; then
+  AC_MSG_ERROR([--enable-vty-group requires a group as argument])
+fi
+if test x"${enable_vty_group}" != x"no"; then
+  AC_DEFINE_UNQUOTED(VTY_GROUP, "${enable_vty_group}", VTY Sockets Group)
+fi
 
 changequote(, )dnl
 
@@ -162,30 +195,30 @@ dnl Some systems (Solaris 2.x) require libnsl (Network Services Library)
 case "$host" in
   *-sunos5.6* | *-solaris2.6*)
       opsys=sol2-6
-      AC_DEFINE(SUNOS_5)
+      AC_DEFINE(SUNOS_5,,SunOS 5)
       AC_CHECK_LIB(xnet, main)
       CURSES=-lcurses
   ;;
   *-sunos5* | *-solaris2*)
-      AC_DEFINE(SUNOS_5)
+      AC_DEFINE(SUNOS_5,,SunOS 5)
       AC_CHECK_LIB(socket, main)
       AC_CHECK_LIB(nsl, main)
       CURSES=-lcurses
   ;;
   *-linux-*)
       opsys=gnu-linux
-      AC_DEFINE(GNU_LINUX)
+      AC_DEFINE(GNU_LINUX,,GNU Linux)
   ;;
   *-nec-sysv4*)
       AC_CHECK_LIB(nsl, gethostbyname)
       AC_CHECK_LIB(socket, socket)
   ;;
   *-freebsd3.2)
-      AC_DEFINE(FREEBSD_32)
+      AC_DEFINE(FREEBSD_32,,FreeBSD 3.2)
   ;;
   *-openbsd*)
       opsys=openbsd
-      AC_DEFINE(OPEN_BSD)
+      AC_DEFINE(OPEN_BSD,,OpenBSD)
   ;;
   *-bsdi*)
       opsys=bsdi
@@ -194,18 +227,12 @@ case "$host" in
   ;;
 esac
 
-case "${host_cpu}-${host_os}" in
-  i?86-solaris*)
-    AC_DEFINE(SOLARIS_X86)
-  ;;
-esac
-
 dnl ---------------------
 dnl Integrated VTY option
 dnl ---------------------
 case "${enable_vtysh}" in
   "yes") VTYSH="vtysh";
-         AC_DEFINE(VTYSH)
+         AC_DEFINE(VTYSH,,VTY shell)
 	 AC_CHECK_LIB(tinfo, tputs, , AC_CHECK_LIB(ncurses, tputs))
          AC_CHECK_LIB(readline, main)
          if test $ac_cv_lib_readline_main = no; then
@@ -215,7 +242,11 @@ case "${enable_vtysh}" in
 	 if test $ac_cv_header_readline_history_h = no;then
            AC_MSG_ERROR([readline is too old to have readline/history.h, please update to the latest readline library.])
 	 fi
-         ;;
+	 AC_CHECK_LIB(readline, rl_completion_matches)
+         if test $ac_cv_lib_readline_rl_completion_matches = no; then
+           AC_DEFINE(rl_completion_matches,completion_matches,Old readline)
+	 fi
+	 ;;
   "no" ) VTYSH="";;
   *    ) ;;
 esac
@@ -223,6 +254,25 @@ esac
 dnl ----------
 dnl PAM module
 dnl ----------
+if test "$with_libpam" = "yes"; then
+  AC_CHECK_HEADER(security/pam_misc.h)
+  if test "$ac_cv_header_security_pam_misc_h" = yes; then
+    AC_DEFINE(HAVE_PAM_MISC_H,,Have pam_misc.h)
+    AC_DEFINE(PAM_CONV_FUNC,misc_conv,Have misc_conv)
+    pam_conv_func="misc_conv"
+  fi
+  AC_CHECK_HEADER(security/openpam.h)
+  if test "$ac_cv_header_security_openpam_h" = yes; then
+    AC_DEFINE(HAVE_OPENPAM_H,,Have openpam.h)
+    AC_DEFINE(PAM_CONV_FUNC,openpam_ttyconv,Have openpam_ttyconv)
+    pam_conv_func="openpam_ttyconv"
+  fi
+  if test -z "$ac_cv_header_security_pam_misc_h$ac_cv_header_security_openpam_h" ; then
+    AC_MSG_WARN([*** pam support will not be built ***])
+    with_libpam="no"
+  fi
+fi
+
 if test "$with_libpam" = "yes"; then
 dnl took this test from proftpd's configure.in and suited to our needs
 dnl -------------------------------------------------------------------------
@@ -232,16 +282,16 @@ dnl of the PAM library.  Prior to 0.72 release, the Linux PAM shared library
 dnl omitted requiring libdl linking information. PAM-0.72 or better ships
 dnl with RedHat 6.2 and Debian 2.2 or better.
 AC_CHECK_LIB(pam, pam_start,
-  [AC_CHECK_LIB(pam, misc_conv,
-    [AC_DEFINE(USE_PAM)
+  [AC_CHECK_LIB(pam, $pam_conv_func,
+    [AC_DEFINE(USE_PAM,,Use PAM for authentication)
      LIBPAM="-lpam"],
-    [AC_DEFINE(USE_PAM)
+    [AC_DEFINE(USE_PAM,,Use PAM for authentication)
      LIBPAM="-lpam -lpam_misc"]
     )
   ],
 
   [AC_CHECK_LIB(pam, pam_end,
-    [AC_CHECK_LIB(pam, misc_conv,
+    [AC_CHECK_LIB(pam, $pam_conv_func,
       [AC_DEFINE(USE_PAM)
        LIBPAM="-lpam -ldl"],
       [AC_DEFINE(USE_PAM)
@@ -257,36 +307,7 @@ AC_SUBST(LIBPAM)
 dnl -------------------------------
 dnl Endian-ness check
 dnl -------------------------------
-AC_DEFUN(ZEBRA_AC_C_BIGENDIAN,
-[AC_CACHE_CHECK(whether byte ordering is bigendian, ac_cv_c_bigendian,
-[ac_cv_c_bigendian=unknown
-# See if sys/param.h defines the BYTE_ORDER macro.
-AC_TRY_COMPILE([#include <sys/types.h>
-#include <sys/param.h>], [
-#if !BYTE_ORDER || !BIG_ENDIAN || !LITTLE_ENDIAN
- bogus endian macros
-#endif], [# It does; now see whether it defined to BIG_ENDIAN or not.
-AC_TRY_COMPILE([#include <sys/types.h>
-#include <sys/param.h>], [
-#if BYTE_ORDER != BIG_ENDIAN
- not big endian
-#endif], ac_cv_c_bigendian=yes, ac_cv_c_bigendian=no)])
-if test $ac_cv_c_bigendian = unknown; then
-AC_TRY_RUN([main () {
-  /* Are we little or big endian?  From Harbison&Steele.  */
-  union
-  {
-    long l;
-    char c[sizeof (long)];
-  } u;
-  u.l = 1;
-  exit (u.c[sizeof (long) - 1] == 1);
-}], ac_cv_c_bigendian=no, ac_cv_c_bigendian=yes, ac_cv_c_bigendian=no)
-fi])
-if test $ac_cv_c_bigendian = yes; then
-  AC_DEFINE(WORDS_BIGENDIAN,1,Big endian words)
-fi
-])
+AC_WORDS_BIGENDIAN
 
 dnl -------------------------------
 dnl check the size in byte of the C
@@ -310,7 +331,7 @@ if test x"$opsys" = x"gnu-linux"; then
   if test "${enable_netlink}" = "yes";then
     AC_MSG_RESULT(netlink)
     RT_METHOD=rt_netlink.o
-    AC_DEFINE(HAVE_NETLINK)
+    AC_DEFINE(HAVE_NETLINK,,netlink)
     netlink=yes
   elif test "${enable_netlink}" = "no"; then
     AC_MSG_RESULT(ioctl)
@@ -319,7 +340,7 @@ if test x"$opsys" = x"gnu-linux"; then
   else
     AC_MSG_RESULT(netlink)
     RT_METHOD=rt_netlink.o
-    AC_DEFINE(HAVE_NETLINK)
+    AC_DEFINE(HAVE_NETLINK,,netlink)
     netlink=yes
   fi
 else
@@ -341,8 +362,7 @@ main ()
     exit (1);
   exit (0);
 }],
-  [AC_DEFINE(HAVE_AF_ROUTE)
-   KERNEL_METHOD=kernel_socket.o
+  [KERNEL_METHOD=kernel_socket.o
    RT_METHOD=rt_socket.o
    AC_MSG_RESULT(socket)],
   [RT_METHOD=rt_ioctl.o
@@ -396,7 +416,7 @@ else
   elif grep NET_RT_IFLIST /usr/include/sys/socket.h >/dev/null 2>&1; then
     AC_MSG_RESULT(sysctl)
     IF_METHOD=if_sysctl.o
-    AC_DEFINE(HAVE_NET_RT_IFLIST)
+    AC_DEFINE(HAVE_NET_RT_IFLIST,,NET_RT_IFLIST)
   else
     AC_MSG_RESULT(ioctl)
     IF_METHOD=if_ioctl.o
@@ -408,12 +428,12 @@ dnl -----------------------
 dnl check proc file system.
 dnl -----------------------
 if test -r /proc/net/dev; then
-  AC_DEFINE(HAVE_PROC_NET_DEV)
+  AC_DEFINE(HAVE_PROC_NET_DEV,,/proc/net/dev)
   IF_PROC=if_proc.o
 fi
 
 if test -r /proc/net/if_inet6; then
-  AC_DEFINE(HAVE_PROC_NET_IF_INET6)
+  AC_DEFINE(HAVE_PROC_NET_IF_INET6,,/proc/net/if_inet6)
   IF_PROC=if_proc.o
 fi
 AC_SUBST(IF_PROC)
@@ -455,8 +475,8 @@ dnl INRIA IPv6
 dnl ----------
 if grep IPV6_INRIA_VERSION /usr/include/netinet/in.h >/dev/null 2>&1; then
    zebra_cv_ipv6=yes
-   AC_DEFINE(HAVE_IPV6)
-   AC_DEFINE(INRIA_IPV6)
+   AC_DEFINE(HAVE_IPV6,,IPv6)
+   AC_DEFINE(INRIA_IPV6,,Inria IPv6)
    RIPNGD="ripngd"
    OSPF6D="ospf6d"
    LIB_IPV6=""
@@ -467,8 +487,8 @@ dnl KAME IPv6
 dnl ---------
 if grep WIDE /usr/include/netinet6/in6.h >/dev/null 2>&1; then
    zebra_cv_ipv6=yes
-   AC_DEFINE(HAVE_IPV6)
-   AC_DEFINE(KAME)
+   AC_DEFINE(HAVE_IPV6,,IPv6)
+   AC_DEFINE(KAME,,KAME IPv6)
    RIPNGD="ripngd"
    OSPF6D="ospf6d"
    if test -d /usr/local/v6/lib -a -f /usr/local/v6/lib/libinet6.a; then
@@ -481,12 +501,12 @@ dnl NRL check
 dnl ---------
 if grep NRL /usr/include/netinet6/in6.h >/dev/null 2>&1; then
    zebra_cv_ipv6=yes
-   AC_DEFINE(HAVE_IPV6)
-   AC_DEFINE(NRL)
+   AC_DEFINE(HAVE_IPV6,,IPv6)
+   AC_DEFINE(NRL,,NRL)
    RIPNGD="ripngd"
    OSPF6D="ospf6d"
    if test x"$opsys" = x"bsdi";then
-      AC_DEFINE(BSDI_NRL)
+      AC_DEFINE(BSDI_NRL,,BSDI)
       AC_MSG_RESULT(BSDI_NRL)
    else
       AC_MSG_RESULT(NRL)
@@ -521,7 +541,7 @@ if test "$zebra_cv_linux_ipv6" = "yes";then
 #if __GLIBC__ >= 2 && __GLIBC_MINOR__ >= 1
   yes
 #endif], [glibc=yes; AC_MSG_RESULT(yes)], AC_MSG_RESULT(no))
-   AC_DEFINE(LINUX_IPV6)   
+   AC_DEFINE(LINUX_IPV6,,Linux IPv6)   
    RIPNGD="ripngd"
    OSPF6D="ospf6d"
    if test "$glibc" != "yes"; then
@@ -570,6 +590,18 @@ else
   OSPFD="ospfd"
 fi
 
+OSPFCLIENT=""
+if test "${enable_opaque_lsa}" = "yes"; then
+  if test "${enable_ospfapi}" != "no";then
+    AC_DEFINE(SUPPORT_OSPF_API,,OSPFAPI)
+
+    if test "${enable_ospfclient}" != "no";then
+      OSPFCLIENT="ospfclient"
+    fi
+  fi
+
+fi
+
 case "${enable_ripngd}" in
   "yes") RIPNGD="ripngd";;
   "no" ) RIPNGD="";;
@@ -583,7 +615,7 @@ case "${enable_ospf6d}" in
 esac
 
 if test "${enable_bgp_announce}" = "no";then
-  AC_DEFINE(DISABLE_BGP_ANNOUNCE)
+  AC_DEFINE(DISABLE_BGP_ANNOUNCE,,Disable BGP installation to zebra)
 fi
 
 AC_SUBST(ZEBRA)
@@ -595,8 +627,10 @@ AC_SUBST(OSPF6D)
 AC_SUBST(VTYSH)
 AC_SUBST(INCLUDES)
 AC_SUBST(CURSES)
-AC_CHECK_LIB(c, inet_ntop, [AC_DEFINE(HAVE_INET_NTOP)])
-AC_CHECK_LIB(c, inet_pton, [AC_DEFINE(HAVE_INET_PTON)])
+AC_SUBST(OSPFCLIENT)
+AC_SUBST(OSPFAPI)
+AC_CHECK_LIB(c, inet_ntop, [AC_DEFINE(HAVE_INET_NTOP,,inet_ntop)])
+AC_CHECK_LIB(c, inet_pton, [AC_DEFINE(HAVE_INET_PTON,,inet_pton)])
 AC_CHECK_LIB(crypt, crypt)
 AC_CHECK_LIB(resolv, res_init)
 AC_CHECK_LIB(m, main)
@@ -613,61 +647,83 @@ dnl check system has GNU regexp
 dnl ---------------------------
 dnl AC_MSG_CHECKING(whether system has GNU regex)
 AC_CHECK_LIB(c, regexec,
-[AC_DEFINE(HAVE_GNU_REGEX)
+[AC_DEFINE(HAVE_GNU_REGEX,,GNU regexp library)
  LIB_REGEX=""],
 [LIB_REGEX="regex.o"])
 AC_SUBST(LIB_REGEX)
-
-dnl AC_MSG_CHECKING(whether system has GNU regex)
-dnl if grep RE_NO_GNU_OPS /usr/include/regex.h >/dev/null 2>&1; then
-dnl   AC_MSG_RESULT(yes)
-dnl   AC_DEFINE(HAVE_GNU_REGEX)
-dnl   LIB_REGEX=""
-dnl else
-dnl   AC_MSG_RESULT(no)
-dnl   LIB_REGEX="regex.o"
-dnl fi
-dnl AC_SUBST(LIB_REGEX)
 
 dnl ------------------
 dnl check SNMP library
 dnl ------------------
 if test "${enable_snmp}" = "yes";then
 dnl  AC_CHECK_LIB(snmp, asn_parse_int, HAVE_SNMP=yes)
-  old_libs="${LIBS}"
-  LIBS="-L/usr/local/lib"
-  unset ac_cv_lib_snmp_asn_parse_int
-  AC_CHECK_LIB(snmp, asn_parse_int, HAVE_SNMP=yes, )
   if test "${HAVE_SNMP}" = ""; then
+    old_libs="${LIBS}"
+    LIBS="-L/usr/lib"
     unset ac_cv_lib_snmp_asn_parse_int
-    AC_CHECK_LIB(crypto, main, [NEED_CRYPTO=yes ], )
-	if test "${NEED_CRYPTO}" = ""; then 
-		AC_CHECK_LIB(snmp, asn_parse_int, [HAVE_SNMP=yes; NEED_CRYPTO=yes ],)
-	else
-	    AC_CHECK_LIB(snmp, asn_parse_int, [HAVE_SNMP=yes; NEED_CRYPTO=yes;LIBS="$LIBS -lcrypto" ],,"-lcrypto")
-	fi
+    AC_CHECK_LIB(crypto, main, NEED_CRYPTO=yes, )
+    if test "${NEED_CRYPTO}" = ""; then
+      AC_CHECK_LIB(netsnmp, asn_parse_int, [HAVE_NETSNMP=yes; HAVE_SNMP=yes ])
+    else
+      AC_CHECK_LIB(netsnmp, asn_parse_int, [HAVE_NETSNMP=yes; HAVE_SNMP=yes; NEED_CRYPTO=yes;LIBS="$LIBS -lcrypto" ],,"-lcrypto")
+    fi
+    LIBS="${old_libs}"
   fi
-  LIBS="${old_libs}"
+  if test "${HAVE_SNMP}" = ""; then
+    old_libs="${LIBS}"
+    LIBS="-L/usr/lib"
+    unset ac_cv_lib_snmp_asn_parse_int
+    AC_CHECK_LIB(snmp, asn_parse_int, HAVE_SNMP=yes, )
+    if test "${HAVE_SNMP}" = ""; then
+      unset ac_cv_lib_snmp_asn_parse_int
+      AC_CHECK_LIB(crypto, main, NEED_CRYPTO=yes, )
+      if test "${NEED_CRYPTO}" = "yes"; then 
+        AC_CHECK_LIB(snmp, asn_parse_int, [HAVE_SNMP=yes; NEED_CRYPTO=yes; LIBS="$LIBS -lcrypto" ],,"-lcrypto")
+      fi
+    fi
+    LIBS="${old_libs}"
+  fi
 
   if test "${HAVE_SNMP}" = ""; then
-	old_libs="${LIBS}"
-	LIBS="-L/usr/local/lib"
-	AC_CHECK_LIB(snmp, asn_parse_int, HAVE_SNMP=yes)
-	LIBS="${old_libs}"
+    old_libs="${LIBS}"
+    LIBS="-L/usr/local/lib"
+    unset ac_cv_lib_snmp_asn_parse_int
+    AC_CHECK_LIB(snmp, asn_parse_int, HAVE_SNMP=yes)
+    if test "${HAVE_SNMP}" = ""; then
+      unset ac_cv_lib_snmp_asn_parse_int
+      AC_CHECK_LIB(crypto, main, NEED_CRYPTO=yes, )
+      if test "${NEED_CRYPTO}" = "yes"; then
+        AC_CHECK_LIB(snmp, asn_parse_int, [HAVE_SNMP=yes; NEED_CRYPTO=yes; LIBS="$LIBS -lcrypto" ],,"-lcrypto")
+      fi
+    fi
+    LIBS="${old_libs}"
   fi
+
   if test "${HAVE_SNMP}" = "yes"; then
-    for ac_snmp in /usr/include/ucd-snmp/asn1.h /usr/local/include/ucd-snmp/asn1.h /dev/null
+    for ac_snmp in /usr/include/net-snmp/library/asn1.h /usr/include/ucd-snmp/asn1.h /usr/local/include/ucd-snmp/asn1.h /dev/null
     do
       test -f "${ac_snmp}" && break
     done
+
     case ${ac_snmp} in
+      /usr/include/net-snmp/*)
+                  AC_DEFINE(HAVE_SNMP,,SNMP)
+		  AC_DEFINE(HAVE_NETSNMP,,SNMP)
+                  AC_DEFINE(UCD_COMPATIBLE,,SNMP)
+                  CFLAGS="${CFLAGS} -I/usr/include/net-snmp -I/usr/include/net-snmp/library"
+		  if test "${HAVE_NETSNMP}" = "yes"; then
+		        LIBS="${LIBS} -lnetsnmp"
+		  else
+			LIBS="${LIBS} -lsnmp"
+		  fi
+                  ;;
       /usr/include/ucd-snmp/*) 
-                  AC_DEFINE(HAVE_SNMP)
+                  AC_DEFINE(HAVE_SNMP,,SNMP)
                   CFLAGS="${CFLAGS} -I/usr/include/ucd-snmp"
     		  LIBS="${LIBS} -lsnmp"
                   ;;
       /usr/local/include/ucd-snmp/*) 
-                  AC_DEFINE(HAVE_SNMP)
+                  AC_DEFINE(HAVE_SNMP,,SNMP)
   	          CFLAGS="${CFLAGS} -I/usr/local/include/ucd-snmp"
   		  LIBS="${LIBS} -L/usr/local/lib -lsnmp"
                   ;;
@@ -686,7 +742,7 @@ AC_TRY_COMPILE([#include <sys/types.h>
 #include <sys/socket.h>
 ],[static struct sockaddr ac_i;int ac_j = sizeof (ac_i.sa_len);],
 [AC_MSG_RESULT(yes)
- AC_DEFINE(HAVE_SA_LEN)],
+ AC_DEFINE(HAVE_SA_LEN,,sa_len)],
  AC_MSG_RESULT(no))
 
 dnl ----------------------------
@@ -697,7 +753,7 @@ AC_TRY_COMPILE([#include <sys/types.h>
 #include <netinet/in.h>
 ],[static struct sockaddr_in ac_i;int ac_j = sizeof (ac_i.sin_len);],
 [AC_MSG_RESULT(yes)
- AC_DEFINE(HAVE_SIN_LEN)],
+ AC_DEFINE(HAVE_SIN_LEN,,sin_len)],
  AC_MSG_RESULT(no))
 
 dnl ----------------------------
@@ -708,7 +764,7 @@ AC_TRY_COMPILE([#include <sys/types.h>
 #include <sys/un.h>
 ],[static struct sockaddr_un ac_i;int ac_j = sizeof (ac_i.sun_len);],
 [AC_MSG_RESULT(yes)
- AC_DEFINE(HAVE_SUN_LEN)],
+ AC_DEFINE(HAVE_SUN_LEN,,sun_len)],
  AC_MSG_RESULT(no))
 
 dnl -----------------------------------
@@ -720,7 +776,7 @@ if test "$zebra_cv_ipv6" = yes; then
 #include <netinet/in.h>
 ],[static struct sockaddr_in6 ac_i;int ac_j = sizeof (ac_i.sin6_scope_id);],
 [AC_MSG_RESULT(yes)
- AC_DEFINE(HAVE_SIN6_SCOPE_ID)],
+ AC_DEFINE(HAVE_SIN6_SCOPE_ID,,scope id)],
  AC_MSG_RESULT(no))
 fi
 
@@ -733,7 +789,7 @@ AC_TRY_COMPILE([#include <sys/types.h>
 #include <netinet/in.h>
 ],[socklen_t ac_x;],
 [AC_MSG_RESULT(yes)
- AC_DEFINE(HAVE_SOCKLEN_T)],
+ AC_DEFINE(HAVE_SOCKLEN_T,,socklen_t)],
  AC_MSG_RESULT(no))
 
 dnl ------------------------
@@ -743,7 +799,7 @@ AC_MSG_CHECKING(whether struct sockaddr_dl exist)
 AC_EGREP_HEADER(sockaddr_dl,
 net/if_dl.h,
 [AC_MSG_RESULT(yes)
- AC_DEFINE(HAVE_SOCKADDR_DL)],
+ AC_DEFINE(HAVE_SOCKADDR_DL,,sockaddr_dl)],
  AC_MSG_RESULT(no))
 
 dnl --------------------------
@@ -753,7 +809,7 @@ AC_MSG_CHECKING(whether struct ifaliasreq exist)
 AC_EGREP_HEADER(ifaliasreq,
 net/if.h,
 [AC_MSG_RESULT(yes)
- AC_DEFINE(HAVE_IFALIASREQ)],
+ AC_DEFINE(HAVE_IFALIASREQ,,ifaliasreq)],
  AC_MSG_RESULT(no))
 
 dnl ----------------------------
@@ -763,7 +819,7 @@ AC_MSG_CHECKING(whether struct if6_aliasreq exist)
 AC_EGREP_HEADER(in6_aliasreq,
 netinet6/in6_var.h,
 [AC_MSG_RESULT(yes)
- AC_DEFINE(HAVE_IN6_ALIASREQ)],
+ AC_DEFINE(HAVE_IN6_ALIASREQ,,in6_aliasreq)],
  AC_MSG_RESULT(no))
 
 dnl ---------------------------
@@ -773,7 +829,7 @@ AC_MSG_CHECKING(whether struct rt_addrinfo exist)
 AC_EGREP_HEADER(rt_addrinfo,
 net/route.h,
 [AC_MSG_RESULT(yes)
- AC_DEFINE(HAVE_RT_ADDRINFO)],
+ AC_DEFINE(HAVE_RT_ADDRINFO,,rt_addrinfo)],
  AC_MSG_RESULT(no))
 
 dnl --------------------------
@@ -783,7 +839,7 @@ AC_MSG_CHECKING(whether struct in_pktinfo exist)
 AC_TRY_COMPILE([#include <netinet/in.h>
 ],[struct in_pktinfo ac_x;],
 [AC_MSG_RESULT(yes)
- AC_DEFINE(HAVE_INPKTINFO)],
+ AC_DEFINE(HAVE_INPKTINFO,,in_pktinfo)],
  AC_MSG_RESULT(no))
 
 dnl --------------------------------------
@@ -793,8 +849,30 @@ AC_MSG_CHECKING(whether getrusage is available)
 AC_TRY_COMPILE([#include <sys/resource.h>
 ],[struct rusage ac_x; getrusage (RUSAGE_SELF, &ac_x);],
 [AC_MSG_RESULT(yes)
- AC_DEFINE(HAVE_RUSAGE)],
+ AC_DEFINE(HAVE_RUSAGE,,rusage)],
  AC_MSG_RESULT(no))
+
+dnl -------------------
+dnl capabilities checks
+dnl -------------------
+AC_MSG_CHECKING(whether prctl PR_SET_KEEPCAPS is available)
+AC_TRY_COMPILE([#include <sys/prctl.h>],[prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0);],
+  [AC_MSG_RESULT(yes)
+   AC_DEFINE(HAVE_PR_SET_KEEPCAPS,,prctl)
+   zebra_ac_keepcaps="yes"],
+   AC_MSG_RESULT(no)
+)
+if test x"${zebra_ac_keepcaps}" = x"yes"; then
+  AC_CHECK_HEADERS(sys/capability.h)
+fi
+if test x"${ac_cv_header_sys_capability_h}" = x"yes"; then
+  AC_CHECK_LIB(cap, cap_init, 
+    [AC_DEFINE(HAVE_LCAPS,1,Capabilities)
+     LIBCAP="-lcap"
+    ]
+  )
+fi
+AC_SUBST(LIBCAP)
 
 dnl -------------
 dnl check version
@@ -803,28 +881,55 @@ file="${srcdir}/lib/version.h"
 VERSION=`sed -ne 's/^#.*ZEBRA_VERSION.*\"\([^\"]*\)\"$/\1/p' $file`
 AC_SUBST(VERSION)
 
-dnl ------------------------------
-dnl set paths for process id files
-dnl ------------------------------
-AC_CACHE_CHECK(pid file directory,ac_piddir,
-[for ZEBRA_PID_DIR in /var/run	dnl
-                   /var/adm	dnl
-                   /etc		dnl
-                   /dev/null;
-do
-  test -d $ZEBRA_PID_DIR && break
-done
-ac_piddir=$ZEBRA_PID_DIR
-if test $ZEBRA_PID_DIR = "/dev/null"; then
-  echo "PID DIRECTORY NOT FOUND!"
-fi])
-AC_DEFINE_UNQUOTED(PATH_ZEBRA_PID, "$ac_piddir/zebra.pid")
-AC_DEFINE_UNQUOTED(PATH_RIPD_PID, "$ac_piddir/ripd.pid")
-AC_DEFINE_UNQUOTED(PATH_RIPNGD_PID, "$ac_piddir/ripngd.pid")
-AC_DEFINE_UNQUOTED(PATH_BGPD_PID, "$ac_piddir/bgpd.pid")
-AC_DEFINE_UNQUOTED(PATH_OSPFD_PID, "$ac_piddir/ospfd.pid")
-AC_DEFINE_UNQUOTED(PATH_OSPF6D_PID, "$ac_piddir/ospf6d.pid")
+dnl ----------
+dnl configure date
+dnl ----------
+CONFDATE=`date '+%Y%m%d'`
+AC_SUBST(CONFDATE)
 
+dnl ------------------------------
+dnl set paths for state directory
+dnl ------------------------------
+if test "${prefix}" = "NONE"; then
+  zebra_statedir_prefix="";
+else
+  zebra_statedir_prefix=${prefix}
+fi
+if test "${localstatedir}" = '${prefix}/var'; then
+  AC_CACHE_CHECK(state directory,ac_statedir,
+  [for ZEBRA_STATE_DIR in ${zebra_statedir_prefix}/var/run dnl
+			${zebra_statedir_prefix}/var/adm dnl
+			${zebra_statedir_prefix}/etc dnl
+			/var/run	dnl
+                        /var/adm	dnl
+                        /etc		dnl
+                        /dev/null;
+  do
+    test -d $ZEBRA_STATE_DIR && break
+  done
+  zebra_statedir=$ZEBRA_STATE_DIR])
+else
+  zebra_statedir=${localstatedir}
+  AC_MSG_CHECKING(directory to use for state file)
+  AC_MSG_RESULT(${zebra_statedir})
+fi
+if test $zebra_statedir = "/dev/null"; then
+    echo "STATE DIRECTORY NOT FOUND!"
+fi
+
+AC_DEFINE_UNQUOTED(PATH_ZEBRA_PID, "$zebra_statedir/zebra.pid",zebra PID)
+AC_DEFINE_UNQUOTED(PATH_RIPD_PID, "$zebra_statedir/ripd.pid",ripd PID)
+AC_DEFINE_UNQUOTED(PATH_RIPNGD_PID, "$zebra_statedir/ripngd.pid",ripngd PID)
+AC_DEFINE_UNQUOTED(PATH_BGPD_PID, "$zebra_statedir/bgpd.pid",bgpd PID)
+AC_DEFINE_UNQUOTED(PATH_OSPFD_PID, "$zebra_statedir/ospfd.pid",ospfd PID)
+AC_DEFINE_UNQUOTED(PATH_OSPF6D_PID, "$zebra_statedir/ospf6d.pid",ospf6d PID)
+AC_DEFINE_UNQUOTED(ZEBRA_SERV_PATH, "$zebra_statedir/zserv.api",zebra api socket)
+AC_DEFINE_UNQUOTED(ZEBRA_VTYSH_PATH, "$zebra_statedir/zebra.vty",zebra vty socket)
+AC_DEFINE_UNQUOTED(RIP_VTYSH_PATH, "$zebra_statedir/ripd.vty",rip vty socket)
+AC_DEFINE_UNQUOTED(RIPNG_VTYSH_PATH, "$zebra_statedir/ripngd.vty",ripng vty socket)
+AC_DEFINE_UNQUOTED(BGP_VTYSH_PATH, "$zebra_statedir/bgpd.vty",bgpd vty socket)
+AC_DEFINE_UNQUOTED(OSPF_VTYSH_PATH, "$zebra_statedir/ospfd.vty",ospfd vty socket)
+AC_DEFINE_UNQUOTED(OSPF6_VTYSH_PATH, "$zebra_statedir/ospf6d.vty",ospf6d vty socket)
 
 dnl ---------------------------
 dnl Check htonl works correctly
@@ -845,7 +950,11 @@ ac_cv_htonl_works=yes,
 ac_cv_htonl_works=no)])
 AC_MSG_RESULT($ac_cv_htonl_works)
 
-AC_OUTPUT(Makefile lib/Makefile zebra/Makefile ripd/Makefile ripngd/Makefile bgpd/Makefile ospfd/Makefile ospf6d/Makefile vtysh/Makefile doc/Makefile)
+AC_OUTPUT(Makefile lib/Makefile zebra/Makefile ripd/Makefile 
+	  ripngd/Makefile bgpd/Makefile ospfd/Makefile 
+	  ospf6d/Makefile vtysh/Makefile doc/Makefile 
+	  ospfclient/Makefile
+	  redhat/zebra.spec)
 
 echo "
 zebra configuration
@@ -855,5 +964,5 @@ host operationg system  : ${host_os}
 source code location    : ${srcdir}
 compiler                : ${CC}
 compiler flags          : ${CFLAGS}
-directory for pid files : ${ac_piddir}
+directory for state files : ${zebra_statedir}
 "

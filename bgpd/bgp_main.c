@@ -29,6 +29,7 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #include "memory.h"
 #include "prefix.h"
 #include "log.h"
+#include "privs.h"
 
 #include "bgpd/bgpd.h"
 #include "bgpd/bgp_attr.h"
@@ -45,6 +46,7 @@ struct option longopts[] =
   { "vty_port",    required_argument, NULL, 'P'},
   { "retain",      no_argument,       NULL, 'r'},
   { "no_kernel",   no_argument,       NULL, 'n'},
+  { "user",        required_argument, NULL, 'u'},
   { "version",     no_argument,       NULL, 'v'},
   { "help",        no_argument,       NULL, 'h'},
   { 0 }
@@ -70,6 +72,21 @@ char *pid_file = PATH_BGPD_PID;
 int vty_port = BGP_VTY_PORT;
 char *vty_addr = NULL;
 
+/* privileges */
+struct zebra_privs_t bgpd_privs =
+{
+  .caps_p = 
+  {
+    ZCAP_BIND
+  },
+  .cap_num_p = 1,
+  .cap_num_i = 0,
+#if defined(ZEBRA_USER) && defined(ZEBRA_GROUP)
+  .user = ZEBRA_USER,
+  .group = ZEBRA_GROUP
+#endif
+};
+
 /* Help information display. */
 static void
 usage (char *progname, int status)
@@ -89,6 +106,7 @@ redistribution between different routing protocols.\n\n\
 -P, --vty_port     Set vty's port number\n\
 -r, --retain       When program terminates, retain added route by bgpd.\n\
 -n, --no_kernel    Do not install route to kernel.\n\
+-u, --user         User and group to run as\n\
 -v, --version      Print program version\n\
 -h, --help         Display this help and exit\n\
 \n\
@@ -113,7 +131,7 @@ sighup (int sig)
   vty_read_config (config_file, config_current, config_default);
 
   /* Create VTY's socket */
-  vty_serv_sock (vty_addr, vty_port ? vty_port : BGP_VTY_PORT, BGP_VTYSH_PATH);
+  vty_serv_sock (vty_addr, vty_port, BGP_VTYSH_PATH);
 
   /* Try to return to normal operation. */
 }
@@ -197,7 +215,7 @@ main (int argc, char **argv)
   /* Command line argument treatment. */
   while (1) 
     {
-      opt = getopt_long (argc, argv, "df:hp:A:P:rnv", longopts, 0);
+      opt = getopt_long (argc, argv, "df:hp:A:P:rnu:v", longopts, 0);
     
       if (opt == EOF)
 	break;
@@ -222,7 +240,15 @@ main (int argc, char **argv)
 	  vty_addr = optarg;
 	  break;
 	case 'P':
-	  vty_port = atoi (optarg);
+          /* Deal with atoi() returning 0 on failure, and bgpd not
+             listening on bgp port... */
+          if (strcmp(optarg, "0") == 0) 
+            {
+              vty_port = 0;
+              break;
+            } 
+          vty_port = atoi (optarg);
+          vty_port = (vty_port ? vty_port : BGP_VTY_PORT);
 	  break;
 	case 'r':
 	  retain_mode = 1;
@@ -230,6 +256,9 @@ main (int argc, char **argv)
 	case 'n':
 	  bgp_option_set (BGP_OPT_NO_FIB);
 	  break;
+  case 'u':
+    bgpd_privs.user = bgpd_privs.group = optarg;
+    break;
 	case 'v':
 	  print_version (progname);
 	  exit (0);
@@ -249,6 +278,7 @@ main (int argc, char **argv)
   /* Initializations. */
   srand (time (NULL));
   signal_init ();
+  zprivs_init (&bgpd_privs);
   cmd_init (1);
   vty_init ();
   memory_init ();

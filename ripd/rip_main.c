@@ -30,6 +30,7 @@
 #include "filter.h"
 #include "keychain.h"
 #include "log.h"
+#include "privs.h"
 
 #include "ripd/ripd.h"
 
@@ -43,8 +44,29 @@ static struct option longopts[] =
   { "vty_addr",    required_argument, NULL, 'A'},
   { "vty_port",    required_argument, NULL, 'P'},
   { "retain",      no_argument,       NULL, 'r'},
+  { "user",        required_argument, NULL, 'u'},
   { "version",     no_argument,       NULL, 'v'},
   { 0 }
+};
+
+/* ripd privileges */
+zebra_capabilities_t _caps_p [] = 
+{
+  ZCAP_RAW,
+  ZCAP_BIND
+};
+
+struct zebra_privs_t ripd_privs =
+{
+#if defined(ZEBRA_USER)
+  .user = ZEBRA_USER,
+#endif
+#if defined ZEBRA_GROUP
+  .group = ZEBRA_GROUP,
+#endif
+  .caps_p = _caps_p,
+  .cap_num_p = 2,
+  .cap_num_i = 0
 };
 
 /* Configuration file and directory. */
@@ -85,6 +107,7 @@ Daemon which manages RIP version 1 and 2.\n\n\
 -A, --vty_addr     Set vty's bind address\n\
 -P, --vty_port     Set vty's port number\n\
 -r, --retain       When program terminates, retain added route by ripd.\n\
+-u, --user         User and group to run as\n\
 -v, --version      Print program version\n\
 -h, --help         Display this help and exit\n\
 \n\
@@ -211,11 +234,22 @@ main (int argc, char **argv)
           pid_file = optarg;
           break;
 	case 'P':
-	  vty_port = atoi (optarg);
+          /* Deal with atoi() returning 0 on failure, and ripd not
+             listening on rip port... */
+          if (strcmp(optarg, "0") == 0) 
+            {
+              vty_port = 0;
+              break;
+            } 
+          vty_port = atoi (optarg);
+          vty_port = (vty_port ? vty_port : RIP_VTY_PORT);
 	  break;
 	case 'r':
 	  retain_mode = 1;
 	  break;
+    case 'u':
+        ripd_privs.group = ripd_privs.user = optarg;
+        break;
 	case 'v':
 	  print_version (progname);
 	  exit (0);
@@ -233,6 +267,7 @@ main (int argc, char **argv)
   master = thread_master_create ();
 
   /* Library initialization. */
+  zprivs_init (&ripd_privs);
   signal_init ();
   cmd_init (1);
   vty_init ();
