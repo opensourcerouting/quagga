@@ -70,10 +70,7 @@ struct option longopts[] =
 zebra_capabilities_t _caps_p [] = 
 {
   ZCAP_ADMIN,
-  ZCAP_RAW,
-  ZCAP_BIND,
   ZCAP_SYS_ADMIN,
-  ZCAP_FOWNER,
 };
 
 /* zebra privileges to run with */
