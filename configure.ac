@@ -103,7 +103,7 @@ AC_ARG_ENABLE(ospfd,
 AC_ARG_ENABLE(ospf6d,
 [  --disable-ospf6d        do not build ospf6d])
 AC_ARG_ENABLE(isisd,
-[  --disable-isisd         do not build isisd])
+[  --enable-isisd          build isisd])
 AC_ARG_ENABLE(bgp-announce,
 [  --disable-bgp-announce, turn off BGP route announcement])
 AC_ARG_ENABLE(netlink,
@@ -762,7 +762,7 @@ esac
 case "${enable_isisd}" in
   "yes") ISISD="isisd";;
   "no" ) ISISD="";;
-  *    ) ISISD="isisd";;
+  *    ) ;;
 esac
 
 if test "${enable_bgp_announce}" = "no";then
