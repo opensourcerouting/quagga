@@ -948,7 +948,7 @@ dnl  AC_CHECK_LIB(snmp, asn_parse_int, HAVE_SNMP=yes)
                   AC_DEFINE(HAVE_SNMP,,SNMP)
 		  AC_DEFINE(HAVE_NETSNMP,,SNMP)
                   AC_DEFINE(UCD_COMPATIBLE,,SNMP)
-                  CFLAGS="${CFLAGS} -I/usr/include/net-snmp -I/usr/include/net-snmp/library"
+                  INCLUDES="${INCLUDES} -I/usr/include/net-snmp -I/usr/include/net-snmp/library"
 		  if test "${HAVE_NETSNMP}" = "yes"; then
 		        LIBS="${LIBS} -lnetsnmp"
 		  else
@@ -957,19 +957,19 @@ dnl  AC_CHECK_LIB(snmp, asn_parse_int, HAVE_SNMP=yes)
                   ;;
       /usr/include/ucd-snmp/*) 
                   AC_DEFINE(HAVE_SNMP,,SNMP)
-                  CFLAGS="${CFLAGS} -I/usr/include/ucd-snmp"
+                  INCLUDES="${INCLUDES} -I/usr/include/ucd-snmp"
     		  LIBS="${LIBS} -lsnmp"
                   ;;
       /usr/local/include/ucd-snmp/*) 
                   AC_DEFINE(HAVE_SNMP,,SNMP)
-  	          CFLAGS="${CFLAGS} -I/usr/local/include/ucd-snmp"
+  	          INCLUDES="${INCLUDES} -I/usr/local/include/ucd-snmp"
   		  LIBS="${LIBS} -L/usr/local/lib -lsnmp"
                   ;;
       /usr/local/include/net-snmp/*)
       		AC_DEFINE(HAVE_SNMP,,SNMP)
       		AC_DEFINE(HAVE_NET_SNMP,,SNMP)
       		AC_DEFINE(UCD_COMPATIBLE,,SNMP)
-      		CFLAGS="${CFLAGS} -I/usr/local/include/net-snmp"
+      		INCLUDES="${INCLUDES} -I/usr/local/include/net-snmp"
       		LIBS="${LIBS} -L/usr/local/lib -lnetsnmp"
       		;;
     esac
@@ -1280,6 +1280,7 @@ host operationg system  : ${host_os}
 source code location    : ${srcdir}
 compiler                : ${CC}
 compiler flags          : ${CFLAGS}
+includes                : ${INCLUDES}
 linker flags            : ${LDFLAGS} ${LIBS}
 state file directory    : ${quagga_statedir}
 config file directory   : `eval echo \`echo ${sysconfdir}\``
