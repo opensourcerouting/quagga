@@ -64,9 +64,8 @@ dnl ---------------------------------------------
 dnl
 if test "x$cflags_specified" = "x" ; then
   if test "x${GCC}" = "xyes"; then
-  	CFLAGS="-Os -g -Wall -Wpacked -Wpadded -Wsign-compare"
-  	CFLAGS="${CFLAGS} -Wpointer-arith -Wbad-function-cast"
-        CFLAGS="${CFLAGS}  -Wwrite-strings"
+  	CFLAGS="-Os -g -Wall -Wpacked -Wsign-compare -Wpointer-arith"
+  	CFLAGS="${CFLAGS} -Wbad-function-cast -Wwrite-strings"
   fi
 fi
 
