@@ -35,6 +35,10 @@
 #include <sys/wait.h>
 
 /* Quagga headers: */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <thread.h>
 #include <log.h>
 #include <sigevent.h>
@@ -54,7 +58,11 @@
 #define DEFAULT_LOGLEVEL	LOG_INFO
 #define DEFAULT_MIN_RESTART	60
 #define DEFAULT_MAX_RESTART	600
+#ifdef PATH_WATCHQUAGGA_PID
+#define DEFAULT_PIDFILE		PATH_WATCHQUAGGA_PID
+#else
 #define DEFAULT_PIDFILE		STATEDIR "/watchquagga.pid"
+#endif
 
 #define PING_TOKEN	"PING"
 
