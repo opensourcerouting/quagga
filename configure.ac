@@ -1134,6 +1134,7 @@ AC_OUTPUT(Makefile lib/Makefile zebra/Makefile ripd/Makefile
 	  ospf6d/Makefile isisd/Makefile vtysh/Makefile doc/Makefile 
 	  ospfclient/Makefile
 	  vtysh/extract.pl
+	  m4/Makefile
 	  pkgsrc/Makefile
 	  redhat/Makefile redhat/quagga.spec
 	  lib/version.h
