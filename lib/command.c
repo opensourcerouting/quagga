@@ -2439,7 +2439,8 @@ DEFUN (show_version,
        SHOW_STR
        "Displays zebra version\n")
 {
-  vty_out (vty, "Quagga %s (%s).%s", QUAGGA_VERSION, host.name, VTY_NEWLINE);
+  vty_out (vty, "Quagga %s (%s).%s", QUAGGA_VERSION, host.name?host.name:"",
+	   VTY_NEWLINE);
   vty_out (vty, "%s%s", QUAGGA_COPYRIGHT, VTY_NEWLINE);
 
   return CMD_SUCCESS;
