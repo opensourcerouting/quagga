@@ -73,17 +73,19 @@ int vty_port = BGP_VTY_PORT;
 char *vty_addr = NULL;
 
 /* privileges */
+zebra_capabilities_t _caps_p [] =  
+{
+    ZCAP_BIND,
+};
+
 struct zebra_privs_t bgpd_privs =
 {
 #if defined(ZEBRA_USER) && defined(ZEBRA_GROUP)
   .user = ZEBRA_USER,
   .group = ZEBRA_GROUP,
 #endif
-  .caps_p = 
-  {
-    ZCAP_BIND
-  },
-  .cap_num_p = 1,
+  .caps_p = _caps_p,
+  .cap_num_p = sizeof(_caps_p)/sizeof(_caps_p[0]),
   .cap_num_i = 0,
 };
 
