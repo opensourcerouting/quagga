@@ -44,6 +44,7 @@
 #include <log.h>
 #include <sigevent.h>
 #include <version.h>
+#include <getopt.h>
 
 #ifndef MIN
 #define MIN(X,Y) (((X) <= (Y)) ? (X) : (Y))
