@@ -18,5 +18,6 @@ debug_print_trace (int signal)
       printf ("%s\n", strings[i]);
 
     free (strings);
+    
+    exit(1);
 }
-

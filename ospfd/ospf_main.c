@@ -55,6 +55,7 @@ zebra_capabilities_t _caps_p [] =
   ZCAP_RAW,
   ZCAP_BIND,
   ZCAP_BROADCAST,
+  ZCAP_ADMIN,
 };
 
 struct zebra_privs_t ospfd_privs =
