@@ -1,3 +1,7 @@
+/*
+ * $Id$
+ */
+
 #ifndef _QUAGGA_ASSERT_H
 #define _QUAGGA_ASSERT_H
 
