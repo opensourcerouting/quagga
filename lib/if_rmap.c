@@ -299,7 +299,8 @@ void
 if_rmap_init (int node)
 {
   ifrmaphash = hash_create (if_rmap_hash_make, if_rmap_hash_cmp);
-
-  install_element (node, &if_rmap_cmd);
-  install_element (node, &no_if_rmap_cmd);
+  if (node == RIPNG_NODE) {
+    install_element (RIPNG_NODE, &if_rmap_cmd);
+    install_element (RIPNG_NODE, &no_if_rmap_cmd);
+  }
 }

@@ -53,7 +53,7 @@ $ignore{'"show route-map"'} = "ignore";
 foreach (@ARGV) {
     $file = $_;
 
-    open (FH, "cpp -DHAVE_CONFIG_H -DVTYSH_EXTRACT_PL -I. -I.. -I../lib $file |");
+    open (FH, "cpp -DHAVE_CONFIG_H -DVTYSH_EXTRACT_PL -DHAVE_IPV6 -I. -I.. -I../lib $file |");
     local $/; undef $/;
     $line = <FH>;
     close (FH);
@@ -85,7 +85,7 @@ foreach (@ARGV) {
               $protocol = "VTYSH_RIPD";
            }
            if ($file =~ /routemap.c/) {
-              $protocol = "VTYSH_RIPD|VTYSH_OSPFD|VTYSH_BGPD";
+              $protocol = "VTYSH_RIPD|VTYSH_RIPNGD|VTYSH_OSPFD|VTYSH_OSPF6D|VTYSH_BGPD";
            }
            if ($file =~ /filter.c/) {
               if ($defun_array[1] =~ m/ipv6/) {
@@ -96,10 +96,20 @@ foreach (@ARGV) {
            }
            if ($file =~ /plist.c/) {
 	      if ($defun_array[1] =~ m/ipv6/) {
-                 $protocol = "VTYSH_RIPNGD|VTYSH_BGPD";
+                 $protocol = "VTYSH_RIPNGD|VTYSH_OSPF6D|VTYSH_BGPD";
               } else {
-                 $protocol = "VTYSH_RIPD|VTYSH_BGPD";
+                 $protocol = "VTYSH_RIPD|VTYSH_OSPFD|VTYSH_BGPD";
               }
+           }
+           if ($file =~ /distribute.c/) {
+              if ($defun_array[1] =~ m/ipv6/) {
+                 $protocol = "VTYSH_RIPNGD";
+              } else {
+                 $protocol = "VTYSH_RIPD";
+              }
+           }
+           if ($file =~ /if_rmap.c/) {
+              $protocol = "VTYSH_RIPNGD";
            }
         } else {
            ($protocol) = ($file =~ /\/([a-z0-9]+)/);

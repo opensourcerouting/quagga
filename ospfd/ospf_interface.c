@@ -135,7 +135,10 @@ ospf_add_to_if (struct interface *ifp, struct ospf_interface *oi)
   p.prefixlen = IPV4_MAX_PREFIXLEN;
 
   rn = route_node_get (IF_OIFS (ifp), &p);
-  assert (! rn->info);
+  /* rn->info should either be NULL or equal to this oi
+   * as route_node_get may return an existing node
+   */
+  assert (! rn->info || rn->info == oi);
   rn->info = oi;
 }
 
@@ -422,7 +425,12 @@ ospf_if_lookup_recv_if (struct ospf *ospf, struct in_addr src)
       else
 	{
 	  if (prefix_match (oi->address, (struct prefix *) &addr))
-	    match = oi;
+	    {
+	      if ( (match == NULL) || 
+	           (match->address->prefixlen < oi->address->prefixlen)
+	         )
+	        match = oi;
+	    }
 	}
     }
 
@@ -464,7 +472,6 @@ ospf_new_if_params ()
   struct ospf_if_params *oip;
 
   oip = XMALLOC (MTYPE_OSPF_IF_PARAMS, sizeof (struct ospf_if_params));
-  memset (oip, 0, sizeof (struct ospf_if_params));
 
   if (!oip)
     return NULL;
