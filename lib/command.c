@@ -145,8 +145,10 @@ level_match(const char *s)
 void
 print_version (const char *progname)
 {
-  printf ("%s version %s (%s)\n", progname, QUAGGA_VERSION, host.name);
-  printf ("%s\n", QUAGGA_COPYRIGHT);
+  printf ("%s version %s", progname, QUAGGA_VERSION);
+  if (host.name != NULL)
+    printf (" (%s)", host.name);
+  printf ("\n%s\n", QUAGGA_COPYRIGHT);
 }
 
 
