@@ -950,6 +950,10 @@ dnl  AC_CHECK_LIB(snmp, asn_parse_int, HAVE_SNMP=yes)
   fi
 fi
 
+if test "${enable_snmp}" = "yes" -a "${HAVE_SNMP}" != "yes"; then
+  AC_MSG_ERROR([--enable-snmp given, but cannot find support for SNMP])
+fi
+
 dnl ----------------------------
 dnl check sa_len of sockaddr
 dnl ----------------------------
