@@ -1941,7 +1941,7 @@ cmd_complete_command (vector vline, struct vty *vty, int *status)
 
 /* return parent node */
 /* MUST eventually converge on CONFIG_NODE */
-static enum node_type
+enum node_type
 node_parent ( enum node_type node )
 {
   enum node_type ret;
