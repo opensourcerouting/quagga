@@ -22,6 +22,17 @@ AC_ARG_ENABLE([exampledir],
 dnl XXX add --exampledir to autoconf standard directory list somehow
 AC_SUBST(exampledir)
 
+dnl default is to match previous behavior
+pkgsrcrcdir=""
+pkgsrcdir=""
+AC_ARG_ENABLE([pkgsrcrcdir],
+	  AC_HELP_STRING([--enable-pkgsrcrcdir],
+			 [specify directory for rc.d scripts]),
+			 pkgsrcrcdir="$enableval"; pkgsrcdir="pkgsrc",)
+dnl XXX add --pkgsrcrcdir to autoconf standard directory list somehow
+AC_SUBST(pkgsrcdir)
+AC_SUBST(pkgsrcrcdir)
+
 dnl -----------------------------------
 dnl Get hostname and other information.
 dnl -----------------------------------
@@ -1127,6 +1138,8 @@ AC_OUTPUT(Makefile lib/Makefile zebra/Makefile ripd/Makefile
 	  redhat/Makefile redhat/quagga.spec
 	  lib/version.h
 	  tests/Makefile
+	  pkgsrc/bgpd.sh pkgsrc/ospf6d.sh pkgsrc/ospfd.sh
+	  pkgsrc/ripd.sh pkgsrc/ripngd.sh pkgsrc/zebra.sh
 	  ,
 	  [chmod +x vtysh/extract.pl])
 
