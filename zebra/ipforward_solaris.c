@@ -67,16 +67,26 @@ solaris_nd(const int cmd, const char* parameter, const int value)
   strioctl.ic_timout = 0;
   strioctl.ic_len = ND_BUFFER_SIZE;
   strioctl.ic_dp = nd_buf;
+  
+  if ( zserv_privs.change (ZPRIVS_RAISE) )
+       zlog_err ("solaris_nd: Can't raise privileges");
   if ((fd = open (device, O_RDWR)) < 0) {
     zlog_warn("failed to open device %s - %s", device, strerror(errno));
+    if ( zserv_privs.change (ZPRIVS_LOWER) )
+         zlog_err ("solaris_nd: Can't lower privileges");
     return -1;
   }
   if (ioctl (fd, I_STR, &strioctl) < 0) {
+    if ( zserv_privs.change (ZPRIVS_LOWER) )
+         zlog_err ("solaris_nd: Can't lower privileges");
     close (fd);
     zlog_warn("ioctl I_STR failed on device %s - %s", device,strerror(errno));
     return -1;
   }
   close(fd);
+  if ( zserv_privs.change (ZPRIVS_LOWER) )
+         zlog_err ("solaris_nd: Can't lower privileges");
+  
   if (cmd == ND_GET) {
     errno = 0;
     retval = atoi(nd_buf);
