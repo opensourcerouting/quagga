@@ -1124,8 +1124,9 @@ AC_OUTPUT(Makefile lib/Makefile zebra/Makefile ripd/Makefile
 	  ospfclient/Makefile
 	  vtysh/extract.pl
 	  redhat/Makefile redhat/quagga.spec
-	  lib/version.h,
-	  tests/Makefile,
+	  lib/version.h
+dnl	  tests/Makefile
+	  ,
 	  [chmod +x vtysh/extract.pl])
 
 echo "
