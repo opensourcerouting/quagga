@@ -153,7 +153,8 @@ extern const char *zlog_proto_names[];
 extern const char *safe_strerror(int errnum);
 
 /* To be called when a fatal signal is caught. */
-extern void zlog_signal(int signo, const char *action);
+extern void zlog_signal(int signo, const char *action,
+			siginfo_t *siginfo, void *program_counter);
 
 /* Log a backtrace. */
 extern void zlog_backtrace(int priority);

@@ -1107,6 +1107,11 @@ if test "${enable_capabilities}" != "no"; then
 fi
 AC_SUBST(LIBCAP)
 
+dnl -------------------
+dnl test for ucontext.h
+dnl -------------------
+AC_CHECK_HEADERS(ucontext.h)
+
 dnl ---------------------------
 dnl check for glibc 'backtrace'
 dnl --------------------------- 
