@@ -21,4 +21,8 @@ size_t strlcpy(char *, const char *, size_t);
 size_t strlcat(char *, const char *, size_t);
 #endif
 
+#ifndef HAVE_STRNLEN
+extern size_t strnlen(const char *s, size_t maxlen);
+#endif
+
 #endif
