@@ -546,8 +546,12 @@ config_write_host (struct vty *vty)
     }
 
   if (zlog_default->default_lvl != LOG_DEBUG)
-    vty_out (vty, "log trap %s%s",
-	     zlog_priority[zlog_default->default_lvl], VTY_NEWLINE);
+    {
+      vty_out (vty, "! N.B. The 'log trap' command is deprecated.%s",
+	       VTY_NEWLINE);
+      vty_out (vty, "log trap %s%s",
+	       zlog_priority[zlog_default->default_lvl], VTY_NEWLINE);
+    }
 
   if (host.logfile && (zlog_default->maxlvl[ZLOG_DEST_FILE] != ZLOG_DISABLED))
     {
