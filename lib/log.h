@@ -161,8 +161,9 @@ extern void zlog_backtrace(int priority);
 
 /* Log a backtrace, but in an async-signal-safe way.  Should not be
    called unless the program is about to exit or abort, since it messes
-   up the state of zlog file pointers. */
-extern void zlog_backtrace_sigsafe(int priority);
+   up the state of zlog file pointers.  If program_counter is non-NULL,
+   that is logged in addition to the current backtrace. */
+extern void zlog_backtrace_sigsafe(int priority, void *program_counter);
 
 /* Defines for use in command construction: */
 
