@@ -3409,8 +3409,10 @@ DEFUN (banner_motd_file,
        "Banner from a file\n"
        "Filename\n")
 {
-  if (host.motdfile) free(host.motdfile);
-  host.motdfile = strdup(argv[0]);
+  if (host.motdfile)
+    XFREE (MTYPE_TMP, host.motdfile);
+  host.motdfile = XSTRDUP (MTYPE_TMP, argv[0]);
+
   return CMD_SUCCESS;
 }
 
