@@ -23,6 +23,7 @@
 #include <zebra.h>
 #include <thread.h>
 #include <log.h>
+#include <network.h>
 #include <sigevent.h>
 #include <lib/version.h>
 #include <getopt.h>
@@ -733,7 +734,6 @@ try_connect(struct daemon *dmn)
   int sock;
   struct sockaddr_un addr;
   socklen_t len;
-  int flags;
 
   if (gs.loglevel > LOG_DEBUG+1)
     zlog_debug("%s: attempting to connect",dmn->name);
@@ -766,18 +766,10 @@ try_connect(struct daemon *dmn)
       return -1;
     }
 
-  /* Set non-blocking. */
-  if ((flags = fcntl(sock, F_GETFL, 0)) < 0)
+  if (set_nonblocking(sock) < 0)
     {
-      zlog_err("%s(%s): fcntl(F_GETFL) failed: %s",
-	       __func__,addr.sun_path, safe_strerror(errno));
-      close(sock);
-      return -1;
-    }
-  if (fcntl(sock, F_SETFL, (flags|O_NONBLOCK)) < 0)
-    {
-      zlog_err("%s(%s): fcntl(F_SETFL,O_NONBLOCK) failed: %s",
-	       __func__,addr.sun_path, safe_strerror(errno));
+      zlog_err("%s(%s): set_nonblocking(%d) failed",
+	       __func__, addr.sun_path, sock);
       close(sock);
       return -1;
     }
