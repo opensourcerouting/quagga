@@ -1193,7 +1193,8 @@ netlink_route (int cmd, int family, void *dest, int length, void *gate,
   req.r.rtm_table = table;
   req.r.rtm_dst_len = length;
 
-  if (zebra_flags & ZEBRA_FLAG_BLACKHOLE)
+  if ((zebra_flags & ZEBRA_FLAG_BLACKHOLE)
+      || (zebra_flags & ZEBRA_FLAG_REJECT))
     discard = 1;
   else
     discard = 0;
@@ -1203,10 +1204,16 @@ netlink_route (int cmd, int family, void *dest, int length, void *gate,
       req.r.rtm_protocol = RTPROT_ZEBRA;
       req.r.rtm_scope = RT_SCOPE_UNIVERSE;
 
-      if (discard)
-	req.r.rtm_type = RTN_BLACKHOLE;
+      if (discard) 
+        {
+          if (zebra_flags & ZEBRA_FLAG_BLACKHOLE)
+            req.r.rtm_type = RTN_BLACKHOLE;
+          else if (zebra_flags & ZEBRA_FLAG_REJECT)
+            req.r.rtm_type = RTN_UNREACHABLE;
+          else assert(RTN_BLACKHOLE != RTN_UNREACHABLE); /* false */
+        } 
       else
-	req.r.rtm_type = RTN_UNICAST;
+	      req.r.rtm_type = RTN_UNICAST;
     }
 
   if (dest)
@@ -1266,7 +1273,8 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
   req.r.rtm_flags |= RTM_F_EQUALIZE;
 #endif /* RTM_F_EQUALIZE */
 
-  if (rib->flags & ZEBRA_FLAG_BLACKHOLE)
+  if ((rib->flags & ZEBRA_FLAG_BLACKHOLE)
+      || (rib->flags & ZEBRA_FLAG_REJECT))
     discard = 1;
   else
     discard = 0;
@@ -1276,10 +1284,16 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
       req.r.rtm_protocol = RTPROT_ZEBRA;
       req.r.rtm_scope = RT_SCOPE_UNIVERSE;
 
-      if (discard)
-	req.r.rtm_type = RTN_BLACKHOLE;
+      if (discard) 
+        {
+          if (rib->flags & ZEBRA_FLAG_BLACKHOLE)
+            req.r.rtm_type = RTN_BLACKHOLE;
+          else if (rib->flags & ZEBRA_FLAG_REJECT)
+            req.r.rtm_type = RTN_UNREACHABLE;
+          else assert(RTN_BLACKHOLE != RTN_UNREACHABLE); /* false */
+        } 
       else
-	req.r.rtm_type = RTN_UNICAST;
+	      req.r.rtm_type = RTN_UNICAST;
     }
 
   addattr_l (&req.n, sizeof req, RTA_DST, &p->u.prefix, bytelen);

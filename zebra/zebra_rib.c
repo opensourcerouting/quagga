@@ -187,8 +187,8 @@ nexthop_delete (struct rib *rib, struct nexthop *nexthop)
 void
 nexthop_free (struct nexthop *nexthop)
 {
-  if (nexthop->type == NEXTHOP_TYPE_IFNAME && nexthop->ifname)
-    free (nexthop->ifname);
+  if (nexthop->ifname)
+    XFREE (0, nexthop->ifname);
   XFREE (MTYPE_NEXTHOP, nexthop);
 }
 
@@ -215,7 +215,7 @@ nexthop_ifname_add (struct rib *rib, char *ifname)
   nexthop = XMALLOC (MTYPE_NEXTHOP, sizeof (struct nexthop));
   memset (nexthop, 0, sizeof (struct nexthop));
   nexthop->type = NEXTHOP_TYPE_IFNAME;
-  nexthop->ifname = strdup (ifname);
+  nexthop->ifname = XSTRDUP (0, ifname);
 
   nexthop_add (rib, nexthop);
 
@@ -304,7 +304,6 @@ nexthop_ipv6_ifindex_add (struct rib *rib, struct in6_addr *ipv6,
   return nexthop;
 }
 #endif /* HAVE_IPV6 */
-
 
 struct nexthop *
 nexthop_blackhole_add (struct rib *rib)
@@ -855,11 +854,13 @@ rib_process (struct route_node *rn, struct rib *del)
   struct rib *next;
   struct rib *fib = NULL;
   struct rib *select = NULL;
+  int installed = 0;
+  struct nexthop *nexthop = NULL;
 
   for (rib = rn->info; rib; rib = next)
     {
       next = rib->next;
-
+      
       /* Currently installed rib. */
       if (CHECK_FLAG (rib->flags, ZEBRA_FLAG_SELECTED))
 	fib = rib;
@@ -897,6 +898,22 @@ rib_process (struct route_node *rn, struct rib *del)
 	  if (! RIB_SYSTEM_ROUTE (select))
 	    rib_install_kernel (rn, select);
 	  redistribute_add (&rn->p, select);
+	}
+      else if (! RIB_SYSTEM_ROUTE (select))
+	{
+	  /* Housekeeping code to deal with 
+	     race conditions in kernel with linux
+	     netlink reporting interface up before IPv4 or IPv6 protocol
+	     is ready to add routes.
+	     This makes sure the routes are IN the kernel.
+	  */
+
+	  for (nexthop = select->nexthop; nexthop; nexthop = nexthop->next)
+	    {
+	      if (CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_FIB))
+		installed = 1;
+	    }
+	    if (! installed) rib_install_kernel (rn, select);
 	}
       return;
     }
@@ -1271,9 +1288,9 @@ static_install_ipv4 (struct prefix *p, struct static_ipv4 *si)
 	case STATIC_IPV4_IFNAME:
 	  nexthop_ifname_add (rib, si->gate.ifname);
 	  break;
-	case STATIC_IPV4_BLACKHOLE:
-	  nexthop_blackhole_add (rib);
-	  break;
+  case STATIC_IPV4_BLACKHOLE:
+    nexthop_blackhole_add (rib);
+    break;
 	}
       rib_process (rn, NULL);
     }
@@ -1296,10 +1313,13 @@ static_install_ipv4 (struct prefix *p, struct static_ipv4 *si)
 	case STATIC_IPV4_IFNAME:
 	  nexthop_ifname_add (rib, si->gate.ifname);
 	  break;
-	case STATIC_IPV4_BLACKHOLE:
-	  nexthop_blackhole_add (rib);
-	  break;
+  case STATIC_IPV4_BLACKHOLE:
+    nexthop_blackhole_add (rib);
+    break;
 	}
+
+      /* Save the flags of this static routes (reject, blackhole) */
+      rib->flags = si->flags;
 
       /* Link this rib to the tree. */
       rib_addnode (rn, rib);
@@ -1390,7 +1410,7 @@ static_uninstall_ipv4 (struct prefix *p, struct static_ipv4 *si)
 /* Add static route into static route configuration. */
 int
 static_add_ipv4 (struct prefix *p, struct in_addr *gate, char *ifname,
-		 u_char distance, u_int32_t vrf_id)
+		 u_char flags, u_char distance, u_int32_t vrf_id)
 {
   u_char type = 0;
   struct route_node *rn;
@@ -1443,6 +1463,7 @@ static_add_ipv4 (struct prefix *p, struct in_addr *gate, char *ifname,
 
   si->type = type;
   si->distance = distance;
+  si->flags = flags;
 
   if (gate)
     si->gate.ipv4 = *gate;
@@ -1536,6 +1557,8 @@ static_delete_ipv4 (struct prefix *p, struct in_addr *gate, char *ifname,
     si->next->prev = si->prev;
   
   /* Free static route configuration. */
+  if (ifname)
+    XFREE (0, si->gate.ifname);
   XFREE (MTYPE_STATIC_IPV4, si);
 
   return 1;
@@ -1547,8 +1570,14 @@ int
 rib_bogus_ipv6 (int type, struct prefix_ipv6 *p,
 		struct in6_addr *gate, unsigned int ifindex, int table)
 {
-  if (type == ZEBRA_ROUTE_CONNECT && IN6_IS_ADDR_UNSPECIFIED (&p->prefix))
+  if (type == ZEBRA_ROUTE_CONNECT && IN6_IS_ADDR_UNSPECIFIED (&p->prefix)) {
+#if defined (MUSICA) || defined (LINUX)
+    /* IN6_IS_ADDR_V4COMPAT(&p->prefix) */
+    if (p->prefixlen == 96)
+      return 0;
+#endif /* MUSICA */
     return 1;
+  }
   if (type == ZEBRA_ROUTE_KERNEL && IN6_IS_ADDR_UNSPECIFIED (&p->prefix)
       && p->prefixlen == 96 && gate && IN6_IS_ADDR_UNSPECIFIED (gate))
     {
@@ -1849,6 +1878,9 @@ static_install_ipv6 (struct prefix *p, struct static_ipv6 *si)
 	  break;
 	}
 
+      /* Save the flags of this static routes (reject, blackhole) */
+      rib->flags = si->flags;
+
       /* Link this rib to the tree. */
       rib_addnode (rn, rib);
 
@@ -1938,7 +1970,7 @@ static_uninstall_ipv6 (struct prefix *p, struct static_ipv6 *si)
 /* Add static route into static route configuration. */
 int
 static_add_ipv6 (struct prefix *p, u_char type, struct in6_addr *gate,
-		 char *ifname, u_char distance, u_int32_t vrf_id)
+		 char *ifname, u_char flags, u_char distance, u_int32_t vrf_id)
 {
   struct route_node *rn;
   struct static_ipv6 *si;
@@ -1973,6 +2005,7 @@ static_add_ipv6 (struct prefix *p, u_char type, struct in6_addr *gate,
 
   si->type = type;
   si->distance = distance;
+  si->flags = flags;
 
   switch (type)
     {
@@ -2060,6 +2093,8 @@ static_delete_ipv6 (struct prefix *p, u_char type, struct in6_addr *gate,
     si->next->prev = si->prev;
   
   /* Free static route configuration. */
+  if (ifname)
+    XFREE (0, si->ifname);
   XFREE (MTYPE_STATIC_IPV6, si);
 
   return 1;

@@ -81,7 +81,7 @@ AC_ARG_ENABLE(snmp,
 [  --enable-snmp           enable SNMP support])
 AC_ARG_WITH(libpam,
 [  --with-libpam           use libpam for PAM support in vtysh])
-AC_ARG_ENABLE(tcpsock,
+AC_ARG_ENABLE(tcp-zebra,
 [  --enable-tcp-zebra      enable TCP/IP socket connection between zebra and protocol daemon])
 dnl Temporary option until OSPF NSSA implementation complete
 AC_ARG_ENABLE(nssa,
@@ -105,8 +105,8 @@ AC_ARG_ENABLE(zebra_group,
 AC_ARG_ENABLE(vty_group,
 [  --enable-vty-group=ARG      set vty sockets to have specified group as owner])
 
-dnl AC_ARG_ENABLE(rtadv,
-dnl [  --enable-rtadv          enable IPV6 router advertisment option])
+AC_ARG_ENABLE(rtadv,
+[  --enable-rtadv         disable IPV6 router advertisment feature])
 
 if test "${enable_broken_aliases}" = "yes"; then
   if test "${enable_netlink}" = "yes"
@@ -135,9 +135,13 @@ if test "${enable_ospf_te}" = "yes"; then
   AC_DEFINE(HAVE_OSPF_TE,,OSPF TE)
 fi
 
-dnl if test "${enable_rtadv}" = "yes"; then
-dnl   AC_DEFINE(HAVE_RTADV)
-dnl fi
+AC_MSG_CHECKING(Should Zebra's RTADV be used)
+if test "${enable_rtadv}" = "yes"; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(HAVE_RTADV)
+else
+  AC_MSG_RESULT(no)
+fi
 
 if test "${enable_user}" = "yes" ; then
   enable_user="zebra"
@@ -184,7 +188,7 @@ dnl -------------------
 dnl Check header files.
 dnl -------------------
 AC_STDC_HEADERS
-AC_CHECK_HEADERS(string.h stropts.h sys/conf.h sys/ksym.h sys/time.h sys/times.h sys/select.h sys/sysctl.h sys/sockio.h sys/types.h net/if_dl.h net/if_var.h linux/version.h kvm.h netdb.h netinet/in.h net/netopt.h netinet/in_var.h netinet/in6_var.h netinet/in6.h inet/nd.h asm/types.h netinet/icmp6.h netinet6/nd6.h libutil.h)
+AC_CHECK_HEADERS(string.h stropts.h sys/conf.h sys/ksym.h sys/time.h sys/times.h sys/select.h sys/sysctl.h sys/sockio.h sys/types.h net/if_dl.h net/if_var.h linux/version.h kvm.h netdb.h netinet/in.h net/netopt.h netinet/in_var.h netinet/in6_var.h netinet6/in6_var.h netinet/in6.h inet/nd.h asm/types.h netinet/icmp6.h netinet6/nd6.h libutil.h)
 
 dnl check some types
 AC_C_CONST
@@ -495,6 +499,23 @@ if grep WIDE /usr/include/netinet6/in6.h >/dev/null 2>&1; then
       LIB_IPV6="-L/usr/local/v6/lib -linet6"
    fi
    AC_MSG_RESULT(KAME)
+fi
+dnl -------------------------
+dnl MUSICA IPv6
+dnl  default host check
+dnl  It is not used by Kheops
+dnl -------------------------
+if grep MUSICA /usr/include6/netinet6/in6.h >/dev/null 2>&1; then
+   zebra_cv_ipv6=yes
+   AC_DEFINE(HAVE_IPV6)
+   AC_DEFINE(MUSICA)
+   AC_DEFINE(KAME)
+   RIPNGD="ripngd"
+   OSPF6D="ospf6d"
+   if test -d /usr/local/v6/lib -a -f /usr/local/v6/lib/libinet6.a; then
+      LIB_IPV6="-L/usr/local/v6/lib -linet6"
+   fi
+   AC_MSG_RESULT(MUSICA)
 fi
 dnl ---------
 dnl NRL check
@@ -815,11 +836,22 @@ net/if.h,
 dnl ----------------------------
 dnl check structure in6_aliasreq
 dnl ----------------------------
-AC_MSG_CHECKING(whether struct if6_aliasreq exist)
+AC_MSG_CHECKING(whether struct in6_aliasreq exist)
 AC_EGREP_HEADER(in6_aliasreq,
 netinet6/in6_var.h,
 [AC_MSG_RESULT(yes)
  AC_DEFINE(HAVE_IN6_ALIASREQ,,in6_aliasreq)],
+ AC_MSG_RESULT(no))
+
+dnl -----------------------------------
+dnl check ifra_lifetime of in6_aliasreq
+dnl -----------------------------------
+AC_MSG_CHECKING(whether in6_aliasreq.ifra_lifetime exist)
+AC_TRY_COMPILE([#include <sys/types.h>
+#include <netinet6/in6_var.h>
+],[static struct if6_aliasreq ac_i;int ac_j = sizeof (ac_i.ifra_lifetime);],
+[AC_MSG_RESULT(yes)
+ AC_DEFINE(HAVE_IFRA_LIFETIME)],
  AC_MSG_RESULT(no))
 
 dnl ---------------------------
@@ -965,4 +997,5 @@ source code location    : ${srcdir}
 compiler                : ${CC}
 compiler flags          : ${CFLAGS}
 directory for state files : ${zebra_statedir}
+linker flags            : ${LDFLAGS} ${LIBS}
 "

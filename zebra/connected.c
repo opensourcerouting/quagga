@@ -69,7 +69,7 @@ connected_up_ipv4 (struct interface *ifp, struct connected *ifc)
   p.prefixlen = addr->prefixlen;
 
   /* Point-to-point check. */
-  if (if_is_pointopoint (ifp))
+  if (ifc_pointopoint (ifc) && dest)
     p.prefix = dest->prefix;
   else
     p.prefix = addr->prefix;
@@ -162,7 +162,8 @@ connected_down_ipv4 (struct interface *ifp, struct connected *ifc)
   p.family = AF_INET;
   p.prefixlen = addr->prefixlen;
 
-  if (if_is_pointopoint (ifp))
+  /* Point-to-point check. */
+  if (dest && ifc_pointopoint (ifc))
     p.prefix = dest->prefix;
   else
     p.prefix = addr->prefix;
@@ -249,7 +250,7 @@ connected_up_ipv6 (struct interface *ifp, struct connected *ifc)
   p.family = AF_INET6;
   p.prefixlen = addr->prefixlen;
 
-  if (if_is_pointopoint (ifp) && dest)
+  if (ifc_pointopoint (ifc) && dest)
     {
       if (IN6_IS_ADDR_UNSPECIFIED (&dest->prefix))
 	p.prefix = addr->prefix;
@@ -262,8 +263,11 @@ connected_up_ipv6 (struct interface *ifp, struct connected *ifc)
   /* Apply mask to the network. */
   apply_mask_ipv6 (&p);
 
+#if ! defined (MUSICA) && ! defined (LINUX)
+  /* XXX: It is already done by rib_bogus_ipv6 within rib_add_ipv6 */
   if (IN6_IS_ADDR_UNSPECIFIED (&p.prefix))
     return;
+#endif
 
   rib_add_ipv6 (ZEBRA_ROUTE_CONNECT, 0, &p, NULL, ifp->ifindex, 0);
 
@@ -339,7 +343,7 @@ connected_down_ipv6 (struct interface *ifp, struct connected *ifc)
   p.family = AF_INET6;
   p.prefixlen = addr->prefixlen;
 
-  if (if_is_pointopoint (ifp) && dest)
+  if (ifc_pointopoint (ifc) && dest)
     {
       if (IN6_IS_ADDR_UNSPECIFIED (&dest->prefix))
 	p.prefix = addr->prefix;

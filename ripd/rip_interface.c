@@ -44,6 +44,10 @@
 void rip_enable_apply (struct interface *);
 void rip_passive_interface_apply (struct interface *);
 int rip_if_down(struct interface *ifp);
+int rip_enable_if_lookup (char *ifname);
+int rip_enable_network_lookup2 (struct connected *connected);
+void rip_enable_apply_all ();
+
 
 struct message ri_version_msg[] = 
 {
@@ -125,7 +129,7 @@ rip_interface_new ()
      Relay or SMDS is enabled, the default value for split-horizon is
      off.  But currently Zebra does detect Frame Relay or SMDS
      interface.  So all interface is set to split horizon.  */
-  ri->split_horizon_default = 1;
+  ri->split_horizon_default = RIP_SPLIT_HORIZON;
   ri->split_horizon = ri->split_horizon_default;
 
   return ri;
@@ -235,10 +239,8 @@ rip_request_interface_send (struct interface *ifp, u_char version)
 	      to.sin_port = htons (RIP_PORT_DEFAULT);
 	      to.sin_addr = p->prefix;
 
-#if 0
 	      if (IS_RIP_DEBUG_EVENT)
 		zlog_info ("SEND request to %s", inet_ntoa (to.sin_addr));
-#endif /* 0 */
 	      
 	      rip_request_send (&to, ifp, version);
 	    }
@@ -475,6 +477,9 @@ rip_interface_add (int command, struct zclient *zclient, zebra_size_t length)
 
   /* rip_request_neighbor_all (); */
 
+  /* Check interface routemap. */
+  rip_if_rmap_update_interface (ifp);
+
   return 0;
 }
 
@@ -563,8 +568,8 @@ rip_interface_reset ()
 	  ri->key_chain = NULL;
 	}
 
-      ri->split_horizon = 0;
-      ri->split_horizon_default = 0;
+      ri->split_horizon = RIP_NO_SPLIT_HORIZON;
+      ri->split_horizon_default = RIP_NO_SPLIT_HORIZON;
 
       ri->list[RIP_FILTER_IN] = NULL;
       ri->list[RIP_FILTER_OUT] = NULL;
@@ -653,6 +658,34 @@ rip_if_down_all ()
     }
 }
 
+static void
+rip_apply_address_add (struct connected *ifc) {
+  struct prefix_ipv4 address;
+  struct prefix *p;
+
+  if (!rip)
+    return;
+
+  if (! if_is_up(ifc->ifp))
+    return;
+
+  p = ifc->address;
+
+  memset (&address, 0, sizeof (address));
+  address.family = p->family;
+  address.prefix = p->u.prefix4;
+  address.prefixlen = p->prefixlen;
+  apply_mask_ipv4(&address);
+
+  /* Check if this interface is RIP enabled or not
+     or  Check if this address's prefix is RIP enabled */
+  if ((rip_enable_if_lookup(ifc->ifp->name) >= 0) ||
+      (rip_enable_network_lookup2(ifc) >= 0))
+    rip_redistribute_add(ZEBRA_ROUTE_CONNECT, RIP_ROUTE_INTERFACE,
+                         &address, ifc->ifp->ifindex, NULL);
+
+}
+
 int
 rip_interface_address_add (int command, struct zclient *zclient,
 			   zebra_size_t length)
@@ -672,9 +705,9 @@ rip_interface_address_add (int command, struct zclient *zclient,
       if (IS_RIP_DEBUG_ZEBRA)
 	zlog_info ("connected address %s/%d is added", 
 		   inet_ntoa (p->u.prefix4), p->prefixlen);
-      
-      /* Check is this interface is RIP enabled or not.*/
-      rip_enable_apply (ifc->ifp);
+
+      /* Check if this prefix needs to be redistributed */
+      rip_apply_address_add(ifc);
 
 #ifdef HAVE_SNMP
       rip_ifaddr_add (ifc->ifp, ifc);
@@ -682,6 +715,29 @@ rip_interface_address_add (int command, struct zclient *zclient,
     }
 
   return 0;
+}
+
+static void
+rip_apply_address_del (struct connected *ifc) {
+  struct prefix_ipv4 address;
+  struct prefix *p;
+
+  if (!rip)
+    return;
+
+  if (! if_is_up(ifc->ifp))
+    return;
+
+  p = ifc->address;
+
+  memset (&address, 0, sizeof (address));
+  address.family = p->family;
+  address.prefix = p->u.prefix4;
+  address.prefixlen = p->prefixlen;
+  apply_mask_ipv4(&address);
+
+  rip_redistribute_delete(ZEBRA_ROUTE_CONNECT, RIP_ROUTE_INTERFACE,
+                          &address, ifc->ifp->ifindex);
 }
 
 int
@@ -707,8 +763,9 @@ rip_interface_address_delete (int command, struct zclient *zclient,
 	  rip_ifaddr_delete (ifc->ifp, ifc);
 #endif /* HAVE_SNMP */
 
-	  /* Check if this interface is RIP enabled or not.*/
-	  rip_enable_apply (ifc->ifp);
+	  /* Chech wether this prefix needs to be removed */
+          rip_apply_address_del(ifc);
+
 	}
 
       connected_free (ifc);
@@ -719,8 +776,10 @@ rip_interface_address_delete (int command, struct zclient *zclient,
 }
 
 /* Check interface is enabled by network statement. */
+/* Check wether the interface has at least a connected prefix that
+ * is within the ripng_enable_network table. */
 int
-rip_enable_network_lookup (struct interface *ifp)
+rip_enable_network_lookup_if (struct interface *ifp)
 {
   struct listnode *nn;
   struct connected *connected;
@@ -752,6 +811,34 @@ rip_enable_network_lookup (struct interface *ifp)
   return -1;
 }
 
+/* Check wether connected is within the ripng_enable_network table. */
+int
+rip_enable_network_lookup2 (struct connected *connected)
+{
+  struct prefix_ipv4 address;
+  struct prefix *p;
+
+  p = connected->address;
+
+  if (p->family == AF_INET) {
+    struct route_node *node;
+
+    address.family = p->family;
+    address.prefix = p->u.prefix4;
+    address.prefixlen = IPV4_MAX_BITLEN;
+
+    /* LPM on p->family, p->u.prefix4/IPV4_MAX_BITLEN within rip_enable_network */
+    node = route_node_match (rip_enable_network,
+                             (struct prefix *)&address);
+
+    if (node) {
+      route_unlock_node (node);
+      return 1;
+    }
+  }
+
+  return -1;
+}
 /* Add RIP enable network. */
 int
 rip_enable_network_add (struct prefix *p)
@@ -767,6 +854,9 @@ rip_enable_network_add (struct prefix *p)
     }
   else
     node->info = "enabled";
+
+  /* XXX: One should find a better solution than a generic one */
+  rip_enable_apply_all();
 
   return 1;
 }
@@ -787,6 +877,9 @@ rip_enable_network_delete (struct prefix *p)
 
       /* Unlock lookup lock. */
       route_unlock_node (node);
+
+      /* XXX: One should find a better solution than a generic one */
+      rip_enable_apply_all ();
 
       return 1;
     }
@@ -819,6 +912,8 @@ rip_enable_if_add (char *ifname)
 
   vector_set (rip_enable_interface, strdup (ifname));
 
+  rip_enable_apply_all(); /* TODOVJ */
+
   return 1;
 }
 
@@ -836,6 +931,8 @@ rip_enable_if_delete (char *ifname)
   str = vector_slot (rip_enable_interface, index);
   free (str);
   vector_unset (rip_enable_interface, index);
+
+  rip_enable_apply_all(); /* TODOVJ */
 
   return 1;
 }
@@ -892,10 +989,13 @@ rip_connect_set (struct interface *ifp, int set)
 	address.prefixlen = p->prefixlen;
 	apply_mask_ipv4 (&address);
 
-	if (set)
-	  rip_redistribute_add (ZEBRA_ROUTE_CONNECT, RIP_ROUTE_INTERFACE,
-				&address, connected->ifp->ifindex, NULL);
-	else
+	if (set) {
+          /* Check once more wether this prefix is within a "network IF_OR_PREF" one */
+          if ((rip_enable_if_lookup(connected->ifp->name) >= 0) ||
+              (rip_enable_network_lookup2(connected) >= 0))
+	    rip_redistribute_add (ZEBRA_ROUTE_CONNECT, RIP_ROUTE_INTERFACE,
+				  &address, connected->ifp->ifindex, NULL);
+	} else
 	  {
 	    rip_redistribute_delete (ZEBRA_ROUTE_CONNECT, RIP_ROUTE_INTERFACE,
 				     &address, connected->ifp->ifindex);
@@ -914,16 +1014,13 @@ rip_enable_apply (struct interface *ifp)
   struct rip_interface *ri = NULL;
 
   /* Check interface. */
-  if (if_is_loopback (ifp))
-    return;
-
   if (! if_is_operative (ifp))
     return;
 
   ri = ifp->info;
 
   /* Check network configuration. */
-  ret = rip_enable_network_lookup (ifp);
+  ret = rip_enable_network_lookup_if (ifp);
 
   /* If the interface is matched. */
   if (ret > 0)
@@ -948,7 +1045,6 @@ rip_enable_apply (struct interface *ifp)
   /* Update running status of the interface. */
   if (ri->enable_network || ri->enable_interface)
     {
-      if (! ri->running)
 	{
 	  if (IS_RIP_DEBUG_EVENT)
 	    zlog_info ("turn on %s", ifp->name);
@@ -964,13 +1060,11 @@ rip_enable_apply (struct interface *ifp)
     {
       if (ri->running)
 	{
-	  if (IS_RIP_DEBUG_EVENT)
-	    zlog_info ("turn off %s", ifp->name);
-
-	  /* Might as well clean up the route table as well */ 
+	  /* Might as well clean up the route table as well
+	   * rip_if_down sets to 0 ri->running, and displays "turn off %s"
+	   **/ 
 	  rip_if_down(ifp);
 
-	  ri->running = 0;
           rip_connect_set (ifp, 0);
 	}
     }
@@ -1190,8 +1284,6 @@ DEFUN (rip_network,
       return CMD_WARNING;
     }
 
-  rip_enable_apply_all ();
-
   return CMD_SUCCESS;
 }
 
@@ -1220,8 +1312,6 @@ DEFUN (no_rip_network,
 	       VTY_NEWLINE);
       return CMD_WARNING;
     }
-
-  rip_enable_apply_all ();
 
   return CMD_SUCCESS;
 }
@@ -1670,10 +1760,15 @@ ALIAS (no_ip_rip_authentication_key_chain,
        "Authentication key-chain\n"
        "name of key-chain\n")
 
-DEFUN (rip_split_horizon,
-       rip_split_horizon_cmd,
-       "ip split-horizon",
+/* CHANGED: ip rip split-horizon
+   Cisco and Zebra's command is
+   ip split-horizon
+ */
+DEFUN (ip_rip_split_horizon,
+       ip_rip_split_horizon_cmd,
+       "ip rip split-horizon",
        IP_STR
+       "Routing Information Protocol\n"
        "Perform split horizon\n")
 {
   struct interface *ifp;
@@ -1682,15 +1777,38 @@ DEFUN (rip_split_horizon,
   ifp = vty->index;
   ri = ifp->info;
 
-  ri->split_horizon = 1;
+  ri->split_horizon = RIP_SPLIT_HORIZON;
   return CMD_SUCCESS;
 }
 
-DEFUN (no_rip_split_horizon,
-       no_rip_split_horizon_cmd,
-       "no ip split-horizon",
+DEFUN (ip_rip_split_horizon_poisoned_reverse,
+       ip_rip_split_horizon_poisoned_reverse_cmd,
+       "ip rip split-horizon poisoned-reverse",
+       IP_STR
+       "Routing Information Protocol\n"
+       "Perform split horizon\n"
+       "With poisoned-reverse\n")
+{
+  struct interface *ifp;
+  struct rip_interface *ri;
+
+  ifp = vty->index;
+  ri = ifp->info;
+
+  ri->split_horizon = RIP_SPLIT_HORIZON_POISONED_REVERSE;
+  return CMD_SUCCESS;
+}
+
+/* CHANGED: no ip rip split-horizon
+   Cisco and Zebra's command is
+   no ip split-horizon
+ */
+DEFUN (no_ip_rip_split_horizon,
+       no_ip_rip_split_horizon_cmd,
+       "no ip rip split-horizon",
        NO_STR
        IP_STR
+       "Routing Information Protocol\n"
        "Perform split horizon\n")
 {
   struct interface *ifp;
@@ -1699,9 +1817,18 @@ DEFUN (no_rip_split_horizon,
   ifp = vty->index;
   ri = ifp->info;
 
-  ri->split_horizon = 0;
+  ri->split_horizon = RIP_NO_SPLIT_HORIZON;
   return CMD_SUCCESS;
 }
+
+ALIAS (no_ip_rip_split_horizon,
+       no_ip_rip_split_horizon_poisoned_reverse_cmd,
+       "no ip rip split-horizon poisoned-reverse",
+       NO_STR
+       IP_STR
+       "Routing Information Protocol\n"
+       "Perform split horizon\n"
+       "With poisoned-reverse\n")
 
 DEFUN (rip_passive_interface,
        rip_passive_interface_cmd,
@@ -1736,6 +1863,18 @@ rip_interface_config_write (struct vty *vty)
       ifp = getdata (node);
       ri = ifp->info;
 
+      /* Do not display the interface if there is no
+       * configuration about it.
+       **/
+      if ((!ifp->desc)                                     &&
+          (ri->split_horizon == ri->split_horizon_default) &&
+          (ri->ri_send == RI_RIP_UNSPEC)                   &&
+          (ri->ri_receive == RI_RIP_UNSPEC)                &&
+          (ri->auth_type != RIP_AUTH_MD5)                  &&
+          (!ri->auth_str)                                  &&
+          (!ri->key_chain)                                 )
+        continue;
+
       vty_out (vty, "interface %s%s", ifp->name,
 	       VTY_NEWLINE);
 
@@ -1746,10 +1885,19 @@ rip_interface_config_write (struct vty *vty)
       /* Split horizon. */
       if (ri->split_horizon != ri->split_horizon_default)
 	{
-	  if (ri->split_horizon)
-	    vty_out (vty, " ip split-horizon%s", VTY_NEWLINE);
-	  else
-	    vty_out (vty, " no ip split-horizon%s", VTY_NEWLINE);
+          switch (ri->split_horizon) {
+          case RIP_SPLIT_HORIZON:
+            vty_out (vty, " ip rip split-horizon%s", VTY_NEWLINE);
+            break;
+          case RIP_SPLIT_HORIZON_POISONED_REVERSE:
+            vty_out (vty, " ip rip split-horizon poisoned-reverse%s",
+                          VTY_NEWLINE);
+            break;
+          case RIP_NO_SPLIT_HORIZON:
+          default:
+            vty_out (vty, " no ip rip split-horizon%s", VTY_NEWLINE);
+            break;
+          }
 	}
 
       /* RIP version setting. */
@@ -1846,6 +1994,7 @@ int
 rip_interface_delete_hook (struct interface *ifp)
 {
   XFREE (MTYPE_RIP_INTERFACE, ifp->info);
+  ifp->info = NULL;
   return 0;
 }
 
@@ -1906,6 +2055,8 @@ rip_if_init ()
   install_element (INTERFACE_NODE, &no_ip_rip_authentication_string_cmd);
   install_element (INTERFACE_NODE, &no_ip_rip_authentication_string2_cmd);
 
-  install_element (INTERFACE_NODE, &rip_split_horizon_cmd);
-  install_element (INTERFACE_NODE, &no_rip_split_horizon_cmd);
+  install_element (INTERFACE_NODE, &ip_rip_split_horizon_cmd);
+  install_element (INTERFACE_NODE, &ip_rip_split_horizon_poisoned_reverse_cmd);
+  install_element (INTERFACE_NODE, &no_ip_rip_split_horizon_cmd);
+  install_element (INTERFACE_NODE, &no_ip_rip_split_horizon_poisoned_reverse_cmd);
 }
