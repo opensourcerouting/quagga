@@ -29,7 +29,6 @@
 #include "vty.h"
 #include "command.h"
 #include "prefix.h"
-#include "zebra/zebra.h"
 #include "table.h"
 #include "log.h"
 
