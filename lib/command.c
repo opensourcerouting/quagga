@@ -2995,6 +2995,19 @@ DEFUN (no_service_terminal_length, no_service_terminal_length_cmd,
   return CMD_SUCCESS;
 }
 
+DEFUN_HIDDEN (do_echo,
+	      echo_cmd,
+	      "echo .MESSAGE",
+	      "Echo a message back to the vty\n"
+	      "The message to echo\n")
+{
+  char *message;
+
+  vty_out (vty, "%s%s",(message = argv_concat(argv, argc, 0)), VTY_NEWLINE);
+  XFREE(MTYPE_TMP, message);
+  return CMD_SUCCESS;
+}
+
 DEFUN (config_logmsg,
        config_logmsg_cmd,
        "logmsg "LOG_LEVELS" .MESSAGE",
@@ -3465,6 +3478,7 @@ cmd_init (int terminal)
       install_element (VIEW_NODE, &config_terminal_length_cmd);
       install_element (VIEW_NODE, &config_terminal_no_length_cmd);
       install_element (VIEW_NODE, &show_logging_cmd);
+      install_element (VIEW_NODE, &echo_cmd);
     }
 
   if (terminal)
@@ -3482,6 +3496,7 @@ cmd_init (int terminal)
       install_element (ENABLE_NODE, &config_terminal_length_cmd);
       install_element (ENABLE_NODE, &config_terminal_no_length_cmd);
       install_element (ENABLE_NODE, &show_logging_cmd);
+      install_element (ENABLE_NODE, &echo_cmd);
       install_element (ENABLE_NODE, &config_logmsg_cmd);
 
       install_default (CONFIG_NODE);
