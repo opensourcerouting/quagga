@@ -3437,7 +3437,8 @@ DEFUN (no_banner_motd,
        "Strings for motd\n")
 {
   host.motd = NULL;
-  if (host.motdfile) free(host.motdfile);
+  if (host.motdfile) 
+    XFREE (MTYPE_TMP, host.motdfile);
   host.motdfile = NULL;
   return CMD_SUCCESS;
 }
