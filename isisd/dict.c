@@ -20,7 +20,7 @@
 
 #include <stdlib.h>
 #include <stddef.h>
-#include <assert.h>
+#include "zassert.h"
 #define DICT_IMPLEMENTATION
 #include "dict.h"
 
