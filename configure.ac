@@ -125,6 +125,8 @@ AC_ARG_ENABLE(logfile_mask,
 
 AC_ARG_ENABLE(rtadv,
 [  --disable-rtadv         disable IPV6 router advertisement feature])
+AC_ARG_ENABLE(irdp,
+[  --enable-irdp           enable IRDP server support in zebra])
 AC_ARG_ENABLE(capabilities,
 [  --disable-capabilities        disable using POSIX capabilities])
 
@@ -161,6 +163,10 @@ if test "${enable_rtadv}" != "no"; then
   AC_DEFINE(HAVE_RTADV,,Enable IPv6 Routing Advertisement support)
 else
   AC_MSG_RESULT(no)
+fi
+
+if test "${enable_irdp}" = "yes"; then
+  AC_DEFINE(HAVE_IRDP,, IRDP )
 fi
 
 if test "${enable_user}" = "yes" || test x"${enable_user}" = x""; then
