@@ -63,6 +63,11 @@
 #else
 #define DEFAULT_PIDFILE		STATEDIR "/watchquagga.pid"
 #endif
+#ifdef DAEMON_VTY_DIR
+#define VTYDIR			DAEMON_VTY_DIR
+#else
+#define VTYDIR			STATEDIR
+#endif
 
 #define PING_TOKEN	"PING"
 
@@ -142,7 +147,7 @@ static struct global_state {
 } gs = {
   .mode = MODE_MONITOR,
   .phase = PHASE_NONE,
-  .vtydir = STATEDIR,
+  .vtydir = VTYDIR,
   .period = 1000*DEFAULT_PERIOD,
   .timeout = DEFAULT_TIMEOUT,
   .restart_timeout = DEFAULT_RESTART_TIMEOUT,
@@ -323,7 +328,7 @@ Options:\n\
 -h, --help	Display this help and exit\n\
 ", progname,mode_str[0],progname,mode_str[1],progname,mode_str[2],
 progname,mode_str[3],progname,mode_str[4],progname,mode_str[2],mode_str[3],
-STATEDIR,DEFAULT_LOGLEVEL,LOG_EMERG,LOG_DEBUG,LOG_DEBUG,
+VTYDIR,DEFAULT_LOGLEVEL,LOG_EMERG,LOG_DEBUG,LOG_DEBUG,
 DEFAULT_MIN_RESTART,DEFAULT_MAX_RESTART,
 DEFAULT_PERIOD,DEFAULT_TIMEOUT,DEFAULT_RESTART_TIMEOUT,DEFAULT_PIDFILE);
 
