@@ -155,12 +155,18 @@ AC_ARG_ENABLE(capabilities,
 [  --disable-capabilities        disable using POSIX capabilities])
 AC_ARG_ENABLE(gcc_ultra_verbose,
 [  --enable-gcc-ultra-verbose    enable ultra verbose GCC warnings])
+AC_ARG_ENABLE(gcc-rdynamic,
+[  --enable-gcc-rdynamic   enable gcc linking with -rdynamic for better backtraces])
 
 if test x"${enable_gcc_ultra_verbose}" = x"yes" ; then
   CFLAGS="${CFLAGS} -W -Wcast-qual -Wstrict-prototypes"
   CFLAGS="${CFLAGS} -Wmissing-declarations -Wmissing-noreturn"
   CFLAGS="${CFLAGS} -Wmissing-format-attribute -Wunreachable-code"
   CFLAGS="${CFLAGS} -Wpacked -Wpadded"
+fi
+
+if test x"${enable_gcc_rdynamic}" = x"yes" ; then
+  LDFLAGS="${LDFLAGS} -rdynamic"
 fi
 
 if test "${enable_broken_aliases}" = "yes"; then
