@@ -62,6 +62,24 @@ maintainer who usually maintains that meta-data). Also, CVS meta-data such
 as cvsignore files do not require ChangeLog updates, just a sane commit
 message.
 
+RELEASE PROCEDURE
+
+  Tag the repository with release tag (follow existing conventions).
+  [This enables recreating the release, and is just good CM practice.]
+
+  Check out the tag, and do a test build.
+
+  In an empty directory, do a fresh checkout with -r <release-tag>
+  [This makes the dates in the tarball be the modified dates in CVS.]
+
+  {Manually patch redhat/quagga.spec.in to remove @CONFDATE@}
+  ./configure
+  make dist
+
+If any errors occur, move tags as needed and start over from the fresh
+checkouts.  Do not append to tarballs, as this has produced
+non-standards-conforming tarballs in the past.
+
 TOOL VERSIONS
 
 Require versions of support tools are listed in INSTALL.quagga.txt.
