@@ -138,7 +138,7 @@ fi
 AC_MSG_CHECKING(Should Zebra's RTADV be used)
 if test "${enable_rtadv}" = "yes"; then
   AC_MSG_RESULT(yes)
-  AC_DEFINE(HAVE_RTADV)
+  AC_DEFINE(HAVE_RTADV,,Use zebra routing advertisement)
 else
   AC_MSG_RESULT(no)
 fi
@@ -160,8 +160,13 @@ AC_DEFINE_UNQUOTED(ZEBRA_GROUP, "${enable_group}", Zebra Group)
 if test x"${enable_vty_group}" = x"yes" ; then
   AC_MSG_ERROR([--enable-vty-group requires a group as argument])
 fi
+if test "${enable_vty_group}" != ""; then
+  AC_MSG_ERROR([--enable-vty-group requires a group as argument])
+fi
 if test x"${enable_vty_group}" != x"no"; then
-  AC_DEFINE_UNQUOTED(VTY_GROUP, "${enable_vty_group}", VTY Sockets Group)
+  if test "${enable_vty_group}" != ""; then
+    AC_DEFINE_UNQUOTED(VTY_GROUP, "${enable_vty_group}", VTY Sockets Group)
+  fi
 fi
 
 changequote(, )dnl
@@ -296,9 +301,9 @@ AC_CHECK_LIB(pam, pam_start,
 
   [AC_CHECK_LIB(pam, pam_end,
     [AC_CHECK_LIB(pam, $pam_conv_func,
-      [AC_DEFINE(USE_PAM)
+      [AC_DEFINE(USE_PAM,,Use PAM for authentication)
        LIBPAM="-lpam -ldl"],
-      [AC_DEFINE(USE_PAM)
+      [AC_DEFINE(USE_PAM,,Use PAM for authentication)
        LIBPAM="-lpam -ldl -lpam_misc"]
      )
   ],AC_MSG_WARN([*** pam support will not be built ***]),
@@ -325,7 +330,14 @@ dnl ----------------------------
 dnl check existance of functions
 dnl ----------------------------
 AC_CHECK_FUNCS(bcopy bzero strerror inet_aton daemon snprintf vsnprintf strlcat strlcpy if_nametoindex if_indextoname getifaddrs)
-AC_CHECK_FUNCS(setproctitle, ,[AC_CHECK_LIB(util, setproctitle, [LIBS="$LIBS -lutil"; AC_DEFINE(HAVE_SETPROCTITLE)])])
+AC_CHECK_FUNCS(setproctitle, ,
+  [AC_CHECK_LIB(util, setproctitle, 
+     [LIBS="$LIBS -lutil"
+      AC_DEFINE(HAVE_SETPROCTITLE,, Have setproctitle)
+     ]
+   )
+  ]
+)
 
 dnl ------------------------------------
 dnl Determine routing get and set method
@@ -477,111 +489,112 @@ else
 dnl ----------
 dnl INRIA IPv6
 dnl ----------
-if grep IPV6_INRIA_VERSION /usr/include/netinet/in.h >/dev/null 2>&1; then
-   zebra_cv_ipv6=yes
-   AC_DEFINE(HAVE_IPV6,,IPv6)
-   AC_DEFINE(INRIA_IPV6,,Inria IPv6)
-   RIPNGD="ripngd"
-   OSPF6D="ospf6d"
-   LIB_IPV6=""
-   AC_MSG_RESULT(INRIA IPv6)
-fi
+  if grep IPV6_INRIA_VERSION /usr/include/netinet/in.h >/dev/null 2>&1; then
+    zebra_cv_ipv6=yes
+    AC_DEFINE(HAVE_IPV6,1,INRIA IPv6)
+    AC_DEFINE(INRIA_IPV6,1,INRIA IPv6)
+    RIPNGD="ripngd"
+    OSPF6D="ospf6d"
+    LIB_IPV6=""
+    AC_MSG_RESULT(INRIA IPv6)
 dnl ---------
 dnl KAME IPv6
 dnl ---------
-if grep WIDE /usr/include/netinet6/in6.h >/dev/null 2>&1; then
-   zebra_cv_ipv6=yes
-   AC_DEFINE(HAVE_IPV6,,IPv6)
-   AC_DEFINE(KAME,,KAME IPv6)
-   RIPNGD="ripngd"
-   OSPF6D="ospf6d"
-   if test -d /usr/local/v6/lib -a -f /usr/local/v6/lib/libinet6.a; then
+  elif grep WIDE /usr/include/netinet6/in6.h >/dev/null 2>&1; then
+    zebra_cv_ipv6=yes
+    AC_DEFINE(HAVE_IPV6,1,KAME IPv6)
+    AC_DEFINE(KAME,1,KAME IPv6)
+    RIPNGD="ripngd"
+    OSPF6D="ospf6d"
+    if test -d /usr/local/v6/lib -a -f /usr/local/v6/lib/libinet6.a; then
       LIB_IPV6="-L/usr/local/v6/lib -linet6"
-   fi
-   AC_MSG_RESULT(KAME)
-fi
+    fi
+    AC_MSG_RESULT(KAME)
 dnl -------------------------
 dnl MUSICA IPv6
 dnl  default host check
 dnl  It is not used by Kheops
 dnl -------------------------
-if grep MUSICA /usr/include6/netinet6/in6.h >/dev/null 2>&1; then
-   zebra_cv_ipv6=yes
-   AC_DEFINE(HAVE_IPV6)
-   AC_DEFINE(MUSICA)
-   AC_DEFINE(KAME)
-   RIPNGD="ripngd"
-   OSPF6D="ospf6d"
-   if test -d /usr/local/v6/lib -a -f /usr/local/v6/lib/libinet6.a; then
+  elif grep MUSICA /usr/include6/netinet6/in6.h >/dev/null 2>&1; then
+    zebra_cv_ipv6=yes
+    AC_DEFINE(HAVE_IPV6,1,Musicia IPv6)
+    AC_DEFINE(MUSICA,1,Musica IPv6 stack)
+    AC_DEFINE(KAME,1,KAME IPv6 stack)
+    RIPNGD="ripngd"
+    OSPF6D="ospf6d"
+    if test -d /usr/local/v6/lib -a -f /usr/local/v6/lib/libinet6.a; then
       LIB_IPV6="-L/usr/local/v6/lib -linet6"
-   fi
-   AC_MSG_RESULT(MUSICA)
-fi
+    fi
+    AC_MSG_RESULT(MUSICA)
 dnl ---------
 dnl NRL check
 dnl ---------
-if grep NRL /usr/include/netinet6/in6.h >/dev/null 2>&1; then
-   zebra_cv_ipv6=yes
-   AC_DEFINE(HAVE_IPV6,,IPv6)
-   AC_DEFINE(NRL,,NRL)
-   RIPNGD="ripngd"
-   OSPF6D="ospf6d"
-   if test x"$opsys" = x"bsdi";then
+  elif grep NRL /usr/include/netinet6/in6.h >/dev/null 2>&1; then
+    zebra_cv_ipv6=yes
+    AC_DEFINE(HAVE_IPV6,1,NRL IPv6)
+    AC_DEFINE(NRL,1,NRL)
+    RIPNGD="ripngd"
+    OSPF6D="ospf6d"
+    if test x"$opsys" = x"bsdi";then
       AC_DEFINE(BSDI_NRL,,BSDI)
       AC_MSG_RESULT(BSDI_NRL)
-   else
+    else
       AC_MSG_RESULT(NRL)
-   fi
-fi
-
+    fi
 dnl ----------
 dnl Linux IPv6
 dnl ----------
-if test "${enable_ipv6}" = "yes"; then
-   AC_EGREP_CPP(yes, [
-   #include <linux/version.h>
-   /* 2.1.128 or later */
-   #if LINUX_VERSION_CODE >= 0x020180
-   yes
-   #endif],
-   [zebra_cv_ipv6=yes; zebra_cv_linux_ipv6=yes;AC_MSG_RESULT(Linux IPv6)])
-else
-   if test x`ls /proc/net/ipv6_route 2>/dev/null` = x"/proc/net/ipv6_route"
-   then
+  elif test "${enable_ipv6}" = "yes"; then
+    AC_EGREP_CPP(yes, [
+      #include <linux/version.h>
+      /* 2.1.128 or later */
+      #if LINUX_VERSION_CODE >= 0x020180
+      yes
+      #endif],
+      [zebra_cv_ipv6=yes
+       zebra_cv_linux_ipv6=yes
+       AC_MSG_RESULT(Linux IPv6)])
+  else
+    if test x`ls /proc/net/ipv6_route 2>/dev/null` = x"/proc/net/ipv6_route"
+     then
       zebra_cv_ipv6=yes
       zebra_cv_linux_ipv6=yes
       AC_MSG_RESULT(Linux IPv6)
-   fi
-fi
+    fi
+  fi
 
-if test "$zebra_cv_linux_ipv6" = "yes";then
-   AC_DEFINE(HAVE_IPV6)
-   AC_MSG_CHECKING(for GNU libc 2.1)
-   AC_EGREP_CPP(yes, [
+  if test "$zebra_cv_linux_ipv6" = "yes";then
+    AC_MSG_CHECKING(for GNU libc >= 2.1)
+    AC_DEFINE(HAVE_IPV6,1,Linux IPv6)
+    AC_EGREP_CPP(yes, [
 #include <features.h>
 #if __GLIBC__ >= 2 && __GLIBC_MINOR__ >= 1
   yes
-#endif], [glibc=yes; AC_MSG_RESULT(yes)], AC_MSG_RESULT(no))
-   AC_DEFINE(LINUX_IPV6,,Linux IPv6)   
-   RIPNGD="ripngd"
-   OSPF6D="ospf6d"
-   if test "$glibc" != "yes"; then
+#endif], 
+      [glibc=yes
+       AC_DEFINE(LINUX_IPV6,1,Linux IPv6 stack)
+       AC_MSG_RESULT(yes)], 
+      AC_MSG_RESULT(no)
+    )
+    RIPNGD="ripngd"
+    OSPF6D="ospf6d"
+    if test "$glibc" != "yes"; then
       INCLUDES="-I/usr/inet6/include"
       if test x`ls /usr/inet6/lib/libinet6.a 2>/dev/null` != x;then
          LIB_IPV6="-L/usr/inet6/lib -linet6"
       fi
-   fi
-fi
+    fi
+  fi
 
 dnl -----------------------
 dnl Set IPv6 related values
 dnl -----------------------
-LIBS="$LIB_IPV6 $LIBS"
-AC_SUBST(LIB_IPV6)
+  LIBS="$LIB_IPV6 $LIBS"
+  AC_SUBST(LIB_IPV6)
 
-if test x"$RIPNGD" = x""; then
-  AC_MSG_RESULT(IPv4 only)
-fi
+  if test x"$RIPNGD" = x""; then
+    AC_MSG_RESULT(IPv4 only)
+  fi
 fi
 
 dnl --------------------
@@ -659,9 +672,9 @@ AC_CHECK_LIB(m, main)
 dnl ---------------------------------------------------
 dnl BSD/OS 4.1 define inet_XtoY function as __inet_XtoY
 dnl ---------------------------------------------------
-AC_CHECK_FUNC(__inet_ntop, AC_DEFINE(HAVE_INET_NTOP))
-AC_CHECK_FUNC(__inet_pton, AC_DEFINE(HAVE_INET_PTON))
-AC_CHECK_FUNC(__inet_aton, AC_DEFINE(HAVE_INET_ATON))
+AC_CHECK_FUNC(__inet_ntop, AC_DEFINE(HAVE_INET_NTOP,,__inet_ntop))
+AC_CHECK_FUNC(__inet_pton, AC_DEFINE(HAVE_INET_PTON,,__inet_pton))
+AC_CHECK_FUNC(__inet_aton, AC_DEFINE(HAVE_INET_ATON,,__inet_aton))
 
 dnl ---------------------------
 dnl check system has GNU regexp
@@ -851,7 +864,7 @@ AC_TRY_COMPILE([#include <sys/types.h>
 #include <netinet6/in6_var.h>
 ],[static struct if6_aliasreq ac_i;int ac_j = sizeof (ac_i.ifra_lifetime);],
 [AC_MSG_RESULT(yes)
- AC_DEFINE(HAVE_IFRA_LIFETIME)],
+ AC_DEFINE(HAVE_IFRA_LIFETIME,,Have in6_aliasreq.ifra_lifetime)],
  AC_MSG_RESULT(no))
 
 dnl ---------------------------
@@ -905,6 +918,18 @@ if test x"${ac_cv_header_sys_capability_h}" = x"yes"; then
   )
 fi
 AC_SUBST(LIBCAP)
+
+dnl ---------------------------
+dnl check for glibc 'backtrace'
+dnl --------------------------- 
+if test "${glibc}" = "yes"; then
+   AC_CHECK_HEADER(execinfo.h)
+fi
+if test x"${ac_cv_header_execinfo_h}" = x"yes"; then
+  AC_CHECK_FUNC(backtrace,
+    [AC_DEFINE(HAVE_GLIBC_BACKTRACE,,Glibc backtrace)]
+  )
+fi
 
 dnl -------------
 dnl check version

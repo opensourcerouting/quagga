@@ -262,7 +262,7 @@ fi
 %dir %attr(750,root,root) /var/run/zebra
 %endif
 %if %vty_group
-%attr(750,%zebra_user,%vty_group) %{_sysconfdir}/vtysh.conf
+%attr(750,%zebra_user,%vty_group) %{_sysconfdir}/vtysh.conf.sample
 %endif
 %{_infodir}/*info*
 %{_mandir}/man*/*
@@ -270,7 +270,7 @@ fi
 %if %with_vtysh
 %{_bindir}/*
 %endif
-%config /etc/zebra/*.conf
+%config /etc/zebra/*
 %config /etc/rc.d/init.d/*
 %config(noreplace) /etc/pam.d/zebra
 %config(noreplace) %attr(640,root,root) /etc/logrotate.d/*

@@ -37,6 +37,7 @@
 #include "log.h"
 #include "memory.h"
 #include "privs.h"
+#include "debug.h"
 
 #include "ospfd/ospfd.h"
 #include "ospfd/ospf_interface.h"
@@ -54,16 +55,16 @@ zebra_capabilities_t _caps_p [] =
   ZCAP_RAW,
   ZCAP_BIND,
   ZCAP_BROADCAST,
-  CAP_NET_ADMIN
 };
 
 struct zebra_privs_t ospfd_privs =
 {
-#if defined(ZEBRA_USER)
+#if defined(ZEBRA_USER) && defined(ZEBRA_GROUP)
   .user = ZEBRA_USER,
-#endif
-#if defined ZEBRA_GROUP
   .group = ZEBRA_GROUP,
+#endif
+#if defined(VTY_GROUP)
+  .vty_group = VTY_GROUP,
 #endif
   .caps_p = _caps_p,
   .cap_num_p = sizeof(_caps_p)/sizeof(_caps_p[0]),
@@ -187,6 +188,11 @@ signal_init ()
   signal_set (SIGTTOU, SIG_IGN);
 #endif
   signal_set (SIGUSR1, sigusr1);
+#ifdef HAVE_GLIBC_BACKTRACE
+  signal_set (SIGBUS, debug_print_trace);
+  signal_set (SIGSEGV, debug_print_trace);
+  signal_set (SIGILL, debug_print_trace); 
+#endif /* HAVE_GLIBC_BACKTRACE */
 }
 
 /* OSPFd main routine. */
@@ -225,7 +231,7 @@ main (int argc, char **argv)
     {
       int opt;
 
-      opt = getopt_long (argc, argv, "dlf:hA:P:v", longopts, 0);
+      opt = getopt_long (argc, argv, "dlf:hA:P:u:v", longopts, 0);
     
       if (opt == EOF)
 	break;

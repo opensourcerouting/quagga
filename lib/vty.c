@@ -2024,7 +2024,7 @@ vty_serv_sock (const char *addr, unsigned short port, char *path)
 
 #ifdef VTYSH
   vty_serv_un (path);
-#endif /* VTYSH */v
+#endif /* VTYSH */
 }
 
 /* Close vty interface. */

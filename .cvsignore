@@ -6,5 +6,10 @@ stamp-h
 stamp-h[0-9]*
 Makefile
 .deps
-autom4te.cache
+autom4te*.cache
 configure.lineno
+configure
+config.h.in
+aclocal.m4
+Makefile.in
+zebra-[0-9.][0-9.][0-9.]*.tar.gz

@@ -70,7 +70,7 @@ cap_map [ZCAP_MAX] =
   [ZCAP_DAC_OVERRIDE] = CAP_DAC_OVERRIDE,
   [ZCAP_READ_SEARCH] = CAP_DAC_READ_SEARCH,
   [ZCAP_SYS_ADMIN] = CAP_SYS_ADMIN,
-  [ZCAP_FOWNER] = ZCAP_FOWNER
+  [ZCAP_FOWNER] = CAP_FOWNER
 };
 
 /* convert zebras privileges to system capabilities */
@@ -175,6 +175,12 @@ zprivs_init(struct zebra_privs_t *zprivs)
   struct passwd *pwentry = NULL;
   struct group *grentry = NULL;
 
+  if (!zprivs)
+    {
+      zlog_err ("zprivs_init: called with NULL arg!");
+      exit (1);
+    }
+
   /* NULL privs */
   if (! (zprivs->user || zprivs->group 
          || zprivs->cap_num_p || zprivs->cap_num_i) )
@@ -197,29 +203,31 @@ zprivs_init(struct zebra_privs_t *zprivs)
         }
     }
 
+  grentry = NULL;
 
-#ifdef VTY_GROUP
-  /* Add the VTY_GROUP to the supplementary groups so it can be chowned to */
-  if ( (grentry = getgrnam (zprivs->vty_group)) )
+  if (zprivs->vty_group)
+    /* Add the vty_group to the supplementary groups so it can be chowned to */
     {
-      if ( setgroups (1, &grentry->gr_gid) )
+      if ( (grentry = getgrnam (zprivs->vty_group)) )
         {
-          zlog_err ("privs_init: could not setgroups, %s",
-                     strerror (errno) );
+          zprivs_state.vtygrp = grentry->gr_gid;
+          if ( setgroups (1, &zprivs_state.vtygrp) )
+            {
+              zlog_err ("privs_init: could not setgroups, %s",
+                         strerror (errno) );
+              exit (1);
+            }       
+        }
+      else
+        {
+          zlog_err ("privs_init: could not lookup supplied user");
           exit (1);
-        }       
-      zprivs_state.vtygrp = grentry->gr_gid;
+        }
     }
-  else
-    {
-      zlog_err ("privs_init: could not lookup supplied user");
-      exit (1);
-    }
-#endif /* VTY_GROUP */
   
   if (zprivs->group)
     {
-      if ( (grentry = getgrnam (zprivs->user)) )
+      if ( (grentry = getgrnam (zprivs->group)) )
         {
           zprivs_state.zgid = grentry->gr_gid;
         }
@@ -228,11 +236,11 @@ zprivs_init(struct zebra_privs_t *zprivs)
           zlog_err ("privs_init: could not lookup supplied user");
           exit (1);
         }
-      
       /* change group now, forever. uid we do later */
       if ( setregid (zprivs_state.zgid, zprivs_state.zgid) )
         {
-          zlog_err ("privs_init: could not setregid");
+          zlog_err ("zprivs_init: could not setregid, %s",
+                    strerror (errno) );
           exit (1);
         }
     }
@@ -267,7 +275,8 @@ zprivs_init(struct zebra_privs_t *zprivs)
     {
       if ( setreuid (zprivs_state.zuid, zprivs_state.zuid) )
         {
-          zlog_err ("privs_init (cap): could not setreuid, %s", strerror (errno) );
+          zlog_err ("zprivs_init (cap): could not setreuid, %s", 
+                     strerror (errno) );
           exit (1);
         }
     }

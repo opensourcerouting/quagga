@@ -22,6 +22,7 @@
 
 #include <zebra.h>
 #include "log.h"
+#include "prefix.h"
 
 /*
 ** Solaris should define IP_DEV_NAME in <inet/ip.h>, but we'll save
@@ -33,6 +34,9 @@
 #define IP_DEV_NAME "/dev/ip"
 #endif
 /*
+
+extern struct zebra_privs_t zserv_privs;
+
 ** This is a limited ndd style function that operates one integer
 ** value only.  Errors return -1. ND_SET commands return 0 on
 ** success. ND_GET commands return the value on success (which could
