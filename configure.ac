@@ -296,7 +296,7 @@ case "$host" in
       AC_CHECK_LIB(nsl, main)
       CURSES=-lcurses
   ;;
-  *-linux-*)
+  *-linux*)
       opsys=gnu-linux
       AC_DEFINE(GNU_LINUX,,GNU Linux)
   ;;
