@@ -1021,6 +1021,6 @@ host operationg system  : ${host_os}
 source code location    : ${srcdir}
 compiler                : ${CC}
 compiler flags          : ${CFLAGS}
-directory for state files : ${zebra_statedir}
+state file directory    : ${zebra_statedir}
 linker flags            : ${LDFLAGS} ${LIBS}
 "
