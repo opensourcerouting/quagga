@@ -39,7 +39,6 @@
 
 /* VTY port number. */
 #define OSPF_VTY_PORT          2604
-#define OSPF_VTYSH_PATH        "/tmp/.ospfd"
 
 /* IP TTL for OSPF protocol. */
 #define OSPF_IP_TTL             1
@@ -87,8 +86,8 @@
 #define OSPF_AUTH_CMD_NOTSEEN              -2
 
 /* OSPF SPF timer values. */
-#define OSPF_SPF_DELAY_DEFAULT              5
-#define OSPF_SPF_HOLDTIME_DEFAULT          10
+#define OSPF_SPF_DELAY_DEFAULT              1
+#define OSPF_SPF_HOLDTIME_DEFAULT           1
 
 /* OSPF interface default values. */
 #define OSPF_OUTPUT_COST_DEFAULT           10
@@ -529,6 +528,7 @@ struct ospf *ospf_get ();
 void ospf_finish (struct ospf *);
 int ospf_router_id_update_timer (struct thread *);
 void ospf_router_id_update ();
+int ospf_network_match_iface (struct connected *, struct prefix *);
 int ospf_network_set (struct ospf *, struct prefix_ipv4 *, struct in_addr);
 int ospf_network_unset (struct ospf *, struct prefix_ipv4 *, struct in_addr);
 int ospf_area_stub_set (struct ospf *, struct in_addr);

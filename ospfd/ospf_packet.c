@@ -326,6 +326,7 @@ ospf_make_md5_digest (struct ospf_interface *oi, struct ospf_packet *op)
   struct md5_ctx ctx;
   void *ibuf;
   unsigned long oldputp;
+  u_int32_t t;
   struct crypt_key *ck;
   char *auth_key;
 
@@ -337,7 +338,9 @@ ospf_make_md5_digest (struct ospf_interface *oi, struct ospf_packet *op)
 
   /* We do this here so when we dup a packet, we don't have to
      waste CPU rewriting other headers. */
-  ospfh->u.crypt.crypt_seqnum = htonl (oi->crypt_seqnum++);
+  t = (time(NULL) & 0xFFFFFFFF);
+  oi->crypt_seqnum = ( t > oi->crypt_seqnum ? t : oi->crypt_seqnum++);
+  ospfh->u.crypt.crypt_seqnum = htonl (oi->crypt_seqnum); 
 
   /* Get MD5 Authentication key from auth_key list. */
   if (list_isempty (OSPF_IF_PARAM (oi, auth_crypt)))
@@ -617,8 +620,11 @@ ospf_hello (struct ip *iph, struct ospf_header *ospfh,
     return;
 
   /* If incoming interface is passive one, ignore Hello. */
-  if (OSPF_IF_PARAM (oi, passive_interface) == OSPF_IF_PASSIVE)
+  if (OSPF_IF_PARAM (oi, passive_interface) == OSPF_IF_PASSIVE) {
+    zlog_info ("Packet %s [HELLO:RECV]: oi is passive",
+               inet_ntoa (ospfh->router_id));
     return;
+  }
 
   /* get neighbor prefix. */
   p.family = AF_INET;
@@ -1012,7 +1018,17 @@ ospf_db_desc (struct ip *iph, struct ospf_header *ospfh,
   oi->db_desc_in++;
 
   dd = (struct ospf_db_desc *) STREAM_PNT (s);
-
+#ifdef HAVE_NSSA
+  /* 
+   * XXX HACK by Hasso Tepper. Setting P bit in NSSA area DD packets is not
+   * required. In fact at least JunOS sends DD packets with P bit clear. 
+   * Until proper solution is developped, this hack should help.
+   */
+  if (oi->area->external_routing == OSPF_AREA_NSSA)
+  {
+     dd->options = (dd->options | ((short)(8)));
+  }
+#endif /* HAVE_NSSA */  
   nbr = ospf_nbr_lookup_by_addr (oi->nbrs, &iph->ip_src);
   if (nbr == NULL)
     {
@@ -1784,6 +1800,7 @@ ospf_ls_upd (struct ip *iph, struct ospf_header *ospfh,
     ospf_opaque_self_originated_lsa_received (nbr, mylsa_upds);
 
   list_delete (mylsa_upds);
+  list_delete (mylsa_acks);
 #endif /* HAVE_OPAQUE_LSA */
 
   assert (listcount (lsas) == 0);
@@ -2211,10 +2228,9 @@ ospf_read (struct thread *thread)
   ospf->t_read = thread_add_read (master, ospf_read, ospf, ospf->fd);
 
   /* IP Header dump. */
-  /*
-  if (ospf_debug_packet & OSPF_DEBUG_RECV)
-    ospf_ip_header_dump (ibuf);
-  */
+    if (IS_DEBUG_OSPF_PACKET(0, RECV))
+	    ospf_ip_header_dump (ibuf);
+
   /* Self-originated packet should be discarded silently. */
   if (ospf_if_lookup_by_local_addr (ospf, NULL, iph->ip_src))
     {
@@ -2263,20 +2279,20 @@ ospf_read (struct thread *thread)
   if (IS_DEBUG_OSPF_PACKET (ospfh->type - 1, RECV))
     {
       if (IS_DEBUG_OSPF_PACKET (ospfh->type - 1, DETAIL))
-	{
-	  zlog_info ("-----------------------------------------------------");
-	  ospf_packet_dump (ibuf);
-	}
+        {
+          zlog_info ("-----------------------------------------------------");
+          ospf_packet_dump (ibuf);
+        }
 
       zlog_info ("%s received from [%s] via [%s]",
-		 ospf_packet_type_str[ospfh->type],
-		 inet_ntoa (ospfh->router_id), IF_NAME (oi));
+                 ospf_packet_type_str[ospfh->type],
+                 inet_ntoa (ospfh->router_id), IF_NAME (oi));
       zlog_info (" src [%s],", inet_ntoa (iph->ip_src));
       zlog_info (" dst [%s]", inet_ntoa (iph->ip_dst));
 
       if (IS_DEBUG_OSPF_PACKET (ospfh->type - 1, DETAIL))
 	zlog_info ("-----------------------------------------------------");
-    }
+  }
 
   /* Some header verification. */
   ret = ospf_verify_header (ibuf, oi, iph, ospfh);
