@@ -20,31 +20,14 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/* System headers: */
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <signal.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <time.h>
-#include <string.h>
-#include <sys/time.h>
-#include <sys/wait.h>
-
-/* Quagga headers: */
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
+#include <zebra.h>
 #include <thread.h>
 #include <log.h>
 #include <sigevent.h>
-#include <version.h>
+#include <lib/version.h>
 #include <getopt.h>
+#include <sys/un.h>
+#include <sys/wait.h>
 
 #ifndef MIN
 #define MIN(X,Y) (((X) <= (Y)) ? (X) : (Y))
