@@ -142,10 +142,11 @@ level_match(const char *s)
   return ZLOG_DISABLED;
 }
 
+/* This is called from main when a daemon is invoked with -v or --version. */
 void
 print_version (const char *progname)
 {
-  printf ("%s version %s (%s)\n", progname, QUAGGA_VERSION, host.name);
+  printf ("%s version %s\n", progname, QUAGGA_VERSION);
   printf ("%s\n", QUAGGA_COPYRIGHT);
 }
 
