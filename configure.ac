@@ -1144,20 +1144,18 @@ ac_cv_htonl_works=yes,
 ac_cv_htonl_works=no)])
 AC_MSG_RESULT($ac_cv_htonl_works)
 
-AC_OUTPUT(Makefile lib/Makefile zebra/Makefile ripd/Makefile 
+AC_CONFIG_FILES([Makefile lib/Makefile zebra/Makefile ripd/Makefile 
 	  ripngd/Makefile bgpd/Makefile ospfd/Makefile 
 	  ospf6d/Makefile isisd/Makefile vtysh/Makefile doc/Makefile 
-	  ospfclient/Makefile
-	  vtysh/extract.pl
-	  m4/Makefile
+	  ospfclient/Makefile tests/Makefile m4/Makefile redhat/Makefile
 	  pkgsrc/Makefile
-	  redhat/Makefile redhat/quagga.spec
+	  vtysh/extract.pl redhat/quagga.spec 
 	  lib/version.h
-	  tests/Makefile
+	  doc/defines.texi
 	  pkgsrc/bgpd.sh pkgsrc/ospf6d.sh pkgsrc/ospfd.sh
-	  pkgsrc/ripd.sh pkgsrc/ripngd.sh pkgsrc/zebra.sh
-	  ,
+	  pkgsrc/ripd.sh pkgsrc/ripngd.sh pkgsrc/zebra.sh],
 	  [chmod +x vtysh/extract.pl])
+AC_OUTPUT
 
 echo "
 Quagga configuration
