@@ -609,7 +609,7 @@ handle_read(struct thread *t_read)
     {
       char why[100];
 
-      if ((errno == EINTR) || (errno == EAGAIN))
+      if (ERRNO_IO_RETRY(errno))
 	{
 	  /* Pretend it never happened. */
 	  SET_READ_HANDLER(dmn);
