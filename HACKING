@@ -93,7 +93,7 @@ installed together.
 PATCH SUBMISSION
 
 * Send a clean diff against the head of CVS in unified diff format, eg by:
-  cvs <cvs opts> diff -uwb ....
+  cvs <cvs opts> diff -upwb ....
 
 * Include ChangeLog and NEWS entries as appropriate before the patch
   (or in it if you are 100% up to date).
