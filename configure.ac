@@ -46,8 +46,11 @@ AC_PROG_CC
 dnl -----------------------------------------
 dnl If CLFAGS doesn\'t exist set default value
 dnl -----------------------------------------
+dnl (Wall is gcc specific... have to make sure
+dnl  gcc is being used before setting it)
+dnl
 if test "x$cflags_specified" = "x" ; then
-  CFLAGS="$CFLAGS -Wall"
+  CFLAGS="$CFLAGS -O"
 fi
 
 dnl --------------
@@ -1122,6 +1125,7 @@ AC_OUTPUT(Makefile lib/Makefile zebra/Makefile ripd/Makefile
 	  vtysh/extract.pl
 	  redhat/Makefile redhat/quagga.spec
 	  lib/version.h,
+	  tests/Makefile,
 	  [chmod +x vtysh/extract.pl])
 
 echo "
