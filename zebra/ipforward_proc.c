@@ -100,7 +100,6 @@ ipforward_off ()
   if ( zserv_privs.change(ZPRIVS_RAISE) )
   	zlog_err ("Can't raise privileges, %s", strerror (errno));
 
-
   fp = fopen (proc_ipv4_forwarding, "w");
 
   if ( zserv_privs.change(ZPRIVS_LOWER) )
@@ -150,7 +149,6 @@ ipforward_ipv6_on ()
 
   if ( zserv_privs.change(ZPRIVS_LOWER) )
   	zlog_err ("Can't lower privileges, %s", strerror (errno));
-
   
   if (fp == NULL)
     return -1;

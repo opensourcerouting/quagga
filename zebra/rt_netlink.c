@@ -102,11 +102,16 @@ netlink_socket (struct nlsock *nl, unsigned long groups)
 
   /* Bind the socket to the netlink structure for anything. */
   if ( zserv_privs.change(ZPRIVS_RAISE) )
-    zlog (NULL, LOG_ERR, "Can't raise privileges");
-    
+   {
+     zlog (NULL, LOG_ERR, "Can't raise privileges");
+     return -1;
+   } 
+
   ret = bind (sock, (struct sockaddr *) &snl, sizeof snl);
   if (ret < 0)
     {
+      if ( zserv_privs.change(ZPRIVS_LOWER) )
+        zlog (NULL, LOG_ERR, "Can't lower privileges");
       zlog (NULL, LOG_ERR, "Can't bind %s socket to group 0x%x: %s", 
 	    nl->name, snl.nl_groups, strerror (errno));
       close (sock);
@@ -200,19 +205,23 @@ netlink_request (int family, int type, struct nlsock *nl)
    * have to raise caps for every message sent
    */
   if ( zserv_privs.change(ZPRIVS_RAISE) )
-    zlog (NULL, LOG_ERR, "Can't raise privileges");
+    {
+      zlog (NULL, LOG_ERR, "Can't raise privileges");
+      return -1;
+    }
  
   ret = sendto (nl->sock, (void*) &req, sizeof req, 0, 
 		(struct sockaddr*) &snl, sizeof snl);
+		
+  if ( zserv_privs.change(ZPRIVS_LOWER) )
+        zlog (NULL, LOG_ERR, "Can't lower privileges");
+        
   if (ret < 0)
-    {
+    {      
       zlog (NULL, LOG_ERR, "%s sendto failed: %s", nl->name, strerror (errno));
       return -1;
     }
 
-  if ( zserv_privs.change(ZPRIVS_LOWER) )
-    zlog (NULL, LOG_ERR, "Can't lower privileges");
-    
   return 0;
 }
 
