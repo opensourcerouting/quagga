@@ -54,14 +54,20 @@ dnl Check CC
 dnl --------
 AC_PROG_CC
 
-dnl -----------------------------------------
+dnl ---------------------------------------------
 dnl If CLFAGS doesn\'t exist set default value
-dnl -----------------------------------------
+dnl AC_PROG_CC will have set minimal default
+dnl already, eg "-O2 -g" for gcc, "-g" for others
 dnl (Wall is gcc specific... have to make sure
 dnl  gcc is being used before setting it)
+dnl ---------------------------------------------
 dnl
 if test "x$cflags_specified" = "x" ; then
-  CFLAGS="$CFLAGS -O"
+  if test "x${GCC}" = "xyes"; then
+  	CFLAGS="-Os -g -Wall -Wpacked -Wpadded -Wsign-compare"
+  	CFLAGS="${CFLAGS} -Wpointer-arith -Wbad-function-cast"
+        CFLAGS="${CFLAGS}  -Wwrite-strings"
+  fi
 fi
 
 dnl --------------
