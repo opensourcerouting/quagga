@@ -48,7 +48,7 @@ should work at least with:
 
 To create the required autotools files (Makefile.in, configure, etc.),
 run either the 'update-autotools' script provided, or else the
-'autoreconf' command supplied with your autoconf package.  After this
+'autoreconf -i' command supplied with your autoconf package.  After this
 you may run configure.  GNU texinfo is required in order to build
 doc/quagga.info, which is not supplied in CVS, but is supplied in the
 CVS snapshots on the Quagga website.   quagga.info is created via
