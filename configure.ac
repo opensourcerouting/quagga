@@ -64,6 +64,11 @@ dnl AIX check
 dnl ---------
 AC_AIX
 
+dnl -------
+dnl libtool
+dnl -------
+AM_PROG_LIBTOOL
+
 dnl ----------------------
 dnl Packages configuration
 dnl ----------------------
