@@ -63,6 +63,9 @@ PATCH APPLICATION TO CVS
 * If the patch might break something, issue a call for testing on the
   mailinglist.
 
+* Give an appropriate commit message, eg the ChangeLog entry should suffice,
+  if it does not, then the ChangeLog entry itself needs to be corrected.
+
 * By committing a patch, you are responsible for fixing problems
   resulting from it (or backing it out).
 
