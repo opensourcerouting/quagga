@@ -67,3 +67,7 @@ tested are:
   ripd
   ospfd
   ripngd
+
+CHANGELOG
+
+[TBD: when to add to per-dir Changelog, when to add to top-level]
