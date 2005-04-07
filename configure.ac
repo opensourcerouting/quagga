@@ -1252,6 +1252,14 @@ AC_DEFINE_UNQUOTED(OSPF6_VTYSH_PATH, "$quagga_statedir/ospf6d.vty",ospf6d vty so
 AC_DEFINE_UNQUOTED(ISIS_VTYSH_PATH, "$quagga_statedir/isisd.vty",isisd vty socket)
 AC_DEFINE_UNQUOTED(DAEMON_VTY_DIR, "$quagga_statedir",daemon vty directory)
 
+dnl -------------------------------
+dnl Quagga sources should always be 
+dnl current wrt interfaces. Dont
+dnl allow deprecated interfaces to
+dnl be exposed.
+dnl -------------------------------
+AC_DEFINE(QUAGGA_NO_DEPRECATED_INTERFACES, 1, Hide deprecated interfaces)
+
 dnl ---------------------------
 dnl Check htonl works correctly
 dnl ---------------------------
