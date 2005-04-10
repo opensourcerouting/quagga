@@ -323,13 +323,18 @@ case "$host" in
       AC_CHECK_LIB(xnet, main)
       CURSES=-lcurses
   ;;
-  [*-sunos5.[8-9]] | [*-sunos5.1[0-9]] \
-  | [*-solaris2.[8-9]] | [*-solaris2.1[0-9]])
+  [*-sunos5.[8-9]] \
+  | [*-sunos5.1[0-9]] \
+  | [*-sunos5.1[0-9].[0-9]] \
+  | [*-solaris2.[8-9]] \
+  | [*-solaris2.1[0-9]] \
+  | [*-solaris2.1[0-9].[0-9]])
       opsys=sol8
       AC_DEFINE(SUNOS_59,,SunOS 5.8 up)
       AC_DEFINE(SUNOS_5, 1, SunOS 5)
       AC_CHECK_LIB(socket, main)
       AC_CHECK_LIB(nsl, main)
+      AC_CHECK_LIB(umem, main)
       CURSES=-lcurses
   ;;
   *-sunos5* | *-solaris2*)
