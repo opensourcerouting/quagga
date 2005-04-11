@@ -10,6 +10,14 @@ AC_PREREQ(2.53)
 
 AC_INIT(Quagga, 0.99.0, [http://bugzilla.quagga.net])
 AC_CONFIG_SRCDIR(lib/zebra.h)
+
+dnl -----------------------------------
+dnl Get hostname and other information.
+dnl -----------------------------------
+AC_CANONICAL_BUILD()
+AC_CANONICAL_HOST()
+AC_CANONICAL_TARGET()
+
 AM_INIT_AUTOMAKE(1.6)
 AM_CONFIG_HEADER(config.h)
 
@@ -32,13 +40,6 @@ AC_ARG_ENABLE([pkgsrcrcdir],
 dnl XXX add --pkgsrcrcdir to autoconf standard directory list somehow
 AC_SUBST(pkgsrcdir)
 AC_SUBST(pkgsrcrcdir)
-
-dnl -----------------------------------
-dnl Get hostname and other information.
-dnl -----------------------------------
-AC_CANONICAL_BUILD()
-AC_CANONICAL_HOST()
-AC_CANONICAL_TARGET()
 
 dnl ------------
 dnl Check CFLAGS
