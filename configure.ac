@@ -21,6 +21,10 @@ AC_CANONICAL_TARGET()
 AM_INIT_AUTOMAKE(1.6)
 AM_CONFIG_HEADER(config.h)
 
+dnl we need gawk for memtypes.awk
+AC_CHECK_PROG([GAWK],[gawk],[gawk],[/bin/false])
+AC_ARG_VAR([GAWK],[GNU AWK])
+
 dnl default is to match previous behavior
 exampledir=${sysconfdir}
 AC_ARG_ENABLE([exampledir],
