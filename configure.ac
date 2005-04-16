@@ -195,6 +195,8 @@ AC_ARG_ENABLE(gcc_ultra_verbose,
 [  --enable-gcc-ultra-verbose    enable ultra verbose GCC warnings])
 AC_ARG_ENABLE(gcc-rdynamic,
 [  --enable-gcc-rdynamic   enable gcc linking with -rdynamic for better backtraces])
+AC_ARG_ENABLE(time-check,
+[  --disable-time-check          disable slow thread warning messages])
 
 if test x"${enable_gcc_ultra_verbose}" = x"yes" ; then
   CFLAGS="${CFLAGS} -W -Wcast-qual -Wstrict-prototypes"
@@ -205,6 +207,14 @@ fi
 
 if test x"${enable_gcc_rdynamic}" = x"yes" ; then
   LDFLAGS="${LDFLAGS} -rdynamic"
+fi
+
+if test x"${enable_time_check}" != x"no" ; then
+  if test x"${enable_time_check}" = x"yes" -o x"${enable_time_check}" = x ; then
+    AC_DEFINE(CONSUMED_TIME_CHECK,5000000,Consumed Time Check)
+  else
+    AC_DEFINE_UNQUOTED(CONSUMED_TIME_CHECK,$enable_time_check,Consumed Time Check)
+  fi
 fi
 
 if test "${enable_broken_aliases}" = "yes"; then
