@@ -3,8 +3,8 @@
  * MTYPE_ and memory_list_.. information in order to autogenerate 
  * memtypes.h.
  *
- * The script is sensitive to the format (though not whitespace), so 
- * be careful. Comment lines /must/ start with either /* or *.
+ * The script is sensitive to the format (though not whitespace), see
+ * the top of memtypes.awk for more details.
  *
  * $Id$
  */
