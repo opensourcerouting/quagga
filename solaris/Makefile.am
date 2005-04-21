@@ -71,7 +71,7 @@ pkginfo.%.tmpl: $(srcdir)/pkginfo.%.tmpl.in Makefile
 	rm -f $@
 	$(edit) $< > $@
 
-pkginfo.%.full: $(srcdir)/pkginfo.%.tmpl pkginfo.tmpl Makefile
+pkginfo.%.full: pkginfo.%.tmpl pkginfo.tmpl Makefile
 	cat pkginfo.tmpl pkginfo.$*.tmpl > $@
 
 # use 'edit' above to transform prototype.in to pkgmk acceptable prototype
