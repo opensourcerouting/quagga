@@ -64,6 +64,9 @@ struct memory_list memory_list_lib[] =
   { MTYPE_PRIVS,		"Privilege information"		},
   { MTYPE_ZLOG,			"Logging"			},
   { MTYPE_ZCLIENT,		"Zclient"			},
+  { MTYPE_WORK_QUEUE,		"Work queue"			},
+  { MTYPE_WORK_QUEUE_ITEM,	"Work queue item"		},
+  { MTYPE_WORK_QUEUE_NAME,	"Work queue name string"	},
   { -1, NULL },
 };
 
@@ -74,6 +77,7 @@ struct memory_list memory_list_zebra[] =
   { MTYPE_VRF_NAME,		"VRF name"			},
   { MTYPE_NEXTHOP,		"Nexthop"			},
   { MTYPE_RIB,			"RIB"				},
+  { MTYPE_RIB_QUEUE,		"RIB process work queue"	},
   { MTYPE_STATIC_IPV4,		"Static IPv4 route"		},
   { MTYPE_STATIC_IPV6,		"Static IPv6 route"		},
   { -1, NULL },
