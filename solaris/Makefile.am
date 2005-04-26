@@ -12,7 +12,7 @@ pkg_depends := $(pkg_names:%=depend.%)
 pkg_packages := $(pkg_names:%=@PACKAGE_TARNAME@-%-$(pkg_name_rev).pkg)
 pkg_pkginfos := $(pkg_names:%=pkginfo.%.full)
 pkg_prototypes := $(pkg_names:%=prototype.%)
-pkg_manifests := $(pkg_quagga_daemons:%=%.xml)
+pkg_manifests := quagga.xml
 
 # pkgmk variable substitutions wont grok ${variable} in prototype
 # file, so we cant let autoconf generate the file sadly
