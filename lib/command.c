@@ -193,8 +193,8 @@ install_node (struct cmd_node *node,
 static int
 cmp_node (const void *p, const void *q)
 {
-  struct cmd_element *a = *(struct cmd_element **)p;
-  struct cmd_element *b = *(struct cmd_element **)q;
+  const struct cmd_element *a = *(struct cmd_element **)p;
+  const struct cmd_element *b = *(struct cmd_element **)q;
 
   return strcmp (a->string, b->string);
 }
@@ -202,8 +202,8 @@ cmp_node (const void *p, const void *q)
 static int
 cmp_desc (const void *p, const void *q)
 {
-  struct desc *a = *(struct desc **)p;
-  struct desc *b = *(struct desc **)q;
+  const struct desc *a = *(struct desc **)p;
+  const struct desc *b = *(struct desc **)q;
 
   return strcmp (a->cmd, b->cmd);
 }
