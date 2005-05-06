@@ -519,7 +519,7 @@ main()
     exit(0);
   exit (1);
 }],[AC_MSG_RESULT(yes - using workaround) AC_DEFINE(HAVE_BROKEN_CMSG_FIRSTHDR,,Broken CMSG_FIRSTHDR)],
-[AC_MSG_RESULT(no)])
+[AC_MSG_RESULT(no)],[AC_MSG_RESULT(no)])
 
 dnl ------------------------------
 dnl check kernel route read method
