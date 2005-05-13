@@ -1339,7 +1339,7 @@ AC_CONFIG_FILES([solaris/Makefile])
 AC_CONFIG_FILES([vtysh/extract.pl],[chmod +x vtysh/extract.pl])
 ## Hack, but working solution to avoid rebuilding of quagga.info.
 ## It's already in CVS until texinfo 4.7 is more common.
-dnl AC_CONFIG_COMMANDS([info-time],[touch doc/quagga.info])dnl
+AC_CONFIG_COMMANDS([info-time],[touch doc/quagga.info])
 AC_OUTPUT
 
 echo "
