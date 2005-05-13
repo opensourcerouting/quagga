@@ -5,7 +5,7 @@
 
 # the names of the various subpackages, and some convenient 
 # derived variables.
-pkg_names = daemons dev doc libs
+pkg_names = daemons dev doc libs smf
 pkg_quagga_daemons = zebra bgpd ospfd ospf6d ripd ripngd
 pkg_name_rev = @PACKAGE_VERSION@-@CONFDATE@-@target_os@-@target_cpu@
 pkg_depends := $(pkg_names:%=depend.%)
