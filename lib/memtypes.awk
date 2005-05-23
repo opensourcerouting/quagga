@@ -9,7 +9,7 @@
 #
 # Each MTYPE_ within the definition must the second token on the line,
 # tokens being delineated by whitespace. It may only consist of the set of
-# characters [A-Z_0-9]. Eg:
+# characters [[:upper:]_[:digit:]]. Eg:
 #
 # '\n  {  MTYPE_AWESOME_IPV8 , "Amazing new protocol, says genius" {}..boo'
 #
@@ -31,7 +31,7 @@
 
 BEGIN {
 	mlistregex = "memory_list_(.*)\\[\\]";
-	mtyperegex = "^(MTYPE_[A-Z_0-9]+).*";
+	mtyperegex = "^(MTYPE_[[:upper:]_[:digit:]]+).*";
 	header = "/* Auto-generated from memtypes.c by " ARGV[0] ". */\n";
 	header = header "/* Do not edit! */\n";
 	header = header "\n#ifndef _QUAGGA_MEMTYPES_H\n";
