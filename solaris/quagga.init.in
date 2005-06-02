@@ -33,7 +33,7 @@ fi
 # fmri must exist
 svcs ${FMRI} > /dev/null 2>&1 || exit $SMF_EXIT_ERR_CONFIG
 
-DAEMON=`svcprop -p @PACKAGE_NAME@/daemon_name ${FMRI} 2> /dev/null`
+DAEMON=`svcprop -p @PACKAGE_TARNAME@/daemon_name ${FMRI} 2> /dev/null`
 [ -z "${DAEMON}" ] && exit $SMF_EXIT_ERR_CONFIG
 
 case ${DAEMON} in
@@ -63,7 +63,7 @@ VTYPORT=`svcprop -p @PACKAGE_TARNAME@/vty_port ${FMRI}`
 [ -z "${PIDFILE}" ] && exit $SMF_EXIT_ERR_CONFIG
 
 # config file must exist
-[ ! -f "$CONFFILE" ] &&  exit $SMF_EXIT_ERR_CONFIG
+#[ ! -f "$CONFFILE" ] &&  exit $SMF_EXIT_ERR_CONFIG
 
 start () {
 	/usr/local/quagga/sbin/${DAEMON} ${ARGS} &
