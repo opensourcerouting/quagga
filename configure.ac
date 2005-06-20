@@ -81,6 +81,7 @@ AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 AC_CHECK_TOOL(AR, ar)
 AC_CHECK_TOOL(RANLIB, ranlib, :)
+AC_CHECK_TOOL(SED, sed)
 
 dnl ---------
 dnl AIX check
