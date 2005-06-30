@@ -802,6 +802,18 @@ dnl ----------
   fi
 
   if test "$zebra_cv_linux_ipv6" = "yes";then
+    AC_MSG_CHECKING(whether libc has IPv6 support)
+    AC_TRY_LINK([#include <netinet/in.h>
+    ],[ int a; a = (int) in6addr_any.s6_addr[0]; if (a != 12345) return a; ],
+    [AC_MSG_RESULT(yes)
+      zebra_cv_ipv6=yes
+      zebra_cv_linux_ipv6=yes],
+    [AC_MSG_RESULT(no)
+      zebra_cv_ipv6=no
+      zebra_cv_linux_ipv6=no])
+  fi
+
+  if test "$zebra_cv_linux_ipv6" = "yes";then
     AC_MSG_CHECKING(for GNU libc >= 2.1)
     AC_DEFINE(HAVE_IPV6,1,Linux IPv6)
     AC_EGREP_CPP(yes, [
