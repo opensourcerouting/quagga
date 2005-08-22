@@ -1966,6 +1966,7 @@ node_parent ( enum node_type node )
     case BGP_IPV4_NODE:
     case BGP_IPV4M_NODE:
     case BGP_IPV6_NODE:
+    case BGP_IPV6M_NODE:
       ret = BGP_NODE;
       break;
     case KEYCHAIN_KEY_NODE:
@@ -2391,6 +2392,7 @@ DEFUN (config_exit,
     case BGP_IPV4_NODE:
     case BGP_IPV4M_NODE:
     case BGP_IPV6_NODE:
+    case BGP_IPV6M_NODE:
       vty->node = BGP_NODE;
       break;
     case KEYCHAIN_KEY_NODE:
@@ -2430,6 +2432,7 @@ DEFUN (config_end,
     case BGP_IPV4_NODE:
     case BGP_IPV4M_NODE:
     case BGP_IPV6_NODE:
+    case BGP_IPV6M_NODE:
     case RMAP_NODE:
     case OSPF_NODE:
     case OSPF6_NODE:
