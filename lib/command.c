@@ -35,7 +35,7 @@ Boston, MA 02111-1307, USA.  */
 
 /* Command vector which includes some level of command lists. Normally
    each daemon maintains each own cmdvec. */
-vector cmdvec;
+vector cmdvec = NULL;
 
 /* Host information structure. */
 struct host host;
@@ -475,7 +475,11 @@ void
 install_element (enum node_type ntype, struct cmd_element *cmd)
 {
   struct cmd_node *cnode;
-
+  
+  /* cmd_init hasn't been called */
+  if (!cmdvec)
+    return;
+  
   cnode = vector_slot (cmdvec, ntype);
 
   if (cnode == NULL) 
