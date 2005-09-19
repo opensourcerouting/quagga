@@ -25,5 +25,9 @@ extern size_t strlcat(char *, const char *, size_t);
 extern size_t strnlen(const char *s, size_t maxlen);
 #endif
 
+#ifndef HAVE_STRNDUP
+extern char * strndup (const char *, size_t);
+#endif
+
 #endif /* _ZEBRA_STR_H */
 
