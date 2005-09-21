@@ -93,6 +93,7 @@ struct memory_list memory_list_bgp[] =
   { MTYPE_ATTR,			"BGP attribute"			},
   { MTYPE_AS_PATH,		"BGP aspath"			},
   { MTYPE_AS_SEG,		"BGP aspath seg"		},
+  { MTYPE_AS_SEG_DATA,		"BGP aspath segment data"	},
   { MTYPE_AS_STR,		"BGP aspath str"		},
   { 0, NULL },
   { MTYPE_BGP_TABLE,		"BGP table"			},
