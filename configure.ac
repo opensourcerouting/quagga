@@ -91,6 +91,8 @@ if test "x$cflags_specified" = "x" ; then
   	CFLAGS="-Os -fno-omit-frame-pointer -g  -Wall"
   	CFLAGS="${CFLAGS} -Wsign-compare -Wpointer-arith"
   	CFLAGS="${CFLAGS} -Wbad-function-cast -Wwrite-strings"
+  	CFLAGS="${CFLAGS} -Wmissing-prototypes -Wmissing-declarations"
+  	CFLAGS="${CFLAGS} -Wchar-subscripts -Wcast-qual"
   fi
   # TODO: conditionally addd -Wpacked if handled
 fi
@@ -1238,8 +1240,23 @@ if test "${enable_capabilities}" != "no"; then
     AC_CHECK_LIB(cap, cap_init, 
       [AC_DEFINE(HAVE_LCAPS,1,Capabilities)
        LIBCAP="-lcap"
-      ]
+       quagga_ac_lcaps="yes"]
     )
+  else
+    AC_CHECK_HEADERS(priv.h,
+     [AC_MSG_CHECKING(Solaris style privileges are available)
+      AC_TRY_COMPILE([#include <priv.h>],[getpflags(PRIV_AWARE);],
+    	  [AC_MSG_RESULT(yes)
+    	   AC_DEFINE(HAVE_SOLARIS_CAPABILITIES,1,getpflags)
+    	   quagga_ac_scaps="yes"],
+    	   AC_MSG_RESULT(no)
+      )
+     ]
+   )
+  fi
+  if test x"${quagga_ac_scaps}" = x"yes" \
+       -o x"${quagga_ac_lcaps}" = x"yes"; then
+    AC_DEFINE(HAVE_CAPABILITIES,1,capabilities)
   fi
 fi
 AC_SUBST(LIBCAP)
