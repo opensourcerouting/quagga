@@ -182,6 +182,7 @@ struct memory_list memory_list_ospf[] =
   { MTYPE_OSPF_PACKET,        "OSPF packet"			},
   { MTYPE_OSPF_FIFO,          "OSPF FIFO queue"			},
   { MTYPE_OSPF_VERTEX,        "OSPF vertex"			},
+  { MTYPE_OSPF_VERTEX_PARENT, "OSPF vertex parent",		},
   { MTYPE_OSPF_NEXTHOP,       "OSPF nexthop"			},
   { MTYPE_OSPF_PATH,	      "OSPF path"			},
   { MTYPE_OSPF_VL_DATA,       "OSPF VL data"			},
