@@ -29,6 +29,7 @@ struct memory_list memory_list_lib[] =
   { MTYPE_VTY_HIST,		"VTY history"			},
   { MTYPE_IF,			"Interface"			},
   { MTYPE_CONNECTED,		"Connected" 			},
+  { MTYPE_CONNECTED_LABEL,	"Connected interface label"	},
   { MTYPE_BUFFER,		"Buffer"			},
   { MTYPE_BUFFER_DATA,		"Buffer data"			},
   { MTYPE_STREAM,		"Stream"			},
