@@ -88,7 +88,7 @@ dnl ---------------------------------------------
 dnl
 if test "x$cflags_specified" = "x" ; then
   if test "x${GCC}" = "xyes" && test "x${ICC}" = "xno"; then
-  	CFLAGS="-Os -fno-omit-frame-pointer -g  -Wall"
+  	CFLAGS="-Os -fno-omit-frame-pointer -g -std=c99 -Wall"
   	CFLAGS="${CFLAGS} -Wsign-compare -Wpointer-arith"
   	CFLAGS="${CFLAGS} -Wbad-function-cast -Wwrite-strings"
   	CFLAGS="${CFLAGS} -Wmissing-prototypes -Wmissing-declarations"
@@ -324,7 +324,7 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS([string.h stropts.h sys/conf.h sys/ksym.h sys/time.h \
                  sys/times.h sys/select.h sys/sysctl.h sys/sockio.h \
                  sys/types.h linux/version.h kvm.h netdb.h asm/types.h \
-                 sys/param.h libutil.h limits.h])
+                 sys/param.h libutil.h limits.h stdint.h])
 
 AC_CHECK_HEADERS([sys/socket.h netinet/in_systm.h netinet/in.h \
 		 net/if_dl.h net/netopt.h inet/nd.h net/route.h \
