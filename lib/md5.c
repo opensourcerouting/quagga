@@ -146,9 +146,10 @@ void md5_init(md5_ctxt *ctxt)
 	memset (ctxt->md5_buf, 0, sizeof(ctxt->md5_buf));
 }
 
-void md5_loop(md5_ctxt *ctxt, const uint8_t *input, uint len)
+void md5_loop(md5_ctxt *ctxt, const void *vinput, uint len)
 {
 	uint gap, i;
+	uint8_t *input = vinput;
 
 	ctxt->md5_n += len * 8; /* byte to bit */
 	gap = MD5_BUFLEN - ctxt->md5_i;

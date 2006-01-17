@@ -68,7 +68,7 @@ typedef struct {
 } md5_ctxt;
 
 extern void md5_init (md5_ctxt *);
-extern void md5_loop (md5_ctxt *, const uint8_t *, u_int);
+extern void md5_loop (md5_ctxt *, const void *, u_int);
 extern void md5_pad (md5_ctxt *);
 extern void md5_result (uint8_t *, md5_ctxt *);
 
