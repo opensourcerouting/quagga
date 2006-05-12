@@ -1693,10 +1693,10 @@ cmd_describe_command_real (vector vline, struct vty *vty, int *status)
     {
       vector_free (matchvec);
       *status = CMD_ERR_NO_MATCH;
+      return NULL;
     }
-  else
-    *status = CMD_SUCCESS;
 
+  *status = CMD_SUCCESS;
   return matchvec;
 }
 
