@@ -1785,6 +1785,7 @@ cmd_complete_command_real (vector vline, struct vty *vty, int *status)
 
   if (vector_active (vline) == 0)
     {
+      vector_free (cmd_vector);
       *status = CMD_ERR_NO_MATCH;
       return NULL;
     }
