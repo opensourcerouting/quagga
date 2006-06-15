@@ -1629,12 +1629,14 @@ cmd_describe_command_real (vector vline, struct vty *vty, int *status)
 	if ((ret = is_cmd_ambiguous (command, cmd_vector, i, match)) == 1)
 	  {
 	    vector_free (cmd_vector);
+	    vector_free (matchvec);
 	    *status = CMD_ERR_AMBIGUOUS;
 	    return NULL;
 	  }
 	else if (ret == 2)
 	  {
 	    vector_free (cmd_vector);
+	    vector_free (matchvec);
 	    *status = CMD_ERR_NO_MATCH;
 	    return NULL;
 	  }
