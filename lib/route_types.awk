@@ -1,4 +1,4 @@
-# $Id: route_types.awk,v 1.2 2006/06/27 08:26:07 paul Exp $
+# $Id: route_types.awk,v 1.3 2006/06/27 10:42:18 paul Exp $
 #
 # Scan a file of route-type definitions (see eg route_types.txt) and
 # generate a corresponding header file with:
@@ -174,9 +174,7 @@ END {
 		printf(redist_str_fmt, rstr);
 		printf(redist_help_def_fmt, toupper(daemon));
 		printf("%s", hstr);
-		printf(redist_help_str_fmt, redist_bare_help);
-		print("\n");
-		
+		printf("\n\n");
 	}
 	
 	#printf("#define QUAGGA_REDIST_STR_ALL %s\n",all);
