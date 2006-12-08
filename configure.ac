@@ -5,10 +5,10 @@
 ##  Copyright (c) 1996, 97, 98, 99, 2000 Kunihiro Ishiguro <kunihiro@zebra.org>
 ##  Portions Copyright (c) 2003 Paul Jakma <paul@dishone.st>
 ##
-## $Id: configure.ac,v 1.123 2006/08/27 22:06:12 paul Exp $
+## $Id: configure.ac,v 1.124 2006/12/08 21:27:08 paul Exp $
 AC_PREREQ(2.53)
 
-AC_INIT(Quagga, 0.99.5, [http://bugzilla.quagga.net])
+AC_INIT(Quagga, 0.99.6, [http://bugzilla.quagga.net])
 AC_CONFIG_SRCDIR(lib/zebra.h)
 
 dnl -----------------------------------
