@@ -1,6 +1,6 @@
 #!/bin/sh
 
-$Id: README.NetBSD,v 1.2 2007/02/02 16:52:38 gdt Exp $
+$Id: README.NetBSD,v 1.3 2007/02/02 17:03:03 gdt Exp $
 
 # This file is helpful for building quagga from cvs on NetBSD, and
 # probably on any system using pkgsrc.  
@@ -9,7 +9,7 @@ $Id: README.NetBSD,v 1.2 2007/02/02 16:52:38 gdt Exp $
 case $1 in
 
     build)
-	./update-autotools
+	./bootstrap.sh
 	LDFLAGS="-L/usr/pkg/lib -R/usr/pkg/lib" CPPFLAGS="-I/usr/pkg/include" \
     	./configure --prefix=/usr/quagga \
 	    --sysconfdir=/etc/zebra --localstatedir=/var/run/zebra \
