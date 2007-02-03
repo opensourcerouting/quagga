@@ -5,7 +5,7 @@
 ##  Copyright (c) 1996, 97, 98, 99, 2000 Kunihiro Ishiguro <kunihiro@zebra.org>
 ##  Portions Copyright (c) 2003 Paul Jakma <paul@dishone.st>
 ##
-## $Id: configure.ac,v 1.124 2006/12/08 21:27:08 paul Exp $
+## $Id: configure.ac,v 1.125 2007/02/03 22:30:03 gdt Exp $
 AC_PREREQ(2.53)
 
 AC_INIT(Quagga, 0.99.6, [http://bugzilla.quagga.net])
@@ -61,7 +61,9 @@ dnl Check CC and friends
 dnl --------------------
 AC_PROG_CC
 AC_PROG_CPP
+
 AC_PROG_EGREP
+AC_PROG_SED
 
 dnl ------------------------------------------------------------------
 dnl Intel compiler check. Although Intel tries really hard to make icc
