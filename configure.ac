@@ -5,7 +5,7 @@
 ##  Copyright (c) 1996, 97, 98, 99, 2000 Kunihiro Ishiguro <kunihiro@zebra.org>
 ##  Portions Copyright (c) 2003 Paul Jakma <paul@dishone.st>
 ##
-## $Id: configure.ac,v 1.125 2007/02/03 22:30:03 gdt Exp $
+## $Id: configure.ac,v 1.126 2007/02/06 19:36:47 gdt Exp $
 AC_PREREQ(2.53)
 
 AC_INIT(Quagga, 0.99.6, [http://bugzilla.quagga.net])
@@ -21,7 +21,8 @@ AC_CANONICAL_TARGET()
 AM_INIT_AUTOMAKE(1.6)
 AM_CONFIG_HEADER(config.h)
 
-dnl we need gawk for memtypes.awk
+dnl GNU awk is required for lib/memtype.h made by memtypes.awk.
+dnl BSD awk complains: awk: gensub doesn't support backreferences (subst "\1")
 AC_CHECK_PROG([GAWK],[gawk],[gawk],[/bin/false])
 AC_ARG_VAR([GAWK],[GNU AWK])
 
