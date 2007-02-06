@@ -5,7 +5,7 @@
 ##  Copyright (c) 1996, 97, 98, 99, 2000 Kunihiro Ishiguro <kunihiro@zebra.org>
 ##  Portions Copyright (c) 2003 Paul Jakma <paul@dishone.st>
 ##
-## $Id: configure.ac,v 1.126 2007/02/06 19:36:47 gdt Exp $
+## $Id: configure.ac,v 1.127 2007/02/06 20:10:35 gdt Exp $
 AC_PREREQ(2.53)
 
 AC_INIT(Quagga, 0.99.6, [http://bugzilla.quagga.net])
@@ -64,7 +64,10 @@ AC_PROG_CC
 AC_PROG_CPP
 
 AC_PROG_EGREP
-AC_PROG_SED
+
+dnl autoconf 2.59 appears not to support AC_PROG_SED
+dnl AC_PROG_SED
+AC_CHECK_PROG([SED],[sed],[sed],[/bin/false])
 
 dnl ------------------------------------------------------------------
 dnl Intel compiler check. Although Intel tries really hard to make icc
