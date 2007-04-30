@@ -5,7 +5,7 @@
 ##  Copyright (c) 1996, 97, 98, 99, 2000 Kunihiro Ishiguro <kunihiro@zebra.org>
 ##  Portions Copyright (c) 2003 Paul Jakma <paul@dishone.st>
 ##
-## $Id: configure.ac,v 1.128 2007/04/29 20:13:35 paul Exp $
+## $Id: configure.ac,v 1.129 2007/04/30 19:14:08 ajs Exp $
 AC_PREREQ(2.53)
 
 AC_INIT(Quagga, 0.99.7, [http://bugzilla.quagga.net])
@@ -119,7 +119,7 @@ if test "x${cflags_specified}" = "x" ; then
         AC_MSG_RESULT([Intel default])
         ;;
     "GCC")
-  	CFLAGS="-Os -fno-omit-frame-pointer -g -std=c99 -Wall"
+  	CFLAGS="-Os -fno-omit-frame-pointer -g -std=gnu99 -Wall"
   	CFLAGS="${CFLAGS} -Wsign-compare -Wpointer-arith"
   	CFLAGS="${CFLAGS} -Wbad-function-cast -Wwrite-strings"
   	CFLAGS="${CFLAGS} -Wmissing-prototypes -Wmissing-declarations"
