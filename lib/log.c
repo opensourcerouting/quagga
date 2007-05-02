@@ -1,5 +1,5 @@
 /*
- * $Id: log.c,v 1.31 2007/04/29 15:48:22 ajs Exp $
+ * $Id: log.c,v 1.32 2007/05/02 16:05:35 paul Exp $
  *
  * Logging of zebra
  * Copyright (C) 1997, 1998, 1999 Kunihiro Ishiguro
@@ -886,3 +886,17 @@ zserv_command_string (unsigned int command)
     }
   return command_types[command].string;
 }
+
+#define RTSIZE	(sizeof(route_types)/sizeof(route_types[0]))
+
+int
+proto_name2num(const char *s)
+{
+   unsigned i;
+
+   for (i=0; i<RTSIZE; ++i)
+     if (strcasecmp(s, route_types[i].string) == 0)
+       return route_types[i].type;
+   return -1;
+}
+#undef RTSIZE
