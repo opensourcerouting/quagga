@@ -5,7 +5,7 @@
 ##  Copyright (c) 1996, 97, 98, 99, 2000 Kunihiro Ishiguro <kunihiro@zebra.org>
 ##  Portions Copyright (c) 2003 Paul Jakma <paul@dishone.st>
 ##
-## $Id: configure.ac,v 1.131 2007/05/10 16:52:26 paul Exp $
+## $Id: configure.ac,v 1.132 2007/05/10 16:53:04 paul Exp $
 AC_PREREQ(2.53)
 
 AC_INIT(Quagga, 0.99.7, [http://bugzilla.quagga.net])
@@ -163,10 +163,11 @@ AC_CACHE_CHECK([if ${MAKE-make} is GNU make], [quagga_cv_gnu_make],
 	]
 )
 
-dnl ---------
-dnl AIX check
-dnl ---------
+dnl -----------------
+dnl System extensions
+dnl -----------------
 AC_AIX
+AC_GNU_SOURCE
 
 dnl -------
 dnl libtool
@@ -640,7 +641,10 @@ AC_FUNC_REALLOC
 AC_FUNC_STAT
 AC_FUNC_SELECT_ARGTYPES
 AC_FUNC_STRFTIME
-AC_FUNC_STRNLEN
+dnl Avoid AC_FUNC_STRNLEN because it pulls in AC_SYSTEM_EXTENSIONS which
+dnl can lead to strange side effects.  So we just check for strnlen
+dnl directly, see below.
+dnlAC_FUNC_STRNLENdnl
 AC_FUNC_VPRINTF
 
 dnl -------------------------------
@@ -665,7 +669,7 @@ dnl ---------------
 dnl other functions
 dnl ---------------
 AC_CHECK_FUNCS([dup2 ftruncate getcwd gethostbyname getpagesize gettimeofday \
-	inet_ntoa inet_aton \
+	inet_ntoa inet_aton strnlen \
 	memchr memmove memset select socket \
 	strcasecmp strchr strcspn strdup strerror \
 	strncasecmp strndup strrchr strspn strstr \
