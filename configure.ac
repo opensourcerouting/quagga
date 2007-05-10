@@ -5,7 +5,7 @@
 ##  Copyright (c) 1996, 97, 98, 99, 2000 Kunihiro Ishiguro <kunihiro@zebra.org>
 ##  Portions Copyright (c) 2003 Paul Jakma <paul@dishone.st>
 ##
-## $Id: configure.ac,v 1.130 2007/05/10 02:38:51 paul Exp $
+## $Id: configure.ac,v 1.131 2007/05/10 16:52:26 paul Exp $
 AC_PREREQ(2.53)
 
 AC_INIT(Quagga, 0.99.7, [http://bugzilla.quagga.net])
@@ -665,7 +665,7 @@ dnl ---------------
 dnl other functions
 dnl ---------------
 AC_CHECK_FUNCS([dup2 ftruncate getcwd gethostbyname getpagesize gettimeofday \
-	inet_ntoa \
+	inet_ntoa inet_aton \
 	memchr memmove memset select socket \
 	strcasecmp strchr strcspn strdup strerror \
 	strncasecmp strndup strrchr strspn strstr \
