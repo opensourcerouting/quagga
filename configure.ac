@@ -5,7 +5,7 @@
 ##  Copyright (c) 1996, 97, 98, 99, 2000 Kunihiro Ishiguro <kunihiro@zebra.org>
 ##  Portions Copyright (c) 2003 Paul Jakma <paul@dishone.st>
 ##
-## $Id: configure.ac,v 1.132 2007/05/10 16:53:04 paul Exp $
+## $Id: configure.ac,v 1.133 2007/05/10 17:05:16 paul Exp $
 AC_PREREQ(2.53)
 
 AC_INIT(Quagga, 0.99.7, [http://bugzilla.quagga.net])
@@ -644,7 +644,7 @@ AC_FUNC_STRFTIME
 dnl Avoid AC_FUNC_STRNLEN because it pulls in AC_SYSTEM_EXTENSIONS which
 dnl can lead to strange side effects.  So we just check for strnlen
 dnl directly, see below.
-dnlAC_FUNC_STRNLENdnl
+dnl AC_FUNC_STRNLENdnl
 AC_FUNC_VPRINTF
 
 dnl -------------------------------
