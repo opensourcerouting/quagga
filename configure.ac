@@ -5,7 +5,7 @@
 ##  Copyright (c) 1996, 97, 98, 99, 2000 Kunihiro Ishiguro <kunihiro@zebra.org>
 ##  Portions Copyright (c) 2003 Paul Jakma <paul@dishone.st>
 ##
-## $Id: configure.ac,v 1.134 2007/06/22 16:14:42 paul Exp $
+## $Id: configure.ac,v 1.135 2007/06/25 19:30:59 hasso Exp $
 AC_PREREQ(2.53)
 
 AC_INIT(Quagga, 0.99.7, [http://bugzilla.quagga.net])
@@ -1064,7 +1064,7 @@ QUAGGA_INCLUDES
 # include <netinet6/in6_var.h>
 #endif
 #if HAVE_NETINET6_ND6_H
-# include <netinet6/nd.h>
+# include <netinet6/nd6.h>
 #endif
 ])dnl
 
