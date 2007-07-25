@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# Import updates from main CVS repo
+
+git-cvsimport -d :pserver:anoncvs@anoncvs.quagga.net:/var/cvsroot -v -p-v -k -u -i -m -o quagga_net quagga
+
+# Annotate tags
+
+git tag -l |
+while read t ; do
+    if [ ! -r .git/refs/tags/$t ] ; then
+       r=$(git-show-ref -s $t)
+       git tag -d $t
+       git tag -a -m 'import cvs tag' $t $r
+    fi
+done
