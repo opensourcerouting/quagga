@@ -1,0 +1,17 @@
+INSTALL
+Makefile.in
+aclocal.m4
+/autom4te.cache
+config.guess
+config.h.in
+config.sub
+configure
+depcomp
+doc/mdate-sh
+doc/quagga.info
+doc/quagga.info-1
+doc/stamp-vti
+doc/version.texi
+install-sh
+ltmain.sh
+missing
