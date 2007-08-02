@@ -1,10 +1,18 @@
 #!/bin/sh
 
-$Id: README.NetBSD,v 1.3 2007/02/02 17:03:03 gdt Exp $
+$Id: README.NetBSD,v 1.4 2007/08/02 13:23:57 gdt Exp $
 
 # This file is helpful for building quagga from cvs on NetBSD, and
 # probably on any system using pkgsrc.  
 # One should have readline installed already (pkgsrc/devel/readline).
+
+# Quagga is currently documented not to require GNU make, but the
+# contents of solaris seem to require it.
+
+if true; then
+    MAKE=gmake
+    echo "WARNING: using gmake to work around buggy solaris/Makefile.am"
+fi
 
 case $1 in
 
@@ -27,4 +35,3 @@ case $1 in
     	make clean
 
 esac
-
