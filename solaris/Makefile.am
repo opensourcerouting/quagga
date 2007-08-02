@@ -1,6 +1,8 @@
 # Solaris packages automake file
 # $Id$
 
+# XXX This file uses GNU make extensions.
+
 .PHONY: packages
 
 # the names of the various subpackages, and some convenient 
