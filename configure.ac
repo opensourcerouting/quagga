@@ -5,7 +5,7 @@
 ##  Copyright (c) 1996, 97, 98, 99, 2000 Kunihiro Ishiguro <kunihiro@zebra.org>
 ##  Portions Copyright (c) 2003 Paul Jakma <paul@dishone.st>
 ##
-## $Id: configure.ac,v 1.136 2007/07/27 16:48:55 paul Exp $
+## $Id: configure.ac,v 1.137 2007/08/02 13:36:56 gdt Exp $
 AC_PREREQ(2.53)
 
 AC_INIT(Quagga, 0.99.8, [http://bugzilla.quagga.net])
@@ -197,6 +197,8 @@ AC_ARG_ENABLE(watchquagga,
 [  --disable-watchquagga   do not build watchquagga])
 AC_ARG_ENABLE(isisd,
 [  --enable-isisd          build isisd])
+AC_ARG_ENABLE(solaris,
+[  --enable-solaris          build solaris])
 AC_ARG_ENABLE(bgp-announce,
 [  --disable-bgp-announce, turn off BGP route announcement])
 AC_ARG_ENABLE(netlink,
@@ -1131,6 +1133,13 @@ case "${enable_isisd}" in
   *    ) ;;
 esac
 
+# XXX Perhaps auto-enable on Solaris, but that's messy for cross builds.
+case "${enable_solaris}" in
+  "yes") SOLARIS="solaris";;
+  "no" ) SOLARIS="";;
+  *    ) ;;
+esac
+
 if test "${enable_bgp_announce}" = "no";then
   AC_DEFINE(DISABLE_BGP_ANNOUNCE,,Disable BGP installation to zebra)
 fi
@@ -1143,6 +1152,7 @@ AC_SUBST(OSPFD)
 AC_SUBST(OSPF6D)
 AC_SUBST(WATCHQUAGGA)
 AC_SUBST(ISISD)
+AC_SUBST(SOLARIS)
 AC_SUBST(VTYSH)
 AC_SUBST(INCLUDES)
 AC_SUBST(CURSES)
