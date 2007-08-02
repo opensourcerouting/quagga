@@ -1,5 +1,7 @@
 # Solaris packages automake file
-# $Id: Makefile.am,v 1.7 2006/02/19 18:59:26 paul Exp $
+# $Id: Makefile.am,v 1.8 2007/08/02 13:37:30 gdt Exp $
+
+# XXX This file uses GNU make extensions.
 
 .PHONY: packages
 
