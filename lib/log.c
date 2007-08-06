@@ -1,5 +1,5 @@
 /*
- * $Id: log.c,v 1.32 2007/05/02 16:05:35 paul Exp $
+ * $Id: log.c,v 1.33 2007/08/06 15:21:45 paul Exp $
  *
  * Logging of zebra
  * Copyright (C) 1997, 1998, 1999 Kunihiro Ishiguro
@@ -769,7 +769,7 @@ mes_lookup (struct message *meslist, int max, int index)
       {
 	if (meslist->key == index)
 	  {
-	    zlog_warn("message index %d [%s] found in position %d (max is %d)",
+	    zlog_debug ("message index %d [%s] found in position %d (max is %d)",
 		      index, meslist->str, i, max);
 	    return meslist->str;
 	  }
