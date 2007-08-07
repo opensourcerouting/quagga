@@ -5,7 +5,7 @@
 ##  Copyright (c) 1996, 97, 98, 99, 2000 Kunihiro Ishiguro <kunihiro@zebra.org>
 ##  Portions Copyright (c) 2003 Paul Jakma <paul@dishone.st>
 ##
-## $Id: configure.ac,v 1.137 2007/08/02 13:36:56 gdt Exp $
+## $Id: configure.ac,v 1.138 2007/08/07 18:49:18 paul Exp $
 AC_PREREQ(2.53)
 
 AC_INIT(Quagga, 0.99.8, [http://bugzilla.quagga.net])
@@ -751,6 +751,35 @@ fi
 AC_SUBST(RT_METHOD)
 AC_SUBST(KERNEL_METHOD)
 AC_SUBST(OTHER_METHOD)
+
+dnl --------------------------
+dnl Determine IS-IS I/O method
+dnl --------------------------
+AC_CHECK_HEADER(net/bpf.h)
+AC_CHECK_HEADER(sys/dlpi.h)
+AC_MSG_CHECKING(zebra IS-IS I/O method)
+if test x"$opsys" = x"gnu-linux"; then
+  AC_MSG_RESULT(pfpacket)
+  ISIS_METHOD=isis_pfpacket.o
+elif test x"$opsys" = x"sol2-6" -o x"$opsys" = x"sol8"; then
+  AC_MSG_RESULT(DLPI)
+  ISIS_METHOD="isis_dlpi.o"
+else
+  if test $ac_cv_header_net_bpf_h = no; then
+    if test $ac_cv_header_sys_dlpi_h = no; then
+      AC_MSG_RESULT(none)
+      AC_MSG_WARN([*** IS-IS support will not be built ***])
+      ISISD=""
+    else
+      AC_MSG_RESULT(DLPI)
+    fi
+    ISIS_METHOD="isis_dlpi.o"
+  else
+    AC_MSG_RESULT(BPF)
+    ISIS_METHOD="isis_bpf.o"
+  fi
+fi
+AC_SUBST(ISIS_METHOD)
 
 dnl ------------------------------------
 dnl check for broken CMSG_FIRSTHDR macro
