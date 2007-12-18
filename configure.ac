@@ -8,7 +8,7 @@
 ## $Id$
 AC_PREREQ(2.53)
 
-AC_INIT(Quagga, 0.99.7, [http://bugzilla.quagga.net])
+AC_INIT(Quagga, 0.99.9, [http://bugzilla.quagga.net])
 AC_CONFIG_SRCDIR(lib/zebra.h)
 
 dnl -----------------------------------
@@ -197,6 +197,8 @@ AC_ARG_ENABLE(watchquagga,
 [  --disable-watchquagga   do not build watchquagga])
 AC_ARG_ENABLE(isisd,
 [  --enable-isisd          build isisd])
+AC_ARG_ENABLE(solaris,
+[  --enable-solaris          build solaris])
 AC_ARG_ENABLE(bgp-announce,
 [  --disable-bgp-announce, turn off BGP route announcement])
 AC_ARG_ENABLE(netlink,
@@ -750,6 +752,35 @@ AC_SUBST(RT_METHOD)
 AC_SUBST(KERNEL_METHOD)
 AC_SUBST(OTHER_METHOD)
 
+dnl --------------------------
+dnl Determine IS-IS I/O method
+dnl --------------------------
+AC_CHECK_HEADER(net/bpf.h)
+AC_CHECK_HEADER(sys/dlpi.h)
+AC_MSG_CHECKING(zebra IS-IS I/O method)
+if test x"$opsys" = x"gnu-linux"; then
+  AC_MSG_RESULT(pfpacket)
+  ISIS_METHOD=isis_pfpacket.o
+elif test x"$opsys" = x"sol2-6" -o x"$opsys" = x"sol8"; then
+  AC_MSG_RESULT(DLPI)
+  ISIS_METHOD="isis_dlpi.o"
+else
+  if test $ac_cv_header_net_bpf_h = no; then
+    if test $ac_cv_header_sys_dlpi_h = no; then
+      AC_MSG_RESULT(none)
+      AC_MSG_WARN([*** IS-IS support will not be built ***])
+      ISISD=""
+    else
+      AC_MSG_RESULT(DLPI)
+    fi
+    ISIS_METHOD="isis_dlpi.o"
+  else
+    AC_MSG_RESULT(BPF)
+    ISIS_METHOD="isis_bpf.o"
+  fi
+fi
+AC_SUBST(ISIS_METHOD)
+
 dnl ------------------------------------
 dnl check for broken CMSG_FIRSTHDR macro
 dnl ------------------------------------
@@ -1131,6 +1162,13 @@ case "${enable_isisd}" in
   *    ) ;;
 esac
 
+# XXX Perhaps auto-enable on Solaris, but that's messy for cross builds.
+case "${enable_solaris}" in
+  "yes") SOLARIS="solaris";;
+  "no" ) SOLARIS="";;
+  *    ) ;;
+esac
+
 if test "${enable_bgp_announce}" = "no";then
   AC_DEFINE(DISABLE_BGP_ANNOUNCE,,Disable BGP installation to zebra)
 fi
@@ -1143,6 +1181,7 @@ AC_SUBST(OSPFD)
 AC_SUBST(OSPF6D)
 AC_SUBST(WATCHQUAGGA)
 AC_SUBST(ISISD)
+AC_SUBST(SOLARIS)
 AC_SUBST(VTYSH)
 AC_SUBST(INCLUDES)
 AC_SUBST(CURSES)

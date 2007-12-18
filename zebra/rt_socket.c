@@ -32,6 +32,7 @@
 #include "zebra/debug.h"
 #include "zebra/rib.h"
 #include "zebra/rt.h"
+#include "zebra/kernel_socket.h"
 
 extern struct zebra_privs_t zserv_privs;
 
@@ -75,7 +76,10 @@ kernel_rtm_ipv4 (int cmd, struct prefix *p, struct rib *rib, int family)
   unsigned int ifindex = 0;
   int gate = 0;
   int error;
+  char prefix_buf[INET_ADDRSTRLEN];
 
+  if (IS_ZEBRA_DEBUG_RIB)
+    inet_ntop (AF_INET, &p->u.prefix, prefix_buf, INET_ADDRSTRLEN);
   memset (&sin_dest, 0, sizeof (struct sockaddr_in));
   sin_dest.sin_family = AF_INET;
 #ifdef HAVE_STRUCT_SOCKADDR_IN_SIN_LEN
@@ -95,13 +99,17 @@ kernel_rtm_ipv4 (int cmd, struct prefix *p, struct rib *rib, int family)
   for (nexthop = rib->nexthop; nexthop; nexthop = nexthop->next)
     {
       gate = 0;
+      char gate_buf[INET_ADDRSTRLEN] = "NULL";
 
+      /*
+       * XXX We need to refrain from kernel operations in some cases,
+       * but this if statement seems overly cautious - what about
+       * other than ADD and DELETE?
+       */
       if ((cmd == RTM_ADD
 	   && CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_ACTIVE))
 	  || (cmd == RTM_DELETE
-#if 0
 	      && CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_FIB)
-#endif
 	      ))
 	{
 	  if (CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_RECURSIVE))
@@ -129,17 +137,14 @@ kernel_rtm_ipv4 (int cmd, struct prefix *p, struct rib *rib, int family)
 		  || nexthop->type == NEXTHOP_TYPE_IFNAME
 		  || nexthop->type == NEXTHOP_TYPE_IPV4_IFINDEX)
 		ifindex = nexthop->ifindex;
-	  if (nexthop->type == NEXTHOP_TYPE_BLACKHOLE)
-      {
-        struct in_addr loopback;
-        loopback.s_addr = htonl (INADDR_LOOPBACK);
-        sin_gate.sin_addr = loopback;
-        gate = 1;
-      }
-	  }
-
-	  if (cmd == RTM_ADD)
-	    SET_FLAG (nexthop->flags, NEXTHOP_FLAG_FIB);
+	      if (nexthop->type == NEXTHOP_TYPE_BLACKHOLE)
+		{
+		  struct in_addr loopback;
+		  loopback.s_addr = htonl (INADDR_LOOPBACK);
+		  sin_gate.sin_addr = loopback;
+		  gate = 1;
+		}
+	    }
 
 	  if (gate && p->prefixlen == 32)
 	    mask = NULL;
@@ -152,34 +157,73 @@ kernel_rtm_ipv4 (int cmd, struct prefix *p, struct rib *rib, int family)
 #endif /* HAVE_STRUCT_SOCKADDR_IN_SIN_LEN */
 	      mask = &sin_mask;
 	    }
-	}
 
-      error = rtm_write (cmd,
-			(union sockunion *)&sin_dest, 
-			(union sockunion *)mask, 
-			gate ? (union sockunion *)&sin_gate : NULL,
-			ifindex,
-			rib->flags,
-			rib->metric);
+	  error = rtm_write (cmd,
+			     (union sockunion *)&sin_dest, 
+			     (union sockunion *)mask, 
+			     gate ? (union sockunion *)&sin_gate : NULL,
+			     ifindex,
+			     rib->flags,
+			     rib->metric);
 
-#if 0
-      if (error)
-	{
-	  zlog_info ("kernel_rtm_ipv4(): nexthop %d add error=%d.",
-	    nexthop_num, error);
-	}
-#endif
-
-      nexthop_num++;
-    }
-
-  /* If there is no useful nexthop then return. */
-  if (nexthop_num == 0)
-    {
-      if (IS_ZEBRA_DEBUG_KERNEL)
-	zlog_debug ("kernel_rtm_ipv4(): No useful nexthop.");
-      return 0;
-    }
+           if (IS_ZEBRA_DEBUG_RIB)
+           {
+             if (!gate)
+             {
+               zlog_debug ("%s: %s/%d: attention! gate not found for rib %p",
+                 __func__, prefix_buf, p->prefixlen, rib);
+               rib_dump (__func__, (struct prefix_ipv4 *)p, rib);
+             }
+             else
+               inet_ntop (AF_INET, &sin_gate.sin_addr, gate_buf, INET_ADDRSTRLEN);
+           }
+ 
+           switch (error)
+           {
+             /* We only flag nexthops as being in FIB if rtm_write() did its work. */
+             case ZEBRA_ERR_NOERROR:
+               nexthop_num++;
+               if (IS_ZEBRA_DEBUG_RIB)
+                 zlog_debug ("%s: %s/%d: successfully did NH %s",
+                   __func__, prefix_buf, p->prefixlen, gate_buf);
+               if (cmd == RTM_ADD)
+                 SET_FLAG (nexthop->flags, NEXTHOP_FLAG_FIB);
+               break;
+ 
+             /* The only valid case for this error is kernel's failure to install
+              * a multipath route, which is common for FreeBSD. This should be
+              * ignored silently, but logged as an error otherwise.
+              */
+             case ZEBRA_ERR_RTEXIST:
+               if (cmd != RTM_ADD)
+                 zlog_err ("%s: rtm_write() returned %d for command %d",
+                   __func__, error, cmd);
+               continue;
+               break;
+ 
+             /* Given that our NEXTHOP_FLAG_FIB matches real kernel FIB, it isn't
+              * normal to get any other messages in ANY case.
+              */
+             case ZEBRA_ERR_RTNOEXIST:
+             case ZEBRA_ERR_RTUNREACH:
+             default:
+               /* This point is reachable regardless of debugging mode. */
+               if (!IS_ZEBRA_DEBUG_RIB)
+                 inet_ntop (AF_INET, &p->u.prefix, prefix_buf, INET_ADDRSTRLEN);
+               zlog_err ("%s: %s/%d: rtm_write() unexpectedly returned %d for command %s",
+                 __func__, prefix_buf, p->prefixlen, error, lookup (rtm_type_str, cmd));
+               break;
+           }
+         } /* if (cmd and flags make sense) */
+       else
+         if (IS_ZEBRA_DEBUG_RIB)
+           zlog_debug ("%s: odd command %s for flags %d",
+             __func__, lookup (rtm_type_str, cmd), nexthop->flags);
+     } /* for (nexthop = ... */
+ 
+   /* If there was no useful nexthop, then complain. */
+   if (nexthop_num == 0 && IS_ZEBRA_DEBUG_KERNEL)
+     zlog_debug ("%s: No useful nexthops were found in RIB entry %p", __func__, rib);
 
   return 0; /*XXX*/
 }

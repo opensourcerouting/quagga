@@ -1,3 +1,103 @@
+2007-11-12 Denis Ovsienko
+
+	* connected.c: (connected_up_ipv4, connected_down_ipv4,
+	  connected_up_ipv6, connected_down_ipv6) Collect all changed
+	  connected routes closest possible to the RIB work queue, so
+	  that the rest can be revalidated correctly.
+
+2007-10-24 Denis Ovsienko
+
+	* kernel_socket.c: (rtm_read) we used to ignore own messages,
+	  but the RIB debug commit broke it for IPv6 case (reported
+	  by Milan Kocian). Fixed.
+
+2007-10-04 Denis Ovsienko
+
+	* zebra_rib.c: (rib_process) escape from the nexthop
+	  iteration cycle earliest possible to save CPU time.
+
+2007-10-03 Denis Ovsienko
+
+	* zebra_rib.c: (rib_process, rib_link, rib_addnode,
+	  rib_unlink, rib_delnode) log IPv6 prefixes same well
+	  as IPv4 ones are logged.
+
+2007-09-14 Denis Ovsienko
+
+	* rt_socket.c: (kernel_rtm_ipv4) Use lookup() instead of
+	  LOOKUP/mes_lookup() for rtm_type_str, as this is more
+	  appropriate for sparse code-spaces (#401).
+	* kernel_socket.c: (rtm_read, rtmsg_debug): Idem.
+	* kernel_socket.[ch]: We don't need rtm_type_str_max any more.
+	* main.c: (main) Don't call rib_sweep_route() before the
+	  pidfile is acquired, this fixes bug #402.
+	* zserv.h: Dropped old_pid, since it's useless now. This
+	  fixes bug #381.
+	* main.c: (main) Idem.
+	* test_main.c: (main) Idem.
+	* kernel_socket.c: (rtm_read) Idem.
+
+2007-09-12 Denis Ovsienko
+
+	* rt_socket.c: (kernel_rtm_ipv4) prefix_buf could be passed
+	  to zlog_err() uninitialized with debug disabled. Fixed.
+
+2007-09-06 Denis Ovsienko
+
+	* rtread_sysctl.c: (route_read) Set RTF_DONE on the routing
+	  messages when fetching initial kernel FIB, so rtm_read()
+	  doesn't skip them.
+
+2007-08-21 Denis Ovsienko
+
+	* ioctl_solaris.c: (if_get_mtu) Don't break things if either
+	  IPv6 was disabled at compile time or the current interface
+	  hasn't it enabled.
+	* kernel_socket.c: (ifm_read) Don't forget to call if_get_mtu()
+	  for updated interfaces.
+
+2007-08-17 Denis Ovsienko
+
+	* kernel_socket.c: (rtm_read) Ignore any routing socket messages
+	  without RTF_DONE flag set, as they are just noise for us.
+
+2007-08-14 Denis Ovsienko
+
+	* zebra_rib.c: (nexthop_active_update) Added a comment
+	  and rewrote nexthop iteration.
+
+2007-08-13 Denis Ovsienko
+
+	* kernel_socket.c: normalize rtm_type_str so it can be handled
+	  by LOOKUP macro
+	* kernel_socket.c: (rtm_read) don't ignore self-generated
+	  routing messages, so we can debug them; make use of
+	  ZEBRA_ERR_RTNOEXIST; output more details in debug log.
+	* kernel_socket.c: (rtmsg_debug) make use of LOOKUP macro
+	* kernel_socket.h: let the world know about rtm_type_str[_max]
+	* rib.h: 3 more debugging functions and 5 return codes
+	* rt_socket.c: (kernel_rtm_ipv4) dump IP prefix and masklen;
+	  complain about strange rtm_write() return values
+	* zebra_rib.c: (rib_lookup_ipv4_route, rib_dump,
+	  rib_lookup_and_dump) --- new functions; more comments;
+	  more debug logging
+
+2007-08-10  Emmanuel Vize <emmanuel.vize@6wind.com>
+
+	* rt_netlink.c: (netlink_interface_addr) Use the appropriate field length for the address
+          (acknowledge Andy's comment).
+
+2007-08-06  Denis Ovsienko
+
+	* zebra_rib.c: (general) Add extra debug logging for RIB and
+	  RIB queue.
+
+2007-08-02  Denis Ovsienko
+
+	* rt_socket.c (kernel_rtm_ipv4): Only call rtm_write when changes
+	are intended.  Don't set FIB flag on failed additions (such as
+	occur with multiple paths.
+
 2007-06-25 Denis Ovsienko
 
 	* zebra_rib.c: (rib_add_ipv4_multipath) Loop through RIB

@@ -1,3 +1,58 @@
+2007-11-12 Denis Ovsienko
+
+	* linklist.c: (listnode_add_after) Don't forget to increment list
+	  items counter.
+	* workqueue.h: Changed working queue flags from enum into integer
+	  and introduced WQ_AIM_HEAD flag to indicate our will to insert
+	  new data before the list head.
+	* workqueue.[ch]: (work_queue_schedule, show_work_queues,
+	  work_queue_plug, work_queue_unplug) Adjust to the new flags style.
+	* workqueue.[ch]: (work_queue_aim_head) new function to control the
+	  WQ_AIM_HEAD flag
+	* workqueue.[ch]: (work_queue_new) Explicitly set both WQ flags
+	  during new WQ initialization.
+	* workqueue.[ch]: (work_queue_add) If WQ_AIM_HEAD indicates a need
+	  to place the new data into list head, do it.
+
+2007-10-22 Lorenzo Colitti <lorenzo@colitti.com>
+
+	* smux.c: (smux_stop) Avoid cancelling a defunct thread pointer
+	  (smux_start) Stop smux before trying to start it, possibly again.
+
+2007-10-04 Denis Ovsienko
+
+	* pid_output.c: (pid_output) stop using LOGFILE_MASK
+	  (0600 by default), introduce and use PIDFILE_MASK (0644)
+	  instead.
+
+2007-09-18  Paul Jakma <paul.jakma@sun.com>
+
+	* privs.c: definition of ZCAP_NET_ADMIN on Solaris should
+	  be PRIV_SYS_IP_CONFIG, when that's available. Thus allowing
+	  Quagga to work with in Solaris zones with exclusive IP
+	  instances.
+
+2007-08-21 Denis Ovsienko
+
+	* sockopt.[ch]: (setsockopt_so_sendbuf, getsockopt_so_sendbuf):
+	  new functions to adjust ospfd working socket.
+
+2007-08-13 Denis Ovsienko
+
+	* zebra.h: introduce ZEBRA_ERR_KERNEL and ZEBRA_ERR_NOERROR
+
+2007-07-06 Atis Elsts <atis@mikrotik.com>
+
+	* pqueue.{c,h}: Export trickle_up
+
+2007-07-26  Paul Jakma <paul.jakma@sun.com>
+
+	* log.c: (mes_lookup) warning about code not being in same-number
+	  array slot should be debug, not warning. E.g. BGP has several
+	  discontigious number spaces, allocating from different parts of a
+	  space is not uncommon (e.g. IANA assigned versus vendor-assigned
+	  code points in some number space).
+	  
 2007-07-06 Andrew J. Schorr <ajschorr@alumni.princeton.edu>
 
 	* sockopt.{c,h}: (setsockopt_multicast_ipv4) Add some comments about

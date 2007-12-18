@@ -6,6 +6,13 @@ $Id$
 # probably on any system using pkgsrc.  
 # One should have readline installed already (pkgsrc/devel/readline).
 
+# Quagga is currently documented not to require GNU make, but sometimes
+# BSD make fails.  Enable this if statement as a workaround.
+if false; then
+    MAKE=gmake
+    echo "WARNING: using gmake to work around nonportable makefiles"
+fi
+
 case $1 in
 
     build)
@@ -25,6 +32,11 @@ case $1 in
 
     clean)
     	make clean
+	;;
+
+    *)
+	echo "Illegal command $1"
+	exit 1
+	;;
 
 esac
-
