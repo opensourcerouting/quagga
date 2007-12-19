@@ -2,7 +2,12 @@
 
 # Import updates from main CVS repo
 
-git-cvsimport -d :pserver:anoncvs@anoncvs.quagga.net:/var/cvsroot -v -p-v -k -u -i -m -o quagga_net quagga
+if ! git branch -l | grep -q upstream ; then
+    git branch upstream origin/upstream
+fi
+
+# verbose args: -v -p-v
+git-cvsimport -d :pserver:anoncvs@anoncvs.quagga.net:/var/cvsroot -k -u -i -m -o upstream quagga
 
 # Annotate tags
 
@@ -14,3 +19,5 @@ while read t ; do
        git tag -a -m 'import cvs tag' $t $r
     fi
 done
+
+echo "Remember to: git push suva:/git/quagga.git upstream"
