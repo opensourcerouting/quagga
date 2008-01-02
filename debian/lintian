@@ -1,0 +1,3 @@
+vyatta-quagga: new-package-should-close-itp-bug
+vyatta-quagga: binary-without-manpage usr/sbin/vyatta-ospfclient
+vyatta-quagga: binary-without-manpage usr/sbin/vyatta-watchquagga

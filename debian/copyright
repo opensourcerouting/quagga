@@ -1,0 +1,39 @@
+This package and repository was debianized for the git-buildpackage
+tool by Tom Grennan <tgrennan@vyatta.com> on Dec 19, 2007. This was
+derived from the debian package by Christian Hammers <ch@debian.org>
+on 2003-07-01.
+
+The source is maintained in the GIT repository:
+    http://suva.vyatta.com/quagga.git
+
+The upstream CVS repository is:
+    :pserver:anoncvs@anoncvs.quagga.net:/var/cvsroot quagga
+
+Upstream Authors: 
+
+    Authors of the original Zebra are 
+        Kunihiro Ishiguro <kunihiro@zebra.org>
+        Toshiaki Takada <takada@zebra.org>
+        Yasuhiro Ohara <yasu@sfc.wide.ad.jp>
+
+    Main patch collector for quagga is 
+        Paul Jakma <paul@jakma.org>
+
+Copyright: 
+
+    Copyright (c) 1996, 97, 98, 99, 2000 Kunihiro Ishiguro <kunihiro@zebra.org>
+    Portions Copyright (c) 2003 Paul Jakma <paul@dishone.st>
+
+License:
+
+ The package libraries are subject to Library General Public License,
+ version 2. The remainder package contents are subject to GNU General
+ Pulic License, version 2.
+
+ Software distributed under the License is distributed on an "AS IS"
+ basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
+ the License for the specific language governing rights and limitations
+ under the License.
+
+On Debian systems, the complete text of these licenses can be found in
+`/usr/share/common-licenses/{GPL-2,LGPL-2}'.

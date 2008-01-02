@@ -1,0 +1,19 @@
+#!/bin/bash
+
+if [ -n "$DEBIAN_SCRIPT_DEBUG" ]; then set -v -x; DEBIAN_SCRIPT_TRACE=1; fi
+${DEBIAN_SCRIPT_TRACE:+ echo "#42#DEBUG# RUNNING $0 $*"}
+# set -e	not because of userdel
+# set -u	not because of debhelper
+
+if [ "$1" = "purge" ]; then
+    for daemon in zebra bgpd ripd ospfd ripngd ospf6d isisd; do
+        rm -f /var/run/vyatta/${daemon}.pid
+	rm -f /var/log/vyatta/${daemon}*
+    done
+    [ -z "`ls /var/run/vyatta 2>/dev/null`" ] && rmdir /var/run/vyatta
+    [ -z "`ls /var/log/vyatta 2>/dev/null`" ] && rmdir /var/log/vyatta
+    rm -f /etc/vyatta/Quagga.conf /etc/vyatta/vtysh.conf
+    userdel quagga >/dev/null 2>&1
+fi
+
+#DEBHELPER#

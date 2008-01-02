@@ -1,0 +1,6 @@
+vyatta-quagga (0.99.9-1) unstable; urgency=low
+
+  * based on upstream/0.99.9 == d68aac0fbecabfb765a42b3c6e5693836dafda99
+
+ -- Tom Grennan <tgrennan@vyatta.com>  Fri, 21 Dec 2007 19:29:50 +0000
+

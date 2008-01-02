@@ -1,0 +1,26 @@
+The Debian Package vyatta-quagga
+----------------------------
+
+This package is the Vyatta build of the Quagga routing protocol
+daemons. The source is maintained in the GIT repository:
+    http://suva.vyatta.com/quagga.git
+
+The upstream CVS repository is:
+    :pserver:anoncvs@anoncvs.quagga.net:/var/cvsroot quagga
+
+To clone the source for this package:
+    git clone http://suva.vyatta.com/quagga.git
+
+To build:
+    git-buildpackage -us -uc
+
+To build from the source package, first add the following to
+/etc/apt/sources.list:
+    deb-src http://archive1.vyatta.com/vyatta community testing
+
+Then:
+    apt-get source vyatta-quagga
+    cd vyatta-quagga-VERSION
+    debuild -nc -b -uc -us
+
+ -- Tom Grennan <tgrennan@vyatta.com>  Wed, 19 DEC 2007
