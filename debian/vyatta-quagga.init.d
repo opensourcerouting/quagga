@@ -20,10 +20,8 @@
 declare progname=${0##*/}
 declare action=$1; shift
 
-pid_dir=/var/run/vyatta
-log_dir=/var/log/vyatta
-daemon_chuid=quagga:quagga
-daemon_group=quagga
+pid_dir=/var/run/vyatta/quagga
+log_dir=/var/log/vyatta/quagga
 
 for dir in $pid_dir $log_dir ; do
     if [ ! -d $dir ]; then
@@ -33,13 +31,14 @@ for dir in $pid_dir $log_dir ; do
     fi
 done
 
-declare -a zebra_args=( -d -A 127.0.0.1  -f /dev/null -i $pid_dir/zebra.pid )
-declare -a ripd_args=( -d -A 127.0.0.1 -f /dev/null -i $pid_dir/ripd.pid )
-declare -a ripngd_args=( -d -A 127.0.0.1 -f /dev/null -i $pid_dir/ripngd.pid )
-declare -a ospfd_args=( -d -A 127.0.0.1 -f /dev/null -i $pid_dir/ospfd.pid )
-declare -a ospf6d_args=( -d -A 127.0.0.1 -f /dev/null -i $pid_dir/ospf6d.pid )
-declare -a isisd_args=( -d -A 127.0.0.1 -f /dev/null -i $pid_dir/isisd.pid )
-declare -a bgpd_args=( -d -A 127.0.0.1 -f /dev/null -i $pid_dir/bgpd.pid )
+declare -a common_args=( -d -P 0 -f /dev/null )
+declare -a zebra_args=( ${common_args[@]} -l -i $pid_dir/zebra.pid )
+declare -a ripd_args=( ${common_args[@]} -i $pid_dir/ripd.pid )
+declare -a ripngd_args=( ${common_args[@]} -i $pid_dir/ripngd.pid )
+declare -a ospfd_args=( ${common_args[@]} -i $pid_dir/ospfd.pid )
+declare -a ospf6d_args=( ${common_args[@]} -i $pid_dir/ospf6d.pid )
+declare -a isisd_args=( ${common_args[@]} -i $pid_dir/isisd.pid )
+declare -a bgpd_args=( ${common_args[@]} -i $pid_dir/bgpd.pid )
 
 vyatta_quagga_start ()
 {
@@ -47,32 +46,30 @@ vyatta_quagga_start ()
     if [ $# -gt 0 ] ; then
 	daemons=( $* )
     else
-	daemons+==( zebra )
+	daemons+=( zebra )
 	daemons+=( ripd )
 #	daemons+=( ripngd )
 	daemons+=( ospfd )
 #	daemons+=( ospf6d )
 #	daemons+=( isisd )
-	daemons+=(  bgpd )
+	daemons+=( bgpd )
     fi
 
-    log_daemon_msg "Starting Quagga Daemons"
+    log_action_begin_msg "Starting Quagga"
     for daemon in ${daemons[@]} ; do
-	log_progress_msg ${daemon}
+	[ "$daemon" != zebra ] && \
+	    log_action_cont_msg "$daemon"
 	start-stop-daemon \
 	    --start \
 	    --quiet \
 	    --oknodo \
-	    --exec "/usr/sbin/vyatta-${daemon}" \
 	    --pidfile=$pid_dir/${daemon}.pid \
 	    --chdir $log_dir \
-	    --chuid $daemon_chuid \
-	    --group $daemon_group \
-	    -- /usr/sbin/vyatta-${daemon} \
-		`eval echo "$""{${daemon}_args[@]}"` || \
-	    ( log_end_msg $? && return )
+	    --exec "/usr/sbin/vyatta-${daemon}" \
+	    -- `eval echo "$""{${daemon}_args[@]}"` || \
+	    ( log_action_end_msg 1 ; return 1 )
     done
-    log_end_msg $?
+    log_action_end_msg 0
 }
 
 vyatta_quagga_stop ()
@@ -84,7 +81,7 @@ vyatta_quagga_stop ()
     else
 	daemons=( bgpd isisd ospf6d ospfd ripngd ripd zebra )
     fi
-    log_daemon_msg "Stopping Quagga Daemons"
+    log_action_begin_msg "Stopping Quagga"
     for daemon in ${daemons[@]} ; do
 	pidfile=$pid_dir/${daemon}.pid
 	if [ -r $pidfile ] ; then
@@ -93,7 +90,8 @@ vyatta_quagga_stop ()
 	    pid=`ps -o pid= -C vyatta-${daemon}`
 	fi
 	if [ -n "$pid" ] ; then
-	    log_progress_msg ${daemon}
+	    [ "$daemon" != zebra ] && \
+		log_action_cont_msg "$daemon"
 	    start-stop-daemon \
 		--stop \
 		--quiet \
@@ -113,9 +111,9 @@ vyatta_quagga_stop ()
 	    rm -f $pidfile
 	fi
     done
-    log_end_msg $?
+    log_action_end_msg $?
     if echo ${daemons[@]} | grep -q zebra ; then
-	log_daemon_msg "Removing all Quagga Routes"
+	log_begin_msg "Removing all Quagga Routes"
 	ip route flush proto zebra
 	log_end_msg $?
     fi
@@ -125,8 +123,13 @@ case "$action" in
     start)
 	# Try to load this necessary (at least for 2.6) module.
 	if [ -d /lib/modules/`uname -r` ] ; then
-	    echo "Loading capability module if not yet done."
-	    set +e; LC_ALL=C modprobe -a capability 2>&1 | egrep -v "(not found|Can't locate)"; set -e
+	    log_begin_msg "Loading capability module if not yet done"
+	    set +e; \
+		LC_ALL=C \
+		modprobe -a capability 2>&1 | \
+		egrep -v "(not found|Can't locate)"; \
+		set -e
+	    log_end_msg 0
 	fi
 	vyatta_quagga_start $*
     	;;

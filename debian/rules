@@ -37,6 +37,8 @@ configure	+= --build=$(DEB_BUILD_GNU_TYPE)
 configure	+= --prefix=/usr
 configure	+= --program-prefix=vyatta-
 configure	+= --libdir=/usr/lib/$(PACKAGE)
+configure	+= --localstatedir=/var/run/vyatta/quagga
+configure	+= --sysconfdir=/etc/vyatta/quagga
 configure	+= --mandir=/usr/share/man
 configure	+= --includedir=/usr/include/vyatta
 configure	+= --infodir=/usr/share/info/$(PACKAGE)
@@ -59,6 +61,7 @@ configure	+= --enable-rtadv
 configure	+= --enable-tcp-md5
 configure	+= --enable-gcc-rdynamic
 configure	+= $(xable_snmp)
+configure	+= --with-libpam
 configure	+= CFLAGS="$(CFLAGS)"
 # configure	+= LDFLAGS="-Wl,-z,defs"
 
