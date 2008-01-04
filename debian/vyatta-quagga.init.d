@@ -31,7 +31,7 @@ for dir in $pid_dir $log_dir ; do
     fi
 done
 
-declare -a common_args=( -d -P 0 -f /dev/null )
+declare -a common_args=( -d -P 0 )
 declare -a zebra_args=( ${common_args[@]} -l -i $pid_dir/zebra.pid )
 declare -a ripd_args=( ${common_args[@]} -i $pid_dir/ripd.pid )
 declare -a ripngd_args=( ${common_args[@]} -i $pid_dir/ripngd.pid )
