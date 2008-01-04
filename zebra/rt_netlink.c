@@ -103,7 +103,7 @@ set_ifindex(struct interface *ifp, unsigned int ifi_index)
 	  if (IS_ZEBRA_DEBUG_KERNEL)
 	    zlog_debug("interface index %d was renamed from %s to %s",
 	    	       ifi_index, oifp->name, ifp->name);
-	  if (if_is_up(oifp))
+	  if (if_is_operative(oifp))
 	    zlog_err("interface rename detected on up interface: index %d "
 		     "was renamed from %s to %s, results are uncertain!", 
 	    	     ifi_index, oifp->name, ifp->name);
@@ -1046,9 +1046,10 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
             }
         }
     }
+  /*
   else
     {
-      /* RTM_DELLINK. */
+    // RTM_DELLINK. 
       ifp = if_lookup_by_name (name);
 
       if (ifp == NULL)
@@ -1060,7 +1061,7 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 
       if_delete_update (ifp);
     }
-
+  */
   return 0;
 }
 
