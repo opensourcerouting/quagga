@@ -1,1 +1,0 @@
-shlibs:Depends=libreadline5 (>= 5.2), vyatta-quagga, libncurses5 (>= 5.6+20071006-3), libc6 (>= 2.7-1)

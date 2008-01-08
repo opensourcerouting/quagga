@@ -19,6 +19,7 @@ config.sub
 configure
 debian/build-stamp
 debian/vyatta-quagga
+debian/vyatta-quagga.substvars
 depcomp
 doc/defines.texi
 doc/mdate-sh
