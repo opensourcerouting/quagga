@@ -274,7 +274,7 @@ if_addr_wakeup (struct interface *ifp)
 	  /* Address check. */
 	  if (p->family == AF_INET)
 	    {
-	      if (! if_is_up (ifp))
+	      if (! if_is_operative (ifp))
 		{
 		  /* XXX: WTF is it trying to set flags here?
 		   * caller has just gotten a new interface, has been
@@ -311,7 +311,7 @@ if_addr_wakeup (struct interface *ifp)
 #ifdef HAVE_IPV6
 	  if (p->family == AF_INET6)
 	    {
-	      if (! if_is_up (ifp))
+	      if (! if_is_operative (ifp))
 		{
 		  /* XXX: See long comment above */
 		  if_set_flags (ifp, IFF_UP | IFF_RUNNING);
@@ -379,7 +379,7 @@ if_delete_update (struct interface *ifp)
 
   zebra_if = ifp->info;
 
-  if (if_is_up(ifp))
+  if (if_is_operative(ifp))
     {
       zlog_err ("interface %s index %d is still up while being deleted.",
 	    ifp->name, ifp->ifindex);
@@ -1205,7 +1205,7 @@ ip_address_install (struct vty *vty, struct interface *ifp,
       && CHECK_FLAG (ifp->status, ZEBRA_INTERFACE_ACTIVE))
     {
       /* Some system need to up the interface to set IP address. */
-      if (! if_is_up (ifp))
+      if (! if_is_operative (ifp))
 	{
 	  if_set_flags (ifp, IFF_UP | IFF_RUNNING);
 	  if_refresh (ifp);
@@ -1398,7 +1398,7 @@ ipv6_address_install (struct vty *vty, struct interface *ifp,
       && CHECK_FLAG (ifp->status, ZEBRA_INTERFACE_ACTIVE))
     {
       /* Some system need to up the interface to set IP address. */
-      if (! if_is_up (ifp))
+      if (! if_is_operative (ifp))
 	{
 	  if_set_flags (ifp, IFF_UP | IFF_RUNNING);
 	  if_refresh (ifp);
