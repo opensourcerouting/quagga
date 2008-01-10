@@ -124,7 +124,13 @@ if test "x${cflags_specified}" = "x" ; then
   	CFLAGS="${CFLAGS} -Wbad-function-cast -Wwrite-strings"
   	CFLAGS="${CFLAGS} -Wmissing-prototypes -Wmissing-declarations"
   	CFLAGS="${CFLAGS} -Wchar-subscripts -Wcast-qual"
-  	# TODO: conditionally addd -Wpacked if handled
+ 
+  	CXXFLAGS="-Os -fno-omit-frame-pointer -g -std=gnu99 -Wall"
+  	CXXFLAGS="${CFLAGS} -Wsign-compare -Wpointer-arith"
+  	CXXFLAGS="${CFLAGS} -Wbad-function-cast -Wwrite-strings"
+  	CXXFLAGS="${CFLAGS} -Wmissing-prototypes -Wmissing-declarations"
+  	CXXFLAGS="${CFLAGS} -Wchar-subscripts -Wcast-qual"
+ 	# TODO: conditionally addd -Wpacked if handled
   	AC_MSG_RESULT([gcc default])
   	;;
     "SUNPRO")
@@ -195,6 +201,8 @@ AC_ARG_ENABLE(ospf6d,
 [  --disable-ospf6d        do not build ospf6d])
 AC_ARG_ENABLE(watchquagga,
 [  --disable-watchquagga   do not build watchquagga])
+AC_ARG_ENABLE(watchlink,
+[  --disable-watchlink   do not build watchlink])
 AC_ARG_ENABLE(isisd,
 [  --enable-isisd          build isisd])
 AC_ARG_ENABLE(solaris,
@@ -1132,6 +1140,12 @@ else
   WATCHQUAGGA="watchquagga"
 fi
 
+if test "${enable_watchlink}" = "no";then
+  WATCHLINK=""
+else
+  WATCHLINK="watchlink"
+fi
+
 OSPFCLIENT=""
 if test "${enable_opaque_lsa}" = "yes"; then
   if test "${enable_ospfapi}" != "no";then
@@ -1180,6 +1194,7 @@ AC_SUBST(RIPNGD)
 AC_SUBST(OSPFD)
 AC_SUBST(OSPF6D)
 AC_SUBST(WATCHQUAGGA)
+AC_SUBST(WATCHLINK)
 AC_SUBST(ISISD)
 AC_SUBST(SOLARIS)
 AC_SUBST(VTYSH)
@@ -1395,6 +1410,7 @@ AC_DEFINE_UNQUOTED(PATH_OSPFD_PID, "$quagga_statedir/ospfd.pid",ospfd PID)
 AC_DEFINE_UNQUOTED(PATH_OSPF6D_PID, "$quagga_statedir/ospf6d.pid",ospf6d PID)
 AC_DEFINE_UNQUOTED(PATH_ISISD_PID, "$quagga_statedir/isisd.pid",isisd PID)
 AC_DEFINE_UNQUOTED(PATH_WATCHQUAGGA_PID, "$quagga_statedir/watchquagga.pid",watchquagga PID)
+AC_DEFINE_UNQUOTED(PATH_WATCHLINK_PID, "$quagga_statedir/watchlink.pid",watchlink PID)
 AC_DEFINE_UNQUOTED(ZEBRA_SERV_PATH, "$quagga_statedir/zserv.api",zebra api socket)
 AC_DEFINE_UNQUOTED(ZEBRA_VTYSH_PATH, "$quagga_statedir/zebra.vty",zebra vty socket)
 AC_DEFINE_UNQUOTED(RIP_VTYSH_PATH, "$quagga_statedir/ripd.vty",rip vty socket)
@@ -1428,6 +1444,7 @@ AC_CONFIG_FILES([Makefile lib/Makefile zebra/Makefile ripd/Makefile
 	  ripngd/Makefile bgpd/Makefile ospfd/Makefile watchquagga/Makefile
 	  ospf6d/Makefile isisd/Makefile vtysh/Makefile doc/Makefile 
 	  ospfclient/Makefile tests/Makefile m4/Makefile redhat/Makefile
+	  watchlink/Makefile
 	  pkgsrc/Makefile
 	  redhat/quagga.spec 
 	  lib/version.h
