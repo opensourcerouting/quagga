@@ -125,10 +125,9 @@ if test "x${cflags_specified}" = "x" ; then
   	CFLAGS="${CFLAGS} -Wmissing-prototypes -Wmissing-declarations"
   	CFLAGS="${CFLAGS} -Wchar-subscripts -Wcast-qual"
  
-  	CXXFLAGS="-Os -fno-omit-frame-pointer -g -std=gnu99 -Wall"
+  	CXXFLAGS="-Os -fno-omit-frame-pointer -g -Wall"
   	CXXFLAGS="${CFLAGS} -Wsign-compare -Wpointer-arith"
-  	CXXFLAGS="${CFLAGS} -Wbad-function-cast -Wwrite-strings"
-  	CXXFLAGS="${CFLAGS} -Wmissing-prototypes -Wmissing-declarations"
+  	CXXFLAGS="${CFLAGS} -Wwrite-strings"
   	CXXFLAGS="${CFLAGS} -Wchar-subscripts -Wcast-qual"
  	# TODO: conditionally addd -Wpacked if handled
   	AC_MSG_RESULT([gcc default])

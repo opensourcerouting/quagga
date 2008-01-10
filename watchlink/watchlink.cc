@@ -1,6 +1,10 @@
+#include <unistd.h>
 #include <iostream>
 #include <stdio.h>
 #include <string>
+#include <fcntl.h>
+#include <syslog.h>
+#include <errno.h>
 
 #include <linux/types.h>
 #include <sys/socket.h>
@@ -16,6 +20,7 @@ using namespace std;
 void print_netlink(NetlinkEvent &nl_event);
 void process_down(NetlinkEvent &nl_event, const string &link_dir, bool debug);
 void process_up(NetlinkEvent &nl_event, const string &link_dir, bool debug);
+pid_t pid_output (const char *path);
 
 struct option longopts[] = 
 {
@@ -32,8 +37,10 @@ usage()
 {
   fprintf(stdout, "-s   start with sending netlink request\n");
   fprintf(stdout, "-l   specify directory for link status. default /var/linkstatus\n");
+  fprintf(stdout, "-i   specify location of pid directory\n");
   fprintf(stdout, "-p   print netlink messages\n");
-  fprintf(stdout, "-d   debug to stdout\n");
+  fprintf(stdout, "-d   run as a daemon\n");
+  fprintf(stdout, "-v   debug to stdout\n");
   fprintf(stdout, "-h   help message\n");
 }
 
@@ -48,11 +55,13 @@ main(int argc, char* const argv[])
   string link_dir = "/var/linkstatus";
   bool send_request = false;
   bool debug = false;
+  bool daemon = false;
+  string pid_path;
   bool print_nl_msg = false;
   
   cout << "starting..." << endl;
   
-  while ((ch = getopt_long(argc, argv, "sl:dhp",longopts,0)) != -1) {
+  while ((ch = getopt_long(argc, argv, "sl:i:dvhp",longopts,0)) != -1) {
     switch (ch) {
     case 's':
       send_request = true;
@@ -60,7 +69,13 @@ main(int argc, char* const argv[])
     case 'l':
       link_dir = optarg;
       break;
+    case 'i':
+      pid_path = optarg;
+      break;
     case 'd':
+      daemon = true;
+      break;
+    case 'v':
       debug = true;
       break;
     case 'p':
@@ -77,11 +92,20 @@ main(int argc, char* const argv[])
 
   //add check here to ensure only one watchlink process
 
+  if (daemon) {
+    if (fork() != 0) {
+      exit(0);
+    }
+  }
+
+  if (pid_path.empty() == false) {
+    pid_output(pid_path.c_str());
+  }
 
 
   int sock = nl_listener.init();
   if (sock <= 0) {
-    cerr << "test_netlink(), bad voodoo. exiting.." << endl;
+    cerr << "watchlink(), bad voodoo. exiting.." << endl;
     exit(1);
   }
 
@@ -166,3 +190,29 @@ print_netlink(NetlinkEvent &nl_event)
 
 }
 
+#define PIDFILE_MASK 0644
+pid_t
+pid_output (const char *path)
+{
+  FILE *fp;
+  pid_t pid;
+  mode_t oldumask;
+
+  pid = getpid();
+
+  oldumask = umask(0777 & ~PIDFILE_MASK);
+  fp = fopen (path, "w");
+  if (fp != NULL) 
+    {
+      fprintf (fp, "%d\n", (int) pid);
+      fclose (fp);
+      umask(oldumask);
+      return pid;
+    }
+  /* XXX Why do we continue instead of exiting?  This seems incompatible
+     with the behavior of the fcntl version below. */
+  syslog(LOG_ERR,"Can't fopen pid lock file %s, continuing",
+            path);
+  umask(oldumask);
+  return -1;
+}
