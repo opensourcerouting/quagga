@@ -32,6 +32,7 @@ for dir in $pid_dir $log_dir ; do
 done
 
 declare -a common_args=( -d -P 0 )
+declare -a watchlink_args=( -s -d -i $pid_dir/watchlink.pid )
 declare -a zebra_args=( ${common_args[@]} -l -i $pid_dir/zebra.pid )
 declare -a ripd_args=( ${common_args[@]} -i $pid_dir/ripd.pid )
 declare -a ripngd_args=( ${common_args[@]} -i $pid_dir/ripngd.pid )
@@ -46,6 +47,7 @@ vyatta_quagga_start ()
     if [ $# -gt 0 ] ; then
 	daemons=( $* )
     else
+	daemons+=( watchlink )
 	daemons+=( zebra )
 	daemons+=( ripd )
 #	daemons+=( ripngd )
@@ -79,7 +81,7 @@ vyatta_quagga_stop ()
     if [ $# -gt 0 ] ; then
 	daemons=( $* )
     else
-	daemons=( bgpd isisd ospf6d ospfd ripngd ripd zebra )
+	daemons=( watchlink bgpd isisd ospf6d ospfd ripngd ripd zebra )
     fi
     log_action_begin_msg "Stopping Quagga"
     for daemon in ${daemons[@]} ; do
