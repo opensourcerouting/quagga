@@ -11,6 +11,7 @@ RUN_DIR=/var/run/vyatta/quagga
 RUN_PDIR=${RUN_DIR%/*}
 ETC_DIR=/etc/vyatta/quagga
 ETC_PDIR=${ETC_DIR%/*}
+WATCHLINK_DIR=/var/linkstatus
 
 # creating quaggavty group if it isn't already there
 if ! getent group quaggavty >/dev/null; then
@@ -35,6 +36,9 @@ fi
 
 # Do not change permissions when upgrading as it would violate policy.
 if [ "$1" = "install" ]; then
+  # Install linkstatus directory
+    mkdir -p $WATCHLINK_DIR
+
   # Logfiles are group readable in case users were put into the quagga group.
     mkdir -p $LOG_PDIR
     chmod 0755 $LOG_PDIR
