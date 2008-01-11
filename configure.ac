@@ -5,7 +5,7 @@
 ##  Copyright (c) 1996, 97, 98, 99, 2000 Kunihiro Ishiguro <kunihiro@zebra.org>
 ##  Portions Copyright (c) 2003 Paul Jakma <paul@dishone.st>
 ##
-## $Id: configure.ac,v 1.140 2008/01/10 15:24:32 ajs Exp $
+## $Id: configure.ac,v 1.141 2008/01/11 16:33:59 ajs Exp $
 AC_PREREQ(2.53)
 
 AC_INIT(Quagga, 0.99.9, [http://bugzilla.quagga.net])
@@ -893,9 +893,18 @@ AC_MSG_RESULT(no))
 dnl ---------------------------------------------------------------
 dnl figure out how to check link-state
 dnl ---------------------------------------------------------------
-AC_CHECK_HEADER([net/if_media.h],
-  [AC_DEFINE(HAVE_BSD_LINK_DETECT,,[BSD link-detect])],
-  [], QUAGGA_INCLUDES)
+AC_CHECK_HEADER([net/if.h],
+  [AC_CHECK_HEADER( [net/if_media.h],
+    [m4_define([LINK_DETECT_INCLUDES],
+      QUAGGA_INCLUDES
+      [#include <net/if_media.h>
+    ])
+    AC_CHECK_MEMBERS( [struct ifmediareq.ifm_status],
+      AC_DEFINE(HAVE_BSD_LINK_DETECT,,[BSD link-detect]),
+      [], LINK_DETECT_INCLUDES)], 
+    [],
+    QUAGGA_INCLUDES)], 
+  [], QUAGGA_INCLUDES )
 
 dnl -----------------------
 dnl check proc file system.
