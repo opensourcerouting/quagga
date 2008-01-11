@@ -1,9 +1,37 @@
+/*
+ * Module: netlink_send.cc
+ *
+ * **** License ****
+ * Version: VPL 1.0
+ *
+ * The contents of this file are subject to the Vyatta Public License
+ * Version 1.0 ("License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ * http://www.vyatta.com/vpl
+ *
+ * Software distributed under the License is distributed on an "AS IS"
+ * basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
+ * the License for the specific language governing rights and limitations
+ * under the License.
+ *
+ * This code was originally developed by Vyatta, Inc.
+ * Portions created by Vyatta are Copyright (C) 2008 Vyatta, Inc.
+ * All Rights Reserved.
+ *
+ * Author: Michael Larson
+ * Date: 2008
+ * Description:
+ *
+ * **** End License ****
+ *
+ */
 #include <errno.h>
 #include <arpa/inet.h>
 #include <linux/types.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <linux/rtnetlink.h>
+#include <syslog.h>
 
 #include <vector>
 #include <string>
@@ -47,6 +75,7 @@ NetlinkSend::send_set(int sock, int ifindex, uint32_t addr, int mask_len, int ty
 
   /* Check netlink socket. */
   if (sock < 0) {
+    syslog(LOG_ERR,"sock is not active, exiting");
     cerr << "sock is not active, exiting" << endl;
     return -1;
   }
@@ -78,6 +107,7 @@ NetlinkSend::send_set(int sock, int ifindex, uint32_t addr, int mask_len, int ty
   ret = sendto (sock, (void*) &req, sizeof req, 0, 
 		(struct sockaddr*) &snl, sizeof snl);
   if (ret < 0) {
+    syslog(LOG_ERR,"netlink_send failed on send: %d, %d",ret,errno);
     cerr << "netlink_send failed on send: " << ret << ", " << errno << endl;
     return -1;
   }
@@ -101,6 +131,7 @@ NetlinkSend::send_get(int sock, int type, int ifindex)
 
   /* Check netlink socket. */
   if (sock < 0) {
+    syslog(LOG_ERR,"sock is not active, exiting");
     cerr << "sock is not active, exiting" << endl;
     return -1;
   }
@@ -131,6 +162,7 @@ NetlinkSend::send_get(int sock, int type, int ifindex)
   ret = sendto (sock, (void*) &req, sizeof req, 0, 
 		(struct sockaddr*) &snl, sizeof snl);
   if (ret < 0) {
+    syslog(LOG_ERR,"netlink_send failed on send: %d, %d",ret,errno);
     cerr << "netlink_send failed on send: " << ret << ", " << errno << endl;
     return -1;
   }

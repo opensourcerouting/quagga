@@ -1,8 +1,36 @@
+/*
+ * Module: netlink_listener.cc
+ *
+ * **** License ****
+ * Version: VPL 1.0
+ *
+ * The contents of this file are subject to the Vyatta Public License
+ * Version 1.0 ("License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ * http://www.vyatta.com/vpl
+ *
+ * Software distributed under the License is distributed on an "AS IS"
+ * basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
+ * the License for the specific language governing rights and limitations
+ * under the License.
+ *
+ * This code was originally developed by Vyatta, Inc.
+ * Portions created by Vyatta are Copyright (C) 2008 Vyatta, Inc.
+ * All Rights Reserved.
+ *
+ * Author: Michael Larson
+ * Date: 2008
+ * Description:
+ *
+ * **** End License ****
+ *
+ */
 #include <errno.h>
 #include <linux/types.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <linux/rtnetlink.h>
+#include <syslog.h>
 
 #include <vector>
 #include <string>
@@ -50,12 +78,14 @@ NetlinkListener::init()
   socklen_t		snl_len;
   
   if (_fd >= 0) {
+    syslog(LOG_ERR,"socket cannot be initialized");
     cerr << "socket cannot be initialized" << endl;
     return _fd;
   }
   
   _fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
   if (_fd < 0) {
+    syslog(LOG_ERR,"Could not open netlink socket: %s",strerror(errno));
     cerr << string("Could not open netlink socket: ") <<  strerror(errno) << endl;
     return _fd;
   }
@@ -67,6 +97,7 @@ NetlinkListener::init()
   snl.nl_pid    = getpid();		// Let the kernel assign the pid to the socket
   snl.nl_groups = RTMGRP_LINK | RTMGRP_IPV4_IFADDR;//_nl_groups;
   if (bind(_fd, reinterpret_cast<struct sockaddr*>(&snl), sizeof(snl)) < 0) {
+    syslog(LOG_ERR,"bind(AF_NETLINK) failed: ",strerror(errno));
     cerr << string("bind(AF_NETLINK) failed: ") << strerror(errno) << endl;
     close(_fd);
     _fd = -1;
@@ -75,18 +106,21 @@ NetlinkListener::init()
   
   snl_len = sizeof(snl);
   if (getsockname(_fd, reinterpret_cast<struct sockaddr*>(&snl), &snl_len) < 0) {
+    syslog(LOG_ERR,"getsockname(AF_NETLINK) failed: ",strerror(errno));
     cerr << string("getsockname(AF_NETLINK) failed: ") << strerror(errno) << endl;
     close(_fd);
     _fd = -1;
     return _fd;
   }
   if (snl_len != sizeof(snl)) {
+    syslog(LOG_ERR,"Wrong address length of AF_NETLINK socket: ");
     cerr << string("Wrong address length of AF_NETLINK socket: ") << endl;
     close(_fd);
     _fd = -1;
     return _fd;
   }
   if (snl.nl_family != AF_NETLINK) {
+    syslog(LOG_ERR,"wrong address family of AF_NETLINK socket: ");;
     cerr << string("Wrong address family of AF_NETLINK socket: ") << endl;
     close(_fd);
     _fd = -1;
@@ -140,6 +174,7 @@ NetlinkListener::process(NetlinkEvent &e)
     off += got;
     
     if ((off - last_mh_off) < (ssize_t)sizeof(struct nlmsghdr)) {
+      syslog(LOG_ERR,"Netlink socket recvfrom failed: message truncated: ");
       cerr << string("Netlink socket recvfrom failed: message truncated: ") << endl;
       break;
     }
@@ -211,6 +246,7 @@ NetlinkListener::comm_sock_set_rcvbuf(int sock, int desired_bufsize, int min_buf
 	    }
 	}
 	if (desired_bufsize < min_bufsize) {
+	  syslog(LOG_ERR,"Cannot set receiving buffer size of socket");
 	  cerr << "Cannot set receiving buffer size of socket" << endl;
 	  return -1;
 	}

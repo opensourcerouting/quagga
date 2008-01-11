@@ -1,3 +1,30 @@
+/*
+ * Module: watchlink.cc
+ *
+ * **** License ****
+ * Version: VPL 1.0
+ *
+ * The contents of this file are subject to the Vyatta Public License
+ * Version 1.0 ("License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ * http://www.vyatta.com/vpl
+ *
+ * Software distributed under the License is distributed on an "AS IS"
+ * basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
+ * the License for the specific language governing rights and limitations
+ * under the License.
+ *
+ * This code was originally developed by Vyatta, Inc.
+ * Portions created by Vyatta are Copyright (C) 2008 Vyatta, Inc.
+ * All Rights Reserved.
+ *
+ * Author: Michael Larson
+ * Date: 2008
+ * Description:
+ *
+ * **** End License ****
+ *
+ */
 #include <unistd.h>
 #include <iostream>
 #include <stdio.h>
@@ -18,8 +45,6 @@ using namespace std;
 
 
 void print_netlink(NetlinkEvent &nl_event);
-void process_down(NetlinkEvent &nl_event, const string &link_dir, bool debug);
-void process_up(NetlinkEvent &nl_event, const string &link_dir, bool debug);
 pid_t pid_output (const char *path);
 
 struct option longopts[] = 
@@ -58,9 +83,11 @@ main(int argc, char* const argv[])
   bool daemon = false;
   string pid_path;
   bool print_nl_msg = false;
-  
-  cout << "starting..." << endl;
-  
+
+  if (debug) {
+    cout << "starting..." << endl;
+  }
+
   while ((ch = getopt_long(argc, argv, "sl:i:dvhp",longopts,0)) != -1) {
     switch (ch) {
     case 's':
@@ -105,15 +132,19 @@ main(int argc, char* const argv[])
 
   int sock = nl_listener.init();
   if (sock <= 0) {
-    cerr << "watchlink(), bad voodoo. exiting.." << endl;
+    syslog(LOG_ERR, "watchlink(), netlink listener failed in initialization. exiting..");
+    cerr << "watchlink(), netlink listener failed in initialization. exiting.." << endl;
     exit(1);
   }
 
   if (send_request) {
-    cout << "sending initial netlink request" << endl;
+    if (debug) {
+      cout << "sending initial netlink request" << endl;
+    }
     nl_listener.set_multipart(true);
     if (nl_send.send_get(sock, RTM_GETLINK) != 0) {
-      cerr << "test_netlink(), error sending" << endl;
+      syslog(LOG_ERR,"watchlink(), error sending, exiting..");
+      cerr << "watchlink(), error sending. exiting.." << endl;
       exit(1);
     }
   }
@@ -121,13 +152,14 @@ main(int argc, char* const argv[])
   NetlinkLinkStatus nl_ls(sock, link_dir, debug);
 
   while (true) {
-    //    cout << "test_netlink: now entering listening mode: " << endl;
+    //    cout << "watchlink: now entering listening mode: " << endl;
 
     NetlinkEvent nl_event;
     if (nl_listener.process(nl_event) == true) {
       if (send_request) {
 	if (nl_send.send_get(sock, RTM_GETADDR) != 0) {
-	  cerr << "test_netlink(), error sending" << endl;
+	  syslog(LOG_ERR,"watchlink(), error sending. exiting..");
+	  cerr << "watchlink(), error sending. exiting.." << endl;
 	  exit(1);
 	}
 	send_request = false;
@@ -190,6 +222,10 @@ print_netlink(NetlinkEvent &nl_event)
 
 }
 
+/**
+ *
+ *below borrowed from quagga library.
+ **/
 #define PIDFILE_MASK 0644
 pid_t
 pid_output (const char *path)

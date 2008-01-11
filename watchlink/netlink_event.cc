@@ -1,3 +1,30 @@
+/*
+ * Module: netlink_event.cc
+ *
+ * **** License ****
+ * Version: VPL 1.0
+ *
+ * The contents of this file are subject to the Vyatta Public License
+ * Version 1.0 ("License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ * http://www.vyatta.com/vpl
+ *
+ * Software distributed under the License is distributed on an "AS IS"
+ * basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
+ * the License for the specific language governing rights and limitations
+ * under the License.
+ *
+ * This code was originally developed by Vyatta, Inc.
+ * Portions created by Vyatta are Copyright (C) 2008 Vyatta, Inc.
+ * All Rights Reserved.
+ *
+ * Author: Michael Larson
+ * Date: 2008
+ * Description:
+ *
+ * **** End License ****
+ *
+ */
 #include <linux/types.h>
 #include <sys/socket.h>
 #include <linux/rtnetlink.h>
@@ -216,19 +243,20 @@ NetlinkEventManager::parse_msg(const struct nlmsghdr *nlHdr)
     }
     break;
   case NLMSG_ERROR: {
-      cerr << "netlink message of type ERROR received: " ;
-      struct nlmsgerr *err = (struct nlmsgerr*) NLMSG_DATA(nlHdr);
-      cerr << string(strerror(-err->error)) << endl;
-    }
+    struct nlmsgerr *err = (struct nlmsgerr*) NLMSG_DATA(nlHdr);
+    syslog(LOG_ERR,"netlink message of type ERROR received: %s",strerror(-err->error));
+    cerr << "netlink message of type ERROR received: " ;
+    cerr << string(strerror(-err->error)) << endl;
+  }
     break;
   case NLMSG_DONE:
-      cerr << "netlink message of type DONE received" << endl;
+    cerr << "netlink message of type DONE received" << endl;
     break;
   case NLMSG_NOOP:
-      cerr << "netlink message of type NOOP received" << endl;
+    cerr << "netlink message of type NOOP received" << endl;
     break;
   default:
-      cerr << "unknown netlink message type received" << endl;
+    cerr << "unknown netlink message type received" << endl;
     break;
   }
 }

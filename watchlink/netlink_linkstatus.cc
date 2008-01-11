@@ -1,7 +1,35 @@
+/*
+ * Module: netlink_linkstatus.cc
+ *
+ * **** License ****
+ * Version: VPL 1.0
+ *
+ * The contents of this file are subject to the Vyatta Public License
+ * Version 1.0 ("License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ * http://www.vyatta.com/vpl
+ *
+ * Software distributed under the License is distributed on an "AS IS"
+ * basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
+ * the License for the specific language governing rights and limitations
+ * under the License.
+ *
+ * This code was originally developed by Vyatta, Inc.
+ * Portions created by Vyatta are Copyright (C) 2008 Vyatta, Inc.
+ * All Rights Reserved.
+ *
+ * Author: Michael Larson
+ * Date: 2008
+ * Description:
+ *
+ * **** End License ****
+ *
+ */
 #include <stdio.h>
 #include <sys/socket.h>
 #include <iostream>
 #include <string>
+#include <syslog.h>
 #include "rl_str_proc.hh"
 #include "netlink_send.hh"
 #include "netlink_event.hh"
@@ -21,10 +49,12 @@ NetlinkLinkStatus::NetlinkLinkStatus(int send_sock, const string &link_dir, bool
   _debug(debug)
 {
   if (_send_sock < 0) {
+    syslog(LOG_ERR,"NetlinkListStatus::NetlinkLinkStatus(), send sock is bad value");
     cerr << "NetlinkListStatus::NetlinkLinkStatus(), send sock is bad value" << endl;
   }
 
   if (_link_dir.empty()) {
+    syslog(LOG_ERR,"NetlinkListStatus::NetlinkLinkStatus(), no link status directory specified");
     cerr << "NetlinkListStatus::NetlinkLinkStatus(), no link status directory specified" << endl;
   }
 }
@@ -125,6 +155,7 @@ NetlinkLinkStatus::process_going_up(const NetlinkEvent &event)
   string file = _link_dir + "/" + buf;
   FILE *fp = fopen(file.c_str(), "r");
   if (fp == NULL) {
+    syslog(LOG_ERR,"NetlinkLinkStatus::process_down(), failed to open state file");
     cerr << "NetlinkLinkStatus::process_down(), failed to open state file" << endl;
     return -1; //means we are still up, ignore...
   }
@@ -135,6 +166,7 @@ NetlinkLinkStatus::process_going_up(const NetlinkEvent &event)
 
     StrProc tokens(line, ",");
     if (tokens.size() != 3) {
+      syslog(LOG_ERR,"NetlinkLinkStatus::process_up(), failure to parse link status file, exiting(): %s, size: %d", line.c_str(), tokens.size());
       cerr << "NetlinkLinkStatus::process_up(), failure to parse link status file, exiting(): " << line << ", size: " << tokens.size() << endl;
       fclose(fp);
       return -1;
@@ -146,6 +178,7 @@ NetlinkLinkStatus::process_going_up(const NetlinkEvent &event)
     
     //reinsert addresses to interface
     if (_nl_send.send_set(_send_sock, ifindex, addr, mask_len, RTM_NEWADDR)) {
+      syslog(LOG_ERR,"NetlinkLinkStatus::process_up(), failure in setting interface back to up");
       cerr << "NetlinkLinkStatus::process_up(), failure in setting interface back to up" << endl;
     }
   }
@@ -187,6 +220,7 @@ NetlinkLinkStatus::process_down(const NetlinkEvent &event)
   string file = _link_dir + "/" + buf;
   FILE *fp = fopen(file.c_str(), "a");
   if (fp == NULL) {
+    syslog(LOG_ERR,"NetlinkLinkStatus::process_down(), failed to open state file");
     cerr << "NetlinkLinkStatus::process_down(), failed to open state file" << endl;
     return -1; 
   }
