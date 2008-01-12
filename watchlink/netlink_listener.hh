@@ -29,6 +29,7 @@
 #define __NETLINK_LISTENER_HH__
 
 #include "netlink_event.hh"
+#include <set>
 #include <string>
 
 class NetlinkListener
@@ -45,6 +46,9 @@ public: //methods
 
   bool
   process(NetlinkEvent &e);
+
+  bool
+  process(NetlinkEvent &e, std::set<std::string> filter);
 
   int
   get_sock() {return _fd;}

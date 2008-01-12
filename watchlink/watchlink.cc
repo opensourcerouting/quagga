@@ -29,13 +29,16 @@
 #include <iostream>
 #include <stdio.h>
 #include <string>
+#include <set>
 #include <fcntl.h>
 #include <syslog.h>
 #include <errno.h>
 
 #include <linux/types.h>
 #include <sys/socket.h>
+#include <signal.h>
 #include <linux/rtnetlink.h>
+#include "rl_str_proc.hh"
 #include "netlink_send.hh"
 #include "netlink_listener.hh"
 #include "netlink_linkstatus.hh"
@@ -52,6 +55,8 @@ struct option longopts[] =
   { 0 }
 };
 
+set<string> g_exclude;
+string g_link_dir = "/var/linkstatus";
 
 /**
  *
@@ -73,11 +78,52 @@ usage()
  *
  *
  **/
+set<string> 
+load_exclusion_file(const string &link_dir)
+{
+  set<string> coll;
+
+  string file = link_dir + "/exclude";
+  FILE *fp = fopen(file.c_str(), "r");
+  if (fp == NULL) {
+    syslog(LOG_ERR,"load_exclusion_file(), failed to open state file");
+    cerr << "load_exclusion_file(), failed to open state file" << endl;
+    return coll; //means we are still up, ignore...
+  }
+
+  char str[1025];
+  while (fgets(str, 1024, fp)) {
+    string line(str);
+
+    StrProc tokens(line, ",");
+    for (int i = 0; i < tokens.size(); ++i) {
+      coll.insert(tokens.get(i));
+    }
+  }
+  fclose(fp);
+  return coll;
+}
+
+/**
+ *
+ *
+ **/
+static void 
+sig_user(int signo)
+{
+  //reload interface exclusion list
+  g_exclude = load_exclusion_file(g_link_dir);
+}
+
+
+/**
+ *
+ *
+ **/
 int 
 main(int argc, char* const argv[])
 {
   int ch;
-  string link_dir = "/var/linkstatus";
   bool send_request = false;
   bool debug = false;
   bool daemon = false;
@@ -94,7 +140,7 @@ main(int argc, char* const argv[])
       send_request = true;
       break;
     case 'l':
-      link_dir = optarg;
+      g_link_dir = optarg;
       break;
     case 'i':
       pid_path = optarg;
@@ -129,6 +175,10 @@ main(int argc, char* const argv[])
     pid_output(pid_path.c_str());
   }
 
+  //load interface exclusion list
+  g_exclude = load_exclusion_file(g_link_dir);
+
+  signal(SIGUSR1, sig_user);
 
   int sock = nl_listener.init();
   if (sock <= 0) {
@@ -149,13 +199,13 @@ main(int argc, char* const argv[])
     }
   }
 
-  NetlinkLinkStatus nl_ls(sock, link_dir, debug);
+  NetlinkLinkStatus nl_ls(sock, g_link_dir, debug);
 
   while (true) {
     //    cout << "watchlink: now entering listening mode: " << endl;
 
     NetlinkEvent nl_event;
-    if (nl_listener.process(nl_event) == true) {
+    if (nl_listener.process(nl_event, g_exclude) == true) {
       if (send_request) {
 	if (nl_send.send_get(sock, RTM_GETADDR) != 0) {
 	  syslog(LOG_ERR,"watchlink(), error sending. exiting..");

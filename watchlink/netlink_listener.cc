@@ -134,6 +134,21 @@ NetlinkListener::init()
  *
  **/
 bool
+NetlinkListener::process(NetlinkEvent &e, set<string> filter)
+{
+  bool state = process(e);
+  if (state == true && filter.find(e.get_iface()) != filter.end()) {
+    e = NetlinkEvent();
+    state = false;
+  }
+  return state;
+}
+
+/**
+ *
+ *
+ **/
+bool
 NetlinkListener::process(NetlinkEvent &e)
 {
   if (_fd <= 0) {
