@@ -1,5 +1,5 @@
 # Solaris packages automake file
-# $Id: Makefile.am,v 1.8 2007/08/02 13:37:30 gdt Exp $
+# $Id: Makefile.am,v 1.9 2008/01/13 18:52:15 paul Exp $
 
 # XXX This file uses GNU make extensions.
 
@@ -97,7 +97,7 @@ quagga.init: $(srcdir)/quagga.init.in Makefile
 
 # construct the pkg
 @PACKAGE_TARNAME@-%-$(pkg_name_rev).pkg: prototype.% \
-		quagga.init pkginfo.%.full
+		depend.% quagga.init pkginfo.%.full
 	($(pkg_make) && \
 	$(pkg_trans) "QUAGGA$*")
 
