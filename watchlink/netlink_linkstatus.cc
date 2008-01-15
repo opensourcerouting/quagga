@@ -155,8 +155,8 @@ NetlinkLinkStatus::process_going_up(const NetlinkEvent &event)
   string file = _link_dir + "/" + buf;
   FILE *fp = fopen(file.c_str(), "r");
   if (fp == NULL) {
-    syslog(LOG_ERR,"NetlinkLinkStatus::process_down(), failed to open state file");
-    cerr << "NetlinkLinkStatus::process_down(), failed to open state file" << endl;
+    syslog(LOG_INFO,"NetlinkLinkStatus::process_going_up(), failed to open state file");
+    //    cerr << "NetlinkLinkStatus::process_going_up(), failed to open state file" << endl;
     return -1; //means we are still up, ignore...
   }
 
@@ -166,8 +166,8 @@ NetlinkLinkStatus::process_going_up(const NetlinkEvent &event)
 
     StrProc tokens(line, ",");
     if (tokens.size() != 4) {
-      syslog(LOG_ERR,"NetlinkLinkStatus::process_up(), failure to parse link status file, exiting(): %s, size: %d", line.c_str(), tokens.size());
-      cerr << "NetlinkLinkStatus::process_up(), failure to parse link status file, exiting(): " << line << ", size: " << tokens.size() << endl;
+      syslog(LOG_INFO,"NetlinkLinkStatus::process_up(), failure to parse link status file, exiting(): %s, size: %d", line.c_str(), tokens.size());
+      //      cerr << "NetlinkLinkStatus::process_up(), failure to parse link status file, exiting(): " << line << ", size: " << tokens.size() << endl;
       fclose(fp);
       return -1;
     }
@@ -179,8 +179,8 @@ NetlinkLinkStatus::process_going_up(const NetlinkEvent &event)
     
     //reinsert addresses to interface
     if (_nl_send.send_set(_send_sock, ifindex, local_addr, addr, mask_len, RTM_NEWADDR)) {
-      syslog(LOG_ERR,"NetlinkLinkStatus::process_up(), failure in setting interface back to up");
-      cerr << "NetlinkLinkStatus::process_up(), failure in setting interface back to up" << endl;
+      syslog(LOG_INFO,"NetlinkLinkStatus::process_up(), failure in setting interface back to up");
+      //      cerr << "NetlinkLinkStatus::process_up(), failure in setting interface back to up" << endl;
     }
   }
 
@@ -221,8 +221,8 @@ NetlinkLinkStatus::process_down(const NetlinkEvent &event)
   string file = _link_dir + "/" + buf;
   FILE *fp = fopen(file.c_str(), "a");
   if (fp == NULL) {
-    syslog(LOG_ERR,"NetlinkLinkStatus::process_down(), failed to open state file");
-    cerr << "NetlinkLinkStatus::process_down(), failed to open state file" << endl;
+    syslog(LOG_INFO,"NetlinkLinkStatus::process_down(), failed to open state file");
+    //    cerr << "NetlinkLinkStatus::process_down(), failed to open state file" << endl;
     return -1; 
   }
 
