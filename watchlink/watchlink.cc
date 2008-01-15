@@ -262,6 +262,7 @@ print_netlink(NetlinkEvent &nl_event)
       else if (nl_event.get_type() == RTM_DELADDR ||
 	       nl_event.get_type() == RTM_NEWADDR) {
 	cout << "  type: " << string(nl_event.get_type()==RTM_DELADDR?"DELADDR":"NEWADDR") << endl;
+	cout << "  local addr: " << nl_event.get_local_addr().str().c_str() << endl;
 	cout << "  addr: " << nl_event.get_addr().str().c_str() << endl;
 	cout << "  broadcast: " << nl_event.get_broadcast().str().c_str() << endl;
 	char buf[20];

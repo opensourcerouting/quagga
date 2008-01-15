@@ -51,6 +51,7 @@ NetlinkEvent::NetlinkEvent(int type,
 			   unsigned char *mac,
 			   bool enabled,
 			   bool running,
+			   IPv4 local,
 			   IPv4 addr,
 			   IPv4 broadcast,
 			   int mask_len,
@@ -61,6 +62,7 @@ NetlinkEvent::NetlinkEvent(int type,
   _mtu(mtu),
   _enabled(enabled),
   _running(running),
+  _local(local),
   _addr(addr),
   _broadcast(broadcast),
   _mask_len(mask_len),
@@ -87,7 +89,7 @@ NetlinkEvent::~NetlinkEvent()
 void
 NetlinkEvent::log()
 {
-  syslog(LOG_USER | LOG_INFO, "NetlinkEvent::log(): type: %d, iface: %s, mtu: %d, addr: %s, bc: %s, mask: %d, index: %d", _type, _iface.c_str(), _mtu, _addr.str().c_str(), _broadcast.str().c_str(), _mask_len, _index);
+  syslog(LOG_USER | LOG_INFO, "NetlinkEvent::log(): type: %d, iface: %s, mtu: %d, local: %s, addr: %s, bc: %s, mask: %d, index: %d", _type, _iface.c_str(), _mtu, _local.str().c_str(), _addr.str().c_str(), _broadcast.str().c_str(), _mask_len, _index);
 }
 
 /**
@@ -163,7 +165,7 @@ NetlinkEventManager::parse_msg(const struct nlmsghdr *nlHdr)
   int mtu = -1;
   int index = -1;
   unsigned char mac[6];
-  IPv4 addr, broadcast;
+  IPv4 addr, local, broadcast;
   int mask_len = -1;
 
   bzero(mac, 6);
@@ -210,6 +212,10 @@ NetlinkEventManager::parse_msg(const struct nlmsghdr *nlHdr)
 	switch(rtAttr->rta_type) {
 	case IFA_LOCAL:
 	  address = *(uint32_t *)RTA_DATA(rtAttr);
+	  local = IPv4(address);
+	  break;
+	case IFA_ADDRESS:
+	  address = *(uint32_t *)RTA_DATA(rtAttr);
 	  addr = IPv4(address);
 	  break;
 	case IFA_LABEL:
@@ -231,6 +237,7 @@ NetlinkEventManager::parse_msg(const struct nlmsghdr *nlHdr)
 		     mac,
 		     enabled,
 		     running,
+		     local,
 		     addr,
 		     broadcast,
 		     mask_len,

@@ -63,7 +63,7 @@ NetlinkSend::~NetlinkSend()
  *
  **/
 int
-NetlinkSend::send_set(int sock, int ifindex, uint32_t addr, int mask_len, int type)
+NetlinkSend::send_set(int sock, int ifindex, uint32_t local_addr, uint32_t addr, int mask_len, int type)
 {
   int ret;
   struct sockaddr_nl snl;
@@ -82,9 +82,13 @@ NetlinkSend::send_set(int sock, int ifindex, uint32_t addr, int mask_len, int ty
 
   if (_debug) {
     struct in_addr in;
-    in.s_addr = addr;
+    in.s_addr = local_addr;
     char *buf = inet_ntoa(in);
-    cout << "NetlinkSend::send_set(): " << type << ", " << buf << "/" << mask_len << ", on interface: " << ifindex << endl;
+    cout << "NetlinkSend::send_set(): " << type << ", " << buf << "/" << mask_len;
+
+    in.s_addr = addr;
+    buf = inet_ntoa(in);
+    cout << ", to this address: " << buf << ", on interface: " << ifindex << endl;
   }
 
   memset(&req, 0, sizeof(req));
@@ -99,8 +103,11 @@ NetlinkSend::send_set(int sock, int ifindex, uint32_t addr, int mask_len, int ty
   req.ifa.ifa_prefixlen = mask_len;
 
   //  addr = htonl( addr );
-  addattr_l(&req.n, sizeof(req), IFA_LOCAL, &addr, sizeof(addr) );
-  
+  addattr_l(&req.n, sizeof(req), IFA_LOCAL, &local_addr, sizeof(addr) );
+  if (local_addr != addr) {
+    addattr_l(&req.n, sizeof(req), IFA_ADDRESS, &addr, sizeof(addr) );
+  }
+
   memset(&snl, 0, sizeof(snl));
   snl.nl_family = AF_NETLINK;
 

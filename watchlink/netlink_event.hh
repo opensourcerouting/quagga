@@ -81,7 +81,8 @@ public:
 	       int mtu,
 	       unsigned char *mac,
 	       bool enabled,
-	       bool running,
+	       bool running,		    
+	       IPv4 local,
 	       IPv4 addr,
 	       IPv4 broadcast,
 	       int mask_len,
@@ -129,6 +130,9 @@ public:
   get_running() const {return _running;}
 
   IPv4
+  get_local_addr() const {return _local;}
+  
+  IPv4
   get_addr() const {return _addr;}
   
   IPv4
@@ -163,6 +167,7 @@ private:
   unsigned char _mac[6];
   bool _enabled;
   bool _running;
+  IPv4 _local;
   IPv4 _addr;
   IPv4 _broadcast;
   int _mask_len;
