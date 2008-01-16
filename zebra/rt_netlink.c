@@ -328,7 +328,8 @@ netlink_parse_info (int (*filter) (struct sockaddr_nl *, struct nlmsghdr *),
 
   while (1)
     {
-      char buf[4096];
+      //increased from 4096 to 8192 as recvmsg overrun error
+      char buf[8192];
       struct iovec iov = { buf, sizeof buf };
       struct sockaddr_nl snl;
       struct msghdr msg = { (void *) &snl, sizeof snl, &iov, 1, NULL, 0, 0 };
