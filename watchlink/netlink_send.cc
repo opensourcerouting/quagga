@@ -104,7 +104,7 @@ NetlinkSend::send_set(int sock, int ifindex, uint32_t local_addr, uint32_t addr,
 
   //  addr = htonl( addr );
   addattr_l(&req.n, sizeof(req), IFA_LOCAL, &local_addr, sizeof(addr) );
-  if (local_addr != addr) {
+  if (addr != -1 && local_addr != addr) {
     addattr_l(&req.n, sizeof(req), IFA_ADDRESS, &addr, sizeof(addr) );
   }
 

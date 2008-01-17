@@ -219,7 +219,7 @@ NetlinkEventManager::parse_msg(const struct nlmsghdr *nlHdr)
 	  addr = IPv4(address);
 	  break;
 	case IFA_LABEL:
-	  iface = string((char*)RTA_DATA(rtAttr));
+	  iface = *((char*)RTA_DATA(rtAttr));
 	  break;
 	case IFA_BROADCAST:
 	  address = *(uint32_t *)RTA_DATA(rtAttr);

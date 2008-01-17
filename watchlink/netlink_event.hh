@@ -49,7 +49,7 @@ private:
 class IPv4 
 {
 public:
-  IPv4() {}
+  IPv4() : _addr(-1) {}
   IPv4(uint32_t addr) : _addr(addr) {}
 
   uint32_t 

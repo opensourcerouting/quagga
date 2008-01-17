@@ -174,8 +174,8 @@ NetlinkLinkStatus::process_going_up(const NetlinkEvent &event)
 
     int ifindex = strtoul(tokens.get(0).c_str(),NULL,10);
     uint32_t local_addr = strtoul(tokens.get(1).c_str(),NULL,10);
-    uint32_t addr = strtoul(tokens.get(1).c_str(),NULL,10);
-    int mask_len = strtoul(tokens.get(2).c_str(),NULL,10);
+    uint32_t addr = strtoul(tokens.get(2).c_str(),NULL,10);
+    int mask_len = strtoul(tokens.get(3).c_str(),NULL,10);
     
     //reinsert addresses to interface
     if (_nl_send.send_set(_send_sock, ifindex, local_addr, addr, mask_len, RTM_NEWADDR)) {
