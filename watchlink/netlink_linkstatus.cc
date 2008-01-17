@@ -155,8 +155,8 @@ NetlinkLinkStatus::process_going_up(const NetlinkEvent &event)
   string file = _link_dir + "/" + buf;
   FILE *fp = fopen(file.c_str(), "r");
   if (fp == NULL) {
-    syslog(LOG_ERR,"NetlinkLinkStatus::process_down(), failed to open state file");
-    cerr << "NetlinkLinkStatus::process_down(), failed to open state file" << endl;
+    syslog(LOG_INFO,"NetlinkLinkStatus::process_going_up(), failed to open state file");
+    //    cerr << "NetlinkLinkStatus::process_going_up(), failed to open state file" << endl;
     return -1; //means we are still up, ignore...
   }
 
@@ -165,21 +165,22 @@ NetlinkLinkStatus::process_going_up(const NetlinkEvent &event)
     string line(str);
 
     StrProc tokens(line, ",");
-    if (tokens.size() != 3) {
-      syslog(LOG_ERR,"NetlinkLinkStatus::process_up(), failure to parse link status file, exiting(): %s, size: %d", line.c_str(), tokens.size());
-      cerr << "NetlinkLinkStatus::process_up(), failure to parse link status file, exiting(): " << line << ", size: " << tokens.size() << endl;
+    if (tokens.size() != 4) {
+      syslog(LOG_INFO,"NetlinkLinkStatus::process_up(), failure to parse link status file, exiting(): %s, size: %d", line.c_str(), tokens.size());
+      //      cerr << "NetlinkLinkStatus::process_up(), failure to parse link status file, exiting(): " << line << ", size: " << tokens.size() << endl;
       fclose(fp);
       return -1;
     }
 
     int ifindex = strtoul(tokens.get(0).c_str(),NULL,10);
+    uint32_t local_addr = strtoul(tokens.get(1).c_str(),NULL,10);
     uint32_t addr = strtoul(tokens.get(1).c_str(),NULL,10);
     int mask_len = strtoul(tokens.get(2).c_str(),NULL,10);
     
     //reinsert addresses to interface
-    if (_nl_send.send_set(_send_sock, ifindex, addr, mask_len, RTM_NEWADDR)) {
-      syslog(LOG_ERR,"NetlinkLinkStatus::process_up(), failure in setting interface back to up");
-      cerr << "NetlinkLinkStatus::process_up(), failure in setting interface back to up" << endl;
+    if (_nl_send.send_set(_send_sock, ifindex, local_addr, addr, mask_len, RTM_NEWADDR)) {
+      syslog(LOG_INFO,"NetlinkLinkStatus::process_up(), failure in setting interface back to up");
+      //      cerr << "NetlinkLinkStatus::process_up(), failure in setting interface back to up" << endl;
     }
   }
 
@@ -206,7 +207,7 @@ NetlinkLinkStatus::process_down(const NetlinkEvent &event)
     return 0;
   }
 
-  if (event.get_index() < 0 || event.get_addr().get() == 0 || event.get_mask_len() < 1) {
+  if (event.get_index() < 0 || event.get_local_addr().get() == 0 || event.get_mask_len() < 1) {
     return 0;
   }
 
@@ -220,8 +221,8 @@ NetlinkLinkStatus::process_down(const NetlinkEvent &event)
   string file = _link_dir + "/" + buf;
   FILE *fp = fopen(file.c_str(), "a");
   if (fp == NULL) {
-    syslog(LOG_ERR,"NetlinkLinkStatus::process_down(), failed to open state file");
-    cerr << "NetlinkLinkStatus::process_down(), failed to open state file" << endl;
+    syslog(LOG_INFO,"NetlinkLinkStatus::process_down(), failed to open state file");
+    //    cerr << "NetlinkLinkStatus::process_down(), failed to open state file" << endl;
     return -1; 
   }
 
@@ -229,6 +230,8 @@ NetlinkLinkStatus::process_down(const NetlinkEvent &event)
   //CRAJ--NEED TO HAVE THIS BE FROM A COLLECTION??? DEPENDS ON FORMAT OF NETLINK MSG
   sprintf(buf,"%d",event.get_index());
   string line = string(buf) + ",";
+  sprintf(buf,"%d",event.get_local_addr().get());
+  line += string(buf) + ",";
   sprintf(buf,"%d",event.get_addr().get());
   line += string(buf) + ",";
   sprintf(buf,"%d",event.get_mask_len());
@@ -238,7 +241,7 @@ NetlinkLinkStatus::process_down(const NetlinkEvent &event)
 
 
  //pull interface addresses
-  if (_nl_send.send_set(_send_sock, event.get_index(), event.get_addr().get(), event.get_mask_len(), RTM_DELADDR)) {
+  if (_nl_send.send_set(_send_sock, event.get_index(), event.get_local_addr().get(), event.get_addr().get(), event.get_mask_len(), RTM_DELADDR)) {
     fclose(fp);
     return -1;
   }

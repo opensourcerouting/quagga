@@ -38,7 +38,7 @@ public:
   send_get(int sock, int type, int ifindex = -1);
 
   int
-  send_set(int sock, int ifindex, uint32_t addr, int mask_len, int type);
+  send_set(int sock, int ifindex, uint32_t local_addr, uint32_t addr, int mask_len, int type);
 
 private:
   int 
