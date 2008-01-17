@@ -59,7 +59,7 @@ if [ "$1" = "install" ]; then
     mkdir -p $ETC_DIR
     chmod 0775 $ETC_DIR
     chown quagga:quaggavty $ETC_DIR
-    for daemon in zebra vtysh ripd ripngd ospfd ospf6d isisd bgpd ; do
+    for daemon in zebra ripd ripngd ospfd ospf6d isisd bgpd ; do
 	if [ ! -e $ETC_DIR/${daemon}.conf ] ; then
 	    touch $ETC_DIR/${daemon}.conf
 	    chown quagga:quaggavty $ETC_DIR/${daemon}.conf
@@ -69,10 +69,15 @@ if [ "$1" = "install" ]; then
 		EOF
 	fi
     done
-    test -e $ETC_DIR/vtysh.conf || cat <<-EOF > $ETC_DIR/vtysh.conf
+    if [ ! -e $ETC_DIR/vtysh.conf ] ; then
+	touch $ETC_DIR/vtysh.conf
+	chown quagga:quaggavty $ETC_DIR/vtysh.conf
+	chmod 0640 $ETC_DIR/vtysh.conf
+	cat <<-EOF >> $ETC_DIR/vtysh.conf
 	username root nopassword
 	username vyatta nopassword
 	EOF
+    fi
 
   # Disable debian/ubuntu package init
     update-rc.d -f quagga remove
