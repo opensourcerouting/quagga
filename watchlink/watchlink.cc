@@ -86,8 +86,8 @@ load_exclusion_file(const string &link_dir)
   string file = link_dir + "/exclude";
   FILE *fp = fopen(file.c_str(), "r");
   if (fp == NULL) {
-    syslog(LOG_ERR,"load_exclusion_file(), failed to open state file");
-    cerr << "load_exclusion_file(), failed to open state file" << endl;
+    syslog(LOG_INFO,"load_exclusion_file(), failed to open state file");
+    //    cerr << "load_exclusion_file(), failed to open state file" << endl;
     return coll; //means we are still up, ignore...
   }
 
