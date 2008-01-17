@@ -38,6 +38,7 @@ fi
 if [ "$1" = "install" ]; then
   # Install linkstatus directory
     mkdir -p $WATCHLINK_DIR
+    touch $WATCHLINK_DIR/exclude
 
   # Logfiles are group readable in case users were put into the quagga group.
     mkdir -p $LOG_PDIR
