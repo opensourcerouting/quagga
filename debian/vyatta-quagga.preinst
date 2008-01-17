@@ -76,7 +76,6 @@ if [ "$1" = "install" ]; then
 	chmod 0640 $ETC_DIR/vtysh.conf
 	cat <<-EOF >> $ETC_DIR/vtysh.conf
 	username root nopassword
-	username vyatta nopassword
 	EOF
     fi
 
