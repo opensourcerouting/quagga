@@ -65,7 +65,7 @@ if [ "$1" = "install" ]; then
 	    chown quagga:quaggavty $ETC_DIR/${daemon}.conf
 	    chmod 0640 $ETC_DIR/${daemon}.conf
 	    cat <<-EOF > $ETC_DIR/${daemon}.conf
-		log file syslog informational
+		log syslog informational
 		EOF
 	fi
     done
