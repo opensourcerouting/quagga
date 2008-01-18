@@ -286,15 +286,15 @@ NetlinkEvent::get_ifinfomsg()
   string ret;
   char buf[40];
 
-  sprintf(buf, "%uc", _ifinfo.ifi_family);
+  sprintf(buf, "%u", _ifinfo.ifi_family);
   ret = "ifi_family: " + string(buf) + ", ";
-  sprintf(buf, "%us", _ifinfo.ifi_type);
+  sprintf(buf, "%u", _ifinfo.ifi_type);
   ret += "ifi_type: " + string(buf) + ", ";
   sprintf(buf, "%d", _ifinfo.ifi_index);
   ret += "ifi_index: " + string(buf) + ", ";
-  sprintf(buf, "%ud", _ifinfo.ifi_flags);
+  sprintf(buf, "%u", _ifinfo.ifi_flags);
   ret += "ifi_flags: " + string(buf) + ", ";
-  sprintf(buf, "%ud", _ifinfo.ifi_change);
+  sprintf(buf, "%u", _ifinfo.ifi_change);
   ret += "ifi_change: " + string(buf);
   return ret;
 }

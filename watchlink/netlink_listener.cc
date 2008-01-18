@@ -137,7 +137,8 @@ bool
 NetlinkListener::process(NetlinkEvent &e, set<string> filter)
 {
   bool state = process(e);
-  if (state == true && filter.find(e.get_iface()) != filter.end()) {
+
+  if (state == true && (filter.find(e.get_iface()) != filter.end() || e.get_ifi_type() != 1/*ARPHRD_ETHER*/)) {
     e = NetlinkEvent();
     state = false;
   }

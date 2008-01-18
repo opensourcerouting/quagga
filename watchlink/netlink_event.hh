@@ -123,6 +123,10 @@ public:
     return _mac;
   }
   */
+
+  int
+  get_ifi_type() const {return _ifinfo.ifi_type;}
+
   bool
   get_enabled() const {return _enabled;}
 
