@@ -41,6 +41,9 @@
 
 using namespace std;
 
+in_addr_t
+ipv4_broadcast_addr (in_addr_t hostaddr, int masklen);
+
 /**
  *
  *
@@ -104,6 +107,10 @@ NetlinkSend::send_set(int sock, int ifindex, uint32_t local_addr, uint32_t addr,
 
   //  addr = htonl( addr );
   addattr_l(&req.n, sizeof(req), IFA_LOCAL, &local_addr, sizeof(addr) );
+
+  in_addr_t broadcast_addr = ipv4_broadcast_addr(local_addr,mask_len);
+  addattr_l(&req.n, sizeof(req), IFA_BROADCAST, &broadcast_addr, sizeof(addr) );
+
   if (addr != -1 && local_addr != addr) {
     addattr_l(&req.n, sizeof(req), IFA_ADDRESS, &addr, sizeof(addr) );
   }
@@ -196,3 +203,41 @@ NetlinkSend::addattr_l(struct nlmsghdr *n, int maxlen, int type, void *data, int
         return 0;
 }
 
+/* Maskbit. */
+static u_char maskbit[] = {0x00, 0x80, 0xc0, 0xe0, 0xf0,
+			         0xf8, 0xfc, 0xfe, 0xff};
+
+/* Convert masklen into IP address's netmask. */
+void
+masklen2ip (int masklen, struct in_addr *netmask)
+{
+  u_char *pnt;
+  int bit;
+  int offset;
+
+  memset (netmask, 0, sizeof (struct in_addr));
+  pnt = (unsigned char *) netmask;
+
+  offset = masklen / 8;
+  bit = masklen % 8;
+  
+  while (offset--)
+    *pnt++ = 0xff;
+
+  if (bit)
+    *pnt = maskbit[bit];
+}
+
+
+in_addr_t
+ipv4_broadcast_addr (in_addr_t hostaddr, int masklen)
+{
+  struct in_addr mask;
+
+  masklen2ip (masklen, &mask);
+  return (masklen != 32-1) ?
+    /* normal case */
+    (hostaddr | ~mask.s_addr) :
+    /* special case for /31 */
+    (hostaddr ^ ~mask.s_addr);
+}

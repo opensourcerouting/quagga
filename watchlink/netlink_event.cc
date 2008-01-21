@@ -219,7 +219,7 @@ NetlinkEventManager::parse_msg(const struct nlmsghdr *nlHdr)
 	  addr = IPv4(address);
 	  break;
 	case IFA_LABEL:
-	  iface = *((char*)RTA_DATA(rtAttr));
+	  iface = string((char*)RTA_DATA(rtAttr));
 	  break;
 	case IFA_BROADCAST:
 	  address = *(uint32_t *)RTA_DATA(rtAttr);
@@ -313,5 +313,4 @@ std::ostream & operator <<(std::ostream & Stream, const NetlinkEvent & instance)
   const NetlinkEvent foo = instance;
   return Stream; 
 }
-
 
