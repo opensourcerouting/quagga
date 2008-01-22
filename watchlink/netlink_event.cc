@@ -254,16 +254,19 @@ NetlinkEventManager::parse_msg(const struct nlmsghdr *nlHdr)
     syslog(LOG_ERR,"netlink message of type ERROR received: %s",strerror(-err->error));
     cerr << "netlink message of type ERROR received: " ;
     cerr << string(strerror(-err->error)) << endl;
+    syslog(LOG_ERR, strerror(-err->error));
   }
     break;
   case NLMSG_DONE:
-    cerr << "netlink message of type DONE received" << endl;
+    //    if (_debug) {
+    //      cout << "netlink message of type DONE received" << endl;
+    //    }
     break;
   case NLMSG_NOOP:
-    cerr << "netlink message of type NOOP received" << endl;
+    syslog(LOG_INFO,"netlink message of type NOOP received");
     break;
   default:
-    cerr << "unknown netlink message type received" << endl;
+    syslog(LOG_INFO,"unknown netlink message type received");
     break;
   }
 }
