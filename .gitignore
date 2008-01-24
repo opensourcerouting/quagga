@@ -20,6 +20,10 @@ configure
 debian/build-stamp
 debian/vyatta-quagga
 debian/vyatta-quagga.substvars
+debian/files
+debian/vyatta-quagga.postinst.debhelper
+debian/vyatta-quagga.postrm.debhelper
+debian/vyatta-quagga.prerm.debhelper
 depcomp
 doc/defines.texi
 doc/mdate-sh
