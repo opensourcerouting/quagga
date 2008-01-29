@@ -96,7 +96,8 @@ NetlinkEvent::log()
  *
  *
  **/
-NetlinkEventManager::NetlinkEventManager()
+NetlinkEventManager::NetlinkEventManager(bool debug) :
+  _debug(debug)
 {
 
 }
@@ -245,16 +246,18 @@ NetlinkEventManager::parse_msg(const struct nlmsghdr *nlHdr)
 
       e.set_ifinfomsg(ifInfo);
       
-      e.log();
+      if (_debug) {
+	e.log();
+      }
       _coll.push_back(e);
     }
     break;
   case NLMSG_ERROR: {
     struct nlmsgerr *err = (struct nlmsgerr*) NLMSG_DATA(nlHdr);
-    syslog(LOG_ERR,"netlink message of type ERROR received: %s",strerror(-err->error));
-    cerr << "netlink message of type ERROR received: " ;
-    cerr << string(strerror(-err->error)) << endl;
-    syslog(LOG_ERR, strerror(-err->error));
+    //drop down to info as this can be caused on startup by downed interfaces that are requested for dump, or attempting to remove routes on downed interface after startup (if they have already been removed).
+    syslog(LOG_INFO,"netlink message of type ERROR received: %s",strerror(-err->error));
+    //    cerr << "netlink message of type ERROR received: " ;
+    //    cerr << string(strerror(-err->error)) << endl;
   }
     break;
   case NLMSG_DONE:

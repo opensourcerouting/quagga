@@ -196,7 +196,7 @@ public:
 public: //methods
   friend std::ostream & operator<< (std::ostream &, const NetlinkEvent &);
 
-  NetlinkEventManager();
+  NetlinkEventManager(bool debug);
 
   ~NetlinkEventManager();
 
@@ -214,6 +214,7 @@ private: //methods
 
 private: //variables
   NLEventColl _coll;
+  bool _debug;
 };
 
 

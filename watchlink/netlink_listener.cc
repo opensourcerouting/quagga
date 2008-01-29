@@ -51,9 +51,10 @@ using namespace std;
  *
  *
  **/
-NetlinkListener::NetlinkListener() : 
+NetlinkListener::NetlinkListener(bool debug) : 
   _fd(-1),
-  _is_multipart_message_read(false)
+  _is_multipart_message_read(false),
+  _nl_event_mgr(debug)
 {
 
 }

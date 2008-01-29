@@ -40,9 +40,15 @@ public:
   int
   send_set(int sock, int ifindex, uint32_t local_addr, uint32_t addr, int mask_len, int type);
 
+  int
+  send_set_route(int sock, int ifindex, uint32_t local_addr, uint32_t dst_addr, int mask_len, int type, int table, int rtn_type, int rt_scope);
+
 private:
   int 
   addattr_l(struct nlmsghdr *n, int maxlen, int type, void *data, int alen);
+
+  int 
+  addattr32(struct nlmsghdr *n, int maxlen, int type, int data);
 
 private:
   bool _debug;

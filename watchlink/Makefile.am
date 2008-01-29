@@ -5,4 +5,4 @@ DEFS = @DEFS@ -DSYSCONFDIR=\"$(sysconfdir)/\"
 
 sbin_PROGRAMS = watchlink
 
-watchlink_SOURCES = watchlink.cc netlink_send.cc netlink_listener.cc netlink_event.cc netlink_linkstatus.cc rl_str_proc.cc
+watchlink_SOURCES = watchlink.cc netlink_utils.cc netlink_send.cc netlink_listener.cc netlink_event.cc netlink_linkstatus.cc rl_str_proc.cc

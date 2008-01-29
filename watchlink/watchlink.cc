@@ -161,7 +161,7 @@ main(int argc, char* const argv[])
   }  
   
   NetlinkSend nl_send(debug);
-  NetlinkListener nl_listener;
+  NetlinkListener nl_listener(debug);
 
   //add check here to ensure only one watchlink process
 

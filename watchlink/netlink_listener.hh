@@ -35,7 +35,7 @@
 class NetlinkListener
 {
 public: //methods
-  NetlinkListener();
+  NetlinkListener(bool debug);
   ~NetlinkListener();
 
   /*

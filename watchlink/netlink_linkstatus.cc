@@ -33,6 +33,7 @@
 #include "rl_str_proc.hh"
 #include "netlink_send.hh"
 #include "netlink_event.hh"
+#include "netlink_utils.hh"
 #include "netlink_linkstatus.hh"
 
 
@@ -174,13 +175,30 @@ NetlinkLinkStatus::process_going_up(const NetlinkEvent &event)
 
     int ifindex = strtoul(tokens.get(0).c_str(),NULL,10);
     uint32_t local_addr = strtoul(tokens.get(1).c_str(),NULL,10);
-    uint32_t addr = strtoul(tokens.get(2).c_str(),NULL,10);
+    //    uint32_t addr = strtoul(tokens.get(2).c_str(),NULL,10);
     int mask_len = strtoul(tokens.get(3).c_str(),NULL,10);
     
-    //reinsert addresses to interface
-    if (_nl_send.send_set(_send_sock, ifindex, local_addr, addr, mask_len, RTM_NEWADDR)) {
+    bool err = _nl_send.send_set_route(_send_sock, ifindex, local_addr, local_addr, 32, RTM_NEWROUTE, RT_TABLE_LOCAL, RTN_LOCAL, RT_SCOPE_HOST);
+    if (err) {
       syslog(LOG_INFO,"NetlinkLinkStatus::process_up(), failure in setting interface back to up");
-      //      cerr << "NetlinkLinkStatus::process_up(), failure in setting interface back to up" << endl;
+    }
+    //COMPUTE FIRST ADDRESS
+    uint32_t first_addr = ipv4_first_addr(local_addr, mask_len);
+    err = _nl_send.send_set_route(_send_sock, ifindex, local_addr, first_addr, 32, RTM_NEWROUTE, RT_TABLE_LOCAL, RTN_BROADCAST, RT_SCOPE_LINK);
+    if (err) {
+      syslog(LOG_INFO,"NetlinkLinkStatus::process_up(), failure in setting interface back to up");
+    }
+    //COMPUTE LAST ADDRESS
+    uint32_t last_addr = ipv4_broadcast_addr(local_addr, mask_len);
+    err = _nl_send.send_set_route(_send_sock, ifindex, local_addr, last_addr, 32, RTM_NEWROUTE, RT_TABLE_LOCAL, RTN_BROADCAST, RT_SCOPE_LINK);
+    if (err) {
+      syslog(LOG_INFO,"NetlinkLinkStatus::process_up(), failure in setting interface back to up");
+    }
+
+    //reinsert addresses to interface
+    err = _nl_send.send_set_route(_send_sock, ifindex, local_addr, first_addr, mask_len, RTM_NEWROUTE, RT_TABLE_MAIN, RTN_UNICAST, RT_SCOPE_LINK);
+    if (err) {
+      syslog(LOG_INFO,"NetlinkLinkStatus::process_up(), failure in setting interface back to up");
     }
   }
 
@@ -226,24 +244,44 @@ NetlinkLinkStatus::process_down(const NetlinkEvent &event)
     return -1; 
   }
 
+  int ifindex = event.get_index();
+  uint32_t local_addr = event.get_local_addr().get();
+  int mask_len = event.get_mask_len();
+
   //create file on system
   //CRAJ--NEED TO HAVE THIS BE FROM A COLLECTION??? DEPENDS ON FORMAT OF NETLINK MSG
-  sprintf(buf,"%d",event.get_index());
+  sprintf(buf,"%d",ifindex);
   string line = string(buf) + ",";
-  sprintf(buf,"%d",event.get_local_addr().get());
+  sprintf(buf,"%d",local_addr);
   line += string(buf) + ",";
   sprintf(buf,"%d",event.get_addr().get());
   line += string(buf) + ",";
-  sprintf(buf,"%d",event.get_mask_len());
+  sprintf(buf,"%d",mask_len);
   line += string(buf) + "\n";
   
   fputs(line.c_str(),fp);
+  
+  uint32_t first_addr = ipv4_first_addr(local_addr, mask_len);
+  //reinsert addresses to interface
+  bool err = _nl_send.send_set_route(_send_sock, ifindex, local_addr, first_addr, mask_len, RTM_DELROUTE, RT_TABLE_MAIN, -1,-1);
+  if (err) {
+    syslog(LOG_INFO,"NetlinkLinkStatus::process_down(), failure in setting interface down");
+  }
 
+  uint32_t last_addr = ipv4_broadcast_addr(local_addr, mask_len);
+  err = _nl_send.send_set_route(_send_sock, ifindex, local_addr, last_addr, 32, RTM_DELROUTE, RT_TABLE_LOCAL, -1,-1);
+  if (err) {
+    syslog(LOG_INFO,"NetlinkLinkStatus::process_down(), failure in setting interface down");
+  }
+  
+  err = _nl_send.send_set_route(_send_sock, ifindex, first_addr, first_addr, 32, RTM_DELROUTE, RT_TABLE_LOCAL, -1,-1);
+  if (err) {
+    syslog(LOG_INFO,"NetlinkLinkStatus::process_down(), failure in setting interface down");
+  }
 
- //pull interface addresses
-  if (_nl_send.send_set(_send_sock, event.get_index(), event.get_local_addr().get(), event.get_addr().get(), event.get_mask_len(), RTM_DELADDR)) {
-    fclose(fp);
-    return -1;
+  err = _nl_send.send_set_route(_send_sock, ifindex, local_addr, local_addr, 32, RTM_DELROUTE, RT_TABLE_LOCAL, -1,-1);
+  if (err) {
+    syslog(LOG_INFO,"NetlinkLinkStatus::process_down(), failure in setting interface down");
   }
 
   fclose(fp);
