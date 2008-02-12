@@ -6628,8 +6628,8 @@ bgp_show_summary (struct vty *vty, struct bgp *bgp, int afi, int safi)
               
               /* Usage summary and header */
               vty_out (vty,
-                       "BGP router identifier %s, local AS number %d%s",
-                       inet_ntoa (bgp->router_id), bgp->as, VTY_NEWLINE);
+                       "BGP router identifier %s, local AS number %lu%s",
+                       inet_ntoa (bgp->router_id), (long unsigned)bgp->as, VTY_NEWLINE);
 
               ents = bgp_table_count (bgp->rib[afi][safi]);
               vty_out (vty, "RIB entries %ld, using %s of memory%s", ents,
@@ -7185,7 +7185,7 @@ bgp_show_peer (struct vty *vty, struct peer *p)
 
   /* Configured IP address. */
   vty_out (vty, "BGP neighbor is %s, ", p->host);
-  vty_out (vty, "remote AS %d, ", p->as);
+  vty_out (vty, "remote AS %lu, ", (long unsigned)p->as);
   vty_out (vty, "local AS %d%s, ",
 	   p->change_local_as ? p->change_local_as : p->local_as,
 	   CHECK_FLAG (p->flags, PEER_FLAG_LOCAL_AS_NO_PREPEND) ?
@@ -7968,7 +7968,7 @@ bgp_show_rsclient_summary (struct vty *vty, struct bgp *bgp,
                       "Route Server's BGP router identifier %s%s",
                       inet_ntoa (bgp->router_id), VTY_NEWLINE);
              vty_out (vty,
-              "Route Server's local AS number %d%s", bgp->as,
+		      "Route Server's local AS number %lu%s", (long unsigned)bgp->as,
                        VTY_NEWLINE);
 
              vty_out (vty, "%s", VTY_NEWLINE);
