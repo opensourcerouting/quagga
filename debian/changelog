@@ -1,3 +1,120 @@
+vyatta-quagga (0.99.9-2) unstable; urgency=low
+
+  vc4.0.0
+  [ Mark O'Brien ]
+
+
+  [ An-Cheng Huang ]
+  * remove generated files from repo
+
+  [ Justin Fletcher ]
+  * Log to syslog daemon
+
+  [ Michael Larson ]
+  * fix for static interface and static nexthop routes for quagga. Now
+    respects cable pull (IFF_RUNNING) events and admin (IFF_UP) events.
+  * initial check-in of watchlink project. compiles, runs and manages
+    state. needs additional testing and updates
+  * removed unnecessary files.
+  * packaging and make rules for base vyatta-quagga project to build
+    watchlink
+  * Added quagga like features to watchlink pgm: standard pid file
+    creation and background option. Also
+  * hooks to start/stop watchlink daemon with quagga
+  * create directory for watchlink to store link status
+  * moved creation of linkstatus directory from postinst to preinst
+    where it should be.
+  * cleaned up source a bit. added syslog error messages. added legal-
+    eeze.
+  * added support for filtering of interfaces. filter or exclusion list
+    needs to be be written to exclude
+  * removed stderr message when unable to open exclusion file. Also
+    downgraded syslog entry to
+  * added empty exclude file creation to make watchlink happy
+  * fix bug introduced with ptp support--indexing of database and
+    initialization of terminating address.
+  * fix for bc addr and fix for parsing iface for show cmds and filter
+  * need to qualify test for non-ethernet type interfaces to
+    newlink/dellink messages only.
+  * moved some stderr messages to syslog. removed stderr message when
+    receiving ack from kernel on netlink msg.
+  * modified watchlink to manage connected routes in local and main
+    tables per interface rather than pulling interface address on cable
+    pull event.
+  * force so_recvbuf size to 223232 (double of 111616) for netlink in
+    zebra. will also need to modify
+  * fix for bug 2750. will also submit to quagga dvlprs.
+
+  [ Stephen Hemminger ]
+  * avoid package conflict between iproute and vyatta-iproute
+  * Revert "avoid package conflict between iproute and vyatta-iproute"
+
+  [ Tom Grennan ]
+  * ignore autoreconf generated files
+  * ignore emacs backups
+  * add script to import updates from anoncvs.quagga.net
+  * import into the "upstream" branch
+  * initial vyatta-quagga debian config
+  * finish vyatta debian config
+  * use default daemon config files rather than /dev/null
+  * fix log files path
+  * set default logging
+  * ignore debuild generated debian/vyatta-quagga.substvars
+  * donot modify existing conffiles
+  * separate init of vtysh.conf from other daemons
+  * use "log syslog LEVEL" not "log file syslog LEVEL"
+  * ignore watchlink binary
+  * donot add user "vyatta" to vtysh.conf in preinit, this is now done
+    during system config
+
+  [ paul ]
+  * [bgpd] Fix typo, which prevented advertisement of MP (non-IPv4)
+    prefixes
+  * [privs/Solaris] Quagga should work in zones with IP instances
+  * [bgpd] Merge AS4 support
+  * [tests] Forgot to commit ecommunity_tests.c
+  * [news] Fix top-line version
+  * [snmp-smux] Fix problems if 'smux peer ...' is issued multiple times
+  * [ospf6d] Fix removal of defunct ASBR routes
+  * 2007-10-30 Nick Hilliard <nick@inex.ie>
+  * [bgpd] small fix for crash if 'listenon' argument is not given
+  * [bgpd] Fix typo in previous commit to bgp_main.c
+
+  [ pilot ]
+  * * rt_socket.c: (kernel_rtm_ipv4) prefix_buf could be passed
+  * Switch from LOOKUP() to lookup() for rtm_type (see bug #401 for
+    details).
+  * + fixed bug #402: now the second zebra process doesn't destroy
+    routes
+  * + sayonara old_pid!
+  * + fix minor regression in OSPF sending buffer adjustment logic
+  * + fix missing arg to zlog_warn()
+  * + Minor bugfix: IPv6 prefixes were logged incorrectly in RIB
+    debugging calls. Fixed.
+  * + rib_process() speedup for multi-nexthop route nodes
+  * + pidfiles are now always created with 0644 perms instead if
+    LOGFILE_MASK (0600)
+  * + fix the bug reported by Milan Kocian (IPv6 route handling was
+    broken by the RIB debug changeset).
+  * + fixed bug #418 (changing address on an existing interface doesn't
+    cause existing static routes to be revalidated)
+  * + fixed no_set_aspath_prepend() to correctly match existing "set"
+    statement
+
+  [ root ]
+  * added support for ifa_address field in rtm_newaddr message and in
+    links where the ifa_address != ifa_local then ifa_address is
+    populated in setaddr message. fix for bug 2650
+  * fix for bug 2648--downgraded some syslog messages and removed some
+    from console.
+  * fix for bug 2570. increased buffer length from 4096 to 8192
+  * fix for ppp--restrict watchlink to ethernet interface types only.
+    Filter by checking the ifi_type flag in ifinfomsg hdr from netlink.
+
+  [ Mark O'Brien ]
+
+ -- Mark O'Brien <mobrien@vyatta.com>  Mon, 25 Feb 2008 17:39:54 -0800
+
 vyatta-quagga (0.99.9-1) unstable; urgency=low
 
   * based on upstream/0.99.9 == d68aac0fbecabfb765a42b3c6e5693836dafda99
