@@ -1047,7 +1047,6 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
             }
         }
     }
-  /*
   else
     {
     // RTM_DELLINK. 
@@ -1062,7 +1061,6 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 
       if_delete_update (ifp);
     }
-  */
   return 0;
 }
 
