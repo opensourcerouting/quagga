@@ -4384,13 +4384,13 @@ bgp_config_write_peer (struct vty *vty, struct bgp *bgp,
 	    vty_out (vty, " neighbor %s peer-group%s", addr,
 		     VTY_NEWLINE);
 	  if (peer->as)
-	    vty_out (vty, " neighbor %s remote-as %d%s", addr, peer->as,
+	    vty_out (vty, " neighbor %s remote-as %u%s", addr, (unsigned)peer->as,
 		     VTY_NEWLINE);
 	}
       else
 	{
 	  if (! g_peer->as)
-	    vty_out (vty, " neighbor %s remote-as %d%s", addr, peer->as,
+	    vty_out (vty, " neighbor %s remote-as %u%s", addr, (unsigned)peer->as,
 		     VTY_NEWLINE);
 	  if (peer->af_group[AFI_IP][SAFI_UNICAST])
 	    vty_out (vty, " neighbor %s peer-group %s%s", addr,
@@ -4781,7 +4781,7 @@ bgp_config_write (struct vty *vty)
 	vty_out (vty, "!%s", VTY_NEWLINE);
 
       /* Router bgp ASN */
-      vty_out (vty, "router bgp %d", bgp->as);
+      vty_out (vty, "router bgp %u", (unsigned)bgp->as);
 
       if (bgp_option_check (BGP_OPT_MULTIPLE_INSTANCE))
 	{

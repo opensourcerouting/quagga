@@ -1188,9 +1188,9 @@ bgp_open_receive (struct peer *peer, bgp_size_t size)
 
   /* Receive OPEN message log  */
   if (BGP_DEBUG (normal, NORMAL))
-    zlog_debug ("%s rcv OPEN, version %d, remote-as (in open) %d,"
+    zlog_debug ("%s rcv OPEN, version %d, remote-as (in open) %u,"
                 " holdtime %d, id %s",
-	        peer->host, version, remote_as, holdtime,
+	        peer->host, version, (unsigned)remote_as, holdtime,
 	        inet_ntoa (remote_id));
   
   /* BEGIN to read the capability here, but dont do it yet */
