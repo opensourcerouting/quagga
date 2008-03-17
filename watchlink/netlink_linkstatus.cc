@@ -1,10 +1,29 @@
 /*
  * Module: netlink_linkstatus.cc
  *
+ * **** License ****
+ * Version: VPL 1.0
  *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 2 as published
- * by the Free Software Foundation.
+ * The contents of this file are subject to the Vyatta Public License
+ * Version 1.0 ("License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ * http://www.vyatta.com/vpl
+ *
+ * Software distributed under the License is distributed on an "AS IS"
+ * basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
+ * the License for the specific language governing rights and limitations
+ * under the License.
+ *
+ * This code was originally developed by Vyatta, Inc.
+ * Portions created by Vyatta are Copyright (C) 2008 Vyatta, Inc.
+ * All Rights Reserved.
+ *
+ * Author: Michael Larson
+ * Date: 2008
+ * Description:
+ *
+ * **** End License ****
+ *
  */
 #include <stdio.h>
 #include <sys/socket.h>
@@ -156,9 +175,15 @@ NetlinkLinkStatus::process_going_up(const NetlinkEvent &event)
 
     int ifindex = strtoul(tokens.get(0).c_str(),NULL,10);
     uint32_t local_addr = strtoul(tokens.get(1).c_str(),NULL,10);
-    //    uint32_t addr = strtoul(tokens.get(2).c_str(),NULL,10);
+    uint32_t addr = strtoul(tokens.get(2).c_str(),NULL,10);
     int mask_len = strtoul(tokens.get(3).c_str(),NULL,10);
+
     
+    bool err = _nl_send.send_set(_send_sock, ifindex, local_addr, addr, mask_len, RTM_NEWADDR);
+    if (err) {
+      syslog(LOG_INFO,"NetlinkLinkStatus::process_up(), failure in setting interface back to up");
+    }
+    /*    
     bool err = _nl_send.send_set_route(_send_sock, ifindex, local_addr, local_addr, 32, RTM_NEWROUTE, RT_TABLE_LOCAL, RTN_LOCAL, RT_SCOPE_HOST);
     if (err) {
       syslog(LOG_INFO,"NetlinkLinkStatus::process_up(), failure in setting interface back to up");
@@ -181,6 +206,7 @@ NetlinkLinkStatus::process_going_up(const NetlinkEvent &event)
     if (err) {
       syslog(LOG_INFO,"NetlinkLinkStatus::process_up(), failure in setting interface back to up");
     }
+    */
   }
 
   fclose(fp);
@@ -241,7 +267,13 @@ NetlinkLinkStatus::process_down(const NetlinkEvent &event)
   line += string(buf) + "\n";
   
   fputs(line.c_str(),fp);
-  
+
+  bool err = _nl_send.send_set(_send_sock, ifindex, event.get_local_addr().get(), event.get_addr().get(), mask_len, RTM_DELADDR);
+  if (err) {
+    syslog(LOG_INFO,"NetlinkLinkStatus::process_down(), failure in setting interface down");
+  }
+
+  /*  
   uint32_t first_addr = ipv4_first_addr(local_addr, mask_len);
   //reinsert addresses to interface
   bool err = _nl_send.send_set_route(_send_sock, ifindex, local_addr, first_addr, mask_len, RTM_DELROUTE, RT_TABLE_MAIN, -1,-1);
@@ -264,7 +296,7 @@ NetlinkLinkStatus::process_down(const NetlinkEvent &event)
   if (err) {
     syslog(LOG_INFO,"NetlinkLinkStatus::process_down(), failure in setting interface down");
   }
-
+  */
   fclose(fp);
 
   return 0;
