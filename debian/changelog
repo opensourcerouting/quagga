@@ -1,3 +1,32 @@
+vyatta-quagga (0.99.9-3) unstable; urgency=low
+
+  VC4.0.1
+  [ Mark O'Brien ]
+
+
+  [ Bob Gilligan ]
+  * Bugfix: 2845
+
+  [ Michael Larson ]
+  * revert behavior for watchlink to pulling/pushing address on
+    interface on IFF_RUNNING|IFF_UP event.
+  * And with the correct licensing headers.
+
+  [ Mohit Mehta ]
+  * Fix Bug 2750 bgp: large ASN shown as negative
+  * Fix Bug 2750 bgp: large ASN shown as negative
+
+  [ Stephen Hemminger ]
+  * Change license notice from VPL to GPLv2
+
+  [ Stig Thormodsrud ]
+  * Fix 2842: Protocol debug does not take affect until underlying log
+    level
+
+  [ Mark O'Brien ]
+
+ -- Mark O'Brien <mobrien@vyatta.com>  Tue, 18 Mar 2008 17:00:43 -0700
+
 vyatta-quagga (0.99.9-2) unstable; urgency=low
 
   vc4.0.0
