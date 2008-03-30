@@ -10,7 +10,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <string>
-#include <set>
+#include <map>
 #include <fcntl.h>
 #include <syslog.h>
 #include <errno.h>
@@ -36,7 +36,7 @@ struct option longopts[] =
   { 0 }
 };
 
-set<string> g_exclude;
+multimap<string,IPv4net> g_exclude;
 string g_link_dir = "/var/linkstatus";
 
 /**
@@ -59,10 +59,10 @@ usage()
  *
  *
  **/
-set<string> 
+multimap<string,IPv4net> 
 load_exclusion_file(const string &link_dir)
 {
-  set<string> coll;
+  multimap<string,IPv4net> coll;
 
   string file = link_dir + "/exclude";
   FILE *fp = fopen(file.c_str(), "r");
@@ -76,9 +76,14 @@ load_exclusion_file(const string &link_dir)
   while (fgets(str, 1024, fp)) {
     string line(str);
 
-    StrProc tokens(line, ",");
-    for (int i = 0; i < tokens.size(); ++i) {
-      coll.insert(tokens.get(i));
+    StrProc tokens(line, " ");
+    if (tokens.size() == 1) {
+      string any("0/0");
+      coll.insert(pair<string,IPv4net>(tokens.get(0),IPv4net(any)));
+    }
+    else if (tokens.size() == 2) {
+      string net(tokens.get(1));
+      coll.insert(pair<string,IPv4net>(tokens.get(0),IPv4net(net)));      
     }
   }
   fclose(fp);
@@ -183,8 +188,6 @@ main(int argc, char* const argv[])
   NetlinkLinkStatus nl_ls(sock, g_link_dir, debug);
 
   while (true) {
-    //    cout << "watchlink: now entering listening mode: " << endl;
-
     NetlinkEvent nl_event;
     if (nl_listener.process(nl_event, g_exclude) == true) {
       if (send_request) {

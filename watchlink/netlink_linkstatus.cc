@@ -130,6 +130,7 @@ NetlinkLinkStatus::process_going_up(const NetlinkEvent &event)
   if (_debug) {
     cout << "NetlinkLinkStatus::process_going_up(): " << event.get_iface() << endl;
   }
+  syslog(LOG_INFO,"Interface is now active: %s",event.get_iface().c_str());
 
   //check for link status file, otherwise return
   char buf[40];
@@ -289,6 +290,7 @@ NetlinkLinkStatus::process_going_down(const NetlinkEvent &event)
   if (_debug) {
     cout << "NetlinkLinkStatus::process_going_down(): " << event.get_iface() << "(" << event.get_index() << ")" << endl;
   }
+  syslog(LOG_INFO,"Interface is now inactive: %s",event.get_iface().c_str());
 
   //pull interface addresses
   if (_nl_send.send_get(_send_sock, RTM_GETADDR, event.get_index())) {

@@ -32,10 +32,12 @@ class IPv4
 public:
   IPv4() : _addr(-1) {}
   IPv4(uint32_t addr) : _addr(addr) {}
+  virtual ~IPv4() {}
 
   uint32_t 
   get() {return _addr;}
 
+  virtual
   std::string 
   str() 
   {
@@ -44,9 +46,61 @@ public:
     char* buf = inet_ntoa(addr);
     return std::string(buf);
   }
+  
+protected:
+  uint32_t _addr;
+};
+
+
+class IPv4net : protected IPv4
+{
+public:
+  IPv4net() : IPv4(-1),_mask_length(32) {}
+  IPv4net(uint32_t addr, char mask_len) : IPv4(addr),_mask_length(mask_len) {}
+  IPv4net(std::string &net) {
+    int pos = net.find("/");
+    if (pos == std::string::npos) {
+      pos = net.length();
+      _mask_length = 32;
+    }
+    else {
+      uint32_t m_val = strtoul(net.substr(pos+1,net.length()-1).c_str(),NULL,10);
+      if (m_val > 32) {
+	m_val = 32;
+      }
+      _mask_length = m_val;
+    }
+    uint32_t a_val = inet_addr(net.substr(0,pos).c_str());
+    if (a_val == INADDR_NONE) {
+      this->_addr = 0;
+      return;
+    }
+    this->_addr = a_val;
+  }
+
+  uint32_t 
+  get_addr() {return get();}
+
+  char
+  get_mask_length() {return _mask_length;}
+
+  std::string 
+  str() 
+  {
+    in_addr addr;
+    addr.s_addr = _addr;
+    char *buf = inet_ntoa(addr);
+    
+    std::string tmp(buf);
+
+    char buf2[80];
+    sprintf(buf2,"%d",_mask_length);
+    tmp += std::string("/") + buf2;
+    return tmp;
+  }
 
 private:
-  uint32_t _addr;
+  char _mask_length;
 };
 
 

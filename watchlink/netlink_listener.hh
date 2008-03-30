@@ -10,7 +10,7 @@
 #define __NETLINK_LISTENER_HH__
 
 #include "netlink_event.hh"
-#include <set>
+#include <map>
 #include <string>
 
 class NetlinkListener
@@ -29,7 +29,7 @@ public: //methods
   process(NetlinkEvent &e);
 
   bool
-  process(NetlinkEvent &e, std::set<std::string> filter);
+  process(NetlinkEvent &e, std::multimap<std::string,IPv4net> filter);
 
   int
   get_sock() {return _fd;}

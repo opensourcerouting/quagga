@@ -13,6 +13,7 @@
 #include <linux/rtnetlink.h>
 #include <syslog.h>
 
+#include <map>
 #include <vector>
 #include <string>
 #include <iostream>
@@ -116,15 +117,29 @@ NetlinkListener::init()
  *
  **/
 bool
-NetlinkListener::process(NetlinkEvent &e, set<string> filter)
+NetlinkListener::process(NetlinkEvent &e, multimap<string,IPv4net> filter)
 {
   bool state = process(e);
-
-  if (state == true && (filter.find(e.get_iface()) != filter.end()) ||
-      (e.get_type() == RTM_DELLINK || e.get_type() == RTM_NEWLINK) && e.get_ifi_type() != 1/*ARPHRD_ETHER*/) {
+  //is this a non-ethernet msg?
+  if ((e.get_type() == RTM_DELLINK || e.get_type() == RTM_NEWLINK) && e.get_ifi_type() != 1/*ARPHRD_ETHER*/) {
     e = NetlinkEvent();
     state = false;
   }
+  else {
+    multimap<string,IPv4net>::iterator iter = filter.begin();
+    while (iter != filter.end()) {
+      if (iter->first == e.get_iface()) { //found interface exclusion
+	if (iter->second.get_mask_length() == 0 || (iter->second.get_addr() == e.get_local_addr().get() && iter->second.get_mask_length() == e.get_mask_len())) { //addr match
+	  e = NetlinkEvent();
+	  state = false;
+	  break;
+	}
+      }
+      ++iter;
+    }
+  }
+   
+
   return state;
 }
 
