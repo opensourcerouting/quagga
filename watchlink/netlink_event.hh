@@ -19,6 +19,10 @@
 #include <ostream>
 #include <linux/rtnetlink.h>
 
+uint32_t
+apply_mask_ipv4 (const uint32_t p, const unsigned char m);
+
+
 class Mac
 {
 public:
@@ -75,7 +79,7 @@ public:
       this->_addr = 0;
       return;
     }
-    this->_addr = a_val;
+    this->_addr = apply_mask_ipv4(a_val,_mask_length);
   }
 
   uint32_t 
@@ -83,6 +87,18 @@ public:
 
   char
   get_mask_length() {return _mask_length;}
+
+  bool
+  contains(IPv4 &addr) {
+    //check if addr is within specified addr range
+    return (apply_mask_ipv4(addr.get(),_mask_length) == _addr);
+  }
+
+  bool
+  contains(IPv4 addr) {
+    //check if addr is within specified addr range
+    return (apply_mask_ipv4(addr.get(),_mask_length) == _addr);
+  }
 
   std::string 
   str() 
@@ -251,6 +267,8 @@ private: //variables
   NLEventColl _coll;
   bool _debug;
 };
+
+
 
 
 #endif // __NETLINK_EVENT_HH__

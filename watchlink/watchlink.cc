@@ -76,6 +76,10 @@ load_exclusion_file(const string &link_dir)
   while (fgets(str, 1024, fp)) {
     string line(str);
 
+    //strip out comments
+    int pos = line.find("#");
+    line = line.substr(0,pos);
+
     StrProc tokens(line, " ");
     if (tokens.size() == 1) {
       string any("0/0");

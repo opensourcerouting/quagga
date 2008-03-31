@@ -301,3 +301,35 @@ std::ostream & operator <<(std::ostream & Stream, const NetlinkEvent & instance)
   return Stream; 
 }
 
+
+/* from quagga prefix.c */
+/* Apply mask to IPv4 prefix. */
+/* Maskbit. */
+static u_char maskbit[] = {0x00, 0x80, 0xc0, 0xe0, 0xf0,
+                                 0xf8, 0xfc, 0xfe, 0xff};
+
+
+uint32_t
+apply_mask_ipv4 (const uint32_t p, const unsigned char m)
+{
+  uint32_t val(p);
+  u_char *pnt = (u_char *) &val;
+  int index;
+  int offset;
+
+  index = m / 8;
+  if (index < 4) {
+    offset = m % 8;
+    
+    pnt[index] &= maskbit[offset];
+    index++;
+    
+    while (index < 4) {
+      pnt[index++] = 0;
+    }
+  }
+  return val;
+}
+
+
+
