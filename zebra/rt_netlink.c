@@ -41,6 +41,7 @@
 #include "zebra/redistribute.h"
 #include "zebra/interface.h"
 #include "zebra/debug.h"
+#include <stddef.h>
 
 /* Socket interface to kernel */
 struct nlsock
@@ -1938,6 +1939,33 @@ kernel_read (struct thread *thread)
   return 0;
 }
 
+/* Filter out messages from self that occur on listener socket */
+static void netlink_install_filter (int sock)
+{
+  /* BPF code to exclude all RTM_NEWROUTE messages from ZEBRA */
+  struct sock_filter filter[] = {
+    BPF_STMT(BPF_LD|BPF_ABS|BPF_H, offsetof(struct nlmsghdr, nlmsg_type)),
+    						/* 0: ldh [4]	          */
+    BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K, htons(RTM_NEWROUTE), 0, 3),	
+						/* 1: jeq 0x18 jt 2 jf 5  */
+    BPF_STMT(BPF_LD|BPF_ABS|BPF_B, 
+	     sizeof(struct nlmsghdr) + offsetof(struct rtmsg, rtm_protocol)),
+    						/* 2: ldb [23]		  */
+    BPF_JUMP(BPF_JMP+ BPF_B, RTPROT_ZEBRA, 2, 0),
+    						/* 3: jeq 0xb jt 4  jf 5  */
+    BPF_STMT(BPF_RET|BPF_K, 0),			/* 4: ret 0               */
+    BPF_STMT(BPF_RET|BPF_K, 0xffff),		/* 5: ret 0xffff          */
+  };
+
+  struct sock_fprog prog = {
+    .len = sizeof(filter) / sizeof(filter[0]),
+    .filter = filter,
+  };
+
+  if (setsockopt(sock, SOL_SOCKET, SO_ATTACH_FILTER, &prog, sizeof(prog)) < 0) 
+    zlog_warn ("Can't install socket filter: %s\n", safe_strerror(errno));
+}
+
 /* Exported interface function.  This function simply calls
    netlink_socket (). */
 void
@@ -1954,5 +1982,8 @@ kernel_init (void)
 
   /* Register kernel socket. */
   if (netlink.sock > 0)
-    thread_add_read (zebrad.master, kernel_read, NULL, netlink.sock);
+    {
+      netlink_install_filter (netlink.sock);
+      thread_add_read (zebrad.master, kernel_read, NULL, netlink.sock);
+    }
 }
