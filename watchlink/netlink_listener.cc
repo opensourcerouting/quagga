@@ -128,9 +128,8 @@ NetlinkListener::process(NetlinkEvent &e, multimap<string,IPv4net> filter)
   else {
     multimap<string,IPv4net>::iterator iter = filter.begin();
     while (iter != filter.end()) {
-      if (iter->first == e.get_iface()) { //found interface exclusion
+      if (iter->first == e.get_iface() || iter->first == "*") { //found interface exclusion
 	if (iter->second.contains(e.get_local_addr())) {
-	  //	if (iter->second.get_mask_length() == 0 || (iter->second.get_addr() == e.get_local_addr().get() && iter->second.get_mask_length() == e.get_mask_len())) { //addr match
 	  e = NetlinkEvent();
 	  state = false;
 	  break;
