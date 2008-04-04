@@ -8,9 +8,12 @@
  */
 #include <stdio.h>
 #include <sys/socket.h>
+#include <sys/file.h>
 #include <iostream>
 #include <string>
 #include <syslog.h>
+#include <errno.h>
+
 #include "rl_str_proc.hh"
 #include "netlink_send.hh"
 #include "netlink_event.hh"
@@ -138,9 +141,17 @@ NetlinkLinkStatus::process_going_up(const NetlinkEvent &event)
   string file = _link_dir + "/" + buf;
   FILE *fp = fopen(file.c_str(), "r");
   if (fp == NULL) {
-    syslog(LOG_INFO,"NetlinkLinkStatus::process_going_up(), failed to open state file");
+      syslog(LOG_INFO,"NetlinkLinkStatus::process_going_up(), failed to open state file: %s",
+	     strerror(errno));
     //    cerr << "NetlinkLinkStatus::process_going_up(), failed to open state file" << endl;
     return -1; //means we are still up, ignore...
+  }
+
+  if (flock(fileno(fp), LOCK_SH)) {
+      syslog(LOG_INFO, "NetlinkLinkStatus::process_going_up() failed to acquire lock: %s",
+	     strerror(errno));
+      fclose(fp);
+      return -1;
   }
 
   char str[1025];
@@ -231,6 +242,13 @@ NetlinkLinkStatus::process_down(const NetlinkEvent &event)
     syslog(LOG_INFO,"NetlinkLinkStatus::process_down(), failed to open state file");
     //    cerr << "NetlinkLinkStatus::process_down(), failed to open state file" << endl;
     return -1; 
+  }
+
+  if (flock(fileno(fp), LOCK_EX)) {
+      syslog(LOG_INFO, "NetlinkLinkStatus::process_down() failed to acquire lock: %s",
+	     strerror(errno));
+      fclose(fp);
+      return -1;
   }
 
   int ifindex = event.get_index();
