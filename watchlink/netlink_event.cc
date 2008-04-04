@@ -6,7 +6,7 @@
  * under the terms of the GNU General Public License version 2 as published
  * by the Free Software Foundation.
  */
-#include <linux/types.h>
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <linux/rtnetlink.h>
 #include <net/if.h>

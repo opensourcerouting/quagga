@@ -7,7 +7,7 @@
  * by the Free Software Foundation.
  */
 #include <errno.h>
-#include <linux/types.h>
+#include <sys/types.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <linux/rtnetlink.h>
