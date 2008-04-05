@@ -1,3 +1,32 @@
+vyatta-quagga (0.99.9-4) unstable; urgency=low
+
+  3.0.2
+  [ Mark O'Brien ]
+
+  * 3.0.1
+
+  [ Michael Larson ]
+  * bumped up netlink recv buffer limits for zebra--should alleviate
+    netlink error msgs that occur under large routing tables when layer
+  * support 64bit
+  * added interface/address exclusion support to watchlink. The correct
+    format is:
+  * modified watchlink parser to support the following behaviors:
+  * add wildcard for interfaces. use an "*" in place of an interface
+    name--and the address provided will exclude all
+
+  [ Stephen Hemminger ]
+  * Filter unwanted netlink messages
+  * fix build on on 64 bit platforms
+  * add locking to prevent file update problems
+
+  [ rbalocca ]
+  * Remove unused lintian "ignore" option
+
+  [ Mark O'Brien ]
+
+ -- Mark O'Brien <mobrien@vyatta.com>  Fri, 04 Apr 2008 18:01:16 -0700
+
 vyatta-quagga (0.99.9-3) unstable; urgency=low
 
   VC4.0.1
