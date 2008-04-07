@@ -156,7 +156,7 @@ NetlinkEventManager::parse_msg(const struct nlmsghdr *nlHdr)
 
   //link state flag 
   enabled = ifInfo->ifi_flags & IFF_UP;
-  running = ifInfo->ifi_flags & IFF_RUNNING;
+  running = enabled && (ifInfo->ifi_flags & IFF_RUNNING);
   index = ifInfo->ifi_index;
 
   struct rtattr* rtAttr = (struct rtattr *)IFLA_RTA(ifInfo);
