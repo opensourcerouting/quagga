@@ -443,7 +443,6 @@ bgp_capability_as4 (struct peer *peer, struct capability_header *hdr)
 
 static struct message capcode_str[] =
 {
-  { 0,	""},
   { CAPABILITY_CODE_MP,			"MultiProtocol Extensions"	},
   { CAPABILITY_CODE_REFRESH,		"Route Refresh"			},
   { CAPABILITY_CODE_ORF,		"Cooperative Route Filtering" 	},
@@ -461,7 +460,7 @@ static size_t cap_minsizes[] =
   [CAPABILITY_CODE_MP]		= sizeof (struct capability_mp_data),
   [CAPABILITY_CODE_REFRESH]	= CAPABILITY_CODE_REFRESH_LEN,
   [CAPABILITY_CODE_ORF]		= sizeof (struct capability_orf_entry),
-  [CAPABILITY_CODE_RESTART]	= sizeof (struct capability_gr) - 2,
+  [CAPABILITY_CODE_RESTART]	= sizeof (struct capability_gr),
   [CAPABILITY_CODE_AS4]		= CAPABILITY_CODE_AS4_LEN,
   [CAPABILITY_CODE_DYNAMIC]	= CAPABILITY_CODE_DYNAMIC_LEN,
   [CAPABILITY_CODE_REFRESH_OLD]	= CAPABILITY_CODE_REFRESH_LEN,

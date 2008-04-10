@@ -1,3 +1,35 @@
+2008-02-28 Paul Jakma <paul.jakma@sun.com>
+
+	* log.c: (mes_lookup) Sowmini Varadhan diagnosed a problem where
+	  this function can cause a NULL dereference, on lookups for unknown
+	  indices, or messages with NULL strings. Can occur, e.g., debug
+	  logging code when processing received messages. Fixed to accept a
+	  pointer to a default string to be used if there is no match.
+	* log.h: LOOKUP adjusted to match
+
+2008-02-28 Paul Jakma <paul.jakma@sun.com>
+
+	* linklist.c: This implementation expects that the data pointer not
+	  be null, e.g. listgetdata() asserts this. The list add methods
+	  don't apply the same sanity check.
+
+	  Noted by Jim Carlson in bug #437.
+
+2008-01-11 Andrew J. Schorr <ajschorr@alumni.princeton.edu>
+
+	* zebra.h: Revert previous change, no need to include <net/if_media.h>
+	  here.
+
+2008-01-10 Ingo Flaschberger <if@xip.at>
+
+	* zebra.h: If HAVE_BSD_LINK_DETECT is defined, include <net/if_media.h>.
+
+2008-01-08 Pavol Rusnak <prusnak@suse.cz>
+
+	* memory.c: (mtype_memstr) Fix accidental shift past width of type,
+	  constant should have been forced to UL, rather than being left to
+	  default to int.
+
 2007-11-12 Denis Ovsienko
 
 	* linklist.c: (listnode_add_after) Don't forget to increment list
