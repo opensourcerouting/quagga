@@ -1951,7 +1951,7 @@ static void netlink_install_filter (int sock)
     BPF_STMT(BPF_LD|BPF_ABS|BPF_B, 
 	     sizeof(struct nlmsghdr) + offsetof(struct rtmsg, rtm_protocol)),
     						/* 2: ldb [23]		  */
-    BPF_JUMP(BPF_JMP+ BPF_B, RTPROT_ZEBRA, 2, 0),
+    BPF_JUMP(BPF_JMP+ BPF_B, RTPROT_ZEBRA, 0, 1),
     						/* 3: jeq 0xb jt 4  jf 5  */
     BPF_STMT(BPF_RET|BPF_K, 0),			/* 4: ret 0               */
     BPF_STMT(BPF_RET|BPF_K, 0xffff),		/* 5: ret 0xffff          */
