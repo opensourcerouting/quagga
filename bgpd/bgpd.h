@@ -56,6 +56,11 @@ struct bgp_master
 #define BGP_OPT_NO_FIB                   (1 << 0)
 #define BGP_OPT_MULTIPLE_INSTANCE        (1 << 1)
 #define BGP_OPT_CONFIG_CISCO             (1 << 2)
+
+#ifdef HAVE_TCP_MD5SIG
+  /* bgp receive socket */
+  int sock;
+#endif /* HAVE_TCP_MD5SIG */
 };
 
 /* BGP instance structure.  */
@@ -358,6 +363,7 @@ struct peer
 
   /* NSF mode (graceful restart) */
   u_char nsf[AFI_MAX][SAFI_MAX];
+#define PEER_FLAG_PASSWORD                  (1 << 9) /* password */
 
   /* Per AF configuration flags. */
   u_int32_t af_flags[AFI_MAX][SAFI_MAX];
@@ -378,6 +384,9 @@ struct peer
 #define PEER_FLAG_MAX_PREFIX                (1 << 14) /* maximum prefix */
 #define PEER_FLAG_MAX_PREFIX_WARNING        (1 << 15) /* maximum prefix warning-only */
 #define PEER_FLAG_NEXTHOP_LOCAL_UNCHANGED   (1 << 16) /* leave link-local nexthop unchanged */ 
+
+  /* MD5 password */
+  char *password;
 
   /* default-originate route-map.  */
   struct
@@ -533,6 +542,13 @@ struct peer
 #define PEER_RMAP_TYPE_IMPORT         (1 << 6) /* neighbor route-map import */
 #define PEER_RMAP_TYPE_EXPORT         (1 << 7) /* neighbor route-map export */
 };
+
+#if defined(HAVE_TCP_MD5SIG)
+
+#define PEER_PASSWORD_MINLEN	(1)
+#define PEER_PASSWORD_MAXLEN	(80)
+
+#endif /* HAVE_TCP_MD5SIG */
 
 /* This structure's member directly points incoming packet data
    stream. */
@@ -924,6 +940,11 @@ extern int peer_route_map_set (struct peer *, afi_t, safi_t, int, const char *);
 extern int peer_route_map_unset (struct peer *, afi_t, safi_t, int);
 
 extern int peer_unsuppress_map_set (struct peer *, afi_t, safi_t, const char *);
+#ifdef HAVE_TCP_MD5SIG
+extern int peer_password_set (struct peer *, const char *);
+extern int peer_password_unset (struct peer *);
+#endif /* HAVE_TCP_MD5SIG */
+
 extern int peer_unsuppress_map_unset (struct peer *, afi_t, safi_t);
 
 extern int peer_maximum_prefix_set (struct peer *, afi_t, safi_t, u_int32_t, u_char, int, u_int16_t);

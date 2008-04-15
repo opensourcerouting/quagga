@@ -218,6 +218,8 @@ AC_ARG_WITH(libpam,
 [  --with-libpam           use libpam for PAM support in vtysh])
 AC_ARG_ENABLE(tcp-zebra,
 [  --enable-tcp-zebra      enable TCP/IP socket connection between zebra and protocol daemon])
+AC_ARG_ENABLE(tcp-md5,
+[  --enable-tcp-md5        enable TCP/IP md5 in BGPd])
 AC_ARG_ENABLE(opaque-lsa,
 [  --enable-opaque-lsa     enable OSPF Opaque-LSA with OSPFAPI support (RFC2370)])
 AC_ARG_ENABLE(ospfapi,
@@ -286,6 +288,10 @@ fi
 
 if test "${enable_tcp_zebra}" = "yes"; then
   AC_DEFINE(HAVE_TCP_ZEBRA,,Use TCP for zebra communication)
+fi
+
+if test "${enable_tcp_md5}" = "yes"; then
+  AC_DEFINE(HAVE_TCP_MD5SIG,1,Enable TCP MD5 Signatures)
 fi
 
 if test "${enable_opaque_lsa}" = "yes"; then
