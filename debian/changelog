@@ -1,3 +1,21 @@
+vyatta-quagga (0.99.9-5) unstable; urgency=low
+
+  VC4.0.2
+  [ Mark O'Brien ]
+
+  * 3.0.2
+
+  [ Stephen Hemminger ]
+  * interface running status fix
+  * Fix packet filter state machine
+
+  [ rbalocca ]
+  * Add upgrade test to prerm
+
+  [ Mark O'Brien ]
+
+ -- Mark O'Brien <mobrien@vyatta.com>  Wed, 16 Apr 2008 09:50:28 -0700
+
 vyatta-quagga (0.99.9-4) unstable; urgency=low
 
   3.0.2
