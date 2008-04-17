@@ -47,7 +47,7 @@ configure	+= --enable-vtysh
 configure	+= --enable-ipv6
 configure	+= --enable-isisd
 configure	+= --enable-watchquagga
-configure	+= --enable-watchlink
+configure	+= --disable-watchlink
 configure	+= --enable-opaque-lsa
 configure	+= --enable-ospfclient=yes
 configure	+= --enable-ospfapi=yes
