@@ -12,7 +12,8 @@ Build-Depends: debhelper (>= 5),
  imagemagick,
  ghostscript | gs-gpl,
  groff,
- po-debconf
+ po-debconf,
+ libsnmp-dev
 Standards-Version: 3.7.2
 Vcs-Git: http://suva.vyatta.git/quagga.git
 
