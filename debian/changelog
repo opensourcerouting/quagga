@@ -15,7 +15,7 @@ vyatta-quagga (0.99.9-6) unstable; urgency=low
 
 vyatta-quagga (0.99.9-5) unstable; urgency=low
 
-  VC4.0.2
+  VC4.0.2 release candidate
   [ Mark O'Brien ]
 
   * 3.0.2
