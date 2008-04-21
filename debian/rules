@@ -18,6 +18,7 @@ PACKAGE=vyatta-quagga
 PKGDIR=$(CURDIR)/debian/$(PACKAGE)
 BUILD_STAMP=debian/build-stamp
 CFLAGS = -Wall -g
+WANT_SNMP=1
 
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
 	CFLAGS += -O0
@@ -107,7 +108,7 @@ install: build
 	install -D --mode=0644 debian/lintian $(PKGDIR)/usr/share/lintian/overrides/$(PACKAGE)
 
 ifeq ($(WANT_SNMP), 1)
-	install -D --mode=0644 zebra/GNOME-PRODUCT-ZEBRA-MIB $(PKGDIR)/usr/share/snmp/mibs
+	install -D --mode=0644 zebra/GNOME-PRODUCT-ZEBRA-MIB $(PKGDIR)/usr/share/snmp/mibs/GNOME-PRODUCT-ZEBRA-MIB.txt
 endif
 
 

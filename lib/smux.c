@@ -1179,7 +1179,10 @@ smux_connect (struct thread *t)
   int ret;
 
   if (debug_smux)
-    zlog_debug ("SMUX connect try %d", fail + 1);
+    {
+    fail = fail + 1;
+    zlog_debug ("SMUX connect try %d", fail);
+    }
 
   /* Clear thread poner of myself. */
   smux_connect_thread = NULL;
@@ -1188,8 +1191,9 @@ smux_connect (struct thread *t)
   smux_sock = smux_socket ();
   if (smux_sock < 0)
     {
-      if (++fail < SMUX_MAX_FAILURE)
-	smux_event (SMUX_CONNECT, 0);
+      zlog_warn ("SMUX socket/connection creation error");
+      // if (++fail < SMUX_MAX_FAILURE)
+      smux_event (SMUX_CONNECT, 0);
       return 0;
     }
 
@@ -1200,8 +1204,8 @@ smux_connect (struct thread *t)
       zlog_warn ("SMUX open message send failed: %s", safe_strerror (errno));
       close (smux_sock);
       smux_sock = -1;
-      if (++fail < SMUX_MAX_FAILURE)
-	smux_event (SMUX_CONNECT, 0);
+      // if (++fail < SMUX_MAX_FAILURE)
+      smux_event (SMUX_CONNECT, 0);
       return -1;
     }
 
@@ -1212,8 +1216,8 @@ smux_connect (struct thread *t)
       zlog_warn ("SMUX register message send failed: %s", safe_strerror (errno));
       close (smux_sock);
       smux_sock = -1;
-      if (++fail < SMUX_MAX_FAILURE)
-	smux_event (SMUX_CONNECT, 0);
+      // if (++fail < SMUX_MAX_FAILURE)
+      smux_event (SMUX_CONNECT, 0);
       return -1;
     }
 
