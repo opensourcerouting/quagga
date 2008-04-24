@@ -47,7 +47,7 @@ vyatta_quagga_start ()
     if [ $# -gt 0 ] ; then
 	daemons=( $* )
     else
-	daemons+=( watchlink )
+#	daemons+=( watchlink )
 	daemons+=( zebra )
 	daemons+=( ripd )
 #	daemons+=( ripngd )
