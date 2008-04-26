@@ -342,6 +342,7 @@ static int
 nexthop_active_ipv4 (struct rib *rib, struct nexthop *nexthop, int set,
 		     struct route_node *top)
 {
+  struct interface *ifp;
   struct prefix_ipv4 p;
   struct route_table *table;
   struct route_node *rn;
@@ -398,7 +399,16 @@ nexthop_active_ipv4 (struct rib *rib, struct nexthop *nexthop, int set,
 	      newhop = match->nexthop;
 	      if (newhop && nexthop->type == NEXTHOP_TYPE_IPV4)
 		nexthop->ifindex = newhop->ifindex;
-	      
+	      else if (newhop && newhop->type == NEXTHOP_TYPE_IFINDEX)
+		{
+		  ifp = if_lookup_by_index (newhop->ifindex);
+		  return (ifp && if_is_operative (ifp));
+		}
+	      else if (newhop && newhop->type == NEXTHOP_TYPE_IFNAME)
+		{
+		  ifp = if_lookup_by_name(newhop->ifname);
+		  return (ifp && if_is_operative (ifp));
+		}
 	      return 1;
 	    }
 	  else if (CHECK_FLAG (rib->flags, ZEBRA_FLAG_INTERNAL))
@@ -418,6 +428,17 @@ nexthop_active_ipv4 (struct rib *rib, struct nexthop *nexthop, int set,
 			    || newhop->type == NEXTHOP_TYPE_IFNAME
 			    || newhop->type == NEXTHOP_TYPE_IPV4_IFINDEX)
 			  nexthop->rifindex = newhop->ifindex;
+
+			if (newhop->type == NEXTHOP_TYPE_IFINDEX)
+			  {
+			    ifp = if_lookup_by_index (newhop->ifindex);
+			    return (ifp && if_is_operative (ifp));
+			  }
+			else if (newhop && newhop->type == NEXTHOP_TYPE_IFNAME)
+			  {
+			    ifp = if_lookup_by_name(newhop->ifname);
+			    return (ifp && if_is_operative (ifp));
+			  }
 		      }
 		    return 1;
 		  }
@@ -439,6 +460,7 @@ static int
 nexthop_active_ipv6 (struct rib *rib, struct nexthop *nexthop, int set,
 		     struct route_node *top)
 {
+  struct interface *ifp;
   struct prefix_ipv6 p;
   struct route_table *table;
   struct route_node *rn;
@@ -496,7 +518,17 @@ nexthop_active_ipv6 (struct rib *rib, struct nexthop *nexthop, int set,
 
 	      if (newhop && nexthop->type == NEXTHOP_TYPE_IPV6)
 		nexthop->ifindex = newhop->ifindex;
-	      
+	      else if (newhop && newhop->type == NEXTHOP_TYPE_IFINDEX)
+		{
+		  ifp = if_lookup_by_index (newhop->ifindex);
+		  return (ifp && if_is_operative (ifp));
+		}
+	      else if (newhop && newhop->type == NEXTHOP_TYPE_IFNAME)
+		{
+		  ifp = if_lookup_by_name(newhop->ifname);
+		  return (ifp && if_is_operative (ifp));
+		}
+
 	      return 1;
 	    }
 	  else if (CHECK_FLAG (rib->flags, ZEBRA_FLAG_INTERNAL))
@@ -518,6 +550,17 @@ nexthop_active_ipv6 (struct rib *rib, struct nexthop *nexthop, int set,
 			    || newhop->type == NEXTHOP_TYPE_IPV6_IFINDEX
 			    || newhop->type == NEXTHOP_TYPE_IPV6_IFNAME)
 			  nexthop->rifindex = newhop->ifindex;
+
+			if (newhop && newhop->type == NEXTHOP_TYPE_IFINDEX)
+			  {
+			    ifp = if_lookup_by_index (newhop->ifindex);
+			    return (ifp && if_is_operative (ifp));
+			  }
+			else if (newhop && newhop->type == NEXTHOP_TYPE_IFNAME)
+			  {
+			    ifp = if_lookup_by_name(newhop->ifname);
+			    return (ifp && if_is_operative (ifp));
+			  }
 		      }
 		    return 1;
 		  }

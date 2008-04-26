@@ -51,7 +51,6 @@ pkgsrc/*.sh
 vtysh/extract.pl
 vtysh/vtysh
 vtysh/vtysh_cmd.c
-watchlink/watchlink
 watchquagga/watchquagga
 zebra/testzebra
 zebra/zebra
