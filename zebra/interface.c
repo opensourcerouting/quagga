@@ -538,15 +538,25 @@ if_down (struct interface *ifp)
 
 	  if (p->family == AF_INET)
 	    connected_down_ipv4 (ifp, ifc);
-#ifdef HAVE_IPV6
-	  else if (p->family == AF_INET6)
-	    connected_down_ipv6 (ifp, ifc);
-#endif /* HAVE_IPV6 */
 	}
     }
 
   /* Examine all static routes which direct to the interface. */
   rib_update ();
+
+#ifdef HAVE_IPV6
+  if (ifp->connected)
+    {
+      for (ALL_LIST_ELEMENTS (ifp->connected, node, next, ifc))
+	{
+	  p = ifc->address;
+	  if (p->family == AF_INET6)
+	    connected_down_ipv6 (ifp, ifc);
+	}
+    }
+
+  rib_update ();
+#endif /* HAVE_IPV6 */
 }
 
 void
