@@ -1,3 +1,24 @@
+vyatta-quagga (0.99.9-7) unstable; urgency=low
+
+  3.0.3
+  [ Mark O'Brien ]
+
+
+  [ Stephen Hemminger ]
+  * mark static routes as inactive when link is down
+  * Don't build watchlink
+  * Don't build watchlink
+  * Check nexthop for internal routes
+  * Check nexthop status
+  * Two passes on update (ipv4 and ipv6)
+
+  [ rbalocca ]
+  * Indicate the VC4.0.2 release candidate in the changelog
+
+  [ Mark O'Brien ]
+
+ -- Mark O'Brien <mobrien@vyatta.com>  Tue, 29 Apr 2008 16:42:45 -0700
+
 vyatta-quagga (0.99.9-6) unstable; urgency=low
 
   VC4.0.2
