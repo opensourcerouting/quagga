@@ -226,7 +226,8 @@ smux_socket ()
     }
   freeaddrinfo(res0);
   if (sock < 0)
-    zlog_warn ("Can't connect to SNMP agent with SMUX");
+     if (debug_smux)
+         zlog_debug ("Can't connect to SNMP agent with SMUX");
 #else
   sock = socket (AF_INET, SOCK_STREAM, 0);
   if (sock < 0)
@@ -257,7 +258,8 @@ smux_socket ()
     {
       close (sock);
       smux_sock = -1;
-      zlog_warn ("Can't connect to SNMP agent with SMUX");
+      if (debug_smux)
+         zlog_debug ("Can't connect to SNMP agent with SMUX");
       return -1;
     }
 #endif
@@ -1191,7 +1193,8 @@ smux_connect (struct thread *t)
   smux_sock = smux_socket ();
   if (smux_sock < 0)
     {
-      zlog_warn ("SMUX socket/connection creation error");
+      if (debug_smux)
+         zlog_debug ("SMUX socket/connection creation error");
       // if (++fail < SMUX_MAX_FAILURE)
       smux_event (SMUX_CONNECT, 0);
       return 0;
