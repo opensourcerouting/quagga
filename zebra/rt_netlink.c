@@ -1939,22 +1939,26 @@ kernel_read (struct thread *thread)
   return 0;
 }
 
-/* Filter out messages from self that occur on listener socket */
-static void netlink_install_filter (int sock)
+/* Filter out messages from self that occur on listener socket,
+   caused by our actions on the command socket
+ */
+static void netlink_install_filter (int sock, __u32 pid)
 {
-  /* BPF code to exclude all RTM_NEWROUTE messages from ZEBRA */
   struct sock_filter filter[] = {
+    /* 0: ldh [4]	          */
     BPF_STMT(BPF_LD|BPF_ABS|BPF_H, offsetof(struct nlmsghdr, nlmsg_type)),
-    						/* 0: ldh [4]	          */
-    BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K, htons(RTM_NEWROUTE), 0, 3),	
-						/* 1: jeq 0x18 jt 2 jf 5  */
-    BPF_STMT(BPF_LD|BPF_ABS|BPF_B, 
-	     sizeof(struct nlmsghdr) + offsetof(struct rtmsg, rtm_protocol)),
-    						/* 2: ldb [23]		  */
-    BPF_JUMP(BPF_JMP+ BPF_B, RTPROT_ZEBRA, 0, 1),
-    						/* 3: jeq 0xb jt 4  jf 5  */
-    BPF_STMT(BPF_RET|BPF_K, 0),			/* 4: ret 0               */
-    BPF_STMT(BPF_RET|BPF_K, 0xffff),		/* 5: ret 0xffff          */
+    /* 1: jeq 0x18 jt 3 jf 6  */
+    BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K, htons(RTM_NEWROUTE), 1, 0),
+    /* 2: jeq 0x19 jt 3 jf 6  */
+    BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K, htons(RTM_DELROUTE), 0, 3),	
+    /* 3: ldw [12]		  */
+    BPF_STMT(BPF_LD|BPF_ABS|BPF_W, offsetof(struct nlmsghdr, nlmsg_pid)),
+    /* 4: jeq XX  jt 5 jf 6   */
+    BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K, htonl(pid), 0, 1),
+    /* 5: ret 0    (skip)     */
+    BPF_STMT(BPF_RET|BPF_K, 0),
+    /* 6: ret 0xffff (keep)   */
+    BPF_STMT(BPF_RET|BPF_K, 0xffff),
   };
 
   struct sock_fprog prog = {
@@ -1983,7 +1987,7 @@ kernel_init (void)
   /* Register kernel socket. */
   if (netlink.sock > 0)
     {
-      netlink_install_filter (netlink.sock);
+      netlink_install_filter (netlink.sock, netlink_cmd.snl.nl_pid);
       thread_add_read (zebrad.master, kernel_read, NULL, netlink.sock);
     }
 }
