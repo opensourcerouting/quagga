@@ -1,3 +1,17 @@
+vyatta-quagga (0.99.9-8) unstable; urgency=low
+
+  3.0.4
+  [ Mark O'Brien ]
+
+
+  [ Stephen Hemminger ]
+  * filter out all route change responses on listen socket
+  * quiet noisy errors from zebra
+
+  [ Mark O'Brien ]
+
+ -- Mark O'Brien <mobrien@vyatta.com>  Mon, 05 May 2008 16:40:58 -0700
+
 vyatta-quagga (0.99.9-7) unstable; urgency=low
 
   3.0.3
