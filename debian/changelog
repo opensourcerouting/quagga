@@ -1,3 +1,16 @@
+vyatta-quagga (0.99.9-9) unstable; urgency=low
+
+  3.0.5
+  [ Mark O'Brien ]
+
+
+  [ An-Cheng Huang ]
+  * fix package upgrade problem caused by prerm script.
+
+  [ Mark O'Brien ]
+
+ -- Mark O'Brien <mobrien@vyatta.com>  Tue, 06 May 2008 12:43:40 -0700
+
 vyatta-quagga (0.99.9-8) unstable; urgency=low
 
   3.0.4
