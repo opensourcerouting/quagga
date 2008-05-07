@@ -1009,6 +1009,7 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
   /* Add interface. */
   if (h->nlmsg_type == RTM_NEWLINK)
     {
+      unsigned long flag = ifi->ifi_flags & 0x0000fffff;
       ifp = if_lookup_by_name (name);
 
       if (ifp == NULL || !CHECK_FLAG (ifp->status, ZEBRA_INTERFACE_ACTIVE))
@@ -1016,8 +1017,11 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
           if (ifp == NULL)
             ifp = if_get_by_name (name);
 
+	  zlog_info ("interface %s index %d %s added.",
+		     name, ifi->ifi_index, if_flag_dump(flag));
+
           set_ifindex(ifp, ifi->ifi_index);
-          ifp->flags = ifi->ifi_flags & 0x0000fffff;
+          ifp->flags = flag;
           ifp->mtu6 = ifp->mtu = *(int *) RTA_DATA (tb[IFLA_MTU]);
           ifp->metric = 1;
 
@@ -1031,9 +1035,11 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
           ifp->mtu6 = ifp->mtu = *(int *) RTA_DATA (tb[IFLA_MTU]);
           ifp->metric = 1;
 
+	  zlog_info ("interface %s index %d changed %s.",
+		     name, ifi->ifi_index,  if_flag_dump(flag));
           if (if_is_operative (ifp))
             {
-              ifp->flags = ifi->ifi_flags & 0x0000fffff;
+              ifp->flags = flag;
               if (!if_is_operative (ifp))
                 if_down (ifp);
 	      else
@@ -1059,6 +1065,9 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
                 name);
           return 0;
         }
+      else
+	zlog_info ("interface %s index %d deleted.",
+		   name, ifi->ifi_index);
 
       if_delete_update (ifp);
     }
