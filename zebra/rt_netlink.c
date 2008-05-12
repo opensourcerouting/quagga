@@ -418,7 +418,13 @@ netlink_parse_info (int (*filter) (struct sockaddr_nl *, struct nlmsghdr *),
                 if (nl == &netlink_cmd
                     && (-errnum == ENODEV || -errnum == ESRCH)
                     && (msg_type == RTM_NEWROUTE || msg_type == RTM_DELROUTE))
-                  loglvl = LOG_DEBUG;
+		  {
+		    /* These errors are normal during link transistion */
+		    if (IS_ZEBRA_DEBUG_KERNEL)
+		      loglvl = LOG_DEBUG;
+		    else
+		      return -1;
+		  }
 
                 zlog (NULL, loglvl, "%s error: %s, type=%s(%u), "
                       "seq=%u, pid=%u",
