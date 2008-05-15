@@ -287,7 +287,7 @@ netlink_request (int family, int type, struct nlsock *nl)
   req.nlh.nlmsg_len = sizeof req;
   req.nlh.nlmsg_type = type;
   req.nlh.nlmsg_flags = NLM_F_ROOT | NLM_F_MATCH | NLM_F_REQUEST;
-  req.nlh.nlmsg_pid = 0;
+  req.nlh.nlmsg_pid = nl->snl.nl_pid;
   req.nlh.nlmsg_seq = ++nl->seq;
   req.g.rtgen_family = family;
 
@@ -370,13 +370,6 @@ netlink_parse_info (int (*filter) (struct sockaddr_nl *, struct nlmsghdr *),
           return -1;
         }
       
-      /* JF: Ignore messages that aren't from the kernel */
-      if ( snl.nl_pid != 0 )
-        {
-          zlog ( NULL, LOG_ERR, "Ignoring message from pid %u", snl.nl_pid );
-          continue;
-        }
-
       for (h = (struct nlmsghdr *) buf; NLMSG_OK (h, (unsigned int) status);
            h = NLMSG_NEXT (h, status))
         {
@@ -1015,7 +1008,7 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
   /* Add interface. */
   if (h->nlmsg_type == RTM_NEWLINK)
     {
-      unsigned long flag = ifi->ifi_flags & 0x0000fffff;
+      unsigned long new_flags = ifi->ifi_flags & 0x0000fffff;
       ifp = if_lookup_by_name (name);
 
       if (ifp == NULL || !CHECK_FLAG (ifp->status, ZEBRA_INTERFACE_ACTIVE))
@@ -1024,10 +1017,10 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
             ifp = if_get_by_name (name);
 
 	  zlog_info ("interface %s index %d %s added.",
-		     name, ifi->ifi_index, if_flag_dump(flag));
+		     name, ifi->ifi_index, if_flag_dump(new_flags));
 
           set_ifindex(ifp, ifi->ifi_index);
-          ifp->flags = flag;
+          ifp->flags = new_flags;
           ifp->mtu6 = ifp->mtu = *(int *) RTA_DATA (tb[IFLA_MTU]);
           ifp->metric = 1;
 
@@ -1041,28 +1034,32 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
           ifp->mtu6 = ifp->mtu = *(int *) RTA_DATA (tb[IFLA_MTU]);
           ifp->metric = 1;
 
-	  zlog_info ("interface %s index %d changed %s.",
-		     name, ifi->ifi_index,  if_flag_dump(flag));
-          if (if_is_operative (ifp))
-            {
-              ifp->flags = flag;
-              if (!if_is_operative (ifp))
-                if_down (ifp);
+	  if (new_flags != ifp->flags)
+	    {
+	      zlog_info ("interface %s index %d changed %s.",
+			 name, ifi->ifi_index,  if_flag_dump(new_flags));
+
+	      if (if_is_operative (ifp))
+		{
+		  ifp->flags = new_flags;
+		  if (!if_is_operative (ifp))
+		    if_down (ifp);
+		  else
+		    /* Must notify client daemons of new interface status. */
+		    zebra_interface_up_update (ifp);
+		}
 	      else
-		/* Must notify client daemons of new interface status. */
-	        zebra_interface_up_update (ifp);
-            }
-          else
-            {
-              ifp->flags = ifi->ifi_flags & 0x0000fffff;
-              if (if_is_operative (ifp))
-                if_up (ifp);
-            }
+		{
+		  ifp->flags = new_flags;
+		  if (if_is_operative (ifp))
+		    if_up (ifp);
+		}
+	    }
         }
     }
   else
     {
-    // RTM_DELLINK. 
+      // RTM_DELLINK. 
       ifp = if_lookup_by_name (name);
 
       if (ifp == NULL)
@@ -1083,6 +1080,13 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 int
 netlink_information_fetch (struct sockaddr_nl *snl, struct nlmsghdr *h)
 {
+  /* JF: Ignore messages that aren't from the kernel */
+  if ( snl->nl_pid != 0 )
+    {
+      zlog ( NULL, LOG_ERR, "Ignoring message from pid %u", snl->nl_pid );
+      return 0;
+    }
+
   switch (h->nlmsg_type)
     {
     case RTM_NEWROUTE:
