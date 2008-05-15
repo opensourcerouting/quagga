@@ -38,10 +38,6 @@ union g_addr {
 
 struct rib
 {
-  /* Status Flags for the *route_node*, but kept in the head RIB.. */
-  u_char rn_status;
-#define RIB_ROUTE_QUEUED	(1 << 0)
-
   /* Link list. */
   struct rib *next;
   struct rib *prev;
@@ -49,20 +45,24 @@ struct rib
   /* Nexthop structure */
   struct nexthop *nexthop;
   
-  /* Refrence count. */
+  /* Reference count. */
   unsigned long refcnt;
   
   /* Uptime. */
   time_t uptime;
 
-  /* Type fo this route. */
-  int type;
-
-  /* Which routing table */
-  int table;			
-
   /* Metric */
   u_int32_t metric;
+
+  /* Which routing table */
+  u_int32_t table;			
+
+  /* Type for this route. < ZEBRA_ROUTE_MAX */
+  u_int8_t type;
+
+  /* Status Flags for the *route_node*, but kept in the head RIB.. */
+  u_char rn_status;
+#define RIB_ROUTE_QUEUED	(1 << 0)
 
   /* Distance. */
   u_char distance;
@@ -90,6 +90,13 @@ struct static_ipv4
   struct static_ipv4 *prev;
   struct static_ipv4 *next;
 
+  /* Nexthop value. */
+  union 
+  {
+    struct in_addr ipv4;
+    char *ifname;
+  } gate;
+
   /* Administrative distance. */
   u_char distance;
 
@@ -98,13 +105,6 @@ struct static_ipv4
 #define STATIC_IPV4_GATEWAY     1
 #define STATIC_IPV4_IFNAME      2
 #define STATIC_IPV4_BLACKHOLE   3
-
-  /* Nexthop value. */
-  union 
-  {
-    struct in_addr ipv4;
-    char *ifname;
-  } gate;
 
   /* bit flags */
   u_char flags;
@@ -122,6 +122,10 @@ struct static_ipv6
   struct static_ipv6 *prev;
   struct static_ipv6 *next;
 
+  /* Nexthop value. */
+  struct in6_addr ipv6;
+  char *ifname;
+
   /* Administrative distance. */
   u_char distance;
 
@@ -130,11 +134,6 @@ struct static_ipv6
 #define STATIC_IPV6_GATEWAY          1
 #define STATIC_IPV6_GATEWAY_IFNAME   2
 #define STATIC_IPV6_IFNAME           3
-
-  /* Nexthop value. */
-  struct in6_addr ipv6;
-  char *ifname;
-
   /* bit flags */
   u_char flags;
 /*
@@ -166,22 +165,24 @@ struct nexthop
   /* Interface index. */
   char *ifname;
   unsigned int ifindex;
+
+  /* Nexthop address or interface name. */
+  union g_addr gate;
+
+  unsigned int rifindex;
+  union g_addr rgate;
+  union g_addr src;
   
-  enum nexthop_types_t type;
+/* Really enum nexthop_types_t but safe space */
+  u_char type;
 
   u_char flags;
 #define NEXTHOP_FLAG_ACTIVE     (1 << 0) /* This nexthop is alive. */
 #define NEXTHOP_FLAG_FIB        (1 << 1) /* FIB nexthop. */
 #define NEXTHOP_FLAG_RECURSIVE  (1 << 2) /* Recursive nexthop. */
 
-  /* Nexthop address or interface name. */
-  union g_addr gate;
-
   /* Recursive lookup nexthop. */
   u_char rtype;
-  unsigned int rifindex;
-  union g_addr rgate;
-  union g_addr src;
 };
 
 /* Routing table instance.  */
