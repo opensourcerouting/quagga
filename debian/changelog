@@ -1,3 +1,51 @@
+vyatta-quagga (0.99.9-9) unstable; urgency=low
+
+  3.0.5
+  [ Mark O'Brien ]
+
+
+  [ An-Cheng Huang ]
+  * fix package upgrade problem caused by prerm script.
+
+  [ Mark O'Brien ]
+
+ -- Mark O'Brien <mobrien@vyatta.com>  Tue, 06 May 2008 12:43:40 -0700
+
+vyatta-quagga (0.99.9-8) unstable; urgency=low
+
+  3.0.4
+  [ Mark O'Brien ]
+
+
+  [ Stephen Hemminger ]
+  * filter out all route change responses on listen socket
+  * quiet noisy errors from zebra
+
+  [ Mark O'Brien ]
+
+ -- Mark O'Brien <mobrien@vyatta.com>  Mon, 05 May 2008 16:40:58 -0700
+
+vyatta-quagga (0.99.9-7) unstable; urgency=low
+
+  3.0.3
+  [ Mark O'Brien ]
+
+
+  [ Stephen Hemminger ]
+  * mark static routes as inactive when link is down
+  * Don't build watchlink
+  * Don't build watchlink
+  * Check nexthop for internal routes
+  * Check nexthop status
+  * Two passes on update (ipv4 and ipv6)
+
+  [ rbalocca ]
+  * Indicate the VC4.0.2 release candidate in the changelog
+
+  [ Mark O'Brien ]
+
+ -- Mark O'Brien <mobrien@vyatta.com>  Tue, 29 Apr 2008 16:42:45 -0700
+
 vyatta-quagga (0.99.9-6) unstable; urgency=low
 
   VC4.0.2

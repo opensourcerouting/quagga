@@ -287,7 +287,7 @@ netlink_request (int family, int type, struct nlsock *nl)
   req.nlh.nlmsg_len = sizeof req;
   req.nlh.nlmsg_type = type;
   req.nlh.nlmsg_flags = NLM_F_ROOT | NLM_F_MATCH | NLM_F_REQUEST;
-  req.nlh.nlmsg_pid = 0;
+  req.nlh.nlmsg_pid = nl->snl.nl_pid;
   req.nlh.nlmsg_seq = ++nl->seq;
   req.g.rtgen_family = family;
 
@@ -370,13 +370,6 @@ netlink_parse_info (int (*filter) (struct sockaddr_nl *, struct nlmsghdr *),
           return -1;
         }
       
-      /* JF: Ignore messages that aren't from the kernel */
-      if ( snl.nl_pid != 0 )
-        {
-          zlog ( NULL, LOG_ERR, "Ignoring message from pid %u", snl.nl_pid );
-          continue;
-        }
-
       for (h = (struct nlmsghdr *) buf; NLMSG_OK (h, (unsigned int) status);
            h = NLMSG_NEXT (h, status))
         {
@@ -425,7 +418,13 @@ netlink_parse_info (int (*filter) (struct sockaddr_nl *, struct nlmsghdr *),
                 if (nl == &netlink_cmd
                     && (-errnum == ENODEV || -errnum == ESRCH)
                     && (msg_type == RTM_NEWROUTE || msg_type == RTM_DELROUTE))
-                  loglvl = LOG_DEBUG;
+		  {
+		    /* These errors are normal during link transistion */
+		    if (IS_ZEBRA_DEBUG_KERNEL)
+		      loglvl = LOG_DEBUG;
+		    else
+		      return -1;
+		  }
 
                 zlog (NULL, loglvl, "%s error: %s, type=%s(%u), "
                       "seq=%u, pid=%u",
@@ -1068,6 +1067,13 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 int
 netlink_information_fetch (struct sockaddr_nl *snl, struct nlmsghdr *h)
 {
+  /* JF: Ignore messages that aren't from the kernel */
+  if ( snl->nl_pid != 0 )
+    {
+      zlog ( NULL, LOG_ERR, "Ignoring message from pid %u", snl->nl_pid );
+      return 0;
+    }
+
   switch (h->nlmsg_type)
     {
     case RTM_NEWROUTE:
@@ -1939,22 +1945,26 @@ kernel_read (struct thread *thread)
   return 0;
 }
 
-/* Filter out messages from self that occur on listener socket */
-static void netlink_install_filter (int sock)
+/* Filter out messages from self that occur on listener socket,
+   caused by our actions on the command socket
+ */
+static void netlink_install_filter (int sock, __u32 pid)
 {
-  /* BPF code to exclude all RTM_NEWROUTE messages from ZEBRA */
   struct sock_filter filter[] = {
+    /* 0: ldh [4]	          */
     BPF_STMT(BPF_LD|BPF_ABS|BPF_H, offsetof(struct nlmsghdr, nlmsg_type)),
-    						/* 0: ldh [4]	          */
-    BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K, htons(RTM_NEWROUTE), 0, 3),	
-						/* 1: jeq 0x18 jt 2 jf 5  */
-    BPF_STMT(BPF_LD|BPF_ABS|BPF_B, 
-	     sizeof(struct nlmsghdr) + offsetof(struct rtmsg, rtm_protocol)),
-    						/* 2: ldb [23]		  */
-    BPF_JUMP(BPF_JMP+ BPF_B, RTPROT_ZEBRA, 0, 1),
-    						/* 3: jeq 0xb jt 4  jf 5  */
-    BPF_STMT(BPF_RET|BPF_K, 0),			/* 4: ret 0               */
-    BPF_STMT(BPF_RET|BPF_K, 0xffff),		/* 5: ret 0xffff          */
+    /* 1: jeq 0x18 jt 3 jf 6  */
+    BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K, htons(RTM_NEWROUTE), 1, 0),
+    /* 2: jeq 0x19 jt 3 jf 6  */
+    BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K, htons(RTM_DELROUTE), 0, 3),	
+    /* 3: ldw [12]		  */
+    BPF_STMT(BPF_LD|BPF_ABS|BPF_W, offsetof(struct nlmsghdr, nlmsg_pid)),
+    /* 4: jeq XX  jt 5 jf 6   */
+    BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K, htonl(pid), 0, 1),
+    /* 5: ret 0    (skip)     */
+    BPF_STMT(BPF_RET|BPF_K, 0),
+    /* 6: ret 0xffff (keep)   */
+    BPF_STMT(BPF_RET|BPF_K, 0xffff),
   };
 
   struct sock_fprog prog = {
@@ -1983,7 +1993,7 @@ kernel_init (void)
   /* Register kernel socket. */
   if (netlink.sock > 0)
     {
-      netlink_install_filter (netlink.sock);
+      netlink_install_filter (netlink.sock, netlink_cmd.snl.nl_pid);
       thread_add_read (zebrad.master, kernel_read, NULL, netlink.sock);
     }
 }
