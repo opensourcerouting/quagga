@@ -23,6 +23,7 @@ debian/files
 debian/vyatta-quagga.postinst.debhelper
 debian/vyatta-quagga.postrm.debhelper
 debian/vyatta-quagga.prerm.debhelper
+debian/vyatta-quagga.debhelper.log
 depcomp
 doc/defines.texi
 doc/mdate-sh
