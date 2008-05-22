@@ -234,6 +234,16 @@ extern int interface_list_proc (void);
 extern int ifaddr_proc_ipv6 (void);
 #endif /* HAVE_PROC_NET_IF_INET6 */
 
+#ifdef HAVE_PROC_NET_IPV4_CONF
+extern int if_linkdetect_on (const char *);
+extern int if_linkdetect_off (const char *);
+#else
+#error config
+#define if_linkdetect_on(name)
+#define if_linkdetect_off(name)
+#endif
+
+
 #ifdef BSDI
 extern int if_kvm_get_mtu (struct interface *);
 #endif /* BSDI */

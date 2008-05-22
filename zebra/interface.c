@@ -32,6 +32,7 @@
 #include "connected.h"
 #include "log.h"
 #include "zclient.h"
+#include "ipforward.h"
 
 #include "zebra/interface.h"
 #include "zebra/rtadv.h"
@@ -1029,6 +1030,9 @@ DEFUN (linkdetect,
   if_was_operative = if_is_operative(ifp);
   SET_FLAG(ifp->status, ZEBRA_INTERFACE_LINKDETECTION);
 
+  /* Enable FIB to remove kernel routes as well */
+  if_linkdetect_on(ifp->name);
+
   /* When linkdetection is enabled, if might come down */
   if (!if_is_operative(ifp) && if_was_operative) if_down(ifp);
 
@@ -1052,6 +1056,9 @@ DEFUN (no_linkdetect,
   if_was_operative = if_is_operative(ifp);
   UNSET_FLAG(ifp->status, ZEBRA_INTERFACE_LINKDETECTION);
   
+  /* Disable FIB update on link-detect */
+  if_linkdetect_off(ifp->name);
+
   /* Interface may come up after disabling link detection */
   if (if_is_operative(ifp) && !if_was_operative) if_up(ifp);
 

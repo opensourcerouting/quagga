@@ -931,6 +931,12 @@ if test -r /proc/net/if_inet6; then
 fi
 AC_SUBST(IF_PROC)
 
+if test -r /proc/sys/net/ipv4/conf; then
+  AC_DEFINE(HAVE_PROC_NET_IPV4_CONF,,/proc/sys/net/ipv4/conf)
+  LINK_DETECT=if_linkdetect.o
+fi
+AC_SUBST(LINK_DETECT)
+
 dnl -----------------------------
 dnl check ipforward detect method
 dnl -----------------------------
