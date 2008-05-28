@@ -22,9 +22,6 @@
 #include <zebra.h>
 #include "log.h"
 #include "privs.h"
-
-#include "log.h"
-#include "privs.h"
 #include "prefix.h"
 
 #include "zebra/interface.h"
