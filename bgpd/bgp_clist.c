@@ -836,6 +836,7 @@ community_list_init (void)
   return ch;
 }
 
+#if 0
 /* Terminate community-list.  */
 static void
 community_list_terminate (struct community_list_handler *ch)
@@ -857,3 +858,4 @@ community_list_terminate (struct community_list_handler *ch)
 
   XFREE (MTYPE_COMMUNITY_LIST_HANDLER, ch);
 }
+#endif
