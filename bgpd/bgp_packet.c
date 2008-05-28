@@ -923,6 +923,7 @@ bgp_notify_send (struct peer *peer, u_char code, u_char sub_code)
   bgp_notify_send_with_data (peer, code, sub_code, NULL, 0);
 }
 
+#if 0
 static const char *
 afi2str (afi_t afi)
 {
@@ -946,6 +947,7 @@ safi2str (safi_t safi)
   else
     return "Unknown SAFI";
 }
+#endif
 
 /* Send route refresh message to the peer. */
 void
