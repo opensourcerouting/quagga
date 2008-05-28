@@ -1561,6 +1561,7 @@ ospf_snmp_if_lookup_next (struct in_addr *ifaddr, unsigned int *ifindex,
     {
       /* Usual interface */
       if (ifaddr->s_addr) 
+	{
         /* The interface must have valid AF_INET connected address */
         /* it must have lager IPv4 address value than the lookup entry */
         if ((ospf_snmp_is_if_have_addr(osif->ifp)) &&
@@ -1574,6 +1575,7 @@ ospf_snmp_if_lookup_next (struct in_addr *ifaddr, unsigned int *ifindex,
             if (oi)
               return oi;
           }
+	}
       /* Unnumbered interface */
       else  
         /* The interface must NOT have valid AF_INET connected address */

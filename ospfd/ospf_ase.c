@@ -156,6 +156,7 @@ ospf_ase_forward_address_check (struct ospf *ospf, struct in_addr fwd_addr)
   return 1;
 }
 
+#if 0
 /* Calculate ASBR route. */
 static struct ospf_route *
 ospf_ase_calculate_asbr_route (struct ospf *ospf,
@@ -236,6 +237,7 @@ ospf_ase_calculate_asbr_route (struct ospf *ospf,
 
   return asbr_route;
 }
+#endif
 
 static struct ospf_route *
 ospf_ase_calculate_new_route (struct ospf_lsa *lsa,
