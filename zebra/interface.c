@@ -1032,6 +1032,9 @@ DEFUN (linkdetect,
 
   /* Enable FIB to remove kernel routes as well */
   if_linkdetect_on(ifp->name);
+#ifdef HAVE_IPV6
+  if_linkdetect_ipv6_on(ifp->name);
+#endif
 
   /* When linkdetection is enabled, if might come down */
   if (!if_is_operative(ifp) && if_was_operative) if_down(ifp);
@@ -1058,6 +1061,9 @@ DEFUN (no_linkdetect,
   
   /* Disable FIB update on link-detect */
   if_linkdetect_off(ifp->name);
+#ifdef HAVE_IPV6
+  if_linkdetect_ipv6_off(ifp->name);
+#endif
 
   /* Interface may come up after disabling link detection */
   if (if_is_operative(ifp) && !if_was_operative) if_up(ifp);

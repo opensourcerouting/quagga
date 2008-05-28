@@ -32,14 +32,14 @@
 extern struct zebra_privs_t zserv_privs;
 
 static int
-linkdetect (const char *name, int onoff)
+linkdetect (const char *name, const char *ver, int onoff)
 {
   FILE *fp;
   int save_errno;
   char proc_name[128];
 
   snprintf(proc_name, sizeof(proc_name)-1, 
-	   "/proc/sys/net/ipv4/conf/%s/link_detect", name);
+	   "/proc/sys/net/%s/conf/%s/link_detect", ver, name);
   
   if ( zserv_privs.change(ZPRIVS_RAISE) )
     zlog_err ("Can't raise privileges, %s", safe_strerror (errno) );
@@ -71,11 +71,25 @@ linkdetect (const char *name, int onoff)
 int
 if_linkdetect_on (const char *name)
 {
-  return linkdetect (name, 1);
+  return linkdetect (name, "ipv4", 1);
 }
 
 int
 if_linkdetect_off (const char *name)
 {
-  return linkdetect (name, 1);
+ return linkdetect (name, "ipv4", 0);
 }
+
+#ifdef HAVE_IPV6
+int
+if_linkdetect_ipv6_on (const char *name)
+{
+  return linkdetect (name, "ipv6", 1);
+}
+
+int
+if_linkdetect_ipv6_off (const char *name)
+{
+ return linkdetect (name, "ipv6", 0);
+}
+#endif

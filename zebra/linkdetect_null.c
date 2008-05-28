@@ -14,3 +14,15 @@ if_linkdetect_off (const char *name)
 {
   return 0;
 }
+
+int
+if_linkdetect_ipv6_on (const char *name)
+{
+  return 0;
+}
+
+int
+if_linkdetect_ipv6_off (const char *name)
+{
+  return 0;
+}
