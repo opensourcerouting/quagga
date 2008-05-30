@@ -923,6 +923,7 @@ bgp_notify_send (struct peer *peer, u_char code, u_char sub_code)
   bgp_notify_send_with_data (peer, code, sub_code, NULL, 0);
 }
 
+#if 0
 static const char *
 afi2str (afi_t afi)
 {
@@ -946,6 +947,7 @@ safi2str (safi_t safi)
   else
     return "Unknown SAFI";
 }
+#endif
 
 /* Send route refresh message to the peer. */
 void
@@ -1235,7 +1237,7 @@ bgp_open_receive (struct peer *peer, bgp_size_t size)
         zlog_debug ("%s [AS4] OPEN remote_as is AS_TRANS, but no AS4."
                     " Odd, but proceeding.", peer->host);
       else if (as4 < BGP_AS_MAX && BGP_DEBUG (as4, AS4))
-        zlog_debug ("%s [AS4] OPEN remote_as is AS_TRANS, but AS4 fits "
+        zlog_debug ("%s [AS4] OPEN remote_as is AS_TRANS, but AS4 %u fits "
                     "in 2-bytes, very odd peer.", peer->host, as4);
       if (as4)
         remote_as = as4;

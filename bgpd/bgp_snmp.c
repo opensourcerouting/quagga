@@ -381,7 +381,7 @@ write_bgpPeerTable (int action, u_char *var_val,
   struct in_addr addr;
   struct peer *peer;
   long intval;
-  int bigsize = SNMP_MAX_LEN;
+  size_t bigsize = SNMP_MAX_LEN;
   
   if (var_val_type != ASN_INTEGER) 
     {

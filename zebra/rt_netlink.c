@@ -53,7 +53,7 @@ struct nlsock
 } netlink      = { -1, 0, {0}, "netlink-listen"},     /* kernel messages */
   netlink_cmd  = { -1, 0, {0}, "netlink-cmd"};        /* command channel */
 
-struct message nlmsg_str[] = {
+static struct message nlmsg_str[] = {
   {RTM_NEWROUTE, "RTM_NEWROUTE"},
   {RTM_DELROUTE, "RTM_DELROUTE"},
   {RTM_GETROUTE, "RTM_GETROUTE"},
@@ -66,7 +66,7 @@ struct message nlmsg_str[] = {
   {0, NULL}
 };
 
-const char *nexthop_types_desc[] =  
+static const char *nexthop_types_desc[] =  
 {
   "none",
   "Directly connected",
@@ -440,7 +440,7 @@ netlink_parse_rtattr (struct rtattr **tb, int max, struct rtattr *rta,
 
 /* Called from interface_lookup_netlink().  This function is only used
    during bootstrap. */
-int
+static int
 netlink_interface (struct sockaddr_nl *snl, struct nlmsghdr *h)
 {
   int len;
@@ -517,7 +517,7 @@ netlink_interface (struct sockaddr_nl *snl, struct nlmsghdr *h)
 }
 
 /* Lookup interface IPv4/IPv6 address. */
-int
+static int
 netlink_interface_addr (struct sockaddr_nl *snl, struct nlmsghdr *h)
 {
   int len;
@@ -652,7 +652,7 @@ netlink_interface_addr (struct sockaddr_nl *snl, struct nlmsghdr *h)
 }
 
 /* Looking up routing table by netlink interface. */
-int
+static int
 netlink_routing_table (struct sockaddr_nl *snl, struct nlmsghdr *h)
 {
   int len;
@@ -769,7 +769,7 @@ struct message rtproto_str[] = {
 };
 
 /* Routing information change from the kernel. */
-int
+static int
 netlink_route_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 {
   int len;
@@ -910,7 +910,7 @@ netlink_route_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
   return 0;
 }
 
-int
+static int
 netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 {
   int len;
@@ -1023,7 +1023,7 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
   return 0;
 }
 
-int
+static int
 netlink_information_fetch (struct sockaddr_nl *snl, struct nlmsghdr *h)
 {
   /* JF: Ignore messages that aren't from the kernel */
@@ -1125,7 +1125,7 @@ netlink_route_read (void)
 
 /* Utility function  comes from iproute2. 
    Authors:	Alexey Kuznetsov, <kuznet@ms2.inr.ac.ru> */
-int
+static int
 addattr_l (struct nlmsghdr *n, int maxlen, int type, void *data, int alen)
 {
   int len;
@@ -1145,7 +1145,7 @@ addattr_l (struct nlmsghdr *n, int maxlen, int type, void *data, int alen)
   return 0;
 }
 
-int
+static int
 rta_addattr_l (struct rtattr *rta, int maxlen, int type, void *data, int alen)
 {
   int len;
@@ -1167,7 +1167,7 @@ rta_addattr_l (struct rtattr *rta, int maxlen, int type, void *data, int alen)
 
 /* Utility function comes from iproute2. 
    Authors:	Alexey Kuznetsov, <kuznet@ms2.inr.ac.ru> */
-int
+static int
 addattr32 (struct nlmsghdr *n, int maxlen, int type, int data)
 {
   int len;
@@ -1195,7 +1195,7 @@ netlink_talk_filter (struct sockaddr_nl *snl, struct nlmsghdr *h)
 }
 
 /* sendmsg() to netlink socket then recvmsg(). */
-int
+static int
 netlink_talk (struct nlmsghdr *n, struct nlsock *nl)
 {
   int status;
@@ -1241,7 +1241,7 @@ netlink_talk (struct nlmsghdr *n, struct nlsock *nl)
 }
 
 /* Routing table change via netlink interface. */
-int
+static int
 netlink_route (int cmd, int family, void *dest, int length, void *gate,
                int index, int zebra_flags, int table)
 {
@@ -1316,7 +1316,7 @@ netlink_route (int cmd, int family, void *dest, int length, void *gate,
 }
 
 /* Routing table change via netlink interface. */
-int
+static int
 netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
                          int family)
 {
@@ -1779,7 +1779,7 @@ kernel_delete_ipv6_old (struct prefix_ipv6 *dest, struct in6_addr *gate,
 #endif /* HAVE_IPV6 */
 
 /* Interface address modification. */
-int
+static int
 netlink_address (int cmd, int family, struct interface *ifp,
                  struct connected *ifc)
 {
@@ -1844,7 +1844,7 @@ kernel_address_delete_ipv4 (struct interface *ifp, struct connected *ifc)
 extern struct thread_master *master;
 
 /* Kernel route reflection. */
-int
+static int
 kernel_read (struct thread *thread)
 {
   int ret;

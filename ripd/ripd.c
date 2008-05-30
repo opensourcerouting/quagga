@@ -926,7 +926,7 @@ rip_auth_md5 (struct rip_packet *packet, struct sockaddr_in *from,
   else if (ri->auth_str)
     strncpy (auth_str, ri->auth_str, RIP_AUTH_MD5_SIZE);
 
-  if (! auth_str)
+  if (auth_str[0] == 0)
     return 0;
   
   /* MD5 digest authentication. */
@@ -2977,6 +2977,7 @@ DEFUN (no_rip_route,
   return CMD_SUCCESS;
 }
 
+#if 0
 static void
 rip_update_default_metric (void)
 {
@@ -2988,6 +2989,7 @@ rip_update_default_metric (void)
       if (rinfo->type != ZEBRA_ROUTE_RIP && rinfo->type != ZEBRA_ROUTE_CONNECT)
         rinfo->metric = rip->default_metric;
 }
+#endif
 
 DEFUN (rip_default_metric,
        rip_default_metric_cmd,

@@ -208,6 +208,8 @@ AC_ARG_ENABLE(bgp-announce,
 [  --disable-bgp-announce, turn off BGP route announcement])
 AC_ARG_ENABLE(netlink,
 [  --enable-netlink        force to use Linux netlink interface])
+AC_ARG_ENABLE(linkdetect,
+[  --enable-linkdetect     use Linux link-detect configuration])
 AC_ARG_ENABLE(broken-aliases,
 [  --enable-broken-aliases enable aliases as distinct interfaces for Linux 2.2.X])
 AC_ARG_ENABLE(snmp,
@@ -917,6 +919,16 @@ AC_CHECK_HEADER([net/if.h],
     QUAGGA_INCLUDES)], 
   [], QUAGGA_INCLUDES )
 
+
+dnl ---------------------------------------------------------------
+dnl kernel link-detect enable via /proc/sys/net/ipv4/conf/ethX/link_detect
+dnl ---------------------------------------------------------------
+if test "${enable_linkdetect}" = "yes"; then
+  AC_DEFINE(HAVE_LINKDETECT,1,Enable Linux kernel linkdetect)
+  LINK_DETECT=if_linkdetect.o
+fi
+AC_SUBST(LINK_DETECT)
+
 dnl -----------------------
 dnl check proc file system.
 dnl -----------------------
@@ -930,12 +942,6 @@ if test -r /proc/net/if_inet6; then
   IF_PROC=if_proc.o
 fi
 AC_SUBST(IF_PROC)
-
-if test -r /proc/sys/net/ipv4/conf; then
-  AC_DEFINE(HAVE_PROC_NET_IPV4_CONF,,/proc/sys/net/ipv4/conf)
-  LINK_DETECT=if_linkdetect.o
-fi
-AC_SUBST(LINK_DETECT)
 
 dnl -----------------------------
 dnl check ipforward detect method

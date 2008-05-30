@@ -270,6 +270,7 @@ ospf_route_install (struct ospf *ospf, struct route_table *rt)
       }
 }
 
+#if 0
 static void
 ospf_intra_route_add (struct route_table *rt, struct vertex *v,
 		      struct ospf_area *area)
@@ -324,6 +325,7 @@ ospf_intra_route_add (struct route_table *rt, struct vertex *v,
 
   rn->info = or;
 }
+#endif
 
 /* RFC2328 16.1. (4). For "router". */
 void

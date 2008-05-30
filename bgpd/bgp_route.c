@@ -10959,6 +10959,7 @@ bgp_distance_unset (struct vty *vty, const char *distance_str,
   return CMD_SUCCESS;
 }
 
+#if 0
 static void
 bgp_distance_reset ()
 {
@@ -10975,6 +10976,7 @@ bgp_distance_reset ()
 	bgp_unlock_node (rn);
       }
 }
+#endif
 
 /* Apply BGP information to distance method. */
 u_char

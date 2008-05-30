@@ -93,6 +93,7 @@ vrf_alloc (const char *name)
   return vrf;
 }
 
+#if 0
 /* Free VRF.  */
 static void
 vrf_free (struct vrf *vrf)
@@ -101,6 +102,7 @@ vrf_free (struct vrf *vrf)
     XFREE (MTYPE_VRF_NAME, vrf->name);
   XFREE (MTYPE_VRF, vrf);
 }
+#endif
 
 /* Lookup VRF by identifier.  */
 struct vrf *
@@ -109,6 +111,7 @@ vrf_lookup (u_int32_t id)
   return vector_lookup (vrf_vector, id);
 }
 
+#if 0
 /* Lookup VRF by name.  */
 static struct vrf *
 vrf_lookup_by_name (char *name)
@@ -122,6 +125,7 @@ vrf_lookup_by_name (char *name)
 	return vrf;
   return NULL;
 }
+#endif
 
 /* Initialize VRF.  */
 static void
@@ -911,8 +915,7 @@ nexthop_active_check (struct route_node *rn, struct rib *rib,
     return CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_ACTIVE);
 
   rmap = 0;
-  if (rib->type >= 0 && rib->type < ZEBRA_ROUTE_MAX &&
-        	proto_rm[family][rib->type])
+  if (rib->type < ZEBRA_ROUTE_MAX && proto_rm[family][rib->type])
     rmap = route_map_lookup_by_name (proto_rm[family][rib->type]);
   if (!rmap && proto_rm[family][ZEBRA_ROUTE_MAX])
     rmap = route_map_lookup_by_name (proto_rm[family][ZEBRA_ROUTE_MAX]);
@@ -1567,7 +1570,7 @@ void rib_dump (const char * func, const struct prefix_ipv4 * p, const struct rib
   zlog_debug ("%s: dumping RIB entry %p for %s/%d", func, rib, straddr1, p->prefixlen);
   zlog_debug
   (
-    "%s: refcnt == %lu, uptime == %u, type == %u, table == %d",
+    "%s: refcnt == %lu, uptime == %lu, type == %u, table == %d",
     func,
     rib->refcnt,
     rib->uptime,
@@ -2780,6 +2783,7 @@ rib_update (void)
         rib_queue_add (&zebrad, rn);
 }
 
+#if 0
 /* Interface goes up. */
 static void
 rib_if_up (struct interface *ifp)
@@ -2793,6 +2797,7 @@ rib_if_down (struct interface *ifp)
 {
   rib_update ();
 }
+#endif
 
 /* Remove all routes which comes from non main table.  */
 static void

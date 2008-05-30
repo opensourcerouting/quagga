@@ -234,13 +234,20 @@ extern int interface_list_proc (void);
 extern int ifaddr_proc_ipv6 (void);
 #endif /* HAVE_PROC_NET_IF_INET6 */
 
-#ifdef HAVE_PROC_NET_IPV4_CONF
+#ifdef HAVE_LINKDETECT
 extern int if_linkdetect_on (const char *);
 extern int if_linkdetect_off (const char *);
+# ifdef HAVE_IPV6
+extern int if_linkdetect_ipv6_on (const char *);
+extern int if_linkdetect_ipv6_off (const char *);
+# endif
 #else
-#error config
 #define if_linkdetect_on(name)
 #define if_linkdetect_off(name)
+# ifdef HAVE_IPV6
+#define if_linkdetect_ipv6_on(name)
+#define if_linkdetect_ipv6_off(name)
+# endif
 #endif
 
 
