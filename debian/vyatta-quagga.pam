@@ -1,3 +1,6 @@
+# This allows root to do vtysh without passwords
+auth    sufficient pam_rootok.so
+
 # Any user may call vtysh but only those belonging to the group quaggavty can
 # actually connect to the socket and use the program.
-auth	sufficient	pam_permit.so
+auth	sufficient pam_wheel.so quaggavty
