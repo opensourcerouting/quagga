@@ -194,6 +194,17 @@ ospf_interface_state_up (int command, struct zclient *zclient,
           ospf_if_recalculate_output_cost (ifp);
         }
 
+      if ((if_tmp.status ^ ifp->status) & ZEBRA_INTERFACE_UNNUMBERED)
+	{
+	  if (IS_DEBUG_OSPF (zebra, ZEBRA_INTERFACE))
+	    zlog_debug ("Zebra: Interface[%s] Unnumbered state change %d -> %d.",
+			ifp->name,
+			if_tmp.status & ZEBRA_INTERFACE_UNNUMBERED,
+			ifp->status & ZEBRA_INTERFACE_UNNUMBERED);
+
+	  ospf_if_reset (ifp);
+	}
+
       if (if_tmp.mtu != ifp->mtu)
         {
           if (IS_DEBUG_OSPF (zebra, ZEBRA_INTERFACE))
