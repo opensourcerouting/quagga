@@ -241,6 +241,27 @@ ospf_lsa_dup (struct ospf_lsa *lsa)
   return new;
 }
 
+static void
+ospf_lsa_oi_seq_free (struct lsa_oi_seq *oi_seq)
+{
+  XFREE (MTYPE_OSPF_LSA_DATA, oi_seq->seq_nr);
+  XFREE (MTYPE_OSPF_LSA_DATA, oi_seq);
+}
+
+void
+ospf_oi_seq_if_delete(struct ospf_interface *oi)
+{
+  int i;
+  struct ospf_lsa *lsa = oi->area->router_lsa_self;
+
+  if (!lsa || !lsa->oi_seq)
+    return;
+  /* "delete" all entries of oi */
+  for (i=0; i < lsa->oi_seq->length/sizeof(seq_nr_t); i++)
+    if (lsa->oi_seq->seq_nr[i] == oi)
+      lsa->oi_seq->seq_nr[i] = NULL;
+}
+
 /* Free OSPF LSA. */
 void
 ospf_lsa_free (struct ospf_lsa *lsa)
@@ -254,6 +275,8 @@ ospf_lsa_free (struct ospf_lsa *lsa)
   if (lsa->data != NULL)
     ospf_lsa_data_free (lsa->data);
 
+  if (lsa->oi_seq != NULL)
+    ospf_lsa_oi_seq_free (lsa->oi_seq);
   assert (lsa->refresh_list < 0);
 
   memset (lsa, 0, sizeof (struct ospf_lsa)); 
@@ -306,6 +329,24 @@ ospf_lsa_data_new (size_t size)
   return XCALLOC (MTYPE_OSPF_LSA_DATA, size);
 }
 
+static struct lsa_oi_seq *
+ospf_lsa_oi_seq_new (void)
+{
+  struct lsa_oi_seq *new;
+
+  new = XCALLOC (MTYPE_OSPF_LSA_DATA, sizeof(*new));
+  return new;
+}
+
+static seq_nr_t *
+ospf_lsa_oi_seq_data_new (size_t size)
+{
+  seq_nr_t *new;
+
+  new = XMALLOC (MTYPE_OSPF_LSA_DATA, size);
+  return new;
+}
+
 /* Duplicate LSA data. */
 struct lsa_header *
 ospf_lsa_data_dup (struct lsa_header *lsah)
@@ -315,6 +356,18 @@ ospf_lsa_data_dup (struct lsa_header *lsah)
   new = ospf_lsa_data_new (ntohs (lsah->length));
   memcpy (new, lsah, ntohs (lsah->length));
 
+  return new;
+}
+
+static void *
+ospf_lsa_oi_seq_dup (struct lsa_oi_seq *oi_seq)
+{
+  struct lsa_oi_seq *new;
+
+  new = ospf_lsa_oi_seq_new ();
+  new->length = oi_seq->length;
+  new->seq_nr = ospf_lsa_oi_seq_data_new (oi_seq->length);
+  memcpy (new->seq_nr, oi_seq->seq_nr, oi_seq->length);
   return new;
 }
 
@@ -653,13 +706,24 @@ lsa_link_ptomp_set (struct stream *s, struct ospf_interface *oi)
   return links;
 }
 
+struct ospf_interface *
+router_lsa_to_oi(struct ospf_lsa *lsa, int index)
+{
+  if (lsa->oi_seq && index >= 0)
+    return lsa->oi_seq->seq_nr[index];
+
+  zlog_debug ("%s: oi_seq:%p, index:%d!",
+	      __func__, lsa->oi_seq, index);
+  return NULL;
+}
 /* Set router-LSA link information. */
 static int
-router_lsa_link_set (struct stream *s, struct ospf_area *area)
+router_lsa_link_set (struct stream *s, seq_nr_t oi_list[],
+		     struct ospf_area *area)
 {
   struct listnode *node;
   struct ospf_interface *oi;
-  int links = 0;
+  int links = 0, old_links, i;
 
   for (ALL_LIST_ELEMENTS_RO (area->oiflist, node, oi))
     {
@@ -670,6 +734,7 @@ router_lsa_link_set (struct stream *s, struct ospf_area *area)
 	{
 	  if (oi->state != ISM_Down)
 	    {
+	      old_links = links;
 	      /* Describe each link. */
 	      switch (oi->type)
 		{
@@ -691,6 +756,8 @@ router_lsa_link_set (struct stream *s, struct ospf_area *area)
 		case OSPF_IFTYPE_LOOPBACK:
 		  links += lsa_link_loopback_set (s, oi); 
 		}
+	      for (i = old_links; i < links; i++)
+		oi_list[i] = oi;
 	    }
 	}
     }
@@ -699,8 +766,9 @@ router_lsa_link_set (struct stream *s, struct ospf_area *area)
 }
 
 /* Set router-LSA body. */
-static void
-ospf_router_lsa_body_set (struct stream *s, struct ospf_area *area)
+static  u_int16_t
+ospf_router_lsa_body_set (struct stream *s, seq_nr_t oi_list[],
+			  struct ospf_area *area)
 {
   unsigned long putp;
   u_int16_t cnt;
@@ -718,10 +786,12 @@ ospf_router_lsa_body_set (struct stream *s, struct ospf_area *area)
   stream_putw(s, 0);
 
   /* Set all link information. */
-  cnt = router_lsa_link_set (s, area);
+  cnt = router_lsa_link_set (s, oi_list, area);
 
   /* Set # of links here. */
   stream_putw_at (s, putp, cnt);
+
+  return cnt;
 }
 
 static int
@@ -790,6 +860,9 @@ ospf_router_lsa_new (struct ospf_area *area)
   struct lsa_header *lsah;
   struct ospf_lsa *new;
   int length;
+  u_int16_t cnt;
+ /* oi_list, less than 1KB, allocat on stack */
+  seq_nr_t oi_list[((OSPF_MAX_LSA_SIZE*2)/3)/sizeof(seq_nr_t)];
 
   if (IS_DEBUG_OSPF (lsa, LSA_GENERATE))
     zlog_debug ("LSA[Type1]: Create router-LSA instance");
@@ -806,7 +879,8 @@ ospf_router_lsa_new (struct ospf_area *area)
 		  OSPF_ROUTER_LSA, ospf->router_id, ospf->router_id);
 
   /* Set router-LSA body fields. */
-  ospf_router_lsa_body_set (s, area);
+  memset(oi_list, 0, sizeof(oi_list));
+  cnt = ospf_router_lsa_body_set (s, oi_list, area);
 
   /* Set length. */
   length = stream_get_endp (s);
@@ -826,6 +900,11 @@ ospf_router_lsa_new (struct ospf_area *area)
   /* Copy LSA data to store, discard stream. */
   new->data = ospf_lsa_data_new (length);
   memcpy (new->data, lsah, length);
+
+  new->oi_seq = ospf_lsa_oi_seq_new ();
+  new->oi_seq->length = cnt*sizeof(seq_nr_t);
+  new->oi_seq->seq_nr = ospf_lsa_oi_seq_data_new (new->oi_seq->length);
+  memcpy (new->oi_seq->seq_nr, oi_list, new->oi_seq->length);
   stream_free (s);
 
   return new;

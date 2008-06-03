@@ -68,6 +68,13 @@ struct lsa_header
   u_int16_t length;
 };
 
+#define seq_nr_t struct ospf_interface *
+/* Router LSA sequnce number list */
+struct lsa_oi_seq {
+  u_int16_t length;
+  seq_nr_t *seq_nr;
+};
+
 /* OSPF LSA. */
 struct ospf_lsa
 {
@@ -83,6 +90,9 @@ struct ospf_lsa
 
   /* LSA data. */
   struct lsa_header *data;
+
+  /* Router LSA OI sequence number */
+  struct lsa_oi_seq *oi_seq;
 
   /* Received time stamp. */
   struct timeval tv_recv;
@@ -247,10 +257,12 @@ extern void ospf_lsa_free (struct ospf_lsa *);
 extern struct ospf_lsa *ospf_lsa_lock (struct ospf_lsa *);
 extern void ospf_lsa_unlock (struct ospf_lsa **);
 extern void ospf_lsa_discard (struct ospf_lsa *);
+extern struct ospf_interface * router_lsa_to_oi(struct ospf_lsa *, int);
 
 extern struct lsa_header *ospf_lsa_data_new (size_t);
 extern struct lsa_header *ospf_lsa_data_dup (struct lsa_header *);
 extern void ospf_lsa_data_free (struct lsa_header *);
+extern void ospf_oi_seq_if_delete(struct ospf_interface *);
 
 /* Prototype for various LSAs */
 extern int ospf_router_lsa_update_timer (struct thread *);
