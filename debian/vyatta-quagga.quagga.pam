@@ -1,0 +1,5 @@
+# This allows root to do vtysh without passwords
+auth    sufficient pam_rootok.so
+
+# Only users in group quaggavty can run vtysh
+auth	required pam_wheel.so trust group=quaggavty
