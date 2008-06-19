@@ -1,3 +1,101 @@
+vyatta-quagga (0.99.9-10) unstable; urgency=low
+
+	  3.1.0
+  [ Mark O'Brien ]
+
+
+  [ Stephen Hemminger ]
+  * Workaround for package rename vs pam problem
+  * Fix vtysh authorization
+  * Allow any user in quagga group to run vtysh
+  * netlink interface minor stuff
+  * get rid of duplicate includes
+  * fix compiler warnings
+  * only process some isisd files
+  * get rid of compiler warnings in OSPF
+  * ifdef out dead code
+  * fix warning from type mismatch
+  * ifdef out dead code
+  * flag field printf formatting in debug strings
+  * comment out unused code
+  * Fix compiler warnings
+  * get rid of compiler warnings
+  * Handle empty auth string properly
+  * Add ipv6 link detect hooks
+  * Change how link-detect is configured in build
+  * Turn on kernel link-detect
+  * ignore cscope and tags files
+
+  [ pilot ]
+  * + fix the set statement name
+  * + [bgpd] Added new route-map set statement: "as-path ignore"
+
+  [ rbalocca ]
+  * Ignore derived files
+
+  [ Stephen Hemminger ]
+  * only set non-blocking on netlink socket
+  * remove unneeded privledge changes
+  * Rearrange RIB structures to save memory
+  * Manage link state on non-connected static routes
+  * Ignore netlink interface events that don't change state
+
+  [ rbalocca ]
+  * Convert to our method of changelog creation
+
+  [ Stephen Hemminger ]
+  * Add interface state change logging
+  * set/check nl port id on messages
+  * Force line buffered mode.
+
+  [ Mohit Mehta ]
+  * Remove extraneous smux log messages for routing daemons connectivity
+    to snmpd
+
+  [ Stephen Hemminger ]
+  * remove watchlink - no longer used
+
+  [ Mohit Mehta ]
+  * Dependency for building quagga with snmp support enabled
+  * Modifications to quagga to enable bgp, ospf and rip mib traversals
+
+  [ Michael H. Warfield ]
+  * TCP MD5SIG patch
+
+  [ paul ]
+  * [bgpd] remove unnecessary 0 entries from struct message's
+  * [ripd] remove unnecessary 0 entries from struct message's
+  * [lib] Fix the struct message LOOKUP function to be more robust
+  * [lib/linklist] Enforce "nodes must have data" invariant more
+    rigorously
+
+  [ pilot ]
+  * + fix bug#326 by rib_lookup_and_pushup()
+
+  [ paul ]
+  * [c++] remove/rename some names in headers that clash with C++
+    reserved words
+  * [tests:bgp] Further tests for 0 sized as_path segments
+  * [isisd] Bug #437: fix ssert caused by bad list management
+  * [bgpd] fix crash on startup if compiled IPv4-only
+  * [solaris] add missing makefile.am dependency
+
+  [ ajs ]
+  * [link-detect] Improve BSD support.
+  * [link-detect] Improve BSD support.
+  * [link-detect] Try to get BSD link-detect to work properly.
+  * [link-detect] Static interface routes should behave properly with
+    link-detect.
+
+  [ paul ]
+  * [lib] add mising UL qualifier to numerical constant
+  * [bgpd] Fix number of DoS security issues, restricted to configured
+    peers.
+
+  [ Mark O'Brien ]
+
+ -- Mark O'Brien <mobrien@firebolt.vyatta.com>  Tue, 17 Jun 2008 09:27:29 -0700
+
 vyatta-quagga (0.99.9-9) unstable; urgency=low
 
   3.0.5
