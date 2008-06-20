@@ -7,9 +7,12 @@ VTYBASE=2610
 ASBASE=64560
 BGPD=/path/to/bgpd
 PREFIX=192.168.145
+CONFBASE=/tmp
+PIDBASE=/var/run/quagga
+CHOWNSTR=quagga:quagga
 
 for H in `seq 1 ${NUM}` ; do
-	CONF=/etc/quagga/bgpd${H}.conf
+	CONF="${CONFBASE}"/bgpd${H}.conf
 	ADDR=${PREFIX}.${H}
 	
 	if [ ! -e "$CONF" ] ; then
@@ -39,17 +42,33 @@ for H in `seq 1 ${NUM}` ; do
 			 neighbor ${NEXTADDR} peer-group default
 			 neighbor ${PREVADDR} remote-as ${PREVAS}
 			 neighbor ${PREVADDR} peer-group default
+			!
+			 address-family ipv6
+			 network fffe:${H}::/48
+			 network fffe:${H}:1::/48 pathlimit 1
+			 network fffe:${H}:2::/48 pathlimit 3
+			 network fffe:${H}:3::/48 pathlimit 3
+			 neighbor default activate
+			 neighbor default capability orf prefix-list both
+			 neighbor default default-originate
+			 neighbor ${NEXTADDR} peer-group default
+			 neighbor ${PREVADDR} peer-group default
+			 exit-address-family
+			!
+			line vty
+			!
+			end
 		EOF
-		chown quagga:quagga "$CONF"
+		chown ${CHOWNSTR} "$CONF"
 	fi
 	# You may want to automatically add configure a local address
 	# on a loop interface.
 	#
 	# Solaris: ifconfig vni${H} plumb ${ADDR}/32 up
 	# Linux:   ip address add ${ADDR}/32 dev lo 2> /dev/null
-	${BGPD} -i /var/run/quagga/bgpd${H}.pid \
+	${BGPD} -i "${PIDBASE}"/bgpd${H}.pid \
 		-l ${ADDR} \
-		-f /etc/quagga/bgpd${H}.conf \
+		-f "${CONF}" \
 		-P $((${VTYBASE}+${H})) \
 		-d
 done
