@@ -1,4 +1,4 @@
-$Id$
+$Id: OSPF-ALIGNMENT.txt,v 1.1 2004/11/17 17:59:52 gdt Exp $
 
 Greg Troxel <gdt@ir.bbn.com>
 2004-11-17

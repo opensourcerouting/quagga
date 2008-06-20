@@ -6,7 +6,7 @@
  * The script is sensitive to the format (though not whitespace), see
  * the top of memtypes.awk for more details.
  *
- * $Id$
+ * $Id: memtypes.c,v 1.12 2007/05/04 20:15:47 paul Exp $
  */
 
 #include "zebra.h"
