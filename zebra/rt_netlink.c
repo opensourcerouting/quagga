@@ -985,21 +985,7 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 	      zlog_info ("interface %s index %d changed %s.",
 			 name, ifi->ifi_index,  if_flag_dump(new_flags));
 
-	      if (if_is_operative (ifp))
-		{
-		  ifp->flags = new_flags;
-		  if (!if_is_operative (ifp))
-		    if_down (ifp);
-		  else
-		    /* Must notify client daemons of new interface status. */
-		    zebra_interface_up_update (ifp);
-		}
-	      else
-		{
-		  ifp->flags = new_flags;
-		  if (if_is_operative (ifp))
-		    if_up (ifp);
-		}
+	      if_flags_update(ifp, new_flags);
 	    }
         }
     }
