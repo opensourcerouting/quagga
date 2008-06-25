@@ -1,7 +1,22 @@
 #!/bin/bash -e
 
+ETC_DIR=/etc/vyatta/quagga
+
 if [ -n "$DEBIAN_SCRIPT_DEBUG" ]; then set -v -x; DEBIAN_SCRIPT_TRACE=1; fi
 ${DEBIAN_SCRIPT_TRACE:+ echo "#42#DEBUG# RUNNING $0 $*"}
+
+# if not written already, write the 'smux peer' values into the config files 
+# of respective routing daemons to communicate with snmp
+
+if ! grep -q smux $ETC_DIR/ospfd.conf; then
+   echo "smux peer .1.3.6.1.4.1.3317.1.2.5" >> $ETC_DIR/ospfd.conf
+fi
+if ! grep -q smux $ETC_DIR/bgpd.conf; then
+   echo "smux peer .1.3.6.1.4.1.3317.1.2.2" >> $ETC_DIR/bgpd.conf
+fi
+if ! grep -q smux $ETC_DIR/ripd.conf; then
+   echo "smux peer .1.3.6.1.4.1.3317.1.2.3" >> $ETC_DIR/ripd.conf
+fi
 
 # This is most likely due to the answer "no" to the "really stop the server"
 # question in the prerm script.
