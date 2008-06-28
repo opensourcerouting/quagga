@@ -1,3 +1,22 @@
+vyatta-quagga (0.99.9-11) unstable; urgency=low
+
+	  3.1.1
+  [ Mark O'Brien ]
+
+
+  [ Stephen Hemminger ]
+  * Revert "Backout all changes related to using kernel for linkdetect"
+  * Revert "Use if_flags_update"
+  * Use if_flags_update
+  * Backout all changes related to using kernel for linkdetect
+  * Fix double free of bgp_table
+  * Check for node being freed twice
+  * Fix double free in bgp when using route client
+
+  [ Mark O'Brien ]
+
+ -- Mark O'Brien <mobrien@firebolt.vyatta.com>  Sat, 28 Jun 2008 11:22:27 -0700
+
 vyatta-quagga (0.99.9-10) unstable; urgency=low
 
 	  3.1.0
