@@ -1,3 +1,31 @@
+2008-02-26 Denis Ovsienko
+	* zebra_rib.[ch]: (rib_lookup_and_pushup) New function, which makes sure,
+	  that if_set_prefix() has nothing in its way of assigning an address.
+	* ioctl.c: (if_set_prefix) Use rib_lookup_and_pushup() to resolve
+	  bug #326.
+
+2008-01-11 Andrew J. Schorr <ajschorr@alumni.princeton.edu>
+
+	* ioctl.c: If HAVE_BSD_LINK_DETECT is defined, include <net/if_media.h>
+	  (if_get_flags) Remove debug messages about BSD link state.
+	* kernel_socket.c: (bsd_linkdetect_translate) If link state
+	  is unknown, we should set the IFF_RUNNING flag.
+
+2008-01-10 Ingo Flaschberger <if@xip.at>
+
+	* ioctl.c: (if_get_flags) If HAVE_BSD_LINK_DETECT, use the SIOCGIFMEDIA
+	  ioctl to ascertain link state.
+	* kernel_socket.c: (bsd_linkdetect_translate) New function to
+	  map the ifm_data.ifi_link_state value into the IFF_RUNNING flag.
+	  (ifm_read) Call bsd_linkdetect_translate to fix the IFF_RUNNING
+	  flag before calling if_flags_update.
+
+2008-01-08 Michael Larson <mike@vyatta.com>
+
+	* zebra_rib.c: (nexthop_active_check) Replace if_is_up with
+	  if_is_operative to solve problems with static interface
+	  routes not behaving properly with link-detect.
+
 2007-11-12 Denis Ovsienko
 
 	* connected.c: (connected_up_ipv4, connected_down_ipv4,

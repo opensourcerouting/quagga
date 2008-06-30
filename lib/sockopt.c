@@ -480,3 +480,36 @@ sockopt_iphdrincl_swab_systoh (struct ip *iph)
 
   iph->ip_id = ntohs(iph->ip_id);
 }
+
+#if defined(HAVE_TCP_MD5SIG)
+int
+sockopt_tcp_signature (int sock, struct sockaddr_in *sin, const char *password)
+{
+  int keylen = password ? strlen(password) : 0;
+
+#if defined(GNU_LINUX)
+
+  struct tcp_md5sig md5sig;
+
+  bzero ((char *)&md5sig, sizeof(md5sig));
+  memcpy (&md5sig.tcpm_addr, sin, sizeof(*sin));
+  md5sig.tcpm_keylen = keylen;
+  if (keylen)
+    memcpy (md5sig.tcpm_key, password, keylen);
+
+  return setsockopt (sock, IPPROTO_TCP, TCP_MD5SIG, &md5sig, sizeof md5sig);
+
+#else /* !GNU_LINUX */
+
+  int enable = keylen ? (TCP_SIG_SPI_BASE + sin->sin_port) : 0;
+
+  /*
+   * XXX Need to do PF_KEY operation here to add/remove an SA entry,
+   * and add/remove an SP entry for this peer's packet flows also.
+   */
+  return setsockopt (sock, IPPROTO_TCP, TCP_MD5SIG, &enable,
+		     sizeof(enable));
+
+#endif /* !GNU_LINUX */
+}
+#endif /* HAVE_TCP_MD5SIG */

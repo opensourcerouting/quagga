@@ -32,6 +32,7 @@
 #include "connected.h"
 #include "log.h"
 #include "zclient.h"
+#include "ipforward.h"
 
 #include "zebra/interface.h"
 #include "zebra/rtadv.h"
@@ -832,6 +833,7 @@ if_dump_vty (struct vty *vty, struct interface *ifp)
 #endif /* HAVE_NET_RT_IFLIST */
 }
 
+#if 0
 /* Check supported address family. */
 static int
 if_supported_family (int family)
@@ -844,6 +846,7 @@ if_supported_family (int family)
 #endif /* HAVE_IPV6 */
   return 0;
 }
+#endif
 
 /* Wrapper hook point for zebra daemon so that ifindex can be set 
  * DEFUN macro not used as extract.pl HAS to ignore this
@@ -1029,6 +1032,12 @@ DEFUN (linkdetect,
   if_was_operative = if_is_operative(ifp);
   SET_FLAG(ifp->status, ZEBRA_INTERFACE_LINKDETECTION);
 
+  /* Enable FIB to remove kernel routes as well */
+  if_linkdetect_on(ifp->name);
+#ifdef HAVE_IPV6
+  if_linkdetect_ipv6_on(ifp->name);
+#endif
+
   /* When linkdetection is enabled, if might come down */
   if (!if_is_operative(ifp) && if_was_operative) if_down(ifp);
 
@@ -1052,6 +1061,12 @@ DEFUN (no_linkdetect,
   if_was_operative = if_is_operative(ifp);
   UNSET_FLAG(ifp->status, ZEBRA_INTERFACE_LINKDETECTION);
   
+  /* Disable FIB update on link-detect */
+  if_linkdetect_off(ifp->name);
+#ifdef HAVE_IPV6
+  if_linkdetect_ipv6_off(ifp->name);
+#endif
+
   /* Interface may come up after disabling link detection */
   if (if_is_operative(ifp) && !if_was_operative) if_up(ifp);
 

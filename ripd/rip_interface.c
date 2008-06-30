@@ -55,7 +55,6 @@ struct message ri_version_msg[] =
   {RI_RIP_VERSION_1,       "1"},
   {RI_RIP_VERSION_2,       "2"},
   {RI_RIP_VERSION_1_AND_2, "1 2"},
-  {0,                      NULL}
 };
 
 extern struct zebra_privs_t ripd_privs;
@@ -254,6 +253,7 @@ rip_request_neighbor (struct in_addr addr)
   rip_request_send (&to, NULL, rip->version_send, NULL);
 }
 
+#if 0
 /* Request routes at all interfaces. */
 static void
 rip_request_neighbor_all (void)
@@ -271,6 +271,7 @@ rip_request_neighbor_all (void)
     if (rp->info)
       rip_request_neighbor (rp->p.u.prefix4);
 }
+#endif
 
 /* Multicast packet receive socket. */
 static int
@@ -404,8 +405,9 @@ rip_interface_down (int command, struct zclient *zclient, zebra_size_t length)
   rip_if_down(ifp);
  
   if (IS_RIP_DEBUG_ZEBRA)
-    zlog_debug ("interface %s index %d flags %ld metric %d mtu %d is down",
-	       ifp->name, ifp->ifindex, ifp->flags, ifp->metric, ifp->mtu);
+    zlog_debug ("interface %s index %d flags %#llx metric %d mtu %d is down",
+	       ifp->name, ifp->ifindex, (unsigned long long) ifp->flags, 
+	       ifp->metric, ifp->mtu);
 
   return 0;
 }
@@ -424,8 +426,9 @@ rip_interface_up (int command, struct zclient *zclient, zebra_size_t length)
     return 0;
 
   if (IS_RIP_DEBUG_ZEBRA)
-    zlog_debug ("interface %s index %d flags %ld metric %d mtu %d is up",
-	       ifp->name, ifp->ifindex, ifp->flags, ifp->metric, ifp->mtu);
+    zlog_debug ("interface %s index %d flags %#llx metric %d mtu %d is up",
+		ifp->name, ifp->ifindex, (unsigned long long)ifp->flags,
+		ifp->metric, ifp->mtu);
 
   /* Check if this interface is RIP enabled or not.*/
   rip_enable_apply (ifp);
@@ -448,8 +451,9 @@ rip_interface_add (int command, struct zclient *zclient, zebra_size_t length)
   ifp = zebra_interface_add_read (zclient->ibuf);
 
   if (IS_RIP_DEBUG_ZEBRA)
-    zlog_debug ("interface add %s index %d flags %ld metric %d mtu %d",
-	       ifp->name, ifp->ifindex, ifp->flags, ifp->metric, ifp->mtu);
+    zlog_debug ("interface add %s index %d flags %#llx metric %d mtu %d",
+		ifp->name, ifp->ifindex, (unsigned long long) ifp->flags,
+		ifp->metric, ifp->mtu);
 
   /* Check if this interface is RIP enabled or not.*/
   rip_enable_apply (ifp);
@@ -487,8 +491,9 @@ rip_interface_delete (int command, struct zclient *zclient,
     rip_if_down(ifp);
   } 
   
-  zlog_info("interface delete %s index %d flags %ld metric %d mtu %d",
-	    ifp->name, ifp->ifindex, ifp->flags, ifp->metric, ifp->mtu);  
+  zlog_info("interface delete %s index %d flags %#llx metric %d mtu %d",
+	    ifp->name, ifp->ifindex, (unsigned long long)ifp->flags,
+	    ifp->metric, ifp->mtu);  
   
   /* To support pseudo interface do not free interface structure.  */
   /* if_delete(ifp); */

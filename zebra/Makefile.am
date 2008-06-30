@@ -10,13 +10,14 @@ LIBCAP = @LIBCAP@
 ipforward = @IPFORWARD@
 if_method = @IF_METHOD@
 if_proc = @IF_PROC@
+link_detect = @LINK_DETECT@
 rt_method = @RT_METHOD@
 rtread_method = @RTREAD_METHOD@
 kernel_method = @KERNEL_METHOD@
 other_method = @OTHER_METHOD@
 ioctl_method = @IOCTL_METHOD@
 
-otherobj = $(ioctl_method) $(ipforward) $(if_method) $(if_proc) \
+otherobj = $(ioctl_method) $(ipforward) $(if_method) $(if_proc) $(link_detect) \
 	$(rt_method) $(rtread_method) $(kernel_method) $(other_method)
 
 sbin_PROGRAMS = zebra
@@ -29,7 +30,7 @@ zebra_SOURCES = \
 	irdp_main.c irdp_interface.c irdp_packet.c router-id.c
 
 testzebra_SOURCES = test_main.c zebra_rib.c interface.c connected.c debug.c \
-	zebra_vty.c \
+	zebra_vty.c linkdetect_null.c \
 	kernel_null.c  redistribute_null.c ioctl_null.c misc_null.c
 
 noinst_HEADERS = \
@@ -42,7 +43,7 @@ testzebra_LDADD = $(LIBCAP) $(LIB_IPV6) ../lib/libzebra.la
 
 zebra_DEPENDENCIES = $(otherobj)
 
-EXTRA_DIST = if_ioctl.c if_ioctl_solaris.c if_netlink.c if_proc.c \
+EXTRA_DIST = if_ioctl.c if_ioctl_solaris.c  if_linkdetect.c if_netlink.c if_proc.c \
         if_sysctl.c ipforward_aix.c ipforward_ews.c ipforward_proc.c \
 	ipforward_solaris.c ipforward_sysctl.c rt_ioctl.c rt_netlink.c \
 	rt_socket.c rtread_netlink.c rtread_proc.c rtread_sysctl.c \

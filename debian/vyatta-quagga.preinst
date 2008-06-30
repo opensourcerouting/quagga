@@ -71,6 +71,12 @@ if [ "$1" = "install" ]; then
 		EOF
 	fi
     done
+   
+   
+   echo "smux peer .1.3.6.1.4.1.3317.1.2.5" >> $ETC_DIR/ospfd.conf  
+   echo "smux peer .1.3.6.1.4.1.3317.1.2.2" >> $ETC_DIR/bgpd.conf
+   echo "smux peer .1.3.6.1.4.1.3317.1.2.3" >> $ETC_DIR/ripd.conf
+
     if [ ! -e $ETC_DIR/vtysh.conf ] ; then
 	touch $ETC_DIR/vtysh.conf
 	chown quagga:quaggavty $ETC_DIR/vtysh.conf

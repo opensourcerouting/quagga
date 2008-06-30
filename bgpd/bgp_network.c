@@ -22,6 +22,7 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 
 #include "thread.h"
 #include "sockunion.h"
+#include "sockopt.h"
 #include "memory.h"
 #include "log.h"
 #include "if.h"
@@ -37,6 +38,34 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 
 extern struct zebra_privs_t bgpd_privs;
 
+
+#if defined(HAVE_TCP_MD5SIG)
+/*
+ * Set MD5 key for the socket, for the given IPv4 peer address.
+ * If the password is NULL or zero-length, the option will be disabled.
+ */
+int
+bgp_md5_set (int sock, struct sockaddr_in *sin, const char *password)
+{
+  int ret, en;
+
+  if ( bgpd_privs.change (ZPRIVS_RAISE) )
+    zlog_err ("bgp_md5_set: could not raise privs");
+
+  ret = sockopt_tcp_signature (sock, sin, password);
+  en  = errno;
+
+  if (bgpd_privs.change (ZPRIVS_LOWER) )
+    zlog_err ("bgp_md5_set: could not lower privs");
+
+  if (ret < 0)
+    zlog (NULL, LOG_WARNING, "can't set TCP_MD5SIG option on socket %d: %s",
+	  sock, safe_strerror (en));
+
+  return ret;
+}
+
+#endif /* HAVE_TCP_MD5SIG */
 
 /* Accept bgp connection. */
 static int
@@ -238,6 +267,12 @@ bgp_connect (struct peer *peer)
   sockopt_reuseaddr (peer->fd);
   sockopt_reuseport (peer->fd);
 
+#ifdef HAVE_TCP_MD5SIG
+  if (CHECK_FLAG (peer->flags, PEER_FLAG_PASSWORD))
+    if (sockunion_family (&peer->su) == AF_INET)
+      bgp_md5_set (peer->fd, &peer->su.sin, peer->password);
+#endif /* HAVE_TCP_MD5SIG */
+
   /* Bind socket. */
   bgp_bind (peer);
 
@@ -288,6 +323,10 @@ bgp_socket (struct bgp *bgp, unsigned short port, char *address)
   struct addrinfo req;
   struct addrinfo *ainfo;
   struct addrinfo *ainfo_save;
+#if defined(HAVE_TCP_MD5SIG) && defined(IPV6_V6ONLY)
+  struct sockaddr_in sin;
+  int socklen, on = 1;
+#endif
   int sock = 0;
   char port_str[BUFSIZ];
 
@@ -296,7 +335,7 @@ bgp_socket (struct bgp *bgp, unsigned short port, char *address)
   req.ai_flags = AI_PASSIVE;
   req.ai_family = AF_UNSPEC;
   req.ai_socktype = SOCK_STREAM;
-  sprintf (port_str, "%d", port);
+  snprintf (port_str, sizeof(port_str), "%d", port);
   port_str[sizeof (port_str) - 1] = '\0';
 
   ret = getaddrinfo (address, port_str, &req, &ainfo);
@@ -323,6 +362,21 @@ bgp_socket (struct bgp *bgp, unsigned short port, char *address)
       sockopt_reuseaddr (sock);
       sockopt_reuseport (sock);
       
+#if defined(HAVE_TCP_MD5SIG) && defined(IPV6_V6ONLY)
+/*	We can not apply MD5SIG to an IPv6 socket.  If this is an AF_INET6
+	socket, we'll have to create another socket for IPv4*/
+
+      if (ainfo->ai_family == AF_INET6) {
+/*	Mark this one for IPv6 only	*/
+          ret = setsockopt (sock, IPPROTO_IPV6, IPV6_V6ONLY, 
+		    (void *) &on, sizeof (on));
+          if( ret < 0 ) {
+              en = errno;
+	      zlog_err ("setsockopt V6ONLY: %s", safe_strerror (en));
+          }
+      }
+#endif
+
       if (bgpd_privs.change (ZPRIVS_RAISE) )
         zlog_err ("bgp_socket: could not raise privs");
 
@@ -346,7 +400,65 @@ bgp_socket (struct bgp *bgp, unsigned short port, char *address)
 	  continue;
 	}
 
+#if defined(HAVE_TCP_MD5SIG) && defined(IPV6_V6ONLY)
       thread_add_read (master, bgp_accept, bgp, sock);
+
+      if (ainfo->ai_family != AF_INET6)
+	continue;
+
+      /* If first socket was an IPv6 socket, we need to create an IPv4
+	socket for use by the TCP_MD5SIG logic.  This code is blatently
+	copied and modified from the alternate IPv4 only code from below... */
+
+      sock = socket (AF_INET, SOCK_STREAM, 0);
+      if (sock < 0)
+        {
+          zlog_err ("socket: %s", safe_strerror (errno));
+          continue;
+        }
+
+      sockopt_reuseaddr (sock);
+      sockopt_reuseport (sock);
+
+      memset (&sin, 0, sizeof (struct sockaddr_in));
+
+      sin.sin_family = AF_INET;
+      sin.sin_port = htons (port);
+      socklen = sizeof (struct sockaddr_in);
+#ifdef HAVE_STRUCT_SOCKADDR_IN_SIN_LEN
+      sin.sin_len = socklen;
+#endif /* HAVE_STRUCT_SOCKADDR_IN_SIN_LEN */
+
+      if ( bgpd_privs.change (ZPRIVS_RAISE) )
+        zlog_err ("bgp_socket: could not raise privs");
+
+      ret = bind (sock, (struct sockaddr *) &sin, socklen);
+      en = errno;
+      if (bgpd_privs.change (ZPRIVS_LOWER) )
+	zlog_err ("bgp_bind_address: could not lower privs");
+
+      if (ret < 0)
+	{
+	  zlog_err ("bind: %s", safe_strerror (en));
+	  close(sock);
+	  continue;
+	}
+
+      ret = listen (sock, 3);
+      if (ret < 0)
+	{
+	  zlog_err ("listen: %s", safe_strerror (errno));
+	  close (sock);
+	  continue;
+	}
+#endif
+
+#ifdef HAVE_TCP_MD5SIG
+      bm->sock = sock;
+#endif /* HAVE_TCP_MD5SIG */
+
+      thread_add_read (master, bgp_accept, bgp, sock);
+
     }
   while ((ainfo = ainfo->ai_next) != NULL);
 
@@ -380,11 +492,10 @@ bgp_socket (struct bgp *bgp, unsigned short port, char *address)
   sin.sin_port = htons (port);
   socklen = sizeof (struct sockaddr_in);
 
-  ret = inet_aton(address, &sin.sin_addr);
-
-  if (ret < 1)
+  if (address && ((ret = inet_aton(address, &sin.sin_addr)) < 1))
     {
-      zlog_err("bgp_socket: could not parse ip address %s: ", address, safe_strerror (errno));
+      zlog_err("bgp_socket: could not parse ip address %s: %s",
+                address, safe_strerror (errno));
       return ret;
     }
 #ifdef HAVE_STRUCT_SOCKADDR_IN_SIN_LEN
@@ -414,6 +525,9 @@ bgp_socket (struct bgp *bgp, unsigned short port, char *address)
       close (sock);
       return ret;
     }
+#ifdef HAVE_TCP_MD5SIG
+  bm->sock = sock;
+#endif /* HAVE_TCP_MD5SIG */
 
   thread_add_read (bm->master, bgp_accept, bgp, sock);
 

@@ -21,6 +21,10 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #ifndef _QUAGGA_BGP_NETWORK_H
 #define _QUAGGA_BGP_NETWORK_H
 
+#if defined(HAVE_TCP_MD5SIG)
+extern int bgp_md5_set (int, struct sockaddr_in *, const char *);
+#endif /* HAVE_TCP_MD5SIG */
+
 extern int bgp_socket (struct bgp *, unsigned short, char *);
 extern int bgp_connect (struct peer *);
 extern void bgp_getsockname (struct peer *);

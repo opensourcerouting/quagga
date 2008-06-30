@@ -53,7 +53,7 @@ struct nlsock
 } netlink      = { -1, 0, {0}, "netlink-listen"},     /* kernel messages */
   netlink_cmd  = { -1, 0, {0}, "netlink-cmd"};        /* command channel */
 
-struct message nlmsg_str[] = {
+static struct message nlmsg_str[] = {
   {RTM_NEWROUTE, "RTM_NEWROUTE"},
   {RTM_DELROUTE, "RTM_DELROUTE"},
   {RTM_GETROUTE, "RTM_GETROUTE"},
@@ -66,7 +66,7 @@ struct message nlmsg_str[] = {
   {0, NULL}
 };
 
-const char *nexthop_types_desc[] =  
+static const char *nexthop_types_desc[] =  
 {
   "none",
   "Directly connected",
@@ -114,6 +114,45 @@ set_ifindex(struct interface *ifp, unsigned int ifi_index)
   ifp->ifindex = ifi_index;
 }
 
+static int
+netlink_recvbuf (struct nlsock *nl, uint32_t newsize)
+{
+  u_int32_t oldsize;
+  socklen_t newlen = sizeof(newsize);
+  socklen_t oldlen = sizeof(oldsize);
+  int ret;
+
+  ret = getsockopt(nl->sock, SOL_SOCKET, SO_RCVBUF, &oldsize, &oldlen);
+  if (ret < 0)
+    {
+      zlog (NULL, LOG_ERR, "Can't get %s receive buffer size: %s", nl->name,
+	    safe_strerror (errno));
+      return -1;
+    }
+
+  ret = setsockopt(nl->sock, SOL_SOCKET, SO_RCVBUF, &nl_rcvbufsize,
+		   sizeof(nl_rcvbufsize));
+  if (ret < 0)
+    {
+      zlog (NULL, LOG_ERR, "Can't set %s receive buffer size: %s", nl->name,
+	    safe_strerror (errno));
+      return -1;
+    }
+
+  ret = getsockopt(nl->sock, SOL_SOCKET, SO_RCVBUF, &newsize, &newlen);
+  if (ret < 0)
+    {
+      zlog (NULL, LOG_ERR, "Can't get %s receive buffer size: %s", nl->name,
+	    safe_strerror (errno));
+      return -1;
+    }
+
+  zlog (NULL, LOG_INFO,
+	"Setting netlink socket receive buffer size: %u -> %u",
+	oldsize, newsize);
+  return 0;
+}
+
 /* Make socket for Linux netlink interface. */
 static int
 netlink_socket (struct nlsock *nl, unsigned long groups)
@@ -132,56 +171,6 @@ netlink_socket (struct nlsock *nl, unsigned long groups)
       return -1;
     }
 
-  ret = fcntl (sock, F_SETFL, O_NONBLOCK);
-  if (ret < 0)
-    {
-      zlog (NULL, LOG_ERR, "Can't set %s socket flags: %s", nl->name,
-            safe_strerror (errno));
-      close (sock);
-      return -1;
-    }
-
-  /* Set receive buffer size if it's set from command line */
-  if (nl_rcvbufsize)
-    {
-      u_int32_t oldsize, oldlen;
-      u_int32_t newsize, newlen;
-
-      oldlen = sizeof(oldsize);
-      newlen = sizeof(newsize);
-
-      ret = getsockopt(sock, SOL_SOCKET, SO_RCVBUF, &oldsize, &oldlen);
-      if (ret < 0)
-	{
-	  zlog (NULL, LOG_ERR, "Can't get %s receive buffer size: %s", nl->name,
-		safe_strerror (errno));
-	  close (sock);
-	  return -1;
-	}
-
-      ret = setsockopt(sock, SOL_SOCKET, SO_RCVBUF, &nl_rcvbufsize,
-		       sizeof(nl_rcvbufsize));
-      if (ret < 0)
-	{
-	  zlog (NULL, LOG_ERR, "Can't set %s receive buffer size: %s", nl->name,
-		safe_strerror (errno));
-	  close (sock);
-	  return -1;
-	}
-
-      ret = getsockopt(sock, SOL_SOCKET, SO_RCVBUF, &newsize, &newlen);
-      if (ret < 0)
-	{
-	  zlog (NULL, LOG_ERR, "Can't get %s receive buffer size: %s", nl->name,
-		safe_strerror (errno));
-	  close (sock);
-	  return -1;
-	}
-
-      zlog (NULL, LOG_INFO,
-	    "Setting netlink socket receive buffer size: %u -> %u",
-	    oldsize, newsize);
-    }
 
   memset (&snl, 0, sizeof snl);
   snl.nl_family = AF_NETLINK;
@@ -221,41 +210,6 @@ netlink_socket (struct nlsock *nl, unsigned long groups)
   nl->snl = snl;
   nl->sock = sock;
   return ret;
-}
-
-int
-set_netlink_blocking (struct nlsock *nl, int *flags)
-{
-
-  /* Change socket flags for blocking I/O.  */
-  if ((*flags = fcntl (nl->sock, F_GETFL, 0)) < 0)
-    {
-      zlog (NULL, LOG_ERR, "%s:%i F_GETFL error: %s",
-            __FUNCTION__, __LINE__, safe_strerror (errno));
-      return -1;
-    }
-  *flags &= ~O_NONBLOCK;
-  if (fcntl (nl->sock, F_SETFL, *flags) < 0)
-    {
-      zlog (NULL, LOG_ERR, "%s:%i F_SETFL error: %s",
-            __FUNCTION__, __LINE__, safe_strerror (errno));
-      return -1;
-    }
-  return 0;
-}
-
-int
-set_netlink_nonblocking (struct nlsock *nl, int *flags)
-{
-  /* Restore socket flags for nonblocking I/O */
-  *flags |= O_NONBLOCK;
-  if (fcntl (nl->sock, F_SETFL, *flags) < 0)
-    {
-      zlog (NULL, LOG_ERR, "%s:%i F_SETFL error: %s",
-            __FUNCTION__, __LINE__, safe_strerror (errno));
-      return -1;
-    }
-  return 0;
 }
 
 /* Get type specified information from netlink. */
@@ -335,25 +289,17 @@ netlink_parse_info (int (*filter) (struct sockaddr_nl *, struct nlmsghdr *),
       struct sockaddr_nl snl;
       struct msghdr msg = { (void *) &snl, sizeof snl, &iov, 1, NULL, 0, 0 };
       struct nlmsghdr *h;
-      int save_errno;
-
-      if (zserv_privs.change (ZPRIVS_RAISE))
-        zlog (NULL, LOG_ERR, "Can't raise privileges");
 
       status = recvmsg (nl->sock, &msg, 0);
-      save_errno = errno;
-
-      if (zserv_privs.change (ZPRIVS_LOWER))
-        zlog (NULL, LOG_ERR, "Can't lower privileges");
-
       if (status < 0)
         {
-          if (save_errno == EINTR)
+          if (errno == EINTR)
             continue;
-          if (save_errno == EWOULDBLOCK || save_errno == EAGAIN)
+          if (errno == EWOULDBLOCK || errno == EAGAIN)
             break;
+
           zlog (NULL, LOG_ERR, "%s recvmsg overrun: %s",
-	  	nl->name, safe_strerror(save_errno));
+	  	nl->name, safe_strerror(errno));
           continue;
         }
 
@@ -494,7 +440,7 @@ netlink_parse_rtattr (struct rtattr **tb, int max, struct rtattr *rta,
 
 /* Called from interface_lookup_netlink().  This function is only used
    during bootstrap. */
-int
+static int
 netlink_interface (struct sockaddr_nl *snl, struct nlmsghdr *h)
 {
   int len;
@@ -571,7 +517,7 @@ netlink_interface (struct sockaddr_nl *snl, struct nlmsghdr *h)
 }
 
 /* Lookup interface IPv4/IPv6 address. */
-int
+static int
 netlink_interface_addr (struct sockaddr_nl *snl, struct nlmsghdr *h)
 {
   int len;
@@ -706,7 +652,7 @@ netlink_interface_addr (struct sockaddr_nl *snl, struct nlmsghdr *h)
 }
 
 /* Looking up routing table by netlink interface. */
-int
+static int
 netlink_routing_table (struct sockaddr_nl *snl, struct nlmsghdr *h)
 {
   int len;
@@ -823,7 +769,7 @@ struct message rtproto_str[] = {
 };
 
 /* Routing information change from the kernel. */
-int
+static int
 netlink_route_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 {
   int len;
@@ -964,7 +910,7 @@ netlink_route_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
   return 0;
 }
 
-int
+static int
 netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 {
   int len;
@@ -1008,6 +954,7 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
   /* Add interface. */
   if (h->nlmsg_type == RTM_NEWLINK)
     {
+      unsigned long new_flags = ifi->ifi_flags & 0x0000fffff;
       ifp = if_lookup_by_name (name);
 
       if (ifp == NULL || !CHECK_FLAG (ifp->status, ZEBRA_INTERFACE_ACTIVE))
@@ -1015,8 +962,11 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
           if (ifp == NULL)
             ifp = if_get_by_name (name);
 
+	  zlog_info ("interface %s index %d %s added.",
+		     name, ifi->ifi_index, if_flag_dump(new_flags));
+
           set_ifindex(ifp, ifi->ifi_index);
-          ifp->flags = ifi->ifi_flags & 0x0000fffff;
+          ifp->flags = new_flags;
           ifp->mtu6 = ifp->mtu = *(int *) RTA_DATA (tb[IFLA_MTU]);
           ifp->metric = 1;
 
@@ -1030,26 +980,32 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
           ifp->mtu6 = ifp->mtu = *(int *) RTA_DATA (tb[IFLA_MTU]);
           ifp->metric = 1;
 
-          if (if_is_operative (ifp))
-            {
-              ifp->flags = ifi->ifi_flags & 0x0000fffff;
-              if (!if_is_operative (ifp))
-                if_down (ifp);
+	  if (new_flags != ifp->flags)
+	    {
+	      zlog_info ("interface %s index %d changed %s.",
+			 name, ifi->ifi_index,  if_flag_dump(new_flags));
+
+	      if (if_is_operative (ifp))
+		{
+		  ifp->flags = new_flags;
+		  if (!if_is_operative (ifp))
+		    if_down (ifp);
+		  else
+		    /* Must notify client daemons of new interface status. */
+		    zebra_interface_up_update (ifp);
+		}
 	      else
-		/* Must notify client daemons of new interface status. */
-	        zebra_interface_up_update (ifp);
-            }
-          else
-            {
-              ifp->flags = ifi->ifi_flags & 0x0000fffff;
-              if (if_is_operative (ifp))
-                if_up (ifp);
-            }
+		{
+		  ifp->flags = new_flags;
+		  if (if_is_operative (ifp))
+		    if_up (ifp);
+		}
+	    }
         }
     }
   else
     {
-    // RTM_DELLINK. 
+      // RTM_DELLINK. 
       ifp = if_lookup_by_name (name);
 
       if (ifp == NULL)
@@ -1058,13 +1014,16 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
                 name);
           return 0;
         }
+      else
+	zlog_info ("interface %s index %d deleted.",
+		   name, ifi->ifi_index);
 
       if_delete_update (ifp);
     }
   return 0;
 }
 
-int
+static int
 netlink_information_fetch (struct sockaddr_nl *snl, struct nlmsghdr *h)
 {
   /* JF: Ignore messages that aren't from the kernel */
@@ -1106,18 +1065,6 @@ int
 interface_lookup_netlink (void)
 {
   int ret;
-  int flags;
-  int snb_ret;
-
-  /* 
-   * Change netlink socket flags to blocking to ensure we get 
-   * a reply via nelink_parse_info
-   */
-  snb_ret = set_netlink_blocking (&netlink_cmd, &flags);
-  if (snb_ret < 0)
-    zlog (NULL, LOG_WARNING,
-          "%s:%i Warning: Could not set netlink socket to blocking.",
-          __FUNCTION__, __LINE__);
 
   /* Get interface information. */
   ret = netlink_request (AF_PACKET, RTM_GETLINK, &netlink_cmd);
@@ -1145,9 +1092,6 @@ interface_lookup_netlink (void)
     return ret;
 #endif /* HAVE_IPV6 */
 
-  /* restore socket flags */
-  if (snb_ret == 0)
-    set_netlink_nonblocking (&netlink_cmd, &flags);
   return 0;
 }
 
@@ -1157,18 +1101,6 @@ int
 netlink_route_read (void)
 {
   int ret;
-  int flags;
-  int snb_ret;
-
-  /* 
-   * Change netlink socket flags to blocking to ensure we get 
-   * a reply via nelink_parse_info
-   */
-  snb_ret = set_netlink_blocking (&netlink_cmd, &flags);
-  if (snb_ret < 0)
-    zlog (NULL, LOG_WARNING,
-          "%s:%i Warning: Could not set netlink socket to blocking.",
-          __FUNCTION__, __LINE__);
 
   /* Get IPv4 routing table. */
   ret = netlink_request (AF_INET, RTM_GETROUTE, &netlink_cmd);
@@ -1188,15 +1120,12 @@ netlink_route_read (void)
     return ret;
 #endif /* HAVE_IPV6 */
 
-  /* restore flags */
-  if (snb_ret == 0)
-    set_netlink_nonblocking (&netlink_cmd, &flags);
   return 0;
 }
 
 /* Utility function  comes from iproute2. 
    Authors:	Alexey Kuznetsov, <kuznet@ms2.inr.ac.ru> */
-int
+static int
 addattr_l (struct nlmsghdr *n, int maxlen, int type, void *data, int alen)
 {
   int len;
@@ -1216,7 +1145,7 @@ addattr_l (struct nlmsghdr *n, int maxlen, int type, void *data, int alen)
   return 0;
 }
 
-int
+static int
 rta_addattr_l (struct rtattr *rta, int maxlen, int type, void *data, int alen)
 {
   int len;
@@ -1238,7 +1167,7 @@ rta_addattr_l (struct rtattr *rta, int maxlen, int type, void *data, int alen)
 
 /* Utility function comes from iproute2. 
    Authors:	Alexey Kuznetsov, <kuznet@ms2.inr.ac.ru> */
-int
+static int
 addattr32 (struct nlmsghdr *n, int maxlen, int type, int data)
 {
   int len;
@@ -1266,15 +1195,13 @@ netlink_talk_filter (struct sockaddr_nl *snl, struct nlmsghdr *h)
 }
 
 /* sendmsg() to netlink socket then recvmsg(). */
-int
+static int
 netlink_talk (struct nlmsghdr *n, struct nlsock *nl)
 {
   int status;
   struct sockaddr_nl snl;
   struct iovec iov = { (void *) n, n->nlmsg_len };
   struct msghdr msg = { (void *) &snl, sizeof snl, &iov, 1, NULL, 0, 0 };
-  int flags = 0;
-  int snb_ret;
   int save_errno;
 
   memset (&snl, 0, sizeof snl);
@@ -1305,31 +1232,16 @@ netlink_talk (struct nlmsghdr *n, struct nlsock *nl)
       return -1;
     }
 
-  /* 
-   * Change socket flags for blocking I/O. 
-   * This ensures we wait for a reply in netlink_parse_info().
-   */
-  snb_ret = set_netlink_blocking (nl, &flags);
-  if (snb_ret < 0)
-    zlog (NULL, LOG_WARNING,
-          "%s:%i Warning: Could not set netlink socket to blocking.",
-          __FUNCTION__, __LINE__);
 
   /* 
    * Get reply from netlink socket. 
    * The reply should either be an acknowlegement or an error.
    */
-  status = netlink_parse_info (netlink_talk_filter, nl);
-
-  /* Restore socket flags for nonblocking I/O */
-  if (snb_ret == 0)
-    set_netlink_nonblocking (nl, &flags);
-
-  return status;
+  return netlink_parse_info (netlink_talk_filter, nl);
 }
 
 /* Routing table change via netlink interface. */
-int
+static int
 netlink_route (int cmd, int family, void *dest, int length, void *gate,
                int index, int zebra_flags, int table)
 {
@@ -1404,7 +1316,7 @@ netlink_route (int cmd, int family, void *dest, int length, void *gate,
 }
 
 /* Routing table change via netlink interface. */
-int
+static int
 netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
                          int family)
 {
@@ -1867,7 +1779,7 @@ kernel_delete_ipv6_old (struct prefix_ipv6 *dest, struct in6_addr *gate,
 #endif /* HAVE_IPV6 */
 
 /* Interface address modification. */
-int
+static int
 netlink_address (int cmd, int family, struct interface *ifp,
                  struct connected *ifc)
 {
@@ -1932,7 +1844,7 @@ kernel_address_delete_ipv4 (struct interface *ifp, struct connected *ifc)
 extern struct thread_master *master;
 
 /* Kernel route reflection. */
-int
+static int
 kernel_read (struct thread *thread)
 {
   int ret;
@@ -1993,6 +1905,15 @@ kernel_init (void)
   /* Register kernel socket. */
   if (netlink.sock > 0)
     {
+      /* Only want non-blocking on the netlink event socket */
+      if (fcntl (netlink.sock, F_SETFL, O_NONBLOCK) < 0)
+	zlog (NULL, LOG_ERR, "Can't set %s socket flags: %s", netlink.name,
+		safe_strerror (errno));
+
+      /* Set receive buffer size if it's set from command line */
+      if (nl_rcvbufsize)
+	netlink_recvbuf (&netlink, nl_rcvbufsize);
+
       netlink_install_filter (netlink.sock, netlink_cmd.snl.nl_pid);
       thread_add_read (zebrad.master, kernel_read, NULL, netlink.sock);
     }

@@ -520,8 +520,6 @@ bgp_damp_disable (struct bgp *bgp, afi_t afi, safi_t safi)
 int
 bgp_config_write_damp (struct vty *vty)
 {
-  if (&bgp_damp_cfg)
-    {
       if (bgp_damp_cfg.half_life == DEFAULT_HALF_LIFE*60
 	  && bgp_damp_cfg.reuse_limit == DEFAULT_REUSE
 	  && bgp_damp_cfg.suppress_value == DEFAULT_SUPPRESS
@@ -542,8 +540,6 @@ bgp_config_write_damp (struct vty *vty)
 		 bgp_damp_cfg.max_suppress_time/60,
 		 VTY_NEWLINE);
       return 1;
-    }
-  return 0;
 }
 
 #define BGP_UPTIME_LEN 25

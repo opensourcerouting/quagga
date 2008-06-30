@@ -208,6 +208,8 @@ AC_ARG_ENABLE(bgp-announce,
 [  --disable-bgp-announce, turn off BGP route announcement])
 AC_ARG_ENABLE(netlink,
 [  --enable-netlink        force to use Linux netlink interface])
+AC_ARG_ENABLE(linkdetect,
+[  --enable-linkdetect     use Linux link-detect configuration])
 AC_ARG_ENABLE(broken-aliases,
 [  --enable-broken-aliases enable aliases as distinct interfaces for Linux 2.2.X])
 AC_ARG_ENABLE(snmp,
@@ -216,6 +218,8 @@ AC_ARG_WITH(libpam,
 [  --with-libpam           use libpam for PAM support in vtysh])
 AC_ARG_ENABLE(tcp-zebra,
 [  --enable-tcp-zebra      enable TCP/IP socket connection between zebra and protocol daemon])
+AC_ARG_ENABLE(tcp-md5,
+[  --enable-tcp-md5        enable TCP/IP md5 in BGPd])
 AC_ARG_ENABLE(opaque-lsa,
 [  --enable-opaque-lsa     enable OSPF Opaque-LSA with OSPFAPI support (RFC2370)])
 AC_ARG_ENABLE(ospfapi,
@@ -284,6 +288,10 @@ fi
 
 if test "${enable_tcp_zebra}" = "yes"; then
   AC_DEFINE(HAVE_TCP_ZEBRA,,Use TCP for zebra communication)
+fi
+
+if test "${enable_tcp_md5}" = "yes"; then
+  AC_DEFINE(HAVE_TCP_MD5SIG,1,Enable TCP MD5 Signatures)
 fi
 
 if test "${enable_opaque_lsa}" = "yes"; then
@@ -894,6 +902,32 @@ AC_TRY_COMPILE([#ifdef HAVE_SYS_PARAM_H
 #endif],[AC_MSG_RESULT(yes)
 AC_DEFINE(HAVE_BSD_STRUCT_IP_MREQ_HACK,,[Can pass ifindex in struct ip_mreq])],
 AC_MSG_RESULT(no))
+
+dnl ---------------------------------------------------------------
+dnl figure out how to check link-state
+dnl ---------------------------------------------------------------
+AC_CHECK_HEADER([net/if.h],
+  [AC_CHECK_HEADER( [net/if_media.h],
+    [m4_define([LINK_DETECT_INCLUDES],
+      QUAGGA_INCLUDES
+      [#include <net/if_media.h>
+    ])
+    AC_CHECK_MEMBERS( [struct ifmediareq.ifm_status],
+      AC_DEFINE(HAVE_BSD_LINK_DETECT,,[BSD link-detect]),
+      [], LINK_DETECT_INCLUDES)], 
+    [],
+    QUAGGA_INCLUDES)], 
+  [], QUAGGA_INCLUDES )
+
+
+dnl ---------------------------------------------------------------
+dnl kernel link-detect enable via /proc/sys/net/ipv4/conf/ethX/link_detect
+dnl ---------------------------------------------------------------
+if test "${enable_linkdetect}" = "yes"; then
+  AC_DEFINE(HAVE_LINKDETECT,1,Enable Linux kernel linkdetect)
+  LINK_DETECT=if_linkdetect.o
+fi
+AC_SUBST(LINK_DETECT)
 
 dnl -----------------------
 dnl check proc file system.

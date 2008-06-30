@@ -923,6 +923,7 @@ bgp_notify_send (struct peer *peer, u_char code, u_char sub_code)
   bgp_notify_send_with_data (peer, code, sub_code, NULL, 0);
 }
 
+#if 0
 static const char *
 afi2str (afi_t afi)
 {
@@ -946,6 +947,7 @@ safi2str (safi_t safi)
   else
     return "Unknown SAFI";
 }
+#endif
 
 /* Send route refresh message to the peer. */
 void
@@ -1235,7 +1237,7 @@ bgp_open_receive (struct peer *peer, bgp_size_t size)
         zlog_debug ("%s [AS4] OPEN remote_as is AS_TRANS, but no AS4."
                     " Odd, but proceeding.", peer->host);
       else if (as4 < BGP_AS_MAX && BGP_DEBUG (as4, AS4))
-        zlog_debug ("%s [AS4] OPEN remote_as is AS_TRANS, but AS4 fits "
+        zlog_debug ("%s [AS4] OPEN remote_as is AS_TRANS, but AS4 %u fits "
                     "in 2-bytes, very odd peer.", peer->host, as4);
       if (as4)
         remote_as = as4;
@@ -1960,11 +1962,14 @@ bgp_route_refresh_receive (struct peer *peer, bgp_size_t size)
       when_to_refresh = stream_getc (s);
       end = stream_pnt (s) + (size - 5);
 
-      while (stream_pnt (s) < end)
+      while ((stream_pnt (s) + 2) < end)
 	{
 	  orf_type = stream_getc (s); 
 	  orf_len = stream_getw (s);
-
+	  
+	  /* orf_len in bounds? */
+	  if ((stream_pnt (s) + orf_len) > end)
+	    break; /* XXX: Notify instead?? */
 	  if (orf_type == ORF_TYPE_PREFIX
 	      || orf_type == ORF_TYPE_PREFIX_OLD)
 	    {
@@ -1984,6 +1989,12 @@ bgp_route_refresh_receive (struct peer *peer, bgp_size_t size)
 			     peer->host, orf_type, orf_len);
 		}
 
+              /* we're going to read at least 1 byte of common ORF header,
+               * and 7 bytes of ORF Address-filter entry from the stream
+               */
+              if (orf_len < 7)
+                break; 
+                
 	      /* ORF prefix-list name */
 	      sprintf (name, "%s.%d.%d", peer->host, afi, safi);
 

@@ -526,7 +526,7 @@ link_info_set (struct stream *s, struct in_addr id,
       
       if (ret == OSPF_MAX_LSA_SIZE)
         {
-          zlog_warn ("%s: Out of space in LSA stream, left %ld, size %ld",
+          zlog_warn ("%s: Out of space in LSA stream, left %ld, size %z",
                      __func__, STREAM_REMAIN (s), STREAM_SIZE (s));
           return 0;
         }
@@ -1895,6 +1895,7 @@ ospf_lsa_translated_nssa_new (struct ospf *ospf,
   return new; 
 }
 
+#if 0
 /* compare type-5 to type-7
  * -1: err, 0: same, 1: different
  */
@@ -1931,6 +1932,7 @@ ospf_lsa_translated_nssa_compare (struct ospf_lsa *t7, struct ospf_lsa *t5)
     
   return LSA_REFRESH_IF_CHANGED;
 }
+#endif
 
 /* Originate Translated Type-5 for supplied Type-7 NSSA LSA */
 struct ospf_lsa *

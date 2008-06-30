@@ -3,7 +3,6 @@
 *.l[ao]
 .deps
 .libs
-ChangeLog
 INSTALL
 Makefile
 Makefile.in
@@ -24,6 +23,7 @@ debian/files
 debian/vyatta-quagga.postinst.debhelper
 debian/vyatta-quagga.postrm.debhelper
 debian/vyatta-quagga.prerm.debhelper
+debian/vyatta-quagga.debhelper.log
 depcomp
 doc/defines.texi
 doc/mdate-sh
@@ -54,5 +54,7 @@ vtysh/vtysh_cmd.c
 watchquagga/watchquagga
 zebra/testzebra
 zebra/zebra
-
+cscope.*
+TAGS
+tags
 
