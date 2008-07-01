@@ -696,7 +696,7 @@ ospf_distribute_check_connected (struct ospf *ospf, struct external_info *ei)
   struct listnode *node;
   struct ospf_interface *oi;
 
-
+/* Should this include a if_is_running() test too? */
   for (ALL_LIST_ELEMENTS_RO (ospf->oiflist, node, oi))
       if (prefix_match (oi->address, (struct prefix *) &ei->p))
           return 0;
