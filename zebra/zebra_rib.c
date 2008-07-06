@@ -401,17 +401,24 @@ nexthop_active_ipv4 (struct rib *rib, struct nexthop *nexthop, int set,
 	    {
 	      /* Directly point connected route. */
 	      newhop = match->nexthop;
-	      if (newhop && nexthop->type == NEXTHOP_TYPE_IPV4)
-		nexthop->ifindex = newhop->ifindex;
-	      else if (newhop && newhop->type == NEXTHOP_TYPE_IFINDEX)
+	      if (newhop)
 		{
-		  ifp = if_lookup_by_index (newhop->ifindex);
-		  return (ifp && if_is_operative (ifp));
-		}
-	      else if (newhop && newhop->type == NEXTHOP_TYPE_IFNAME)
-		{
-		  ifp = if_lookup_by_name(newhop->ifname);
-		  return (ifp && if_is_operative (ifp));
+		  if (nexthop->type == NEXTHOP_TYPE_IPV4)
+		    nexthop->ifindex = newhop->ifindex;
+
+		  if (newhop->type == NEXTHOP_TYPE_IFINDEX ||
+		      newhop->type == NEXTHOP_TYPE_IPV4_IFINDEX)
+		    {
+		      ifp = if_lookup_by_index (newhop->ifindex);
+		      return (ifp && if_is_operative (ifp));
+		    }
+		      
+		  if (newhop->type == NEXTHOP_TYPE_IFNAME ||
+		      newhop->type == NEXTHOP_TYPE_IPV4_IFNAME)
+		    {
+		      ifp = if_lookup_by_name(newhop->ifname);
+		      return (ifp && if_is_operative (ifp));
+		    }
 		}
 	      return 1;
 	    }
