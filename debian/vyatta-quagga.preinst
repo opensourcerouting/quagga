@@ -67,7 +67,7 @@ if [ "$1" = "install" ]; then
 	    chmod 0640 $ETC_DIR/${daemon}.conf
 	    cat <<-EOF > $ETC_DIR/${daemon}.conf
 		log syslog
-                log facility local7
+		log facility local7
 		EOF
 	fi
     done
