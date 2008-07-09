@@ -267,6 +267,11 @@ bgp_connect (struct peer *peer)
   sockopt_reuseaddr (peer->fd);
   sockopt_reuseport (peer->fd);
 
+#ifdef IPTOS_PREC_INTERNETCONTROL
+  if (sockunion_family (&peer->su) == AF_INET)
+    setsockopt_ipv4_tos (peer->fd, IPTOS_PREC_INTERNETCONTROL);
+#endif
+
 #ifdef HAVE_TCP_MD5SIG
   if (CHECK_FLAG (peer->flags, PEER_FLAG_PASSWORD))
     if (sockunion_family (&peer->su) == AF_INET)
@@ -362,6 +367,11 @@ bgp_socket (struct bgp *bgp, unsigned short port, char *address)
       sockopt_reuseaddr (sock);
       sockopt_reuseport (sock);
       
+#ifdef IPTOS_PREC_INTERNETCONTROL
+      if (ainfo->ai_family == AF_INET)
+	setsockopt_ipv4_tos (sock, IPTOS_PREC_INTERNETCONTROL);
+#endif
+
 #if defined(HAVE_TCP_MD5SIG) && defined(IPV6_V6ONLY)
 /*	We can not apply MD5SIG to an IPv6 socket.  If this is an AF_INET6
 	socket, we'll have to create another socket for IPv4*/
@@ -419,6 +429,7 @@ bgp_socket (struct bgp *bgp, unsigned short port, char *address)
 
       sockopt_reuseaddr (sock);
       sockopt_reuseport (sock);
+      setsockopt_ipv4_tos (sock, IPTOS_PREC_INTERNETCONTROL);
 
       memset (&sin, 0, sizeof (struct sockaddr_in));
 
@@ -485,6 +496,10 @@ bgp_socket (struct bgp *bgp, unsigned short port, char *address)
 
   sockopt_reuseaddr (sock);
   sockopt_reuseport (sock);
+
+#ifdef IPTOS_PREC_INTERNETCONTROL
+  setsockopt_ipv4_tos (sock, IPTOS_PREC_INTERNETCONTROL);
+#endif
 
   memset (&sin, 0, sizeof (struct sockaddr_in));
 
