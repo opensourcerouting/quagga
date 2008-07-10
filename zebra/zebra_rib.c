@@ -51,7 +51,7 @@ extern struct zebra_t zebrad;
 int rib_process_hold_time = 10;
 
 /* Each route type's string and default distance value. */
-struct
+static const struct
 {  
   int key;
   int distance;
@@ -70,7 +70,7 @@ struct
 };
 
 /* Vector for routing table.  */
-vector vrf_vector;
+static vector vrf_vector;
 
 /* Allocate new VRF.  */
 static struct vrf *
@@ -401,17 +401,24 @@ nexthop_active_ipv4 (struct rib *rib, struct nexthop *nexthop, int set,
 	    {
 	      /* Directly point connected route. */
 	      newhop = match->nexthop;
-	      if (newhop && nexthop->type == NEXTHOP_TYPE_IPV4)
-		nexthop->ifindex = newhop->ifindex;
-	      else if (newhop && newhop->type == NEXTHOP_TYPE_IFINDEX)
+	      if (newhop)
 		{
-		  ifp = if_lookup_by_index (newhop->ifindex);
-		  return (ifp && if_is_operative (ifp));
-		}
-	      else if (newhop && newhop->type == NEXTHOP_TYPE_IFNAME)
-		{
-		  ifp = if_lookup_by_name(newhop->ifname);
-		  return (ifp && if_is_operative (ifp));
+		  if (nexthop->type == NEXTHOP_TYPE_IPV4)
+		    nexthop->ifindex = newhop->ifindex;
+
+		  if (newhop->type == NEXTHOP_TYPE_IFINDEX ||
+		      newhop->type == NEXTHOP_TYPE_IPV4_IFINDEX)
+		    {
+		      ifp = if_lookup_by_index (newhop->ifindex);
+		      return (ifp && if_is_operative (ifp));
+		    }
+		      
+		  if (newhop->type == NEXTHOP_TYPE_IFNAME ||
+		      newhop->type == NEXTHOP_TYPE_IPV4_IFNAME)
+		    {
+		      ifp = if_lookup_by_name(newhop->ifname);
+		      return (ifp && if_is_operative (ifp));
+		    }
 		}
 	      return 1;
 	    }
@@ -521,19 +528,25 @@ nexthop_active_ipv6 (struct rib *rib, struct nexthop *nexthop, int set,
 	      /* Directly point connected route. */
 	      newhop = match->nexthop;
 
-	      if (newhop && nexthop->type == NEXTHOP_TYPE_IPV6)
-		nexthop->ifindex = newhop->ifindex;
-	      else if (newhop && newhop->type == NEXTHOP_TYPE_IFINDEX)
+	      if (newhop)
 		{
-		  ifp = if_lookup_by_index (newhop->ifindex);
-		  return (ifp && if_is_operative (ifp));
-		}
-	      else if (newhop && newhop->type == NEXTHOP_TYPE_IFNAME)
-		{
-		  ifp = if_lookup_by_name(newhop->ifname);
-		  return (ifp && if_is_operative (ifp));
-		}
+		  if (nexthop->type == NEXTHOP_TYPE_IPV4)
+		    nexthop->ifindex = newhop->ifindex;
 
+		  if (newhop->type == NEXTHOP_TYPE_IFINDEX ||
+		      newhop->type == NEXTHOP_TYPE_IPV4_IFINDEX)
+		    {
+		      ifp = if_lookup_by_index (newhop->ifindex);
+		      return (ifp && if_is_operative (ifp));
+		    }
+		      
+		  if (newhop->type == NEXTHOP_TYPE_IFNAME ||
+		      newhop->type == NEXTHOP_TYPE_IPV4_IFNAME)
+		    {
+		      ifp = if_lookup_by_name(newhop->ifname);
+		      return (ifp && if_is_operative (ifp));
+		    }
+		}
 	      return 1;
 	    }
 	  else if (CHECK_FLAG (rib->flags, ZEBRA_FLAG_INTERNAL))
@@ -2160,6 +2173,9 @@ static_add_ipv4 (struct prefix *p, struct in_addr *gate, const char *ifname,
   /* Install into rib. */
   static_install_ipv4 (p, si);
 
+  /* Scan for possible recursive route changes */
+  rib_update();
+
   return 1;
 }
 
@@ -2223,6 +2239,9 @@ static_delete_ipv4 (struct prefix *p, struct in_addr *gate, const char *ifname,
   XFREE (MTYPE_STATIC_IPV4, si);
 
   route_unlock_node (rn);
+
+  /* Scan for possible recursive route changes */
+  rib_update();
 
   return 1;
 }
@@ -2706,6 +2725,8 @@ static_add_ipv6 (struct prefix *p, u_char type, struct in6_addr *gate,
   /* Install into rib. */
   static_install_ipv6 (p, si);
 
+  /* Scan for possible recursive route changes */
+  rib_update();
   return 1;
 }
 
@@ -2759,6 +2780,7 @@ static_delete_ipv6 (struct prefix *p, u_char type, struct in6_addr *gate,
     XFREE (0, si->ifname);
   XFREE (MTYPE_STATIC_IPV6, si);
 
+  rib_update();
   return 1;
 }
 #endif /* HAVE_IPV6 */
