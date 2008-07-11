@@ -684,7 +684,7 @@ peer_sort (struct peer *peer)
     }
 }
 
-static inline void
+void
 peer_free (struct peer *peer)
 {
   assert (peer->status == Deleted);
@@ -720,48 +720,6 @@ peer_free (struct peer *peer)
   XFREE (MTYPE_BGP_PEER, peer);
 }
                                                 
-/* increase reference count on a struct peer */
-struct peer *
-peer_lock (struct peer *peer)
-{
-  assert (peer && (peer->lock >= 0));
-  assert (peer->status != Deleted);
-    
-  peer->lock++;
-  
-  return peer;
-}
-
-/* decrease reference count on a struct peer
- * struct peer is freed and NULL returned if last reference
- */
-struct peer *
-peer_unlock (struct peer *peer)
-{
-  assert (peer && (peer->lock > 0));
-  
-  peer->lock--;
-  
-  if (peer->lock == 0)
-    {
-#if 0
-      zlog_debug ("unlocked and freeing");
-      zlog_backtrace (LOG_DEBUG);
-#endif
-      peer_free (peer);
-      return NULL;
-    }
-
-#if 0
-  if (peer->lock == 1)
-    {
-      zlog_debug ("unlocked to 1");
-      zlog_backtrace (LOG_DEBUG);
-    }
-#endif
-
-  return peer;
-}
   
 /* Allocate new peer object, implicitely locked.  */
 static struct peer *
@@ -1190,7 +1148,7 @@ peer_delete (struct peer *peer)
 
       if ((pn = listnode_lookup (peer->group->peer, peer)))
         {
-          peer = peer_unlock (peer); /* group->peer list reference */
+          peer_unlock (peer); /* group->peer list reference */
           list_delete_node (peer->group->peer, pn);
         }
       peer->group = NULL;
