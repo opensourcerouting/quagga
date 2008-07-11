@@ -136,7 +136,7 @@ ospf_interface_delete (int command, struct zclient *zclient,
 
   if (IS_DEBUG_OSPF (zebra, ZEBRA_INTERFACE))
     zlog_debug
-      ("Zebra: interface delete %s index %d flags %ld metric %d mtu %d",
+      ("Zebra: interface delete %s index %d flags %#llx metric %d mtu %d",
        ifp->name, ifp->ifindex, (unsigned long long)ifp->flags,
        ifp->metric, ifp->mtu);
 
