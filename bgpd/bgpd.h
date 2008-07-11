@@ -69,6 +69,13 @@ struct bgp
   /* AS number of this BGP instance.  */
   as_t as;
 
+  /* reference count, primarily to allow bgp_process'ing of route_node's
+   * to be done after a struct peer is deleted.
+   *
+   * named 'lock' for hysterical reasons within Quagga.
+   */
+  int lock;
+
   /* Name of this BGP instance.  */
   char *name;
   
@@ -862,7 +869,25 @@ extern int bgp_option_unset (int);
 extern int bgp_option_check (int);
 
 extern int bgp_get (struct bgp **, as_t *, const char *);
-extern int bgp_delete (struct bgp *);
+extern void bgp_delete (struct bgp *);
+extern void bgp_free (struct bgp *);
+
+static inline struct bgp *
+bgp_lock (struct bgp *bgp)
+{
+  assert (bgp && (bgp->lock >= 0));
+  bgp->lock++;
+  return bgp;
+}
+
+static inline void
+bgp_unlock (struct bgp *bgp)
+{
+  assert (bgp && (bgp->lock > 0));
+  if (--bgp->lock == 0)
+      bgp_free (bgp);
+}
+
 
 extern int bgp_flag_set (struct bgp *, int);
 extern int bgp_flag_unset (struct bgp *, int);

@@ -697,6 +697,8 @@ peer_free (struct peer *peer)
   BGP_WRITE_OFF (peer->t_write);
   BGP_EVENT_FLUSH (peer);
   
+  bgp_unlock (peer->bgp);
+
   if (peer->desc)
     XFREE (MTYPE_PEER_DESC, peer->desc);
   
@@ -747,7 +749,7 @@ peer_new (struct bgp *bgp)
   peer->ostatus = Idle;
   peer->weight = 0;
   peer->password = NULL;
-  peer->bgp = bgp;
+  peer->bgp = bgp_lock (bgp);
   peer = peer_lock (peer); /* initial reference */
 
   /* Set default flags.  */
@@ -1285,15 +1287,19 @@ peer_group_active (struct peer *peer)
 
 /* Peer group cofiguration. */
 static struct peer_group *
-peer_group_new ()
+peer_group_new (struct bgp *bgp)
 {
-  return (struct peer_group *) XCALLOC (MTYPE_PEER_GROUP,
-					sizeof (struct peer_group));
+  struct peer_group *group;
+
+  group = XCALLOC (MTYPE_PEER_GROUP, sizeof (struct peer_group));
+  group->bgp = bgp_lock (bgp);
+  return group;
 }
 
 static void
 peer_group_free (struct peer_group *group)
 {
+  bgp_unlock (group->bgp);
   XFREE (MTYPE_PEER_GROUP, group);
 }
 
@@ -1320,8 +1326,7 @@ peer_group_get (struct bgp *bgp, const char *name)
   if (group)
     return group;
 
-  group = peer_group_new ();
-  group->bgp = bgp;
+  group = peer_group_new (bgp);
   group->name = strdup (name);
   group->peer = list_new ();
   group->conf = peer_new (bgp);
@@ -1884,6 +1889,7 @@ bgp_create (as_t *as, const char *name)
   if ( (bgp = XCALLOC (MTYPE_BGP, sizeof (struct bgp))) == NULL)
     return NULL;
   
+  bgp_lock(bgp);	/* initial reference */
   bgp->peer_self = peer_new (bgp);
   bgp->peer_self->host = strdup ("Static announcement");
 
@@ -2012,7 +2018,7 @@ bgp_get (struct bgp **bgp_val, as_t *as, const char *name)
 }
 
 /* Delete BGP instance. */
-int
+void
 bgp_delete (struct bgp *bgp)
 {
   struct peer *peer;
@@ -2020,7 +2026,6 @@ bgp_delete (struct bgp *bgp)
   struct listnode *node;
   struct listnode *next;
   afi_t afi;
-  safi_t safi;
   int i;
 
   /* Delete static route. */
@@ -2045,7 +2050,16 @@ bgp_delete (struct bgp *bgp)
   list_delete (bgp->rsclient);
 
   listnode_delete (bm->bgp, bgp);
-  
+
+  bgp_unlock(bgp);
+}
+
+void
+bgp_free(struct bgp *bgp)
+{
+  afi_t afi;
+  safi_t safi;
+
   if (bgp->name)
     free (bgp->name);
   
@@ -2060,8 +2074,6 @@ bgp_delete (struct bgp *bgp)
 	  XFREE (MTYPE_ROUTE_TABLE,bgp->rib[afi][safi]);
       }
   XFREE (MTYPE_BGP, bgp);
-
-  return 0;
 }
 
 struct peer *
