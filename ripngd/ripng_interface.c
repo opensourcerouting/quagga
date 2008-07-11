@@ -294,7 +294,8 @@ ripng_interface_add (int command, struct zclient *zclient, zebra_size_t length)
 
   if (IS_RIPNG_DEBUG_ZEBRA)
     zlog_debug ("RIPng interface add %s index %d flags %#llx metric %d mtu %d",
-	       ifp->name, ifp->ifindex, ifp->flags, ifp->metric, ifp->mtu6);
+		ifp->name, ifp->ifindex, (unsigned long long) ifp->flags,
+		ifp->metric, ifp->mtu6);
 
   /* Check is this interface is RIP enabled or not.*/
   ripng_enable_apply (ifp);
@@ -327,7 +328,8 @@ ripng_interface_delete (int command, struct zclient *zclient,
   }
 
   zlog_info("interface delete %s index %d flags %#llx metric %d mtu %d",
-            ifp->name, ifp->ifindex, ifp->flags, ifp->metric, ifp->mtu6);
+            ifp->name, ifp->ifindex, (unsigned long long) ifp->flags,
+	    ifp->metric, ifp->mtu6);
 
   /* To support pseudo interface do not free interface structure.  */
   /* if_delete(ifp); */

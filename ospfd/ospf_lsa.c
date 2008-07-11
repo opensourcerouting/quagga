@@ -526,7 +526,7 @@ link_info_set (struct stream *s, struct in_addr id,
       
       if (ret == OSPF_MAX_LSA_SIZE)
         {
-          zlog_warn ("%s: Out of space in LSA stream, left %ld, size %z",
+          zlog_warn ("%s: Out of space in LSA stream, left %zd, size %zd",
                      __func__, STREAM_REMAIN (s), STREAM_SIZE (s));
           return 0;
         }
