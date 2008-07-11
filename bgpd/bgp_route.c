@@ -2680,10 +2680,10 @@ bgp_clear_node_complete (struct work_queue *wq)
 {
   struct peer *peer = wq->spec.data;
   
-  peer_unlock (peer); /* bgp_clear_node_complete */
-  
   /* Tickle FSM to start moving again */
   BGP_EVENT_ADD (peer, Clearing_Completed);
+
+  peer_unlock (peer); /* bgp_clear_node_complete */
 }
 
 static void
