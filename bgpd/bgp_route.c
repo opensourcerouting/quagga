@@ -138,7 +138,7 @@ bgp_info_new ()
 }
 
 /* Free bgp route information. */
-static void
+void
 bgp_info_free (struct bgp_info *binfo)
 {
   if (binfo->attr)
@@ -151,39 +151,6 @@ bgp_info_free (struct bgp_info *binfo)
   XFREE (MTYPE_BGP_ROUTE, binfo);
 }
 
-struct bgp_info *
-bgp_info_lock (struct bgp_info *binfo)
-{
-  binfo->lock++;
-  return binfo;
-}
-
-struct bgp_info *
-bgp_info_unlock (struct bgp_info *binfo)
-{
-  assert (binfo && binfo->lock > 0);
-  binfo->lock--;
-  
-  if (binfo->lock == 0)
-    {
-#if 0
-      zlog_debug ("%s: unlocked and freeing", __func__);
-      zlog_backtrace (LOG_DEBUG);
-#endif
-      bgp_info_free (binfo);
-      return NULL;
-    }
-
-#if 0
-  if (binfo->lock == 1)
-    {
-      zlog_debug ("%s: unlocked to 1", __func__);
-      zlog_backtrace (LOG_DEBUG);
-    }
-#endif
-  
-  return binfo;
-}
 
 void
 bgp_info_add (struct bgp_node *rn, struct bgp_info *ri)
