@@ -257,13 +257,62 @@ extern void if_delete_retain (struct interface *);
    deletes it from the interface list and frees the structure. */
 extern void if_delete (struct interface *);
 
-extern int if_is_up (struct interface *);
-extern int if_is_running (struct interface *);
-extern int if_is_operative (struct interface *);
-extern int if_is_loopback (struct interface *);
-extern int if_is_broadcast (struct interface *);
-extern int if_is_pointopoint (struct interface *);
-extern int if_is_multicast (struct interface *);
+/* Does interface up ? */
+static inline int
+if_is_up (const struct interface *ifp)
+{
+  return ifp->flags & IFF_UP;
+}
+
+/* Is interface running? */
+static inline int
+if_is_running (const struct interface *ifp)
+{
+  return ifp->flags & IFF_RUNNING;
+}
+
+/* Is the interface operative, eg. either UP & RUNNING
+   or UP & !ZEBRA_INTERFACE_LINK_DETECTION */
+static inline int
+if_is_operative (const struct interface *ifp)
+{
+  return ((ifp->flags & IFF_UP) &&
+	  (ifp->flags & IFF_RUNNING || 
+	   !CHECK_FLAG(ifp->status, ZEBRA_INTERFACE_LINKDETECTION)));
+}
+
+/* Is this loopback interface ? */
+static inline int
+if_is_loopback (const struct interface *ifp)
+{
+  /* XXX: Do this better, eg what if IFF_WHATEVER means X on platform M
+   * but Y on platform N?
+   */
+  return (ifp->flags & (IFF_LOOPBACK|IFF_NOXMIT|IFF_VIRTUAL));
+}
+
+/* Does this interface support broadcast ? */
+static inline int
+if_is_broadcast (const struct interface *ifp)
+{
+  return ifp->flags & IFF_BROADCAST;
+}
+
+/* Does this interface support broadcast ? */
+static inline int
+if_is_pointopoint (const struct interface *ifp)
+{
+  return ifp->flags & IFF_POINTOPOINT;
+}
+
+/* Does this interface support multicast ? */
+static inline int
+if_is_multicast (const struct interface *ifp)
+{
+  return ifp->flags & IFF_MULTICAST;
+}
+
+
 extern void if_add_hook (int, int (*)(struct interface *));
 extern void if_init (void);
 extern void if_dump_all (void);
