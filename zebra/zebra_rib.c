@@ -401,26 +401,33 @@ nexthop_active_ipv4 (struct rib *rib, struct nexthop *nexthop, int set,
 	    {
 	      /* Directly point connected route. */
 	      newhop = match->nexthop;
-	      if (newhop)
-		{
-		  if (nexthop->type == NEXTHOP_TYPE_IPV4)
-		    nexthop->ifindex = newhop->ifindex;
+	      if (!newhop)
+		return 0;	/* dead route */
 
-		  if (newhop->type == NEXTHOP_TYPE_IFINDEX ||
-		      newhop->type == NEXTHOP_TYPE_IPV4_IFINDEX)
-		    {
-		      ifp = if_lookup_by_index (newhop->ifindex);
-		      return (ifp && if_is_operative (ifp));
-		    }
-		      
-		  if (newhop->type == NEXTHOP_TYPE_IFNAME ||
-		      newhop->type == NEXTHOP_TYPE_IPV4_IFNAME)
-		    {
-		      ifp = if_lookup_by_name(newhop->ifname);
-		      return (ifp && if_is_operative (ifp));
-		    }
+	      /* if scanning and the new match is different than the old one
+	       * then force the CHANGED flag.
+	       * FIXME (have this routine return NULL or nexhop instead)
+	       */
+	      if (!set && newhop != nexthop)
+		SET_FLAG (rib->flags, ZEBRA_FLAG_CHANGED);
+
+	      /* recursive route, remember index */
+	      if (nexthop->type == NEXTHOP_TYPE_IPV4)
+		nexthop->ifindex = newhop->ifindex;
+	      
+	      switch(newhop->type)
+		{
+		case NEXTHOP_TYPE_IFINDEX:
+		case NEXTHOP_TYPE_IPV4_IFINDEX:
+		  ifp = if_lookup_by_index (newhop->ifindex);
+		  return (ifp && if_is_operative (ifp));
+		case NEXTHOP_TYPE_IFNAME:
+		case NEXTHOP_TYPE_IPV4_IFNAME:
+		  ifp = if_lookup_by_name(newhop->ifname);
+		  return (ifp && if_is_operative (ifp));
+		default:
+		  return 1;
 		}
-	      return 1;
 	    }
 	  else if (CHECK_FLAG (rib->flags, ZEBRA_FLAG_INTERNAL) ||
 		   match->type == ZEBRA_ROUTE_STATIC)
@@ -527,27 +534,33 @@ nexthop_active_ipv6 (struct rib *rib, struct nexthop *nexthop, int set,
 	    {
 	      /* Directly point connected route. */
 	      newhop = match->nexthop;
+	      if (!newhop)
+		return 0;	/* dead route */
 
-	      if (newhop)
+	      /* if scanning and the new match is different than the old one
+	       * then force the CHANGED flag.
+	       * FIXME (have this routine return NULL or nexhop instead)
+	       */
+	      if (!set && newhop != nexthop)
+		SET_FLAG (rib->flags, ZEBRA_FLAG_CHANGED);
+
+	      /* recursive route, remember index */
+	      if (nexthop->type == NEXTHOP_TYPE_IPV6)
+		nexthop->ifindex = newhop->ifindex;
+	      
+	      switch(newhop->type)
 		{
-		  if (nexthop->type == NEXTHOP_TYPE_IPV4)
-		    nexthop->ifindex = newhop->ifindex;
-
-		  if (newhop->type == NEXTHOP_TYPE_IFINDEX ||
-		      newhop->type == NEXTHOP_TYPE_IPV4_IFINDEX)
-		    {
-		      ifp = if_lookup_by_index (newhop->ifindex);
-		      return (ifp && if_is_operative (ifp));
-		    }
-		      
-		  if (newhop->type == NEXTHOP_TYPE_IFNAME ||
-		      newhop->type == NEXTHOP_TYPE_IPV4_IFNAME)
-		    {
-		      ifp = if_lookup_by_name(newhop->ifname);
-		      return (ifp && if_is_operative (ifp));
-		    }
+		case NEXTHOP_TYPE_IFINDEX:
+		case NEXTHOP_TYPE_IPV6_IFINDEX:
+		  ifp = if_lookup_by_index (newhop->ifindex);
+		  return (ifp && if_is_operative (ifp));
+		case NEXTHOP_TYPE_IFNAME:
+		case NEXTHOP_TYPE_IPV6_IFNAME:
+		  ifp = if_lookup_by_name(newhop->ifname);
+		  return (ifp && if_is_operative (ifp));
+		default:
+		  return 1;
 		}
-	      return 1;
 	    }
 	  else if (CHECK_FLAG (rib->flags, ZEBRA_FLAG_INTERNAL))
 	    {
