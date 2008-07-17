@@ -340,13 +340,41 @@ nexthop_blackhole_add (struct rib *rib)
   return nexthop;
 }
 
+static int
+nexthop_isactive(const struct nexthop *nexthop)
+{
+  struct interface *ifp;
+
+  switch(nexthop->type)
+    {
+    case NEXTHOP_TYPE_IPV4:
+    case NEXTHOP_TYPE_IPV6:
+      if (nexthop->ifindex == 0)
+	return 0;
+      /* fall through */
+    case NEXTHOP_TYPE_IFINDEX:
+    case NEXTHOP_TYPE_IPV4_IFINDEX:
+    case NEXTHOP_TYPE_IPV6_IFINDEX:
+      ifp = if_lookup_by_index (nexthop->ifindex);
+      return (ifp && if_is_operative (ifp));
+
+    case NEXTHOP_TYPE_IFNAME:
+    case NEXTHOP_TYPE_IPV4_IFNAME:
+    case NEXTHOP_TYPE_IPV6_IFNAME:
+      ifp = if_lookup_by_name(nexthop->ifname);
+      return (ifp && if_is_operative (ifp));
+
+    default:
+      return 1;
+    }
+}
+
 /* If force flag is not set, do not modify falgs at all for uninstall
    the route from FIB. */
 static int
 nexthop_active_ipv4 (struct rib *rib, struct nexthop *nexthop, int set,
 		     struct route_node *top)
 {
-  struct interface *ifp;
   struct prefix_ipv4 p;
   struct route_table *table;
   struct route_node *rn;
@@ -404,28 +432,17 @@ nexthop_active_ipv4 (struct rib *rib, struct nexthop *nexthop, int set,
 	      if (!newhop)
 		return 0;	/* dead route */
 
-	      /* if scanning and the new match is different than the old one
-	       * then force the CHANGED flag.
-	       * FIXME (have this routine return NULL or nexhop instead)
-	       */
-	      if (!set && newhop != nexthop)
-		SET_FLAG (rib->flags, ZEBRA_FLAG_CHANGED);
-
 	      /* recursive route, remember index */
 	      if (nexthop->type == NEXTHOP_TYPE_IPV4)
 		nexthop->ifindex = newhop->ifindex;
 	      
-	      switch(newhop->type)
+	      if (nexthop_isactive (newhop))
 		{
-		case NEXTHOP_TYPE_IFINDEX:
-		case NEXTHOP_TYPE_IPV4_IFINDEX:
-		  ifp = if_lookup_by_index (newhop->ifindex);
-		  return (ifp && if_is_operative (ifp));
-		case NEXTHOP_TYPE_IFNAME:
-		case NEXTHOP_TYPE_IPV4_IFNAME:
-		  ifp = if_lookup_by_name(newhop->ifname);
-		  return (ifp && if_is_operative (ifp));
-		default:
+		  /* if new match is different  then force the CHANGED flag.
+		   * FIXME (have this routine return NULL or nexhop instead)
+		   */
+		  if (newhop != nexthop)
+		    SET_FLAG (rib->flags, ZEBRA_FLAG_CHANGED);
 		  return 1;
 		}
 	    }
@@ -433,8 +450,13 @@ nexthop_active_ipv4 (struct rib *rib, struct nexthop *nexthop, int set,
 		   match->type == ZEBRA_ROUTE_STATIC)
 	    {
 	      for (newhop = match->nexthop; newhop; newhop = newhop->next)
-		if (CHECK_FLAG (newhop->flags, NEXTHOP_FLAG_FIB))
+		if (CHECK_FLAG (newhop->flags, NEXTHOP_FLAG_FIB)
+		    && ! CHECK_FLAG (newhop->flags, NEXTHOP_FLAG_RECURSIVE)
+		    && nexthop_isactive (newhop))
 		  {
+		    if (newhop != nexthop)
+		      SET_FLAG (rib->flags, ZEBRA_FLAG_CHANGED);
+
 		    if (set)
 		      {
 			SET_FLAG (nexthop->flags, NEXTHOP_FLAG_RECURSIVE);
@@ -447,19 +469,7 @@ nexthop_active_ipv4 (struct rib *rib, struct nexthop *nexthop, int set,
 			    || newhop->type == NEXTHOP_TYPE_IPV4_IFINDEX)
 			  nexthop->rifindex = newhop->ifindex;
 		      }
-		    else if (newhop != nexthop)
-		      SET_FLAG (rib->flags, ZEBRA_FLAG_CHANGED);
 
-		    if (newhop->type == NEXTHOP_TYPE_IFINDEX)
-		      {
-			ifp = if_lookup_by_index (newhop->ifindex);
-			return (ifp && if_is_operative (ifp));
-		      }
-		    else if (newhop && newhop->type == NEXTHOP_TYPE_IFNAME)
-		      {
-			ifp = if_lookup_by_name(newhop->ifname);
-			return (ifp && if_is_operative (ifp));
-		      }
 		    return 1;
 		  }
 	      return 0;
@@ -480,7 +490,6 @@ static int
 nexthop_active_ipv6 (struct rib *rib, struct nexthop *nexthop, int set,
 		     struct route_node *top)
 {
-  struct interface *ifp;
   struct prefix_ipv6 p;
   struct route_table *table;
   struct route_node *rn;
@@ -538,36 +547,30 @@ nexthop_active_ipv6 (struct rib *rib, struct nexthop *nexthop, int set,
 	      if (!newhop)
 		return 0;	/* dead route */
 
-	      /* if scanning and the new match is different than the old one
-	       * then force the CHANGED flag.
-	       * FIXME (have this routine return NULL or nexhop instead)
-	       */
-	      if (!set && newhop != nexthop)
-		SET_FLAG (rib->flags, ZEBRA_FLAG_CHANGED);
-
 	      /* recursive route, remember index */
 	      if (nexthop->type == NEXTHOP_TYPE_IPV6)
 		nexthop->ifindex = newhop->ifindex;
 	      
-	      switch(newhop->type)
+	      if (nexthop_isactive (newhop))
 		{
-		case NEXTHOP_TYPE_IFINDEX:
-		case NEXTHOP_TYPE_IPV6_IFINDEX:
-		  ifp = if_lookup_by_index (newhop->ifindex);
-		  return (ifp && if_is_operative (ifp));
-		case NEXTHOP_TYPE_IFNAME:
-		case NEXTHOP_TYPE_IPV6_IFNAME:
-		  ifp = if_lookup_by_name(newhop->ifname);
-		  return (ifp && if_is_operative (ifp));
-		default:
+		  /* if new match is different  then force the CHANGED flag.
+		   * FIXME (have this routine return NULL or nexhop instead)
+		   */
+		  if (newhop != nexthop)
+		    SET_FLAG (rib->flags, ZEBRA_FLAG_CHANGED);
 		  return 1;
 		}
 	    }
 	  else if (CHECK_FLAG (rib->flags, ZEBRA_FLAG_INTERNAL))
 	    {
 	      for (newhop = match->nexthop; newhop; newhop = newhop->next)
-		if (CHECK_FLAG (newhop->flags, NEXTHOP_FLAG_FIB))
+		if (CHECK_FLAG (newhop->flags, NEXTHOP_FLAG_FIB)
+		    && ! CHECK_FLAG (newhop->flags, NEXTHOP_FLAG_RECURSIVE)
+		    && nexthop_isactive (newhop))
 		  {
+		    if (newhop != nexthop)
+		      SET_FLAG (rib->flags, ZEBRA_FLAG_CHANGED);
+
 		    if (set)
 		      {
 			SET_FLAG (nexthop->flags, NEXTHOP_FLAG_RECURSIVE);
@@ -581,19 +584,6 @@ nexthop_active_ipv6 (struct rib *rib, struct nexthop *nexthop, int set,
 			    || newhop->type == NEXTHOP_TYPE_IPV6_IFINDEX
 			    || newhop->type == NEXTHOP_TYPE_IPV6_IFNAME)
 			  nexthop->rifindex = newhop->ifindex;
-		      }
-		    else if (newhop != nexthop)
-		      SET_FLAG (rib->flags, ZEBRA_FLAG_CHANGED);
-
-		    if (newhop && newhop->type == NEXTHOP_TYPE_IFINDEX)
-		      {
-			ifp = if_lookup_by_index (newhop->ifindex);
-			return (ifp && if_is_operative (ifp));
-		      }
-		    else if (newhop && newhop->type == NEXTHOP_TYPE_IFNAME)
-		      {
-			ifp = if_lookup_by_name(newhop->ifname);
-			return (ifp && if_is_operative (ifp));
 		      }
 		    return 1;
 		  }
