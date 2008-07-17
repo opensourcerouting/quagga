@@ -433,8 +433,7 @@ nexthop_active_ipv4 (struct rib *rib, struct nexthop *nexthop, int set,
 		   match->type == ZEBRA_ROUTE_STATIC)
 	    {
 	      for (newhop = match->nexthop; newhop; newhop = newhop->next)
-		if (CHECK_FLAG (newhop->flags, NEXTHOP_FLAG_FIB)
-		    && ! CHECK_FLAG (newhop->flags, NEXTHOP_FLAG_RECURSIVE))
+		if (CHECK_FLAG (newhop->flags, NEXTHOP_FLAG_FIB))
 		  {
 		    if (set)
 		      {
@@ -448,6 +447,8 @@ nexthop_active_ipv4 (struct rib *rib, struct nexthop *nexthop, int set,
 			    || newhop->type == NEXTHOP_TYPE_IPV4_IFINDEX)
 			  nexthop->rifindex = newhop->ifindex;
 		      }
+		    else if (newhop != nexthop)
+		      SET_FLAG (rib->flags, ZEBRA_FLAG_CHANGED);
 
 		    if (newhop->type == NEXTHOP_TYPE_IFINDEX)
 		      {
@@ -565,8 +566,7 @@ nexthop_active_ipv6 (struct rib *rib, struct nexthop *nexthop, int set,
 	  else if (CHECK_FLAG (rib->flags, ZEBRA_FLAG_INTERNAL))
 	    {
 	      for (newhop = match->nexthop; newhop; newhop = newhop->next)
-		if (CHECK_FLAG (newhop->flags, NEXTHOP_FLAG_FIB)
-		    && ! CHECK_FLAG (newhop->flags, NEXTHOP_FLAG_RECURSIVE))
+		if (CHECK_FLAG (newhop->flags, NEXTHOP_FLAG_FIB))
 		  {
 		    if (set)
 		      {
@@ -582,6 +582,8 @@ nexthop_active_ipv6 (struct rib *rib, struct nexthop *nexthop, int set,
 			    || newhop->type == NEXTHOP_TYPE_IPV6_IFNAME)
 			  nexthop->rifindex = newhop->ifindex;
 		      }
+		    else if (newhop != nexthop)
+		      SET_FLAG (rib->flags, ZEBRA_FLAG_CHANGED);
 
 		    if (newhop && newhop->type == NEXTHOP_TYPE_IFINDEX)
 		      {
@@ -1477,6 +1479,7 @@ rib_delnode (struct route_node *rn, struct rib *rib)
     zlog_debug ("%s: %s/%d: rn %p, rib %p, removing", __func__,
       buf, rn->p.prefixlen, rn, rib);
   }
+  UNSET_FLAG (rib->flags, ZEBRA_FLAG_SELECTED);
   SET_FLAG (rib->status, RIB_ENTRY_REMOVED);
   rib_queue_add (&zebrad, rn);
 }
