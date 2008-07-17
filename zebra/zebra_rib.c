@@ -409,8 +409,12 @@ nexthop_active_ipv4 (struct rib *rib, struct nexthop *nexthop, int set,
 
       /* Pick up selected route. */
       for (match = rn->info; match; match = match->next)
-	if (CHECK_FLAG (match->flags, ZEBRA_FLAG_SELECTED))
-	  break;
+	{
+	  if (CHECK_FLAG (match->status, RIB_ENTRY_REMOVED))
+	      continue;
+	  if (CHECK_FLAG (match->flags, ZEBRA_FLAG_SELECTED))
+	    break;
+	}
 
       /* If there is no selected route or matched route is EGP, go up
          tree. */
@@ -524,8 +528,12 @@ nexthop_active_ipv6 (struct rib *rib, struct nexthop *nexthop, int set,
 
       /* Pick up selected route. */
       for (match = rn->info; match; match = match->next)
-	if (CHECK_FLAG (match->flags, ZEBRA_FLAG_SELECTED))
-	  break;
+	{
+	  if (CHECK_FLAG (match->status, RIB_ENTRY_REMOVED))
+	      continue;
+	  if (CHECK_FLAG (match->flags, ZEBRA_FLAG_SELECTED))
+	    break;
+	}
 
       /* If there is no selected route or matched route is EGP, go up
          tree. */
@@ -626,8 +634,13 @@ rib_match_ipv4 (struct in_addr addr)
       
       /* Pick up selected route. */
       for (match = rn->info; match; match = match->next)
-	if (CHECK_FLAG (match->flags, ZEBRA_FLAG_SELECTED))
-	  break;
+	{
+	  if (CHECK_FLAG (match->status, RIB_ENTRY_REMOVED))
+	      continue;
+	  if (CHECK_FLAG (match->flags, ZEBRA_FLAG_SELECTED))
+	    break;
+	}
+
 
       /* If there is no selected route or matched route is EGP, go up
          tree. */
@@ -681,8 +694,12 @@ rib_lookup_ipv4 (struct prefix_ipv4 *p)
 
   /* Pick up selected route. */
   for (match = rn->info; match; match = match->next)
-    if (CHECK_FLAG (match->flags, ZEBRA_FLAG_SELECTED))
-      break;
+    {
+      if (CHECK_FLAG (match->status, RIB_ENTRY_REMOVED))
+	continue;
+      if (CHECK_FLAG (match->flags, ZEBRA_FLAG_SELECTED))
+	break;
+    }
 
   if (! match || match->type == ZEBRA_ROUTE_BGP)
     return NULL;
@@ -734,12 +751,12 @@ rib_lookup_ipv4_route (struct prefix_ipv4 *p, union sockunion * qgate)
 
   /* Find out if a "selected" RR for the discovered RIB entry exists ever. */
   for (match = rn->info; match; match = match->next)
-  {
-    if (CHECK_FLAG (match->status, RIB_ENTRY_REMOVED))
-      continue;
-    if (CHECK_FLAG (match->flags, ZEBRA_FLAG_SELECTED))
-      break;
-  }
+    {
+      if (CHECK_FLAG (match->status, RIB_ENTRY_REMOVED))
+	continue;
+      if (CHECK_FLAG (match->flags, ZEBRA_FLAG_SELECTED))
+	break;
+    }
 
   /* None such found :( */
   if (!match)
@@ -801,8 +818,12 @@ rib_match_ipv6 (struct in6_addr *addr)
       
       /* Pick up selected route. */
       for (match = rn->info; match; match = match->next)
-	if (CHECK_FLAG (match->flags, ZEBRA_FLAG_SELECTED))
-	  break;
+	{
+	  if (CHECK_FLAG (match->status, RIB_ENTRY_REMOVED))
+	      continue;
+	  if (CHECK_FLAG (match->flags, ZEBRA_FLAG_SELECTED))
+	    break;
+	}
 
       /* If there is no selected route or matched route is EGP, go up
          tree. */
@@ -1469,7 +1490,6 @@ rib_delnode (struct route_node *rn, struct rib *rib)
     zlog_debug ("%s: %s/%d: rn %p, rib %p, removing", __func__,
       buf, rn->p.prefixlen, rn, rib);
   }
-  UNSET_FLAG (rib->flags, ZEBRA_FLAG_SELECTED);
   SET_FLAG (rib->status, RIB_ENTRY_REMOVED);
   rib_queue_add (&zebrad, rn);
 }
