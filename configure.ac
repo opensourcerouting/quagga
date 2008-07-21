@@ -5,7 +5,7 @@
 ##  Copyright (c) 1996, 97, 98, 99, 2000 Kunihiro Ishiguro <kunihiro@zebra.org>
 ##  Portions Copyright (c) 2003 Paul Jakma <paul@dishone.st>
 ##
-## $Id: configure.ac,v 1.142 2008/06/10 21:25:38 paul Exp $
+## $Id: configure.ac,v 1.143 2008/07/21 21:02:49 paul Exp $
 AC_PREREQ(2.53)
 
 AC_INIT(Quagga, 0.99.10, [http://bugzilla.quagga.net])
@@ -905,6 +905,27 @@ AC_CHECK_HEADER([net/if.h],
     [],
     QUAGGA_INCLUDES)], 
   [], QUAGGA_INCLUDES )
+
+dnl ------------------------
+dnl TCP_MD5SIG socket option
+dnl ------------------------
+
+AC_CHECK_HEADER([netinet/tcp.h], 
+   [m4_define([MD5_INCLUDES],
+      QUAGGA_INCLUDES
+      [#include <netinet/tcp.h>
+    ])
+    AC_CHECK_DECLS([TCP_MD5SIG], [], [], MD5_INCLUDES)],
+   [],
+   QUAGGA_INCLUDES)
+if test $ac_cv_have_decl_TCP_MD5SIG = no; then
+  AC_CHECK_HEADER([linux/tcp.h],
+       [m4_define([MD5_INCLUDES],
+          QUAGGA_INCLUDES
+          [#include <linux/tcp.h>
+        ])
+       AC_CHECK_DECLS([TCP_MD5SIG], [], [], MD5_INCLUDES)])
+fi
 
 dnl -----------------------
 dnl check proc file system.
