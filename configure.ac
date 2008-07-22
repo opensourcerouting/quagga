@@ -5,7 +5,7 @@
 ##  Copyright (c) 1996, 97, 98, 99, 2000 Kunihiro Ishiguro <kunihiro@zebra.org>
 ##  Portions Copyright (c) 2003 Paul Jakma <paul@dishone.st>
 ##
-## $Id: configure.ac,v 1.143 2008/07/21 21:02:49 paul Exp $
+## $Id: configure.ac,v 1.144 2008/07/22 21:11:48 paul Exp $
 AC_PREREQ(2.53)
 
 AC_INIT(Quagga, 0.99.10, [http://bugzilla.quagga.net])
@@ -1207,7 +1207,9 @@ case "${enable_solaris}" in
 esac
 
 if test "${enable_bgp_announce}" = "no";then
-  AC_DEFINE(DISABLE_BGP_ANNOUNCE,,Disable BGP installation to zebra)
+  AC_DEFINE(DISABLE_BGP_ANNOUNCE,1,Disable BGP installation to zebra)
+else
+  AC_DEFINE(DISABLE_BGP_ANNOUNCE,0,Disable BGP installation to zebra)
 fi
 
 AC_SUBST(ZEBRA)
