@@ -381,11 +381,12 @@ nexthop_active_ipv4 (struct rib *rib, struct nexthop *nexthop, int set,
   struct rib *match;
   struct nexthop *newhop;
 
-  if (nexthop->type == NEXTHOP_TYPE_IPV4)
-    nexthop->ifindex = 0;
-
   if (set)
-    UNSET_FLAG (nexthop->flags, NEXTHOP_FLAG_RECURSIVE);
+    {
+      UNSET_FLAG (nexthop->flags, NEXTHOP_FLAG_RECURSIVE);
+      if (nexthop->type == NEXTHOP_TYPE_IPV4)
+	nexthop->ifindex = 0;
+    }
 
   /* Make lookup prefix. */
   memset (&p, 0, sizeof (struct prefix_ipv4));
@@ -411,7 +412,7 @@ nexthop_active_ipv4 (struct rib *rib, struct nexthop *nexthop, int set,
       for (match = rn->info; match; match = match->next)
 	{
 	  if (CHECK_FLAG (match->status, RIB_ENTRY_REMOVED))
-	      continue;
+	    continue;
 	  if (CHECK_FLAG (match->flags, ZEBRA_FLAG_SELECTED))
 	    break;
 	}
@@ -436,17 +437,19 @@ nexthop_active_ipv4 (struct rib *rib, struct nexthop *nexthop, int set,
 	      if (!newhop)
 		return 0;	/* dead route */
 
-	      /* recursive route, remember index */
-	      if (set && nexthop->type == NEXTHOP_TYPE_IPV4)
-		nexthop->ifindex = newhop->ifindex;
-	      
 	      if (nexthop_isactive (newhop))
 		{
-		  /* if new match is different  then force the CHANGED flag.
-		   * FIXME (have this routine return NULL or nexhop instead)
-		   */
-		  if (newhop != nexthop)
-		    SET_FLAG (rib->flags, ZEBRA_FLAG_CHANGED);
+		  if (set)
+		    {
+		      if (nexthop->type == NEXTHOP_TYPE_IPV4)
+			nexthop->ifindex = newhop->ifindex;
+		    }
+		  else 
+		    {
+		      if (nexthop->ifindex != newhop->ifindex ||
+			  CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_RECURSIVE))
+			SET_FLAG (rib->flags, ZEBRA_FLAG_CHANGED);
+		    }
 		  return 1;
 		}
 	    }
@@ -458,9 +461,6 @@ nexthop_active_ipv4 (struct rib *rib, struct nexthop *nexthop, int set,
 		    && ! CHECK_FLAG (newhop->flags, NEXTHOP_FLAG_RECURSIVE)
 		    && nexthop_isactive (newhop))
 		  {
-		    if (newhop != nexthop)
-		      SET_FLAG (rib->flags, ZEBRA_FLAG_CHANGED);
-
 		    if (set)
 		      {
 			SET_FLAG (nexthop->flags, NEXTHOP_FLAG_RECURSIVE);
@@ -472,7 +472,14 @@ nexthop_active_ipv4 (struct rib *rib, struct nexthop *nexthop, int set,
 			    || newhop->type == NEXTHOP_TYPE_IFNAME
 			    || newhop->type == NEXTHOP_TYPE_IPV4_IFINDEX)
 			  nexthop->rifindex = newhop->ifindex;
+			if (nexthop->type == NEXTHOP_TYPE_IPV4)
+			  nexthop->ifindex = newhop->ifindex;
 		      }
+		    else if (! CHECK_FLAG(nexthop->flags, NEXTHOP_FLAG_RECURSIVE)
+			     || newhop->ifindex != nexthop->ifindex
+			     || nexthop->gate.ipv4.s_addr != newhop->gate.ipv4.s_addr)
+		      SET_FLAG (rib->flags, ZEBRA_FLAG_CHANGED);
+
 
 		    return 1;
 		  }
@@ -530,7 +537,7 @@ nexthop_active_ipv6 (struct rib *rib, struct nexthop *nexthop, int set,
       for (match = rn->info; match; match = match->next)
 	{
 	  if (CHECK_FLAG (match->status, RIB_ENTRY_REMOVED))
-	      continue;
+	    continue;
 	  if (CHECK_FLAG (match->flags, ZEBRA_FLAG_SELECTED))
 	    break;
 	}
@@ -556,16 +563,22 @@ nexthop_active_ipv6 (struct rib *rib, struct nexthop *nexthop, int set,
 		return 0;	/* dead route */
 
 	      /* recursive route, remember index */
-	      if (set && nexthop->type == NEXTHOP_TYPE_IPV6)
+	      if (nexthop->type == NEXTHOP_TYPE_IPV6)
 		nexthop->ifindex = newhop->ifindex;
 	      
 	      if (nexthop_isactive (newhop))
 		{
-		  /* if new match is different  then force the CHANGED flag.
-		   * FIXME (have this routine return NULL or nexhop instead)
-		   */
-		  if (newhop != nexthop)
-		    SET_FLAG (rib->flags, ZEBRA_FLAG_CHANGED);
+		  if (set)
+		    {
+		      if (nexthop->type == NEXTHOP_TYPE_IPV6)
+			nexthop->ifindex = newhop->ifindex;
+		    }
+		  else 
+		    {
+		      if (nexthop->ifindex != newhop->ifindex ||
+			  CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_RECURSIVE))
+			SET_FLAG (rib->flags, ZEBRA_FLAG_CHANGED);
+		    }
 		  return 1;
 		}
 	    }
@@ -576,9 +589,6 @@ nexthop_active_ipv6 (struct rib *rib, struct nexthop *nexthop, int set,
 		    && ! CHECK_FLAG (newhop->flags, NEXTHOP_FLAG_RECURSIVE)
 		    && nexthop_isactive (newhop))
 		  {
-		    if (newhop != nexthop)
-		      SET_FLAG (rib->flags, ZEBRA_FLAG_CHANGED);
-
 		    if (set)
 		      {
 			SET_FLAG (nexthop->flags, NEXTHOP_FLAG_RECURSIVE);
@@ -592,7 +602,15 @@ nexthop_active_ipv6 (struct rib *rib, struct nexthop *nexthop, int set,
 			    || newhop->type == NEXTHOP_TYPE_IPV6_IFINDEX
 			    || newhop->type == NEXTHOP_TYPE_IPV6_IFNAME)
 			  nexthop->rifindex = newhop->ifindex;
+			if (nexthop->type == NEXTHOP_TYPE_IPV6)
+			  nexthop->ifindex = newhop->ifindex;
 		      }
+		    else if (! CHECK_FLAG(nexthop->flags, NEXTHOP_FLAG_RECURSIVE)
+			     || newhop->ifindex != nexthop->ifindex
+			     || !IPV6_ADDR_SAME(&nexthop->gate.ipv6, 
+						&newhop->gate.ipv4))
+		      SET_FLAG (rib->flags, ZEBRA_FLAG_CHANGED);
+
 		    return 1;
 		  }
 	      return 0;
