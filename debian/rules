@@ -61,7 +61,6 @@ configure	+= --enable-logfile-mask=0640
 configure	+= --enable-rtadv
 configure	+= --enable-tcp-md5
 configure	+= --enable-gcc-rdynamic
-configure	+= --enable-linkdetect
 configure	+= $(xable_snmp)
 configure	+= --with-libpam
 configure	+= CFLAGS="$(CFLAGS)"
