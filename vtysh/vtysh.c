@@ -274,7 +274,7 @@ vtysh_pager_init (void)
 static int
 vtysh_execute_func (const char *line, int pager)
 {
-  int ret, cmd_stat = CMD_SUCCESS;
+  int ret, cmd_stat;
   u_int i;
   vector vline;
   struct cmd_element *cmd;
@@ -335,6 +335,7 @@ vtysh_execute_func (const char *line, int pager)
 
   cmd_free_strvec (vline);
 
+  cmd_stat = ret;
   switch (ret)
     {
     case CMD_WARNING:
