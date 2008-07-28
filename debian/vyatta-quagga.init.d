@@ -48,9 +48,9 @@ vyatta_quagga_start ()
     else
 	daemons+=( zebra )
 	daemons+=( ripd )
-#	daemons+=( ripngd )
+	daemons+=( ripngd )
 	daemons+=( ospfd )
-#	daemons+=( ospf6d )
+	daemons+=( ospf6d )
 #	daemons+=( isisd )
 	daemons+=( bgpd )
     fi
