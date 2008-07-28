@@ -328,7 +328,8 @@ main (int argc, char **argv, char **env)
 	      if (echo_command)
 		printf("%s%s\n", vtysh_prompt(), cmd->line);
 	      
-	      log_it(cmd->line);
+	      if (logfile)
+		log_it(cmd->line);
 
 	      ret = vtysh_execute_no_pager(cmd->line);
 	      if (ret != CMD_SUCCESS 
@@ -342,7 +343,8 @@ main (int argc, char **argv, char **env)
 	  if (echo_command)
 	    printf("%s%s\n", vtysh_prompt(), cmd->line);
 
-	  log_it(cmd->line);
+	  if (logfile)
+	    log_it(cmd->line);
 
 	  ret = vtysh_execute_no_pager(cmd->line);
 	  if (ret != CMD_SUCCESS 
