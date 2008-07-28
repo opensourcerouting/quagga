@@ -437,7 +437,7 @@ nexthop_active_ipv4 (struct rib *rib, struct nexthop *nexthop, int set,
 		return 0;	/* dead route */
 
 	      /* recursive route, remember index */
-	      if (set && nexthop->type == NEXTHOP_TYPE_IPV4)
+	      if (nexthop->type == NEXTHOP_TYPE_IPV4)
 		nexthop->ifindex = newhop->ifindex;
 	      
 	      if (nexthop_isactive (newhop))
@@ -556,7 +556,7 @@ nexthop_active_ipv6 (struct rib *rib, struct nexthop *nexthop, int set,
 		return 0;	/* dead route */
 
 	      /* recursive route, remember index */
-	      if (set && nexthop->type == NEXTHOP_TYPE_IPV6)
+	      if (nexthop->type == NEXTHOP_TYPE_IPV6)
 		nexthop->ifindex = newhop->ifindex;
 	      
 	      if (nexthop_isactive (newhop))
