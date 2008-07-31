@@ -22,6 +22,8 @@
 #ifndef _ZEBRA_SOCKOPT_H
 #define _ZEBRA_SOCKOPT_H
 
+#include "sockunion.h"
+
 extern int setsockopt_so_recvbuf (int sock, int size);
 extern int setsockopt_so_sendbuf (const int sock, int size);
 extern int getsockopt_so_sendbuf (const int sock);
@@ -87,7 +89,6 @@ extern int setsockopt_multicast_ipv4(int sock, int optname,
 			             unsigned int ifindex
 					 /* optional: if non-zero, may be used
 					 	instead of if_addr */);
-extern int setsockopt_ipv4_tos(int sock, int tos);
 
 /* Ask for, and get, ifindex, by whatever method is supported. */
 extern int setsockopt_ifindex (int, int, int);
@@ -99,32 +100,6 @@ extern int getsockopt_ifindex (int, struct msghdr *);
 extern void sockopt_iphdrincl_swab_htosys (struct ip *iph);
 extern void sockopt_iphdrincl_swab_systoh (struct ip *iph);
 
-#if defined(HAVE_TCP_MD5SIG)
-
-#if defined(GNU_LINUX) && !defined(TCP_MD5SIG)
-
-/* XXX these will come from <linux/tcp.h> eventually */
-
-#define TCP_MD5SIG		14
-#define TCP_MD5SIG_MAXKEYLEN	80
-
-struct tcp_md5sig {
-        struct sockaddr_storage tcpm_addr;      /* address associated */
-        __u16   __tcpm_pad1;                            /* zero */
-        __u16   tcpm_keylen;                            /* key length */
-        __u32   __tcpm_pad2;                            /* zero */
-        __u8    tcpm_key[TCP_MD5SIG_MAXKEYLEN];         /* key (binary) */
-};
-
-#endif /* defined(GNU_LINUX) && !defined(TCP_MD5SIG) */
-
-#if !defined(GNU_LINUX) && !defined(TCP_SIG_SPI_BASE)
-#define TCP_SIG_SPI_BASE 1000 /* XXX this will go away */
-#endif
-
-extern int sockopt_tcp_signature(int sock, struct sockaddr_in *sin,
+extern int sockopt_tcp_signature(int sock, union sockunion *su,
                                  const char *password);
-
-#endif /* HAVE_TCP_MD5SIG */
-
 #endif /*_ZEBRA_SOCKOPT_H */

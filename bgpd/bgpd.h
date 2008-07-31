@@ -42,6 +42,9 @@ struct bgp_master
   struct work_queue *process_main_queue;
   struct work_queue *process_rsclient_queue;
   
+  /* Listening sockets */
+  struct list *listen_sockets;
+  
   /* BGP port number.  */
   u_int16_t port;
 
@@ -390,7 +393,10 @@ struct peer
 #define PEER_FLAG_ORF_PREFIX_RM             (1 << 13) /* orf capability receive-mode */
 #define PEER_FLAG_MAX_PREFIX                (1 << 14) /* maximum prefix */
 #define PEER_FLAG_MAX_PREFIX_WARNING        (1 << 15) /* maximum prefix warning-only */
-#define PEER_FLAG_NEXTHOP_LOCAL_UNCHANGED   (1 << 16) /* leave link-local nexthop unchanged */ 
+#define PEER_FLAG_NEXTHOP_LOCAL_UNCHANGED   (1 << 16) /* leave link-local nexthop unchanged */
+
+  /* MD5 password */
+  char *password;
 
   /* MD5 password */
   char *password;
@@ -550,12 +556,8 @@ struct peer
 #define PEER_RMAP_TYPE_EXPORT         (1 << 7) /* neighbor route-map export */
 };
 
-#if defined(HAVE_TCP_MD5SIG)
-
 #define PEER_PASSWORD_MINLEN	(1)
 #define PEER_PASSWORD_MAXLEN	(80)
-
-#endif /* HAVE_TCP_MD5SIG */
 
 /* This structure's member directly points incoming packet data
    stream. */
@@ -810,7 +812,8 @@ enum bgp_clear_type
 #define BGP_ERR_INSTANCE_MISMATCH               -26
 #define BGP_ERR_LOCAL_AS_ALLOWED_ONLY_FOR_EBGP  -27
 #define BGP_ERR_CANNOT_HAVE_LOCAL_AS_SAME_AS    -28
-#define BGP_ERR_MAX                             -29
+#define BGP_ERR_TCPSIG_FAILED			-29
+#define BGP_ERR_MAX                             -30
 
 extern struct bgp_master *bm;
 
@@ -984,10 +987,9 @@ extern int peer_route_map_set (struct peer *, afi_t, safi_t, int, const char *);
 extern int peer_route_map_unset (struct peer *, afi_t, safi_t, int);
 
 extern int peer_unsuppress_map_set (struct peer *, afi_t, safi_t, const char *);
-#ifdef HAVE_TCP_MD5SIG
+
 extern int peer_password_set (struct peer *, const char *);
 extern int peer_password_unset (struct peer *);
-#endif /* HAVE_TCP_MD5SIG */
 
 extern int peer_unsuppress_map_unset (struct peer *, afi_t, safi_t);
 

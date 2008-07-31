@@ -1876,7 +1876,7 @@ static void netlink_install_filter (int sock, __u32 pid)
     .filter = filter,
   };
 
-  if (setsockopt(sock, SOL_SOCKET, SO_ATTACH_FILTER, &prog, sizeof(prog)) < 0) 
+  if (setsockopt(sock, SOL_SOCKET, SO_ATTACH_FILTER, &prog, sizeof(prog)) < 0)
     zlog_warn ("Can't install socket filter: %s\n", safe_strerror(errno));
 }
 

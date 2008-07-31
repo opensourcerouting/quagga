@@ -1,6 +1,6 @@
 #!/bin/sh
 
-$Id$
+$Id: README.NetBSD,v 1.5 2007/08/02 13:38:38 gdt Exp $
 
 # This file is helpful for building quagga from cvs on NetBSD, and
 # probably on any system using pkgsrc.  

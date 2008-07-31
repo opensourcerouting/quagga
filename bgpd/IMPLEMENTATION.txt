@@ -1,4 +1,4 @@
-$Id$
+$Id: IMPLEMENTATION.txt,v 1.2 2005/02/15 17:10:03 gdt Exp $
 
 This file contains notes about the internals of the BGP
 implementation.  The initial impetus is understanding the memory usage

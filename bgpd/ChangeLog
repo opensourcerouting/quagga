@@ -1,4 +1,90 @@
+2008-07-22 Paul Jakma <paul.jakma@sun.com>
+
+	* bgp_{packet,route,advertise}.c: change to compiler testing of
+	  DISABLE_BGP_ANNOUNCE, rather than cpp.
+
+2008-07-22 MIYAJIMA Mitsuharu <miyajima.mitsuharu@anchor.jp>
+
+	* bgp_packet.c: (bgp_update_packet_eor) Fix crash triggerable
+	  if a bgpd was compiled with --disable-bgp-announce and if GR is 
+	  advertised by peer.
+
+2008-07-22 Paul Jakma <paul.jakma@sun.com>
+
+	* bgp_community.c: (community_str2com) assigns defaults to local
+	  vars
+	* bgp_attr.c: (bgp_attr_parse) match format specifier to arg
+	* bgp_table.{c,h}: (bgp_table_top) can take a * to a const, quelling
+	  warning in bgp_route.c
+ 
+2008-07-21 Paul Jakma <paul.jakma@sun.com>
+
+
+	* bgp_packet.c: (bgp_open_receive) fix warning in a zlog call
+	* bgp_vty.c: (bgp_vty_return) add return code
+	* bgpd.c: (bgp_master_init) setup the socket list.
+	* bgp_network.c: Remove the dual IPv4/6 socket thing for now, which
+	  was implemented by Michael, until such time as its clear its
+	  required for Linux (see sockopt comments). IPv6 support, including
+	  IPv4 sessions on AF_INET6 sockets, therefore is broken, and the
+	  '-l 0.0.0.0' arguments would need to be given to bgpd to make
+	  things work here.
+
+2008-07-21 Michael H. Warfield <mhw@wittsend.com>
+           YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+	   Tomohiko Kusuda <kusuda@inetcore.com>
+           Leigh Brown <leigh@solinno.co.uk>
+	
+	* bgp_network.c: (bgp_md5_set_one) shim between libzebra tcp-md5
+	  sockopt and bgpd.
+	  (bgp_md5_set_socket) Helper for bgp_connect
+	  (bgp_md5_set) setup TCP-MD5SIG for the given peer.
+	  (bgp_connect) call out to bgp_md5_set_socket for the outgoing
+	  connect socket.
+	  (bgp_socket) save references to the listen sockets, needed if
+	  TCP-MD5SIG is applied later or changed.
+	* bgp_vty.c: (*neighbor_password_cmd) New 'neighbor ... password'
+	  commands.
+	* bgpd.c: (peer_{new,delete) manage TCP-MD5 password
+	  (peer_group2peer_config_copy) inherit TCP-MD5 password
+	  (peer_password_{un,}set) orchestrate the whole add/remove of TCP-MD5
+	  passwords: applying checks, stopping peers, and trying to return
+	  errors to UI, etc.
+	  (bgp_config_write_peer) save password.
+	  Fix missing newline in writeout of neighbor ... port.
+
+2008-07-02 MIYAJIMA Mitsuharu <miyajima.mitsuharu@anchor.jp>
+
+	* *.c: CMD_AS_RANGE was being used inside command strings, and thus
+	  not being expanded, fix by dequoting.
+
+2008-07-02 Stephen Hemminger <stephen.hemminger@vyatta.com>
+
+	* bgp_table.{c,h}: (bgp_table_finish) Take a double pointer and 
+	  scrub pointer in caller, so fixing double-free crashes seen
+	  with route-server-client configuration.
+	* *.c: Adjust all callers of bgp_table_finish
+
+2008-07-02 Paul Jakma <paul.jakma@sun.com>
+
+	* bgp_table.{c,h}: (bgp_node_delete, bgp_table_free) shouldn't be
+	  exported.
+	
+2008-06-07 Paul Jakma <paul@jakma.org>
+
+	* bgp_attr.{c,h}: (bgp_mp_{un,}reach_parse) export, for unit tests.
+	* bgp_attr.c: (bgp_mp_reach_parse) Add logging. Tighten length test
+	  to bounds check against the attribute length rather than the
+	  stream length..
+
+2008-06-01 jfletche@gmail.com 
+
+	* bgp_attr.c: (bgp_attr_aspathlimit) fix silly bug in flags check
+	  that was causing BGP to drop sessions if it received a
+	  aspath-limit with partial set. Fixes bug #419.
+
 2008-04-10 Denis Ovsienko
+
 	* bgp_aspath.[ch]: (aspath_filter_exclude) New function allows
 	  filtering out arbitrary ASns from AS_PATH attribute.
 	* bgp_aspath.[ch]: (aspath_print_vty) Accept suffix to let calling

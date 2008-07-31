@@ -1,5 +1,5 @@
 /*
-   $Id$
+   $Id: command.c,v 1.55 2007/04/28 22:14:10 ajs Exp $
  
    Command interpreter routine for virtual terminal [aka TeletYpe]
    Copyright (C) 1997, 98, 99 Kunihiro Ishiguro

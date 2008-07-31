@@ -1,5 +1,5 @@
 /*
-    $Id$
+    $Id: watchquagga.c,v 1.12 2007/05/10 02:38:52 paul Exp $
 
     Monitor status of quagga daemons and restart if necessary.
 
