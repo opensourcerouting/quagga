@@ -1535,7 +1535,6 @@ bgp_processq_del (struct work_queue *wq, void *data)
   struct bgp_process_queue *pq = data;
   
   bgp_unlock_node (pq->rn);
-  bgp_unlock(pq->bgp);
   XFREE (MTYPE_BGP_PROCESS_QUEUE, pq);
 }
 
@@ -1583,7 +1582,7 @@ bgp_process (struct bgp *bgp, struct bgp_node *rn, afi_t afi, safi_t safi)
     return;
   
   pqnode->rn = bgp_lock_node (rn); /* unlocked by bgp_processq_del */
-  pqnode->bgp = bgp_lock(bgp);
+  pqnode->bgp = bgp;
   pqnode->afi = afi;
   pqnode->safi = safi;
   

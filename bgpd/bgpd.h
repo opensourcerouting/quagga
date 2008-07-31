@@ -398,9 +398,6 @@ struct peer
   /* MD5 password */
   char *password;
 
-  /* MD5 password */
-  char *password;
-
   /* default-originate route-map.  */
   struct
   {

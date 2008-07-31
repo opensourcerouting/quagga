@@ -62,7 +62,7 @@ struct rib
 
   /* Status Flags for the *route_node*, but kept in the head RIB.. */
   u_char rn_status;
-#define RIB_ROUTE_QUEUED	(1 << 0)
+#define RIB_ROUTE_QUEUED(x)	(1 << (x))
 
   /* Distance. */
   u_char distance;
