@@ -42,6 +42,9 @@ struct bgp_master
   struct work_queue *process_main_queue;
   struct work_queue *process_rsclient_queue;
   
+  /* Listening sockets */
+  struct list *listen_sockets;
+  
   /* BGP port number.  */
   u_int16_t port;
 
@@ -68,6 +71,13 @@ struct bgp
 {
   /* AS number of this BGP instance.  */
   as_t as;
+
+  /* reference count, primarily to allow bgp_process'ing of route_node's
+   * to be done after a struct peer is deleted.
+   *
+   * named 'lock' for hysterical reasons within Quagga.
+   */
+  int lock;
 
   /* Name of this BGP instance.  */
   char *name;
@@ -383,7 +393,10 @@ struct peer
 #define PEER_FLAG_ORF_PREFIX_RM             (1 << 13) /* orf capability receive-mode */
 #define PEER_FLAG_MAX_PREFIX                (1 << 14) /* maximum prefix */
 #define PEER_FLAG_MAX_PREFIX_WARNING        (1 << 15) /* maximum prefix warning-only */
-#define PEER_FLAG_NEXTHOP_LOCAL_UNCHANGED   (1 << 16) /* leave link-local nexthop unchanged */ 
+#define PEER_FLAG_NEXTHOP_LOCAL_UNCHANGED   (1 << 16) /* leave link-local nexthop unchanged */
+
+  /* MD5 password */
+  char *password;
 
   /* MD5 password */
   char *password;
@@ -543,12 +556,8 @@ struct peer
 #define PEER_RMAP_TYPE_EXPORT         (1 << 7) /* neighbor route-map export */
 };
 
-#if defined(HAVE_TCP_MD5SIG)
-
 #define PEER_PASSWORD_MINLEN	(1)
 #define PEER_PASSWORD_MAXLEN	(80)
-
-#endif /* HAVE_TCP_MD5SIG */
 
 /* This structure's member directly points incoming packet data
    stream. */
@@ -803,7 +812,8 @@ enum bgp_clear_type
 #define BGP_ERR_INSTANCE_MISMATCH               -26
 #define BGP_ERR_LOCAL_AS_ALLOWED_ONLY_FOR_EBGP  -27
 #define BGP_ERR_CANNOT_HAVE_LOCAL_AS_SAME_AS    -28
-#define BGP_ERR_MAX                             -29
+#define BGP_ERR_TCPSIG_FAILED			-29
+#define BGP_ERR_MAX                             -30
 
 extern struct bgp_master *bm;
 
@@ -823,13 +833,32 @@ extern struct peer_group *peer_group_lookup (struct bgp *, const char *);
 extern struct peer_group *peer_group_get (struct bgp *, const char *);
 extern struct peer *peer_lookup_with_open (union sockunion *, as_t, struct in_addr *,
 				    int *);
-extern struct peer *peer_lock (struct peer *);
-extern struct peer *peer_unlock (struct peer *);
+extern void peer_free (struct peer *peer);
 extern int peer_sort (struct peer *peer);
 extern int peer_active (struct peer *);
 extern int peer_active_nego (struct peer *);
 extern struct peer *peer_create_accept (struct bgp *);
 extern char *peer_uptime (time_t, char *, size_t);
+
+static inline struct peer *
+peer_lock (struct peer *peer)
+{
+  assert (peer && (peer->lock >= 0));
+  assert (peer->status != Deleted);
+    
+  peer->lock++;
+  return peer;
+}
+
+static inline void
+peer_unlock (struct peer *peer)
+{
+  assert (peer && (peer->lock > 0));
+  
+  if (--peer->lock == 0)
+      peer_free (peer);
+}
+
 extern int bgp_config_write (struct vty *);
 extern void bgp_config_write_family_header (struct vty *, afi_t, safi_t, int *);
 
@@ -843,7 +872,25 @@ extern int bgp_option_unset (int);
 extern int bgp_option_check (int);
 
 extern int bgp_get (struct bgp **, as_t *, const char *);
-extern int bgp_delete (struct bgp *);
+extern void bgp_delete (struct bgp *);
+extern void bgp_free (struct bgp *);
+
+static inline struct bgp *
+bgp_lock (struct bgp *bgp)
+{
+  assert (bgp && (bgp->lock >= 0));
+  bgp->lock++;
+  return bgp;
+}
+
+static inline void
+bgp_unlock (struct bgp *bgp)
+{
+  assert (bgp && (bgp->lock > 0));
+  if (--bgp->lock == 0)
+      bgp_free (bgp);
+}
+
 
 extern int bgp_flag_set (struct bgp *, int);
 extern int bgp_flag_unset (struct bgp *, int);
@@ -940,10 +987,9 @@ extern int peer_route_map_set (struct peer *, afi_t, safi_t, int, const char *);
 extern int peer_route_map_unset (struct peer *, afi_t, safi_t, int);
 
 extern int peer_unsuppress_map_set (struct peer *, afi_t, safi_t, const char *);
-#ifdef HAVE_TCP_MD5SIG
+
 extern int peer_password_set (struct peer *, const char *);
 extern int peer_password_unset (struct peer *);
-#endif /* HAVE_TCP_MD5SIG */
 
 extern int peer_unsuppress_map_unset (struct peer *, afi_t, safi_t);
 

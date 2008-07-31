@@ -34,6 +34,7 @@
 #include "memory.h"
 #include "vtysh/vtysh.h"
 #include "log.h"
+#include "bgpd/bgp_vty.h"
 
 /* Struct VTY. */
 struct vty *vty;
@@ -271,7 +272,7 @@ vtysh_pager_init (void)
 }
 
 /* Command execution over the vty interface. */
-static void
+static int
 vtysh_execute_func (const char *line, int pager)
 {
   int ret, cmd_stat;
@@ -287,7 +288,7 @@ vtysh_execute_func (const char *line, int pager)
   vline = cmd_make_strvec (line);
 
   if (vline == NULL)
-    return;
+    return CMD_SUCCESS;
 
   saved_ret = ret = cmd_execute_command (vline, vty, &cmd, 1);
   saved_node = vty->node;
@@ -335,6 +336,7 @@ vtysh_execute_func (const char *line, int pager)
 
   cmd_free_strvec (vline);
 
+  cmd_stat = ret;
   switch (ret)
     {
     case CMD_WARNING:
@@ -393,7 +395,7 @@ vtysh_execute_func (const char *line, int pager)
 			  }
 			fp = NULL;
 		      }
-		    return;
+		    return CMD_SUCCESS;
 		  }
 
 		ret = cmd_execute_command (vline, vty, &cmd, 1);
@@ -434,18 +436,19 @@ vtysh_execute_func (const char *line, int pager)
 	}
       fp = NULL;
     }
+  return cmd_stat;
 }
 
-void
+int
 vtysh_execute_no_pager (const char *line)
 {
-  vtysh_execute_func (line, 0);
+  return vtysh_execute_func (line, 0);
 }
 
-void
+int
 vtysh_execute (const char *line)
 {
-  vtysh_execute_func (line, 1);
+  return vtysh_execute_func (line, 1);
 }
 
 /* Configration make from file. */
@@ -838,7 +841,7 @@ DEFUNSH (VTYSH_ALL,
 DEFUNSH (VTYSH_BGPD,
 	 router_bgp,
 	 router_bgp_cmd,
-	 "router bgp CMD_AS_RANGE",
+	 "router bgp " CMD_AS_RANGE,
 	 ROUTER_STR
 	 BGP_STR
 	 AS_STR)
@@ -846,6 +849,16 @@ DEFUNSH (VTYSH_BGPD,
   vty->node = BGP_NODE;
   return CMD_SUCCESS;
 }
+
+ALIAS_SH (VTYSH_BGPD,
+	  router_bgp,
+	  router_bgp_view_cmd,
+	  "router bgp " CMD_AS_RANGE " view WORD",
+	  ROUTER_STR
+	  BGP_STR
+	  AS_STR
+	  "BGP view\n"
+	  "view name\n")
 
 DEFUNSH (VTYSH_BGPD,
 	 address_family_vpnv4,
@@ -2341,6 +2354,7 @@ vtysh_init_vty (void)
 #endif
   install_element (CONFIG_NODE, &router_isis_cmd);
   install_element (CONFIG_NODE, &router_bgp_cmd);
+  install_element (CONFIG_NODE, &router_bgp_view_cmd);
   install_element (BGP_NODE, &address_family_vpnv4_cmd);
   install_element (BGP_NODE, &address_family_vpnv4_unicast_cmd);
   install_element (BGP_NODE, &address_family_ipv4_unicast_cmd);

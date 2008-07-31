@@ -138,7 +138,7 @@ bgp_info_new ()
 }
 
 /* Free bgp route information. */
-static void
+void
 bgp_info_free (struct bgp_info *binfo)
 {
   if (binfo->attr)
@@ -151,39 +151,6 @@ bgp_info_free (struct bgp_info *binfo)
   XFREE (MTYPE_BGP_ROUTE, binfo);
 }
 
-struct bgp_info *
-bgp_info_lock (struct bgp_info *binfo)
-{
-  binfo->lock++;
-  return binfo;
-}
-
-struct bgp_info *
-bgp_info_unlock (struct bgp_info *binfo)
-{
-  assert (binfo && binfo->lock > 0);
-  binfo->lock--;
-  
-  if (binfo->lock == 0)
-    {
-#if 0
-      zlog_debug ("%s: unlocked and freeing", __func__);
-      zlog_backtrace (LOG_DEBUG);
-#endif
-      bgp_info_free (binfo);
-      return NULL;
-    }
-
-#if 0
-  if (binfo->lock == 1)
-    {
-      zlog_debug ("%s: unlocked to 1", __func__);
-      zlog_backtrace (LOG_DEBUG);
-    }
-#endif
-  
-  return binfo;
-}
 
 void
 bgp_info_add (struct bgp_node *rn, struct bgp_info *ri)
@@ -742,9 +709,8 @@ bgp_announce_check (struct bgp_info *ri, struct peer *peer, struct prefix *p,
   filter = &peer->filter[afi][safi];
   bgp = peer->bgp;
   
-#ifdef DISABLE_BGP_ANNOUNCE
-  return 0;
-#endif
+  if (DISABLE_BGP_ANNOUNCE)
+    return 0;
 
   /* Do not send announces to RS-clients from the 'normal' bgp_table. */
   if (CHECK_FLAG(peer->af_flags[afi][safi], PEER_FLAG_RSERVER_CLIENT))
@@ -1095,9 +1061,8 @@ bgp_announce_check_rsclient (struct bgp_info *ri, struct peer *rsclient,
   filter = &rsclient->filter[afi][safi];
   bgp = rsclient->bgp;
 
-#ifdef DISABLE_BGP_ANNOUNCE
-  return 0;
-#endif
+  if (DISABLE_BGP_ANNOUNCE)
+    return 0;
 
   /* Do not send back route to sender. */
   if (from == rsclient)
@@ -1570,6 +1535,7 @@ bgp_processq_del (struct work_queue *wq, void *data)
   struct bgp_process_queue *pq = data;
   
   bgp_unlock_node (pq->rn);
+  bgp_unlock(pq->bgp);
   XFREE (MTYPE_BGP_PROCESS_QUEUE, pq);
 }
 
@@ -1617,7 +1583,7 @@ bgp_process (struct bgp *bgp, struct bgp_node *rn, afi_t afi, safi_t safi)
     return;
   
   pqnode->rn = bgp_lock_node (rn); /* unlocked by bgp_processq_del */
-  pqnode->bgp = bgp;
+  pqnode->bgp = bgp_lock(bgp);
   pqnode->afi = afi;
   pqnode->safi = safi;
   
@@ -2680,10 +2646,10 @@ bgp_clear_node_complete (struct work_queue *wq)
 {
   struct peer *peer = wq->spec.data;
   
-  peer_unlock (peer); /* bgp_clear_node_complete */
-  
   /* Tickle FSM to start moving again */
   BGP_EVENT_ADD (peer, Clearing_Completed);
+
+  peer_unlock (peer); /* bgp_clear_node_complete */
 }
 
 static void

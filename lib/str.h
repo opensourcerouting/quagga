@@ -1,5 +1,5 @@
 /*
- * $Id$
+ * $Id: str.h,v 1.4 2005/09/19 09:53:21 hasso Exp $
  */
 
 #ifndef _ZEBRA_STR_H

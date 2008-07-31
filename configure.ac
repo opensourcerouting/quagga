@@ -5,10 +5,10 @@
 ##  Copyright (c) 1996, 97, 98, 99, 2000 Kunihiro Ishiguro <kunihiro@zebra.org>
 ##  Portions Copyright (c) 2003 Paul Jakma <paul@dishone.st>
 ##
-## $Id$
+## $Id: configure.ac,v 1.144 2008/07/22 21:11:48 paul Exp $
 AC_PREREQ(2.53)
 
-AC_INIT(Quagga, 0.99.9, [http://bugzilla.quagga.net])
+AC_INIT(Quagga, 0.99.10, [http://bugzilla.quagga.net])
 AC_CONFIG_SRCDIR(lib/zebra.h)
 
 dnl -----------------------------------
@@ -208,8 +208,6 @@ AC_ARG_ENABLE(bgp-announce,
 [  --disable-bgp-announce, turn off BGP route announcement])
 AC_ARG_ENABLE(netlink,
 [  --enable-netlink        force to use Linux netlink interface])
-AC_ARG_ENABLE(linkdetect,
-[  --enable-linkdetect     use Linux link-detect configuration])
 AC_ARG_ENABLE(broken-aliases,
 [  --enable-broken-aliases enable aliases as distinct interfaces for Linux 2.2.X])
 AC_ARG_ENABLE(snmp,
@@ -919,27 +917,39 @@ AC_CHECK_HEADER([net/if.h],
     QUAGGA_INCLUDES)], 
   [], QUAGGA_INCLUDES )
 
+dnl ------------------------
+dnl TCP_MD5SIG socket option
+dnl ------------------------
 
-dnl ---------------------------------------------------------------
-dnl kernel link-detect enable via /proc/sys/net/ipv4/conf/ethX/link_detect
-dnl ---------------------------------------------------------------
-if test "${enable_linkdetect}" = "yes"; then
-  AC_DEFINE(HAVE_LINKDETECT,1,Enable Linux kernel linkdetect)
-  LINK_DETECT=if_linkdetect.o
+AC_CHECK_HEADER([netinet/tcp.h], 
+   [m4_define([MD5_INCLUDES],
+      QUAGGA_INCLUDES
+      [#include <netinet/tcp.h>
+    ])
+    AC_CHECK_DECLS([TCP_MD5SIG], [], [], MD5_INCLUDES)],
+   [],
+   QUAGGA_INCLUDES)
+if test $ac_cv_have_decl_TCP_MD5SIG = no; then
+  AC_CHECK_HEADER([linux/tcp.h],
+       [m4_define([MD5_INCLUDES],
+          QUAGGA_INCLUDES
+          [#include <linux/tcp.h>
+        ])
+       AC_CHECK_DECLS([TCP_MD5SIG], [], [], MD5_INCLUDES)])
 fi
-AC_SUBST(LINK_DETECT)
 
 dnl -----------------------
 dnl check proc file system.
 dnl -----------------------
-if test -r /proc/net/dev; then
-  AC_DEFINE(HAVE_PROC_NET_DEV,,/proc/net/dev)
-  IF_PROC=if_proc.o
-fi
-
-if test -r /proc/net/if_inet6; then
-  AC_DEFINE(HAVE_PROC_NET_IF_INET6,,/proc/net/if_inet6)
-  IF_PROC=if_proc.o
+if test "$netlink" != yes; then
+  if test -r /proc/net/dev; then
+    AC_DEFINE(HAVE_PROC_NET_DEV,,/proc/net/dev)
+    IF_PROC=if_proc.o
+  fi
+  if test -r /proc/net/if_inet6; then
+    AC_DEFINE(HAVE_PROC_NET_IF_INET6,,/proc/net/if_inet6)
+    IF_PROC=if_proc.o
+  fi
 fi
 AC_SUBST(IF_PROC)
 
@@ -1209,7 +1219,9 @@ case "${enable_solaris}" in
 esac
 
 if test "${enable_bgp_announce}" = "no";then
-  AC_DEFINE(DISABLE_BGP_ANNOUNCE,,Disable BGP installation to zebra)
+  AC_DEFINE(DISABLE_BGP_ANNOUNCE,1,Disable BGP installation to zebra)
+else
+  AC_DEFINE(DISABLE_BGP_ANNOUNCE,0,Disable BGP installation to zebra)
 fi
 
 AC_SUBST(ZEBRA)

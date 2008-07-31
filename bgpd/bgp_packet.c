@@ -235,9 +235,8 @@ bgp_update_packet_eor (struct peer *peer, afi_t afi, safi_t safi)
   struct stream *s;
   struct stream *packet;
 
-#ifdef DISABLE_BGP_ANNOUNCE
-  return;
-#endif /* DISABLE_BGP_ANNOUNCE */
+  if (DISABLE_BGP_ANNOUNCE)
+    return NULL;
 
   if (BGP_DEBUG (normal, NORMAL))
     zlog_debug ("send End-of-RIB for %s to %s", afi_safi_print (afi, safi), peer->host);
@@ -369,9 +368,8 @@ bgp_default_update_send (struct peer *peer, struct attr *attr,
   char attrstr[BUFSIZ];
   char buf[BUFSIZ];
 
-#ifdef DISABLE_BGP_ANNOUNCE
-  return;
-#endif /* DISABLE_BGP_ANNOUNCE */
+  if (DISABLE_BGP_ANNOUNCE)
+    return;
 
   if (afi == AFI_IP)
     str2prefix ("0.0.0.0/0", &p);
@@ -438,9 +436,8 @@ bgp_default_withdraw_send (struct peer *peer, afi_t afi, safi_t safi)
   bgp_size_t total_attr_len;
   char buf[BUFSIZ];
 
-#ifdef DISABLE_BGP_ANNOUNCE
-  return;
-#endif /* DISABLE_BGP_ANNOUNCE */
+  if (DISABLE_BGP_ANNOUNCE)
+    return;
 
   if (afi == AFI_IP)
     str2prefix ("0.0.0.0/0", &p);
@@ -923,7 +920,6 @@ bgp_notify_send (struct peer *peer, u_char code, u_char sub_code)
   bgp_notify_send_with_data (peer, code, sub_code, NULL, 0);
 }
 
-#if 0
 static const char *
 afi2str (afi_t afi)
 {
@@ -947,7 +943,6 @@ safi2str (safi_t safi)
   else
     return "Unknown SAFI";
 }
-#endif
 
 /* Send route refresh message to the peer. */
 void
@@ -960,9 +955,8 @@ bgp_route_refresh_send (struct peer *peer, afi_t afi, safi_t safi,
   struct bgp_filter *filter;
   int orf_refresh = 0;
 
-#ifdef DISABLE_BGP_ANNOUNCE
-  return;
-#endif /* DISABLE_BGP_ANNOUNCE */
+  if (DISABLE_BGP_ANNOUNCE)
+    return;
 
   filter = &peer->filter[afi][safi];
 
@@ -1190,9 +1184,9 @@ bgp_open_receive (struct peer *peer, bgp_size_t size)
 
   /* Receive OPEN message log  */
   if (BGP_DEBUG (normal, NORMAL))
-    zlog_debug ("%s rcv OPEN, version %d, remote-as (in open) %u,"
+    zlog_debug ("%s rcv OPEN, version %d, remote-as (in open) %d,"
                 " holdtime %d, id %s",
-	        peer->host, version, (unsigned)remote_as, holdtime,
+	        peer->host, version, remote_as, holdtime,
 	        inet_ntoa (remote_id));
   
   /* BEGIN to read the capability here, but dont do it yet */
@@ -1237,7 +1231,7 @@ bgp_open_receive (struct peer *peer, bgp_size_t size)
         zlog_debug ("%s [AS4] OPEN remote_as is AS_TRANS, but no AS4."
                     " Odd, but proceeding.", peer->host);
       else if (as4 < BGP_AS_MAX && BGP_DEBUG (as4, AS4))
-        zlog_debug ("%s [AS4] OPEN remote_as is AS_TRANS, but AS4 %u fits "
+        zlog_debug ("%s [AS4] OPEN remote_as is AS_TRANS, but AS4 (%u) fits "
                     "in 2-bytes, very odd peer.", peer->host, as4);
       if (as4)
         remote_as = as4;

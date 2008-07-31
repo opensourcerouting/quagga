@@ -87,33 +87,6 @@ extern struct zebra_privs_t zserv_privs;
 
 extern u_int32_t nl_rcvbufsize;
 
-/* Note: on netlink systems, there should be a 1-to-1 mapping between interface
-   names and ifindex values. */
-static void
-set_ifindex(struct interface *ifp, unsigned int ifi_index)
-{
-  struct interface *oifp;
-
-  if (((oifp = if_lookup_by_index(ifi_index)) != NULL) && (oifp != ifp))
-    {
-      if (ifi_index == IFINDEX_INTERNAL)
-        zlog_err("Netlink is setting interface %s ifindex to reserved "
-		 "internal value %u", ifp->name, ifi_index);
-      else
-        {
-	  if (IS_ZEBRA_DEBUG_KERNEL)
-	    zlog_debug("interface index %d was renamed from %s to %s",
-	    	       ifi_index, oifp->name, ifp->name);
-	  if (if_is_operative(oifp))
-	    zlog_err("interface rename detected on up interface: index %d "
-		     "was renamed from %s to %s, results are uncertain!", 
-	    	     ifi_index, oifp->name, ifp->name);
-	  if_delete_update(oifp);
-        }
-    }
-  ifp->ifindex = ifi_index;
-}
-
 static int
 netlink_recvbuf (struct nlsock *nl, uint32_t newsize)
 {
@@ -467,12 +440,26 @@ netlink_interface (struct sockaddr_nl *snl, struct nlmsghdr *h)
 #endif /* IFLA_WIRELESS */
 
   if (tb[IFLA_IFNAME] == NULL)
-    return -1;
+    {
+      zlog_err("%s: missing interface name in message", __func__);
+      return -1;
+    }
   name = (char *) RTA_DATA (tb[IFLA_IFNAME]);
 
+  if (ifi->ifi_index == IFINDEX_INTERNAL)
+    {
+      zlog_err("%s: reserved ifindex", __func__);
+      return -1;
+    }
+
   /* Add interface. */
-  ifp = if_get_by_name (name);
-  set_ifindex(ifp, ifi->ifi_index);
+  ifp = if_lookup_by_index(ifi->ifi_index);
+  if (!ifp)
+    {
+      ifp = if_create(name, strlen(name));
+      ifp->ifindex = ifi->ifi_index;
+    }
+  strncpy(ifp->name, name, INTERFACE_NAMSIZ);
   ifp->flags = ifi->ifi_flags & 0x0000fffff;
   ifp->mtu6 = ifp->mtu = *(int *) RTA_DATA (tb[IFLA_MTU]);
   ifp->metric = 1;
@@ -941,24 +928,37 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 #endif /* IFLA_WIRELESS */
   
   if (tb[IFLA_IFNAME] == NULL)
-    return -1;
+    {
+      zlog_err("%s: missing interface name", __func__);
+      return -1;
+    }
   name = (char *) RTA_DATA (tb[IFLA_IFNAME]);
 
   /* Add interface. */
   if (h->nlmsg_type == RTM_NEWLINK)
     {
       unsigned long new_flags = ifi->ifi_flags & 0x0000fffff;
-      ifp = if_lookup_by_name (name);
+      ifp = if_lookup_by_index (ifi->ifi_index);
+
+      if (ifp && strcmp(ifp->name, name) != 0)
+	{
+	  zlog_info("interface index %d was renamed from %s to %s",
+		    ifi->ifi_index, ifp->name, name);
+
+	  strncpy(ifp->name, name, INTERFACE_NAMSIZ);
+	}
 
       if (ifp == NULL || !CHECK_FLAG (ifp->status, ZEBRA_INTERFACE_ACTIVE))
         {
           if (ifp == NULL)
-            ifp = if_get_by_name (name);
+	    {
+	    ifp = if_create(name, strlen(name));
+	    ifp->ifindex = ifi->ifi_index;
+	    }
 
 	  zlog_info ("interface %s index %d %s added.",
 		     name, ifi->ifi_index, if_flag_dump(new_flags));
 
-          set_ifindex(ifp, ifi->ifi_index);
           ifp->flags = new_flags;
           ifp->mtu6 = ifp->mtu = *(int *) RTA_DATA (tb[IFLA_MTU]);
           ifp->metric = 1;
@@ -969,7 +969,6 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
       else
         {
           /* Interface status change. */
-          set_ifindex(ifp, ifi->ifi_index);
           ifp->mtu6 = ifp->mtu = *(int *) RTA_DATA (tb[IFLA_MTU]);
           ifp->metric = 1;
 
@@ -1877,7 +1876,7 @@ static void netlink_install_filter (int sock, __u32 pid)
     .filter = filter,
   };
 
-  if (setsockopt(sock, SOL_SOCKET, SO_ATTACH_FILTER, &prog, sizeof(prog)) < 0) 
+  if (setsockopt(sock, SOL_SOCKET, SO_ATTACH_FILTER, &prog, sizeof(prog)) < 0)
     zlog_warn ("Can't install socket filter: %s\n", safe_strerror(errno));
 }
 

@@ -1,5 +1,5 @@
 /*
- * $Id$
+ * $Id: log.h,v 1.20 2008/02/28 23:26:02 paul Exp $
  *
  * Zebra logging funcions.
  * Copyright (C) 1997, 1998, 1999 Kunihiro Ishiguro

@@ -58,6 +58,9 @@ static char *line_read;
 /* Master of threads. */
 struct thread_master *master;
 
+/* Command logging */
+FILE *logfile;
+
 /* SIGTSTP handler.  This function care user's ^Z input. */
 void
 sigtstp (int sig)
@@ -159,6 +162,7 @@ struct option longopts[] =
   { "echo",                 no_argument,             NULL, 'E'},
   { "dryrun",		    no_argument,	     NULL, 'C'},
   { "help",                 no_argument,             NULL, 'h'},
+  { "noerror",		    no_argument,	     NULL, 'n'},
   { 0 }
 };
 
@@ -191,6 +195,18 @@ vtysh_rl_gets ()
   return (line_read);
 }
 
+static void log_it(const char *line)
+{
+  time_t t = time(NULL);
+  struct tm *tmp = localtime(&t);
+  char *user = getenv("USER") ? : "boot";
+  char tod[64];
+
+  strftime(tod, sizeof tod, "%Y%m%d-%H:%M.%S", tmp);
+  
+  fprintf(logfile, "%s:%s %s\n", tod, user, line);
+}
+
 /* VTY shell main routine. */
 int
 main (int argc, char **argv, char **env)
@@ -206,14 +222,19 @@ main (int argc, char **argv, char **env)
   } *cmd = NULL;
   struct cmd_rec *tail = NULL;
   int echo_command = 0;
+  int no_error = 0;
 
   /* Preserve name of myself. */
   progname = ((p = strrchr (argv[0], '/')) ? ++p : argv[0]);
 
+  /* if logging open now */
+  if ((p = getenv("VTYSH_LOG")) != NULL)
+      logfile = fopen(p, "a");
+
   /* Option handling. */
   while (1) 
     {
-      opt = getopt_long (argc, argv, "be:c:d:EhC", longopts, 0);
+      opt = getopt_long (argc, argv, "be:c:d:nEhC", longopts, 0);
     
       if (opt == EOF)
 	break;
@@ -241,6 +262,9 @@ main (int argc, char **argv, char **env)
 	  break;
 	case 'd':
 	  daemon_name = optarg;
+	  break;
+	case 'n':
+	  no_error = 1;
 	  break;
 	case 'E':
 	  echo_command = 1;
@@ -281,6 +305,10 @@ main (int argc, char **argv, char **env)
   if(dryrun)
     return(0);
   
+  /* Ignore error messages */
+  if (no_error)
+    freopen("/dev/null", "w", stdout);
+
   /* Make sure we pass authentication before proceeding. */
   vtysh_auth ();
 
@@ -299,19 +327,41 @@ main (int argc, char **argv, char **env)
 
       while (cmd != NULL)
         {
+	  int ret;
 	  char *eol;
 
 	  while ((eol = strchr(cmd->line, '\n')) != NULL)
 	    {
 	      *eol = '\0';
+
 	      if (echo_command)
-	        printf("%s%s\n", vtysh_prompt(), cmd->line);
-	      vtysh_execute_no_pager(cmd->line);
+		printf("%s%s\n", vtysh_prompt(), cmd->line);
+	      
+	      if (logfile)
+		log_it(cmd->line);
+
+	      ret = vtysh_execute_no_pager(cmd->line);
+	      if (!no_error &&
+		  ! (ret == CMD_SUCCESS ||
+		     ret == CMD_SUCCESS_DAEMON ||
+		     ret == CMD_WARNING))
+		exit(1);
+
 	      cmd->line = eol+1;
 	    }
+
 	  if (echo_command)
 	    printf("%s%s\n", vtysh_prompt(), cmd->line);
-	  vtysh_execute_no_pager (cmd->line);
+
+	  if (logfile)
+	    log_it(cmd->line);
+
+	  ret = vtysh_execute_no_pager(cmd->line);
+	  if (!no_error &&
+	      ! (ret == CMD_SUCCESS ||
+		 ret == CMD_SUCCESS_DAEMON ||
+		 ret == CMD_WARNING))
+	    exit(1);
 
 	  {
 	    struct cmd_rec *cr;
