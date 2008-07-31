@@ -59,11 +59,6 @@ struct bgp_master
 #define BGP_OPT_NO_FIB                   (1 << 0)
 #define BGP_OPT_MULTIPLE_INSTANCE        (1 << 1)
 #define BGP_OPT_CONFIG_CISCO             (1 << 2)
-
-#ifdef HAVE_TCP_MD5SIG
-  /* bgp receive socket */
-  int sock;
-#endif /* HAVE_TCP_MD5SIG */
 };
 
 /* BGP instance structure.  */
@@ -71,13 +66,6 @@ struct bgp
 {
   /* AS number of this BGP instance.  */
   as_t as;
-
-  /* reference count, primarily to allow bgp_process'ing of route_node's
-   * to be done after a struct peer is deleted.
-   *
-   * named 'lock' for hysterical reasons within Quagga.
-   */
-  int lock;
 
   /* Name of this BGP instance.  */
   char *name;
@@ -373,7 +361,6 @@ struct peer
 
   /* NSF mode (graceful restart) */
   u_char nsf[AFI_MAX][SAFI_MAX];
-#define PEER_FLAG_PASSWORD                  (1 << 9) /* password */
 
   /* Per AF configuration flags. */
   u_int32_t af_flags[AFI_MAX][SAFI_MAX];
@@ -871,23 +858,6 @@ extern int bgp_option_check (int);
 extern int bgp_get (struct bgp **, as_t *, const char *);
 extern void bgp_delete (struct bgp *);
 extern void bgp_free (struct bgp *);
-
-static inline struct bgp *
-bgp_lock (struct bgp *bgp)
-{
-  assert (bgp && (bgp->lock >= 0));
-  bgp->lock++;
-  return bgp;
-}
-
-static inline void
-bgp_unlock (struct bgp *bgp)
-{
-  assert (bgp && (bgp->lock > 0));
-  if (--bgp->lock == 0)
-      bgp_free (bgp);
-}
-
 
 extern int bgp_flag_set (struct bgp *, int);
 extern int bgp_flag_unset (struct bgp *, int);
