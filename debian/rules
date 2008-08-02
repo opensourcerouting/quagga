@@ -59,7 +59,6 @@ configure	+= --enable-vty-group=quaggavty
 configure	+= --enable-configfile-mask=0640
 configure	+= --enable-logfile-mask=0640
 configure	+= --enable-rtadv
-configure	+= --enable-tcp-md5
 configure	+= --enable-gcc-rdynamic
 configure	+= $(xable_snmp)
 configure	+= --with-libpam
