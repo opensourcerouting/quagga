@@ -148,6 +148,7 @@ cluster_free (struct cluster_list *cluster)
   XFREE (MTYPE_CLUSTER, cluster);
 }
 
+#if 0
 static struct cluster_list *
 cluster_dup (struct cluster_list *cluster)
 {
@@ -167,6 +168,7 @@ cluster_dup (struct cluster_list *cluster)
   
   return new;
 }
+#endif
 
 static struct cluster_list *
 cluster_intern (struct cluster_list *cluster)
@@ -1569,7 +1571,7 @@ bgp_attr_parse (struct peer *peer, struct attr *attr, bgp_size_t size,
 	  zlog (peer->log, LOG_WARNING, 
 		"%s Extended length set, but just %lu bytes of attr header",
 		peer->host,
-		endp - STREAM_PNT (BGP_INPUT (peer)));
+		(unsigned long) (endp - STREAM_PNT (BGP_INPUT (peer))));
 
 	  bgp_notify_send (peer, 
 			   BGP_NOTIFY_UPDATE_ERR, 
