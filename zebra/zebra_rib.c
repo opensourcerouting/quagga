@@ -710,7 +710,6 @@ rib_lookup_ipv4 (struct prefix_ipv4 *p)
   /* Unlock node. */
   route_unlock_node (rn);
 
-  /* Pick up selected route. */
   for (match = rn->info; match; match = match->next)
     {
       if (CHECK_FLAG (match->status, RIB_ENTRY_REMOVED))
@@ -1286,7 +1285,7 @@ end:
  * it and processed by rib_process(). Don't process more, than one RN record; operate
  * only in the specified sub-queue.
  */
-unsigned int
+static unsigned int
 process_subq (struct list * subq, u_char qindex)
 {
   struct listnode *lnode;
@@ -1323,7 +1322,8 @@ meta_queue_process (struct work_queue *dummy, void *data)
 /* Look into the RN and queue it into one or more priority queues, increasing the size
  * for each data push done.
  */
-void rib_meta_queue_add (struct meta_queue *mq, struct route_node *rn)
+static void
+rib_meta_queue_add (struct meta_queue *mq, struct route_node *rn)
 {
   u_char qindex;
   struct rib *rib;
@@ -1421,8 +1421,8 @@ rib_queue_add (struct zebra_t *zebra, struct route_node *rn)
 }
 
 /* Create new meta queue. A destructor function doesn't seem to be necessary here. */
-struct meta_queue *
-meta_queue_new ()
+static struct meta_queue *
+meta_queue_new (void)
 {
   struct meta_queue *new;
   unsigned i, failed = 0;
