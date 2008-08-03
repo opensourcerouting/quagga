@@ -2,6 +2,35 @@ quagga (0.99.10-vyatta1) unstable; urgency=low
 
   * Merge in upstream version 0.99.10
   * Rename package from vyatta-quagga to quagga
+	  3.1.2
+  [ Mark O'Brien ]
+
+
+  [ Stephen Hemminger ]
+  * Remove routes from FIB.
+  * Handle state transistions when there are multiple nexthops
+  * Update recursive route when nexthop changes
+  * Minor typo in zebra debugging
+  * Go back to hiding connected routes from down interfaces
+  * Handle races with add/delete of routes
+  * Revert "Only announce connected routes if link is detected"
+  * Update RIB/FIB on recursive route state changes
+  * Make some trivial functions on interfaces inline
+  * Fix compiler warnings from incorrect format strings
+
+  [ Mohit Mehta ]
+  * Fix Bug 3435 Protocol MIBs are not supported on upgraded system
+
+  [ Stephen Hemminger ]
+  * Rescan for next hops after static route change
+  * Set IPv4 TOS value for BGP
+  * active static route changes for ipv6
+  * Fix whitespace in config file
+  * Correctly identify/manage all connected static routes
+  * Make some rib data structures private
+  * Only announce connected routes if link is detected
+
+  [ Mark O'Brien ]
 
  -- Stephen Hemminger <shemminger@vyatta.com>  Thu, 31 Jul 2008 14:16:57 -0700
 
