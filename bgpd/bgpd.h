@@ -859,9 +859,43 @@ extern int bgp_get (struct bgp **, as_t *, const char *);
 extern void bgp_delete (struct bgp *);
 extern void bgp_free (struct bgp *);
 
-extern int bgp_flag_set (struct bgp *, int);
-extern int bgp_flag_unset (struct bgp *, int);
-extern int bgp_flag_check (struct bgp *, int);
+/* BGP flag manipulation.  */
+static inline void
+bgp_flag_set (struct bgp *bgp, int flag)
+{
+  SET_FLAG (bgp->flags, flag);
+}
+
+static inline void
+bgp_flag_unset (struct bgp *bgp, int flag)
+{
+  UNSET_FLAG (bgp->flags, flag);
+}
+
+static inline int
+bgp_flag_check (const struct bgp *bgp, int flag)
+{
+  return CHECK_FLAG (bgp->flags, flag);
+}
+
+/* Internal function to set BGP structure configureation flag.  */
+static inline void
+bgp_config_set (struct bgp *bgp, int config)
+{
+  SET_FLAG (bgp->config, config);
+}
+
+static inline void
+bgp_config_unset (struct bgp *bgp, int config)
+{
+  UNSET_FLAG (bgp->config, config);
+}
+
+static inline int
+bgp_config_check (const struct bgp *bgp, int config)
+{
+  return CHECK_FLAG (bgp->config, config);
+}
 
 extern int bgp_router_id_set (struct bgp *, struct in_addr *);
 
