@@ -17,9 +17,17 @@ extern void _zlog_assert_failed (const char *assertion, const char *file,
 #define __ASSERT_FUNCTION    NULL
 #endif
 
-#define zassert(EX) ((void)((EX) ?  0 :	\
-			    (_zlog_assert_failed(#EX, __FILE__, __LINE__, \
-						 __ASSERT_FUNCTION), 0)))
+#ifdef __GNUC__
+#define UNLIKELY(EX)	__builtin_expect(!!(EX), 0)
+#define LIKELY(EX)	__builtin_expect(!!(EX), 1)
+#else
+#define UNLIKELY(EX)	(EX)
+#define LIKELY(EX)	(EX)
+#endif
+
+#define zassert(EX) ((void)(UNLIKELY(EX) ? 0 :		\
+	  (_zlog_assert_failed(#EX, __FILE__, __LINE__, \
+			       __ASSERT_FUNCTION), 0)))
 
 #undef assert
 #define assert(EX) zassert(EX)
