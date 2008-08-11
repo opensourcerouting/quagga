@@ -36,12 +36,8 @@ configure	 = ./configure
 configure	+= --host=$(DEB_HOST_GNU_TYPE)
 configure	+= --build=$(DEB_BUILD_GNU_TYPE)
 configure	+= --prefix=/usr
-configure	+= --program-prefix=vyatta-
 configure	+= --libdir=/usr/lib/$(PACKAGE)
-configure	+= --localstatedir=/var/run/vyatta/quagga
-configure	+= --sysconfdir=/etc/vyatta/quagga
 configure	+= --mandir=/usr/share/man
-configure	+= --includedir=/usr/include/vyatta
 configure	+= --infodir=/usr/share/info/$(PACKAGE)
 configure	+= --enable-exampledir=/usr/share/doc/$(PACKAGE)/examples
 configure	+= --enable-vtysh
@@ -92,7 +88,6 @@ clean-patched:
 	rm -f $(BUILD_STAMP)
 	rm -f config.status config.sub config.guess config.log
 	rm -f aclocal.m4 configure Makefile.in Makefile INSTALL
-	rm -f etc/default/vyatta
 	rm -rf config
 	dh_clean 
 
