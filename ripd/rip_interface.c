@@ -406,8 +406,9 @@ rip_interface_down (int command, struct zclient *zclient, zebra_size_t length)
   rip_if_down(ifp);
  
   if (IS_RIP_DEBUG_ZEBRA)
-    zlog_debug ("interface %s index %d flags %ld metric %d mtu %d is down",
-	       ifp->name, ifp->ifindex, ifp->flags, ifp->metric, ifp->mtu);
+    zlog_debug ("interface %s index %d flags %#llx metric %d mtu %d is down",
+	       ifp->name, ifp->ifindex, 
+		(unsigned long long) ifp->flags, ifp->metric, ifp->mtu);
 
   return 0;
 }
@@ -426,8 +427,9 @@ rip_interface_up (int command, struct zclient *zclient, zebra_size_t length)
     return 0;
 
   if (IS_RIP_DEBUG_ZEBRA)
-    zlog_debug ("interface %s index %d flags %ld metric %d mtu %d is up",
-	       ifp->name, ifp->ifindex, ifp->flags, ifp->metric, ifp->mtu);
+    zlog_debug ("interface %s index %d flags %#llx metric %d mtu %d is up",
+		ifp->name, ifp->ifindex, (unsigned long long) ifp->flags,
+		ifp->metric, ifp->mtu);
 
   /* Check if this interface is RIP enabled or not.*/
   rip_enable_apply (ifp);
@@ -450,8 +452,9 @@ rip_interface_add (int command, struct zclient *zclient, zebra_size_t length)
   ifp = zebra_interface_add_read (zclient->ibuf);
 
   if (IS_RIP_DEBUG_ZEBRA)
-    zlog_debug ("interface add %s index %d flags %ld metric %d mtu %d",
-	       ifp->name, ifp->ifindex, ifp->flags, ifp->metric, ifp->mtu);
+    zlog_debug ("interface add %s index %d flags %#llx metric %d mtu %d",
+		ifp->name, ifp->ifindex, (unsigned long long) ifp->flags,
+		ifp->metric, ifp->mtu);
 
   /* Check if this interface is RIP enabled or not.*/
   rip_enable_apply (ifp);
@@ -489,8 +492,9 @@ rip_interface_delete (int command, struct zclient *zclient,
     rip_if_down(ifp);
   } 
   
-  zlog_info("interface delete %s index %d flags %ld metric %d mtu %d",
-	    ifp->name, ifp->ifindex, ifp->flags, ifp->metric, ifp->mtu);  
+  zlog_info("interface delete %s index %d flags %#llx metric %d mtu %d",
+	    ifp->name, ifp->ifindex, (unsigned long long) ifp->flags,
+	    ifp->metric, ifp->mtu);  
   
   /* To support pseudo interface do not free interface structure.  */
   /* if_delete(ifp); */
