@@ -37,6 +37,8 @@ configure	+= --host=$(DEB_HOST_GNU_TYPE)
 configure	+= --build=$(DEB_BUILD_GNU_TYPE)
 configure	+= --prefix=/usr
 configure	+= --libdir=/usr/lib/$(PACKAGE)
+configure	+= --localstatedir=/var/run/quagga 
+configure	+= --sysconfdir=/etc/quagga
 configure	+= --mandir=/usr/share/man
 configure	+= --infodir=/usr/share/info/$(PACKAGE)
 configure	+= --enable-exampledir=/usr/share/doc/$(PACKAGE)/examples
