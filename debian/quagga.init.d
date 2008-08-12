@@ -10,6 +10,8 @@
 # Description: Quagga is a routing suite for IP routing protocols like 
 #              BGP, OSPF, RIP and others. This script contols the main 
 #              daemon "quagga" as well as the individual protocol daemons.
+#              FIXME! this init script will be deprecated as daemon start/stop
+#                     is integrated with vyatta-cfg-quagga
 ### END INIT INFO
 #
 
@@ -18,8 +20,8 @@
 declare progname=${0##*/}
 declare action=$1; shift
 
-pid_dir=/var/run/quagga
-log_dir=/var/log/quagga
+pid_dir=/var/run/vyatta/quagga
+log_dir=/var/log/vyatta/quagga
 
 for dir in $pid_dir $log_dir ; do
     if [ ! -d $dir ]; then
@@ -30,7 +32,7 @@ for dir in $pid_dir $log_dir ; do
 done
 
 declare -a common_args=( -d -P 0 )
-declare -a zebra_args=( ${common_args[@]} -l -S -i $pid_dir/zebra.pid )
+declare -a zebra_args=( ${common_args[@]} -l -s 1048576 -i $pid_dir/zebra.pid )
 declare -a ripd_args=( ${common_args[@]} -i $pid_dir/ripd.pid )
 declare -a ripngd_args=( ${common_args[@]} -i $pid_dir/ripngd.pid )
 declare -a ospfd_args=( ${common_args[@]} -i $pid_dir/ospfd.pid )
@@ -38,7 +40,7 @@ declare -a ospf6d_args=( ${common_args[@]} -i $pid_dir/ospf6d.pid )
 declare -a isisd_args=( ${common_args[@]} -i $pid_dir/isisd.pid )
 declare -a bgpd_args=( ${common_args[@]} -i $pid_dir/bgpd.pid )
 
-quagga_start ()
+vyatta_quagga_start ()
 {
     local -a daemons
     if [ $# -gt 0 ] ; then
@@ -63,14 +65,14 @@ quagga_start ()
 	    --oknodo \
 	    --pidfile=$pid_dir/${daemon}.pid \
 	    --chdir $log_dir \
-	    --exec "/usr/sbin-${daemon}" \
+	    --exec "/usr/sbin/vyatta-${daemon}" \
 	    -- `eval echo "$""{${daemon}_args[@]}"` || \
 	    ( log_action_end_msg 1 ; return 1 )
     done
     log_action_end_msg 0
 }
 
-quagga_stop ()
+vyatta_quagga_stop ()
 {
     local -a daemons
 
@@ -85,7 +87,7 @@ quagga_stop ()
 	if [ -r $pidfile ] ; then
 	    pid=`cat $pidfile 2>/dev/null`
 	else
-	    pid=`ps -o pid= -C ${daemon}`
+	    pid=`ps -o pid= -C vyatta-${daemon}`
 	fi
 	if [ -n "$pid" ] ; then
 	    [ "$daemon" != zebra ] && \
@@ -94,7 +96,7 @@ quagga_stop ()
 		--stop \
 		--quiet \
 		--oknodo \
-		--exec /usr/sbin-${daemon}
+		--exec /usr/sbin/vyatta-${daemon}
 #
 # Now we have to wait until $DAEMON has _really_ stopped.
 #
@@ -129,17 +131,17 @@ case "$action" in
 		set -e
 	    log_end_msg 0
 	fi
-	quagga_start $*
+	vyatta_quagga_start $*
     	;;
 	
     stop|0)
-	quagga_stop $*
+	vyatta_quagga_stop $*
    	;;
 
     restart|force-reload)
-	quagga_stop $*
+	vyatta_quagga_stop $*
 	sleep 2
-	quagga_start $*
+	vyatta_quagga_start $*
 	;;
 
     *)
