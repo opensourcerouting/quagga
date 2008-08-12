@@ -1,10 +1,8 @@
-quagga (0.99.10-vyatta1) unstable; urgency=low
+vyatta-quagga (0.99.10-1) unstable; urgency=low
 
   * Merge in upstream version 0.99.10
   * Rename package from vyatta-quagga to quagga
 	  3.1.2
-  [ Mark O'Brien ]
-
 
   [ Stephen Hemminger ]
   * Remove routes from FIB.
