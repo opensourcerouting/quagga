@@ -1,4 +1,4 @@
-Source: quagga
+Source: vyatta-quagga
 Section: contrib/net
 Priority: extra
 Maintainer: Stephen Hemminger <shemminger@vyatta.com>
@@ -17,12 +17,12 @@ Build-Depends: debhelper (>= 5),
 Standards-Version: 3.7.2
 Vcs-Git: http://suva.vyatta.com/git/vyatta-quagga.git
 
-Package: quagga
+Package: vyatta-quagga
 Architecture: any
 Depends: ${shlibs:Depends}, logrotate (>= 3.2-11), iproute, ${misc:Depends}
 Pre-Depends: adduser
-Conflicts: zebra, zebra-pj, vyatta-quagga
-Replaces: zebra, zebra-pj, vyatta-quagga
+Conflicts: zebra, zebra-pj, quagga
+Replaces: zebra, zebra-pj, quagga
 Suggests: snmpd
 Description: BGP/OSPF/RIP routing daemon
  GNU Quagga is free software which manages TCP/IP based routing protocols.
