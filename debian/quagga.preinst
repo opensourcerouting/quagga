@@ -5,11 +5,11 @@ ${DEBIAN_SCRIPT_TRACE:+ echo "#42#DEBUG# RUNNING $0 $*"}
 set -e
 set -u
 
-LOG_DIR=/var/log/quagga
+LOG_DIR=/var/log/vyatta/quagga
 LOG_PDIR=${LOG_DIR%/*}
-RUN_DIR=/var/run/quagga
+RUN_DIR=/var/run/vyatta/quagga
 RUN_PDIR=${RUN_DIR%/*}
-ETC_DIR=/etc/quagga
+ETC_DIR=/etc/vyatta/quagga
 ETC_PDIR=${ETC_DIR%/*}
 
 # creating quaggavty group if it isn't already there
@@ -27,8 +27,8 @@ if ! getent passwd quagga >/dev/null; then
         adduser \
           --system \
           --ingroup quagga \
-          --home /var/run/quagga/ \
-          --gecos "Quagga routing suite" \
+          --home /var/run/vyatta/ \
+          --gecos "Vyatta Quagga routing suite" \
           --shell /bin/false \
           quagga  >/dev/null
 fi

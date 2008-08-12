@@ -1,8 +1,6 @@
-etc/quagga/
-usr/bin/vtysh
-usr/include/quagga/
+etc/vyatta/quagga/
+opt/vyatta/
 usr/lib/quagga/
-usr/share/doc/quagga/
 usr/share/lintian/overrides/
 usr/share/man/man1/vtysh.1
 usr/share/man/man8

@@ -30,7 +30,7 @@ for dir in $pid_dir $log_dir ; do
 done
 
 declare -a common_args=( -d -P 0 )
-declare -a zebra_args=( ${common_args[@]} -l -s 65536 -i $pid_dir/zebra.pid )
+declare -a zebra_args=( ${common_args[@]} -l -S -i $pid_dir/zebra.pid )
 declare -a ripd_args=( ${common_args[@]} -i $pid_dir/ripd.pid )
 declare -a ripngd_args=( ${common_args[@]} -i $pid_dir/ripngd.pid )
 declare -a ospfd_args=( ${common_args[@]} -i $pid_dir/ospfd.pid )
