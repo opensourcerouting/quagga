@@ -63,7 +63,7 @@ quagga_start ()
 	    --oknodo \
 	    --pidfile=$pid_dir/${daemon}.pid \
 	    --chdir $log_dir \
-	    --exec "/usr/sbin/${daemon}" \
+	    --exec "/usr/sbin-${daemon}" \
 	    -- `eval echo "$""{${daemon}_args[@]}"` || \
 	    ( log_action_end_msg 1 ; return 1 )
     done
@@ -94,7 +94,7 @@ quagga_stop ()
 		--stop \
 		--quiet \
 		--oknodo \
-		--exec /usr/sbin/${daemon}
+		--exec /usr/sbin-${daemon}
 #
 # Now we have to wait until $DAEMON has _really_ stopped.
 #
