@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 ### BEGIN INIT INFO
-# Provides: quagga
+# Provides: vyatta-quagga
 # Required-Start: $local_fs $network $remote_fs $syslog
 # Required-Stop: $local_fs $network $remote_fs $syslog
 # Default-Start:  2 3 4 5

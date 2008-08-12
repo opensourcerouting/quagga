@@ -1,6 +1,6 @@
-etc/vyatta/quagga/
+etc/quagga/
 opt/vyatta/
-usr/lib/quagga/
+usr/lib/vyatta-quagga/
 usr/share/lintian/overrides/
 usr/share/man/man1/vtysh.1
 usr/share/man/man8
