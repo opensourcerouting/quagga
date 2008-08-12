@@ -1,4 +1,4 @@
 etc/logrotate.d/
-etc/vyatta/
-var/log/vyatta/
-var/run/vyatta/
+etc/
+var/log/
+var/run/

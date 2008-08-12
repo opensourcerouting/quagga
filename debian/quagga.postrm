@@ -7,12 +7,10 @@ ${DEBIAN_SCRIPT_TRACE:+ echo "#42#DEBUG# RUNNING $0 $*"}
 
 if [ "$1" = "purge" ]; then
     for daemon in zebra bgpd ripd ospfd ripngd ospf6d isisd; do
-        rm -f /var/run/vyatta/${daemon}.pid
-	rm -f /var/log/vyatta/${daemon}*
+        rm -f /var/run/${daemon}.pid
+	rm -f /var/log/${daemon}*
     done
-    [ -z "`ls /var/run/vyatta 2>/dev/null`" ] && rmdir /var/run/vyatta
-    [ -z "`ls /var/log/vyatta 2>/dev/null`" ] && rmdir /var/log/vyatta
-    rm -f /etc/vyatta/Quagga.conf /etc/vyatta/vtysh.conf
+    rm -rf /etc/quagga /var/run/quagga /var/log/quagga
     userdel quagga >/dev/null 2>&1
 fi
 
