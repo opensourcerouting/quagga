@@ -44,6 +44,9 @@
 /* Default rtm_table for all clients */
 extern struct zebra_t zebrad;
 
+/* Should kernel routes be removed on link down? */
+int rib_system_routes = 0;
+
 /* Hold time for RIB process, should be very minimal.
  * it is useful to able to set it otherwise for testing, hence exported
  * as global here for test-rig code.
@@ -209,7 +212,8 @@ nexthop_free (struct nexthop *nexthop)
 }
 
 struct nexthop *
-nexthop_ifindex_add (struct rib *rib, unsigned int ifindex)
+nexthop_ifindex_add (struct rib *rib, unsigned int ifindex,
+		     struct in_addr *src)
 {
   struct nexthop *nexthop;
 
@@ -217,6 +221,8 @@ nexthop_ifindex_add (struct rib *rib, unsigned int ifindex)
   memset (nexthop, 0, sizeof (struct nexthop));
   nexthop->type = NEXTHOP_TYPE_IFINDEX;
   nexthop->ifindex = ifindex;
+  if (src)
+    nexthop->src.ipv4 = *src;
 
   nexthop_add (rib, nexthop);
 
@@ -869,8 +875,10 @@ rib_match_ipv6 (struct in6_addr *addr)
 }
 #endif /* HAVE_IPV6 */
 
-#define RIB_SYSTEM_ROUTE(R) \
+#define RIB_SYSTEM_ROUTE(R)  \
         ((R)->type == ZEBRA_ROUTE_KERNEL || (R)->type == ZEBRA_ROUTE_CONNECT)
+#define RIB_SHOULD_UPDATE(R)  \
+	(! CHECK_FLAG((R)->status, RIB_ENTRY_PRESERVE) )
 
 /* This function verifies reachability of one given nexthop, which can be
  * numbered or unnumbered, IPv4 or IPv6. The result is unconditionally stored
@@ -1073,7 +1081,7 @@ rib_uninstall (struct route_node *rn, struct rib *rib)
   if (CHECK_FLAG (rib->flags, ZEBRA_FLAG_SELECTED))
     {
       redistribute_delete (&rn->p, rib);
-      if (! RIB_SYSTEM_ROUTE (rib))
+      if (RIB_SHOULD_UPDATE (rib))
 	rib_uninstall_kernel (rn, rib);
       UNSET_FLAG (rib->flags, ZEBRA_FLAG_SELECTED);
     }
@@ -1198,17 +1206,17 @@ rib_process (struct route_node *rn)
       if (CHECK_FLAG (select->flags, ZEBRA_FLAG_CHANGED))
         {
           redistribute_delete (&rn->p, select);
-          if (! RIB_SYSTEM_ROUTE (select))
+	  if (RIB_SHOULD_UPDATE (select))
             rib_uninstall_kernel (rn, select);
 
           /* Set real nexthop. */
           nexthop_active_update (rn, select, 1);
   
-          if (! RIB_SYSTEM_ROUTE (select))
+	  if (RIB_SHOULD_UPDATE (select))
             rib_install_kernel (rn, select);
           redistribute_add (&rn->p, select);
         }
-      else if (! RIB_SYSTEM_ROUTE (select))
+      else if (RIB_SHOULD_UPDATE (select))
         {
           /* Housekeeping code to deal with 
              race conditions in kernel with linux
@@ -1239,7 +1247,7 @@ rib_process (struct route_node *rn)
         zlog_debug ("%s: %s/%d: Removing existing route, fib %p", __func__,
           buf, rn->p.prefixlen, fib);
       redistribute_delete (&rn->p, fib);
-      if (! RIB_SYSTEM_ROUTE (fib))
+      if (RIB_SHOULD_UPDATE (fib))
 	rib_uninstall_kernel (rn, fib);
       UNSET_FLAG (fib->flags, ZEBRA_FLAG_SELECTED);
 
@@ -1259,7 +1267,7 @@ rib_process (struct route_node *rn)
       /* Set real nexthop. */
       nexthop_active_update (rn, select, 1);
 
-      if (! RIB_SYSTEM_ROUTE (select))
+      if (RIB_SHOULD_UPDATE (select))
         rib_install_kernel (rn, select);
       SET_FLAG (select->flags, ZEBRA_FLAG_SELECTED);
       redistribute_add (&rn->p, select);
@@ -1297,12 +1305,7 @@ process_subq (struct list * subq, u_char qindex)
 
   if (rnode->info) /* The first RIB record is holding the flags bitmask. */
     UNSET_FLAG (((struct rib *)rnode->info)->rn_status, RIB_ROUTE_QUEUED(qindex));
-  else
-    {
-      zlog_debug ("%s: called for route_node (%p, %d) with no ribs",
-                  __func__, rnode, rnode->lock);
-      zlog_backtrace(LOG_DEBUG);
-    }
+
   route_unlock_node (rnode);
   list_delete_node (subq, lnode);
   return 1;
@@ -1630,13 +1633,14 @@ int
 rib_add_ipv4 (int type, int flags, struct prefix_ipv4 *p, 
 	      struct in_addr *gate, struct in_addr *src,
 	      unsigned int ifindex, u_int32_t vrf_id,
-	      u_int32_t metric, u_char distance)
+	      u_int32_t metric, u_int8_t distance, u_int8_t scope)
 {
   struct rib *rib;
   struct rib *same = NULL;
   struct route_table *table;
   struct route_node *rn;
   struct nexthop *nexthop;
+
 
   /* Lookup table.  */
   table = vrf_table (AFI_IP, SAFI_UNICAST, 0);
@@ -1693,6 +1697,7 @@ rib_add_ipv4 (int type, int flags, struct prefix_ipv4 *p,
   rib->table = vrf_id;
   rib->nexthop_num = 0;
   rib->uptime = time (NULL);
+  rib->scope = scope;
 
   /* Nexthop settings. */
   if (gate)
@@ -1703,12 +1708,18 @@ rib_add_ipv4 (int type, int flags, struct prefix_ipv4 *p,
 	nexthop_ipv4_add (rib, gate, src);
     }
   else
-    nexthop_ifindex_add (rib, ifindex);
+    nexthop_ifindex_add (rib, ifindex, src);
 
   /* If this route is kernel route, set FIB flag to the route. */
-  if (type == ZEBRA_ROUTE_KERNEL || type == ZEBRA_ROUTE_CONNECT)
-    for (nexthop = rib->nexthop; nexthop; nexthop = nexthop->next)
-      SET_FLAG (nexthop->flags, NEXTHOP_FLAG_FIB);
+  if (RIB_SYSTEM_ROUTE (rib)) 
+    {
+      /* Mark system routes with the don't touch me flag */
+      if (! rib_system_routes)
+	SET_FLAG(rib->status, RIB_ENTRY_PRESERVE);
+
+      for (nexthop = rib->nexthop; nexthop; nexthop = nexthop->next)
+	SET_FLAG (nexthop->flags, NEXTHOP_FLAG_FIB);
+    }
 
   /* Link new rib to node.*/
   if (IS_ZEBRA_DEBUG_RIB)
@@ -1866,8 +1877,7 @@ void rib_lookup_and_pushup (struct prefix_ipv4 * p)
    */
   for (rib = rn->info; rib; rib = rib->next)
   {
-    if (CHECK_FLAG (rib->flags, ZEBRA_FLAG_SELECTED) &&
-      ! RIB_SYSTEM_ROUTE (rib))
+    if (CHECK_FLAG (rib->flags, ZEBRA_FLAG_SELECTED) && RIB_SHOULD_UPDATE (rib))
     {
       changed = 1;
       if (IS_ZEBRA_DEBUG_RIB)
@@ -2417,7 +2427,7 @@ rib_bogus_ipv6 (int type, struct prefix_ipv6 *p,
   if (type == ZEBRA_ROUTE_KERNEL && IN6_IS_ADDR_UNSPECIFIED (&p->prefix)
       && p->prefixlen == 96 && gate && IN6_IS_ADDR_UNSPECIFIED (gate))
     {
-      kernel_delete_ipv6_old (p, gate, ifindex, 0, table);
+      kernel_delete_ipv6_old (p, gate, ifindex, table);
       return 1;
     }
   return 0;
@@ -2499,12 +2509,18 @@ rib_add_ipv6 (int type, int flags, struct prefix_ipv6 *p,
 	nexthop_ipv6_add (rib, gate);
     }
   else
-    nexthop_ifindex_add (rib, ifindex);
+    nexthop_ifindex_add (rib, ifindex, NULL);
 
   /* If this route is kernel route, set FIB flag to the route. */
   if (type == ZEBRA_ROUTE_KERNEL || type == ZEBRA_ROUTE_CONNECT)
-    for (nexthop = rib->nexthop; nexthop; nexthop = nexthop->next)
-      SET_FLAG (nexthop->flags, NEXTHOP_FLAG_FIB);
+    {
+      /* Mark system routes with the don't touch me flag */
+      if (! rib_system_routes)
+	SET_FLAG(rib->status, RIB_ENTRY_PRESERVE);
+
+      for (nexthop = rib->nexthop; nexthop; nexthop = nexthop->next)
+	SET_FLAG (nexthop->flags, NEXTHOP_FLAG_FIB);
+    }
 
   /* Link new rib to node.*/
   rib_addnode (rn, rib);
@@ -3053,7 +3069,7 @@ rib_close_table (struct route_table *table)
     for (rn = route_top (table); rn; rn = route_next (rn))
       for (rib = rn->info; rib; rib = rib->next)
         {
-          if (! RIB_SYSTEM_ROUTE (rib)
+          if (RIB_SHOULD_UPDATE (rib)
 	      && CHECK_FLAG (rib->flags, ZEBRA_FLAG_SELECTED))
             rib_uninstall_kernel (rn, rib);
         }

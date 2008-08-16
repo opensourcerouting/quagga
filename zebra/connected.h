@@ -26,7 +26,7 @@
 extern struct connected *
 connected_check (struct interface *ifp, struct prefix *p);
 
-extern void
+extern struct connected *
 connected_add_ipv4 (struct interface *ifp, int flags, struct in_addr *addr, 
 		    u_char prefixlen, struct in_addr *broad, 
 		    const char *label);
@@ -39,7 +39,7 @@ extern void connected_up_ipv4 (struct interface *, struct connected *);
 extern void connected_down_ipv4 (struct interface *, struct connected *);
 
 #ifdef HAVE_IPV6
-extern void
+extern struct connected *
 connected_add_ipv6 (struct interface *ifp, int flags, struct in6_addr *address,
 		    u_char prefixlen, struct in6_addr *broad,
 		    const char *label);

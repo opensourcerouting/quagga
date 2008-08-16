@@ -63,12 +63,16 @@ int keep_kernel_mode = 0;
 u_int32_t nl_rcvbufsize = 0;
 #endif /* HAVE_NETLINK */
 
+/* Manage system routes. */
+extern int rib_system_routes;
+
 /* Command line options. */
 struct option longopts[] = 
 {
   { "batch",       no_argument,       NULL, 'b'},
   { "daemon",      no_argument,       NULL, 'd'},
   { "keep_kernel", no_argument,       NULL, 'k'},
+  { "rib_system",  no_argument,       NULL, 'S'},
   { "log_mode",    no_argument,       NULL, 'l'},
   { "config_file", required_argument, NULL, 'f'},
   { "pid_file",    required_argument, NULL, 'i'},
@@ -131,6 +135,7 @@ usage (char *progname, int status)
 	      "-i, --pid_file     Set process identifier file name\n"\
 	      "-k, --keep_kernel  Don't delete old routes which installed by "\
 				  "zebra.\n"\
+	      "-S, --system       Manage all routes on link transistions\n"
 	      "-l, --log_mode     Set verbose log mode flag\n"\
 	      "-C, --dryrun       Check configuration for validity and exit\n"\
 	      "-A, --vty_addr     Set vty's bind address\n"\
@@ -231,9 +236,9 @@ main (int argc, char **argv)
       int opt;
   
 #ifdef HAVE_NETLINK  
-      opt = getopt_long (argc, argv, "bdklf:i:hA:P:ru:g:vs:C", longopts, 0);
+      opt = getopt_long (argc, argv, "bdklf:i:hA:P:ru:g:vs:CS", longopts, 0);
 #else
-      opt = getopt_long (argc, argv, "bdklf:i:hA:P:ru:g:vC", longopts, 0);
+      opt = getopt_long (argc, argv, "bdklf:i:hA:P:ru:g:vCS", longopts, 0);
 #endif /* HAVE_NETLINK */
 
       if (opt == EOF)
@@ -250,6 +255,9 @@ main (int argc, char **argv)
 	  break;
 	case 'k':
 	  keep_kernel_mode = 1;
+	  break;
+	case 'S':
+	  rib_system_routes = 1;
 	  break;
 	case 'C':
 	  dryrun = 1;

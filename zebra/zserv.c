@@ -773,7 +773,7 @@ zread_ipv4_add (struct zserv *client, u_short length)
 	    {
 	    case ZEBRA_NEXTHOP_IFINDEX:
 	      ifindex = stream_getl (s);
-	      nexthop_ifindex_add (rib, ifindex);
+	      nexthop_ifindex_add (rib, ifindex, NULL);
 	      break;
 	    case ZEBRA_NEXTHOP_IFNAME:
 	      ifname_len = stream_getc (s);
