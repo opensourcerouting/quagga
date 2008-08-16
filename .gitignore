@@ -18,6 +18,7 @@ config.sub
 configure
 debian/build-stamp
 debian/quagga
+debian/vyatta-quagga
 debian/*.substvars
 debian/files
 debian/*.debhelper
