@@ -295,6 +295,13 @@ netlink_parse_info (int (*filter) (struct sockaddr_nl *, struct nlmsghdr *),
           return -1;
         }
       
+      /* JF: Ignore messages that aren't from the kernel */
+      if ( snl.nl_pid != 0 )
+	{
+	  zlog_debug ("Ignoring message from pid %u", snl.nl_pid );
+	  continue;
+	}
+
       for (h = (struct nlmsghdr *) buf; NLMSG_OK (h, (unsigned int) status);
            h = NLMSG_NEXT (h, status))
         {
@@ -1835,19 +1842,13 @@ kernel_read (struct thread *thread)
 static void netlink_install_filter (int sock, __u32 pid)
 {
   struct sock_filter filter[] = {
-    /* 0: ldh [4]	          */
-    BPF_STMT(BPF_LD|BPF_ABS|BPF_H, offsetof(struct nlmsghdr, nlmsg_type)),
-    /* 1: jeq 0x18 jt 3 jf 6  */
-    BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K, htons(RTM_NEWROUTE), 1, 0),
-    /* 2: jeq 0x19 jt 3 jf 6  */
-    BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K, htons(RTM_DELROUTE), 0, 3),	
-    /* 3: ldw [12]		  */
+    /* 0: ldw [12]		  */
     BPF_STMT(BPF_LD|BPF_ABS|BPF_W, offsetof(struct nlmsghdr, nlmsg_pid)),
-    /* 4: jeq XX  jt 5 jf 6   */
+    /* 1: jeq XX  jt 2 jf 3   */
     BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K, htonl(pid), 0, 1),
-    /* 5: ret 0    (skip)     */
+    /* 2: ret 0    (skip)     */
     BPF_STMT(BPF_RET|BPF_K, 0),
-    /* 6: ret 0xffff (keep)   */
+    /* 3: ret 0xffff (keep)   */
     BPF_STMT(BPF_RET|BPF_K, 0xffff),
   };
 
