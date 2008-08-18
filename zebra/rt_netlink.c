@@ -139,7 +139,7 @@ netlink_socket (struct nlsock *nl, unsigned long groups)
   int ret;
   struct sockaddr_nl snl;
   int sock;
-  socklen_t namelen;
+  int namelen;
   int save_errno;
 
   sock = socket (AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
@@ -177,7 +177,7 @@ netlink_socket (struct nlsock *nl, unsigned long groups)
 
   /* multiple netlink sockets will have different nl_pid */
   namelen = sizeof snl;
-  ret = getsockname (sock, (struct sockaddr *) &snl, &namelen);
+  ret = getsockname (sock, (struct sockaddr *) &snl, (socklen_t *) &namelen);
   if (ret < 0 || namelen != sizeof snl)
     {
       zlog (NULL, LOG_ERR, "Can't get %s socket name: %s", nl->name,
@@ -220,7 +220,7 @@ netlink_request (int family, int type, struct nlsock *nl)
   req.nlh.nlmsg_len = sizeof req;
   req.nlh.nlmsg_type = type;
   req.nlh.nlmsg_flags = NLM_F_ROOT | NLM_F_MATCH | NLM_F_REQUEST;
-  req.nlh.nlmsg_pid = 0;
+  req.nlh.nlmsg_pid = nl->snl.nl_pid;
   req.nlh.nlmsg_seq = ++nl->seq;
   req.g.rtgen_family = family;
 
@@ -295,13 +295,6 @@ netlink_parse_info (int (*filter) (struct sockaddr_nl *, struct nlmsghdr *),
           return -1;
         }
       
-      /* JF: Ignore messages that aren't from the kernel */
-      if ( snl.nl_pid != 0 )
-	{
-	  zlog_debug ("Ignoring message from pid %u", snl.nl_pid );
-	  continue;
-	}
-
       for (h = (struct nlmsghdr *) buf; NLMSG_OK (h, (unsigned int) status);
            h = NLMSG_NEXT (h, status))
         {
@@ -1046,6 +1039,13 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 static int
 netlink_information_fetch (struct sockaddr_nl *snl, struct nlmsghdr *h)
 {
+  /* JF: Ignore messages that aren't from the kernel */
+  if ( snl->nl_pid != 0 )
+    {
+      zlog ( NULL, LOG_ERR, "Ignoring message from pid %u", snl->nl_pid );
+      return 0;
+    }
+
   switch (h->nlmsg_type)
     {
     case RTM_NEWROUTE:
@@ -1829,18 +1829,26 @@ kernel_read (struct thread *thread)
   return 0;
 }
 
-/* Filter out messages that are not from kernel. */
-static void netlink_install_filter (int sock)
+/* Filter out messages from self that occur on listener socket,
+   caused by our actions on the command socket
+ */
+static void netlink_install_filter (int sock, __u32 pid)
 {
   struct sock_filter filter[] = {
-    /* 0: ldw [12]		  */
+    /* 0: ldh [4]	          */
+    BPF_STMT(BPF_LD|BPF_ABS|BPF_H, offsetof(struct nlmsghdr, nlmsg_type)),
+    /* 1: jeq 0x18 jt 3 jf 6  */
+    BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K, htons(RTM_NEWROUTE), 1, 0),
+    /* 2: jeq 0x19 jt 3 jf 6  */
+    BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K, htons(RTM_DELROUTE), 0, 3),	
+    /* 3: ldw [12]		  */
     BPF_STMT(BPF_LD|BPF_ABS|BPF_W, offsetof(struct nlmsghdr, nlmsg_pid)),
-    /* 1: jeq XX  jt 5 jf 6   */
-    BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K, 0, 0, 1),
-    /* 2: ret 0xffff (keep)   */
-    BPF_STMT(BPF_RET|BPF_K, 0xffff),
-    /* 3: ret 0    (skip)     */
+    /* 4: jeq XX  jt 5 jf 6   */
+    BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K, htonl(pid), 0, 1),
+    /* 5: ret 0    (skip)     */
     BPF_STMT(BPF_RET|BPF_K, 0),
+    /* 6: ret 0xffff (keep)   */
+    BPF_STMT(BPF_RET|BPF_K, 0xffff),
   };
 
   struct sock_fprog prog = {
@@ -1878,7 +1886,7 @@ kernel_init (void)
       if (nl_rcvbufsize)
 	netlink_recvbuf (&netlink, nl_rcvbufsize);
 
-      netlink_install_filter (netlink.sock);
+      netlink_install_filter (netlink.sock, netlink_cmd.snl.nl_pid);
       thread_add_read (zebrad.master, kernel_read, NULL, netlink.sock);
     }
 }
