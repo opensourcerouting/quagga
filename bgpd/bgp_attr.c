@@ -154,8 +154,7 @@ cluster_dup (struct cluster_list *cluster)
 {
   struct cluster_list *new;
 
-  new = XMALLOC (MTYPE_CLUSTER, sizeof (struct cluster_list));
-  memset (new, 0, sizeof (struct cluster_list));
+  new = XCALLOC (MTYPE_CLUSTER, sizeof (struct cluster_list));
   new->length = cluster->length;
 
   if (cluster->length)

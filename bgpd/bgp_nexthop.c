@@ -98,11 +98,7 @@ bnc_nexthop_free (struct bgp_nexthop_cache *bnc)
 static struct bgp_nexthop_cache *
 bnc_new ()
 {
-  struct bgp_nexthop_cache *new;
-
-  new = XMALLOC (MTYPE_BGP_NEXTHOP_CACHE, sizeof (struct bgp_nexthop_cache));
-  memset (new, 0, sizeof (struct bgp_nexthop_cache));
-  return new;
+  return XCALLOC (MTYPE_BGP_NEXTHOP_CACHE, sizeof (struct bgp_nexthop_cache));
 }
 
 static void
