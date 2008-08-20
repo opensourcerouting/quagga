@@ -592,6 +592,8 @@ lsa_link_ptop_set (struct stream *s, struct ospf_interface *oi)
 	links += link_info_set (s, nbr->router_id, id,
 		                LSA_LINK_TYPE_POINTOPOINT, 0, cost);
       }
+  if (oi->ifp->status & ZEBRA_INTERFACE_UNNUMBERED)
+    return links;
 
   /* Regardless of the state of the neighboring router, we must
      add a Type 3 link (stub network).
