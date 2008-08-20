@@ -1,3 +1,20 @@
+vyatta-quagga (0.99.9-13) unstable; urgency=low
+
+	  3.1.3
+  [ Mark O'Brien ]
+
+
+  [ Stephen Hemminger ]
+  * Put bug fix for route flapping back
+  * Revert "Only set ifindex on set pass"
+  * Revert "Fix management of route changes"
+  * Fix management of route changes
+  * Only set ifindex on set pass
+
+  [ Mark O'Brien ]
+
+ -- Mark O'Brien <mobrien@firebolt.vyatta.com>  Tue, 19 Aug 2008 17:48:34 -0700
+
 vyatta-quagga (0.99.9-12) unstable; urgency=low
 
 	  3.1.2
