@@ -20,8 +20,9 @@
  */
 
 /* #define DEBUG */
-
+#include <errno.h>
 #include <zebra.h>
+#include <sys/times.h>
 
 #include "thread.h"
 #include "memory.h"
@@ -32,7 +33,6 @@
 
 /* Recent absolute time of day */
 static struct timeval recent_time;
-static struct timeval last_recent_time;
 /* Relative time, since startup */
 static struct timeval relative_time;
 static struct timeval relative_time_base;
@@ -94,54 +94,98 @@ timeval_elapsed (struct timeval a, struct timeval b)
 }
 
 #ifndef HAVE_CLOCK_MONOTONIC
+static unsigned long recent_clock_mark; /* Holds value of last call to times(2) */
+static unsigned long last_clock_mark;
+static unsigned long clocks_per_sec, msec_scale, usec_scale;
+
+static unsigned long quagga_times(void)
+{
+#if defined(GNU_LINUX)
+  unsigned long ret;
+
+  errno = 0;
+  ret = times(NULL); /* Linux can handle NULL */
+  /* Workaround broken syscall impl.
+   * A bugfix exists for the kernel, hopefully
+   * it will make it into 2.6.28
+   */
+  if (errno)
+    ret = (unsigned long) (-errno);
+  return ret;
+#else
+  struct tms dummy; /* Only return value is used */
+
+  return times(&dummy);
+#endif
+}
+
 static void
 quagga_gettimeofday_relative_adjust (void)
 {
-  struct timeval diff;
-  if (timeval_cmp (recent_time, last_recent_time) < 0)
-    {
-      relative_time.tv_sec++;
-      relative_time.tv_usec = 0;
-    }
-  else
-    {
-      diff = timeval_subtract (recent_time, last_recent_time);
-      relative_time.tv_sec += diff.tv_sec;
-      relative_time.tv_usec += diff.tv_usec;
-      relative_time = timeval_adjust (relative_time);
-    }
-  last_recent_time = recent_time;
+  unsigned long diff;
+
+  diff = recent_clock_mark - last_clock_mark;
+  if (!diff)
+    return;
+  /* save mark for next calculation */
+  last_clock_mark = recent_clock_mark;
+
+  relative_time.tv_sec += diff / clocks_per_sec; /* convert to seconds */
+  relative_time.tv_usec += (diff % clocks_per_sec) * usec_scale; /* convert to useconds */
+  relative_time = timeval_adjust (relative_time);
 }
 #endif /* !HAVE_CLOCK_MONOTONIC */
+
+static int init_quagga_timers(void)
+{
+  int ret;
+
+  ret = gettimeofday (&recent_time, NULL);
+  relative_time_base = recent_time;
+#if !defined(HAVE_CLOCK_MONOTONIC)
+  clocks_per_sec = sysconf(_SC_CLK_TCK);
+  assert(clocks_per_sec != 0);
+
+  /* Precondition: 1000 % clocks_per_sec == 0 */
+  assert(1000 % clocks_per_sec == 0);
+  msec_scale = 1000 / clocks_per_sec;
+
+  /* Precondition: TIMER_SECOND_MICRO % clocks_per_sec == 0 */
+  assert(TIMER_SECOND_MICRO % clocks_per_sec == 0);
+  usec_scale = TIMER_SECOND_MICRO / clocks_per_sec;
+  recent_clock_mark = quagga_times();
+  last_clock_mark = recent_clock_mark;
+#endif
+  if (ret)
+    return ret;
+  timers_inited = 1;
+  return 0;
+}
 
 /* gettimeofday wrapper, to keep recent_time updated */
 static int
 quagga_gettimeofday (struct timeval *tv)
 {
   int ret;
-  
-  assert (tv);
-  
-  if (!(ret = gettimeofday (&recent_time, NULL)))
-    {
-      /* init... */
-      if (!timers_inited)
-        {
-          relative_time_base = last_recent_time = recent_time;
-          timers_inited = 1;
-        }
-      /* avoid copy if user passed recent_time pointer.. */
-      if (tv != &recent_time)
-        *tv = recent_time;
-      return 0;
-    }
-  return ret;
+
+  /* init... */
+  if (!timers_inited)
+    ret = init_quagga_timers();
+  else
+    ret = gettimeofday (&recent_time, NULL);
+  if (ret)
+    return ret;
+
+  /* avoid copy if user passed recent_time pointer.. */
+  if (tv != &recent_time)
+    *tv = recent_time;
+  return 0;
 }
 
 static int
 quagga_get_relative (struct timeval *tv)
 {
-  int ret;
+  int ret = 0;
 
 #ifdef HAVE_CLOCK_MONOTONIC
   {
@@ -153,8 +197,12 @@ quagga_get_relative (struct timeval *tv)
       }
   }
 #else /* !HAVE_CLOCK_MONOTONIC */
-  if (!(ret = quagga_gettimeofday (&recent_time)))
-    quagga_gettimeofday_relative_adjust();
+  /* init... */
+  if (!timers_inited)
+    ret = init_quagga_timers();
+
+  recent_clock_mark = quagga_times();
+  quagga_gettimeofday_relative_adjust();
 #endif /* HAVE_CLOCK_MONOTONIC */
 
   if (tv)
