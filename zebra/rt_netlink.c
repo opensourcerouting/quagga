@@ -1325,10 +1325,18 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
   else
     discard = 0;
 
-  if (rib->type == ZEBRA_ROUTE_KERNEL || rib->type == ZEBRA_ROUTE_CONNECT)
+  switch (rib->type) {
+  case ZEBRA_ROUTE_KERNEL:
+    /* FIXME: should remember original protocol from RTM_NEWLINK */
+    req.r.rtm_protocol = RTPROT_BOOT;
+    break;
+  case ZEBRA_ROUTE_CONNECT:
     req.r.rtm_protocol = RTPROT_KERNEL;
-  else
+    break;
+  default:
     req.r.rtm_protocol = RTPROT_ZEBRA;
+  }
+
   req.r.rtm_scope = rib->scope;
 
   if (cmd == RTM_NEWROUTE)
