@@ -970,20 +970,16 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
       unsigned long new_flags = ifi->ifi_flags & 0x0000fffff;
       ifp = if_lookup_by_index (ifi->ifi_index);
 
-      if (ifp && strcmp(ifp->name, name) != 0)
-	{
-	  zlog_info("interface index %d was renamed from %s to %s",
-		    ifi->ifi_index, ifp->name, name);
-
-	  strncpy(ifp->name, name, INTERFACE_NAMSIZ);
-	}
-
       if (ifp == NULL || !CHECK_FLAG (ifp->status, ZEBRA_INTERFACE_ACTIVE))
         {
           if (ifp == NULL)
 	    {
 	    ifp = if_create(name, strlen(name));
 	    ifp->ifindex = ifi->ifi_index;
+	    } 
+	  else if (strcmp(ifp->name, name) != 0)
+	    {
+	      strncpy(ifp->name, name, INTERFACE_NAMSIZ);
 	    }
 
 	  zlog_info ("interface %s index %d %s added.",
@@ -1021,6 +1017,15 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 		    if_up (ifp);
 		}
 	    }
+	  else if (strcmp(ifp->name, name) != 0)
+	    {
+	      zlog_info("interface index %d was renamed from %s to %s",
+			ifi->ifi_index, ifp->name, name);
+	      
+	      strncpy(ifp->name, name, INTERFACE_NAMSIZ);
+	      rib_update();
+	    }
+
         }
     }
   else
