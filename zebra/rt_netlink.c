@@ -475,6 +475,7 @@ netlink_interface (struct sockaddr_nl *snl, struct nlmsghdr *h)
   strncpy(ifp->name, name, INTERFACE_NAMSIZ);
   ifp->flags = ifi->ifi_flags & 0x0000fffff;
   ifp->mtu6 = ifp->mtu = *(int *) RTA_DATA (tb[IFLA_MTU]);
+  ifp->metric = 1;
 
   /* Hardware type and address. */
   ifp->hw_type = ifi->ifi_type;
@@ -976,6 +977,7 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 	    {
 	    ifp = if_create(name, strlen(name));
 	    ifp->ifindex = ifi->ifi_index;
+	    ifp->metric = 1;
 	    } 
 	  else if (strcmp(ifp->name, name) != 0)
 	    {
@@ -1361,8 +1363,8 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
 
   addattr_l (&req.n, sizeof req, RTA_DST, &p->u.prefix, bytelen);
 
-  /* Metric. */
-  addattr32 (&req.n, sizeof req, RTA_PRIORITY, rib->metric);
+  if (rib->type != ZEBRA_ROUTE_CONNECT)
+    addattr32 (&req.n, sizeof req, RTA_PRIORITY, rib->metric);
 
   if (discard)
     {
