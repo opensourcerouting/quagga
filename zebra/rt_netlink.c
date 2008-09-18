@@ -1033,12 +1033,11 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
   else
     {
       // RTM_DELLINK. 
-      ifp = if_lookup_by_name (name);
-
+      ifp = if_lookup_by_index (ifi->ifi_index);
       if (ifp == NULL)
         {
-          zlog (NULL, LOG_WARNING, "interface %s is deleted but can't find",
-                name);
+          zlog (NULL, LOG_WARNING, "interface %s index %d is deleted but can't find",
+                name, ifi->ifi_index);
           return 0;
         }
       else
@@ -1046,6 +1045,7 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 		   name, ifi->ifi_index);
 
       if_delete_update (ifp);
+      if_delete (ifp);
     }
   return 0;
 }
