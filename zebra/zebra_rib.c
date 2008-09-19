@@ -605,7 +605,7 @@ nexthop_active_ipv6 (struct rib *rib, struct nexthop *nexthop, int set,
 		    else if (! CHECK_FLAG(nexthop->flags, NEXTHOP_FLAG_RECURSIVE)
 			     || newhop->ifindex != nexthop->ifindex
 			     || !IPV6_ADDR_SAME(&nexthop->gate.ipv6,
-						&newhop->gate.ipv4))
+						&newhop->gate.ipv6))
 		      SET_FLAG (rib->flags, ZEBRA_FLAG_CHANGED);
 
 		    return 1;
