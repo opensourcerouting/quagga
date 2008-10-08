@@ -474,7 +474,7 @@ netlink_interface (struct sockaddr_nl *snl, struct nlmsghdr *h)
     }
   strncpy(ifp->name, name, INTERFACE_NAMSIZ);
   ifp->flags = ifi->ifi_flags & 0x0000fffff;
-  ifp->mtu6 = ifp->mtu = *(int *) RTA_DATA (tb[IFLA_MTU]);
+  ifp->mtu6 = ifp->mtu = *(uint32_t *) RTA_DATA (tb[IFLA_MTU]);
   ifp->metric = 1;
 
   /* Hardware type and address. */
@@ -720,7 +720,7 @@ netlink_routing_table (struct sockaddr_nl *snl, struct nlmsghdr *h)
   src = NULL;
 
   if (tb[RTA_OIF])
-    index = *(int *) RTA_DATA (tb[RTA_OIF]);
+    index = *(uint32_t *) RTA_DATA (tb[RTA_OIF]);
 
   if (tb[RTA_DST])
     dest = RTA_DATA (tb[RTA_DST]);
@@ -735,7 +735,7 @@ netlink_routing_table (struct sockaddr_nl *snl, struct nlmsghdr *h)
     gate = RTA_DATA (tb[RTA_GATEWAY]);
 
   if (tb[RTA_PRIORITY])
-    metric = *(int *) RTA_DATA(tb[RTA_PRIORITY]);
+    metric = *(uint32_t *) RTA_DATA(tb[RTA_PRIORITY]);
 
   if (rtm->rtm_family == AF_INET)
     {
@@ -852,7 +852,7 @@ netlink_route_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
   src = NULL;
 
   if (tb[RTA_OIF])
-    index = *(int *) RTA_DATA (tb[RTA_OIF]);
+    index = *(uint32_t *) RTA_DATA (tb[RTA_OIF]);
 
   if (tb[RTA_DST])
     dest = RTA_DATA (tb[RTA_DST]);
@@ -988,7 +988,7 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 		     name, ifi->ifi_index, if_flag_dump(new_flags));
 
           ifp->flags = new_flags;
-          ifp->mtu6 = ifp->mtu = *(int *) RTA_DATA (tb[IFLA_MTU]);
+          ifp->mtu6 = ifp->mtu = *(uint32_t *) RTA_DATA (tb[IFLA_MTU]);
 
           /* If new link is added. */
           if_add_update (ifp);
@@ -996,7 +996,7 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
       else
         {
           /* Interface status change. */
-          ifp->mtu6 = ifp->mtu = *(int *) RTA_DATA (tb[IFLA_MTU]);
+          ifp->mtu6 = ifp->mtu = *(uint32_t *) RTA_DATA (tb[IFLA_MTU]);
 
 	  if (new_flags != ifp->flags)
 	    {
