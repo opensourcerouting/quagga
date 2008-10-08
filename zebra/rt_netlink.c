@@ -969,15 +969,17 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
   if (h->nlmsg_type == RTM_NEWLINK)
     {
       unsigned long new_flags = ifi->ifi_flags & 0x0000fffff;
+      unsigned int mtu = *(uint32_t *) RTA_DATA (tb[IFLA_MTU]);
       ifp = if_lookup_by_index (ifi->ifi_index);
 
+      /* New interface */
       if (ifp == NULL || !CHECK_FLAG (ifp->status, ZEBRA_INTERFACE_ACTIVE))
         {
           if (ifp == NULL)
 	    {
-	    ifp = if_create(name, strlen(name));
-	    ifp->ifindex = ifi->ifi_index;
-	    ifp->metric = 1;
+	      ifp = if_create(name, strlen(name));
+	      ifp->ifindex = ifi->ifi_index;
+	      ifp->metric = 1;
 	    } 
 	  else if (strcmp(ifp->name, name) != 0)
 	    {
@@ -988,47 +990,54 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 		     name, ifi->ifi_index, if_flag_dump(new_flags));
 
           ifp->flags = new_flags;
-          ifp->mtu6 = ifp->mtu = *(uint32_t *) RTA_DATA (tb[IFLA_MTU]);
+          ifp->mtu6 = ifp->mtu = mtu; 
 
-          /* If new link is added. */
-          if_add_update (ifp);
+	  /* If new link is added. */
+	  if_add_update (ifp);
         }
-      else
-        {
-          /* Interface status change. */
-          ifp->mtu6 = ifp->mtu = *(uint32_t *) RTA_DATA (tb[IFLA_MTU]);
+      /* Interface status change. */
+      else if (new_flags != ifp->flags)
+	{
+	  ifp->mtu6 = ifp->mtu = mtu;
 
-	  if (new_flags != ifp->flags)
+	  zlog_info ("interface %s index %d changed %s.",
+		     name, ifi->ifi_index,  if_flag_dump(new_flags));
+
+	  if (if_is_operative (ifp))
 	    {
-	      zlog_info ("interface %s index %d changed %s.",
-			 name, ifi->ifi_index,  if_flag_dump(new_flags));
-
-	      if (if_is_operative (ifp))
-		{
-		  ifp->flags = new_flags;
-		  if (!if_is_operative (ifp))
-		    if_down (ifp);
-		  else
-		    /* Must notify client daemons of new interface status. */
-		    zebra_interface_up_update (ifp);
-		}
+	      ifp->flags = new_flags;
+	      if (!if_is_operative (ifp))
+		if_down (ifp);
 	      else
-		{
-		  ifp->flags = new_flags;
-		  if (if_is_operative (ifp))
-		    if_up (ifp);
-		}
+		/* Must notify client daemons of new interface status. */
+		zebra_interface_up_update (ifp);
 	    }
-	  else if (strcmp(ifp->name, name) != 0)
+	  else
 	    {
-	      zlog_info("interface index %d was renamed from %s to %s",
-			ifi->ifi_index, ifp->name, name);
-	      
-	      strncpy(ifp->name, name, INTERFACE_NAMSIZ);
-	      rib_update();
+	      ifp->flags = new_flags;
+	      if (if_is_operative (ifp))
+		if_up (ifp);
 	    }
-
-        }
+	}
+      /* Interface name change */
+      else if (strcmp(ifp->name, name) != 0)
+	{
+	  ifp->mtu = ifp->mtu6 = mtu;
+	  zlog_info("interface index %d was renamed from %s to %s",
+		    ifi->ifi_index, ifp->name, name);
+	      
+	  strncpy(ifp->name, name, INTERFACE_NAMSIZ);
+	  rib_update();
+	}
+      /* Interface mtu change */
+      else if (mtu != ifp->mtu)
+	{
+	  zlog_info("interface index %d mtu changed from %u to %u",
+		    ifp->mtu, mtu);
+	  ifp->mtu = ifp->mtu6 = mtu;
+	  if (if_is_operative (ifp))
+	    zebra_interface_up_update (ifp);
+	}
     }
   else
     {
