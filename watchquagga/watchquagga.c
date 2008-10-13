@@ -1,5 +1,9 @@
 /*
+<<<<<<< HEAD:watchquagga/watchquagga.c
     $Id: watchquagga.c,v 1.12 2007/05/10 02:38:52 paul Exp $
+=======
+    $Id$
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:watchquagga/watchquagga.c
 
     Monitor status of quagga daemons and restart if necessary.
 

@@ -1,5 +1,9 @@
 /*
+<<<<<<< HEAD:lib/log.c
  * $Id: log.c,v 1.34 2008/02/28 23:26:02 paul Exp $
+=======
+ * $Id$
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:lib/log.c
  *
  * Logging of zebra
  * Copyright (C) 1997, 1998, 1999 Kunihiro Ishiguro
@@ -29,6 +33,10 @@
 #include "command.h"
 #ifndef SUNOS_5
 #include <sys/un.h>
+#endif
+/* for printstack on solaris */
+#ifdef HAVE_UCONTEXT_H
+#include <ucontext.h>
 #endif
 
 static int logfile_fd = -1;	/* Used in signal handler. */
@@ -740,9 +748,9 @@ zlog_rotate (struct zlog *zl)
 
 /* Message lookup function. */
 const char *
-lookup (struct message *mes, int key)
+lookup (const struct message *mes, int key)
 {
-  struct message *pnt;
+  const struct message *pnt;
 
   for (pnt = mes; pnt->key != 0; pnt++) 
     if (pnt->key == key) 

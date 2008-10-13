@@ -236,7 +236,11 @@ DEFUN (no_debug_zebra_rib,
 
 DEFUN (no_debug_zebra_rib_q,
        no_debug_zebra_rib_q_cmd,
+<<<<<<< HEAD:zebra/debug.c
        "no debug zebra rib queueu",
+=======
+       "no debug zebra rib queue",
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:zebra/debug.c
        NO_STR
        DEBUG_STR
        "Zebra configuration\n"

@@ -51,7 +51,7 @@ extern struct zebra_t zebrad;
 int rib_process_hold_time = 10;
 
 /* Each route type's string and default distance value. */
-struct
+static const struct
 {  
   int key;
   int distance;
@@ -70,7 +70,7 @@ struct
 };
 
 /* Vector for routing table.  */
-vector vrf_vector;
+static vector vrf_vector;
 
 /* Allocate new VRF.  */
 static struct vrf *
@@ -376,8 +376,12 @@ nexthop_active_ipv4 (struct rib *rib, struct nexthop *nexthop, int set,
 
       /* Pick up selected route. */
       for (match = rn->info; match; match = match->next)
-	if (CHECK_FLAG (match->flags, ZEBRA_FLAG_SELECTED))
-	  break;
+	{
+	  if (CHECK_FLAG (match->status, RIB_ENTRY_REMOVED))
+	    continue;
+	  if (CHECK_FLAG (match->flags, ZEBRA_FLAG_SELECTED))
+	    break;
+	}
 
       /* If there is no selected route or matched route is EGP, go up
          tree. */
@@ -473,8 +477,12 @@ nexthop_active_ipv6 (struct rib *rib, struct nexthop *nexthop, int set,
 
       /* Pick up selected route. */
       for (match = rn->info; match; match = match->next)
-	if (CHECK_FLAG (match->flags, ZEBRA_FLAG_SELECTED))
-	  break;
+	{
+	  if (CHECK_FLAG (match->status, RIB_ENTRY_REMOVED))
+	    continue;
+	  if (CHECK_FLAG (match->flags, ZEBRA_FLAG_SELECTED))
+	    break;
+	}
 
       /* If there is no selected route or matched route is EGP, go up
          tree. */
@@ -560,8 +568,12 @@ rib_match_ipv4 (struct in_addr addr)
       
       /* Pick up selected route. */
       for (match = rn->info; match; match = match->next)
-	if (CHECK_FLAG (match->flags, ZEBRA_FLAG_SELECTED))
-	  break;
+	{
+	  if (CHECK_FLAG (match->status, RIB_ENTRY_REMOVED))
+	    continue;
+	  if (CHECK_FLAG (match->flags, ZEBRA_FLAG_SELECTED))
+	    break;
+	}
 
       /* If there is no selected route or matched route is EGP, go up
          tree. */
@@ -613,10 +625,13 @@ rib_lookup_ipv4 (struct prefix_ipv4 *p)
   /* Unlock node. */
   route_unlock_node (rn);
 
-  /* Pick up selected route. */
   for (match = rn->info; match; match = match->next)
-    if (CHECK_FLAG (match->flags, ZEBRA_FLAG_SELECTED))
-      break;
+    {
+      if (CHECK_FLAG (match->status, RIB_ENTRY_REMOVED))
+	continue;
+      if (CHECK_FLAG (match->flags, ZEBRA_FLAG_SELECTED))
+	break;
+    }
 
   if (! match || match->type == ZEBRA_ROUTE_BGP)
     return NULL;
@@ -668,12 +683,21 @@ rib_lookup_ipv4_route (struct prefix_ipv4 *p, union sockunion * qgate)
 
   /* Find out if a "selected" RR for the discovered RIB entry exists ever. */
   for (match = rn->info; match; match = match->next)
+<<<<<<< HEAD:zebra/zebra_rib.c
   {
     if (CHECK_FLAG (match->status, RIB_ENTRY_REMOVED))
       continue;
     if (CHECK_FLAG (match->flags, ZEBRA_FLAG_SELECTED))
       break;
   }
+=======
+    {
+      if (CHECK_FLAG (match->status, RIB_ENTRY_REMOVED))
+	continue;
+      if (CHECK_FLAG (match->flags, ZEBRA_FLAG_SELECTED))
+	break;
+    }
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:zebra/zebra_rib.c
 
   /* None such found :( */
   if (!match)
@@ -735,8 +759,12 @@ rib_match_ipv6 (struct in6_addr *addr)
       
       /* Pick up selected route. */
       for (match = rn->info; match; match = match->next)
-	if (CHECK_FLAG (match->flags, ZEBRA_FLAG_SELECTED))
-	  break;
+	{
+	  if (CHECK_FLAG (match->status, RIB_ENTRY_REMOVED))
+	    continue;
+	  if (CHECK_FLAG (match->flags, ZEBRA_FLAG_SELECTED))
+	    break;
+	}
 
       /* If there is no selected route or matched route is EGP, go up
          tree. */
@@ -1172,6 +1200,7 @@ rib_process (struct route_node *rn)
           rn->p.prefixlen, del, rn);
       rib_unlink (rn, del);
     }
+<<<<<<< HEAD:zebra/zebra_rib.c
 
 end:
   if (IS_ZEBRA_DEBUG_RIB_Q)
@@ -1215,11 +1244,113 @@ meta_queue_process (struct work_queue *dummy, void *data)
     }
   return mq->size ? WQ_REQUEUE : WQ_SUCCESS;
 }
+=======
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:zebra/zebra_rib.c
 
+<<<<<<< HEAD:zebra/zebra_rib.c
 /* Look into the RN and queue it into one or more priority queues, increasing the size
  * for each data push done.
  */
 void rib_meta_queue_add (struct meta_queue *mq, struct route_node *rn)
+{
+  u_char qindex;
+  struct rib *rib;
+  char buf[INET6_ADDRSTRLEN];
+=======
+end:
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:zebra/zebra_rib.c
+  if (IS_ZEBRA_DEBUG_RIB_Q)
+<<<<<<< HEAD:zebra/zebra_rib.c
+    inet_ntop (rn->p.family, &rn->p.u.prefix, buf, INET6_ADDRSTRLEN);
+  for (rib = rn->info; rib; rib = rib->next)
+  {
+    switch (rib->type)
+    {
+      case ZEBRA_ROUTE_KERNEL:
+      case ZEBRA_ROUTE_CONNECT:
+        qindex = 0;
+        break;
+      case ZEBRA_ROUTE_STATIC:
+        qindex = 1;
+        break;
+      case ZEBRA_ROUTE_RIP:
+      case ZEBRA_ROUTE_RIPNG:
+      case ZEBRA_ROUTE_OSPF:
+      case ZEBRA_ROUTE_OSPF6:
+      case ZEBRA_ROUTE_ISIS:
+        qindex = 2;
+        break;
+      case ZEBRA_ROUTE_BGP:
+        qindex = 3;
+        break;
+      default:
+        qindex = 4;
+        break;
+    }
+    /* Invariant: at this point we always have rn->info set. */
+    if (CHECK_FLAG (((struct rib *)rn->info)->rn_status, RIB_ROUTE_QUEUED(qindex)))
+    {
+      if (IS_ZEBRA_DEBUG_RIB_Q)
+        zlog_debug ("%s: %s/%d: rn %p is already queued in sub-queue %u", __func__, buf, rn->p.prefixlen, rn, qindex);
+      continue;
+    }
+    SET_FLAG (((struct rib *)rn->info)->rn_status, RIB_ROUTE_QUEUED(qindex));
+    listnode_add (mq->subq[qindex], rn);
+    route_lock_node (rn);
+    mq->size++;
+    if (IS_ZEBRA_DEBUG_RIB_Q)
+      zlog_debug ("%s: %s/%d: queued rn %p into sub-queue %u", __func__, buf, rn->p.prefixlen, rn, qindex);
+  }
+=======
+    zlog_debug ("%s: %s/%d: rn %p dequeued", __func__, buf, rn->p.prefixlen, rn);
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:zebra/zebra_rib.c
+}
+
+<<<<<<< HEAD:zebra/zebra_rib.c
+=======
+/* Take a list of route_node structs and return 1, if there was a record picked from
+ * it and processed by rib_process(). Don't process more, than one RN record; operate
+ * only in the specified sub-queue.
+ */
+static unsigned int
+process_subq (struct list * subq, u_char qindex)
+{
+  struct listnode *lnode;
+  struct route_node *rnode;
+  if (!(lnode = listhead (subq)))
+    return 0;
+  rnode = listgetdata (lnode);
+  rib_process (rnode);
+  if (rnode->info) /* The first RIB record is holding the flags bitmask. */
+    UNSET_FLAG (((struct rib *)rnode->info)->rn_status, RIB_ROUTE_QUEUED(qindex));
+  route_unlock_node (rnode);
+  list_delete_node (subq, lnode);
+  return 1;
+}
+
+/* Dispatch the meta queue by picking, processing and unlocking the next RN from
+ * a non-empty sub-queue with lowest priority. wq is equal to zebra->ribq and data
+ * is pointed to the meta queue structure.
+ */
+static wq_item_status
+meta_queue_process (struct work_queue *dummy, void *data)
+{
+  struct meta_queue * mq = data;
+  u_char i;
+  for (i = 0; i < MQ_SIZE; i++)
+    if (process_subq (mq->subq[i], i))
+    {
+      mq->size--;
+      break;
+    }
+  return mq->size ? WQ_REQUEUE : WQ_SUCCESS;
+}
+
+/* Look into the RN and queue it into one or more priority queues, increasing the size
+ * for each data push done.
+ */
+static void
+rib_meta_queue_add (struct meta_queue *mq, struct route_node *rn)
 {
   u_char qindex;
   struct rib *rib;
@@ -1267,6 +1398,7 @@ void rib_meta_queue_add (struct meta_queue *mq, struct route_node *rn)
   }
 }
 
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:zebra/zebra_rib.c
 /* Add route_node to work queue and schedule processing */
 static void
 rib_queue_add (struct zebra_t *zebra, struct route_node *rn)
@@ -1309,16 +1441,30 @@ rib_queue_add (struct zebra_t *zebra, struct route_node *rn)
     work_queue_add (zebra->ribq, zebra->mq);
 
   rib_meta_queue_add (zebra->mq, rn);
+<<<<<<< HEAD:zebra/zebra_rib.c
+=======
 
   if (IS_ZEBRA_DEBUG_RIB_Q)
     zlog_debug ("%s: %s/%d: rn %p queued", __func__, buf, rn->p.prefixlen, rn);
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:zebra/zebra_rib.c
 
+<<<<<<< HEAD:zebra/zebra_rib.c
+  if (IS_ZEBRA_DEBUG_RIB_Q)
+    zlog_debug ("%s: %s/%d: rn %p queued", __func__, buf, rn->p.prefixlen, rn);
+
+=======
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:zebra/zebra_rib.c
   return;
 }
 
 /* Create new meta queue. A destructor function doesn't seem to be necessary here. */
+<<<<<<< HEAD:zebra/zebra_rib.c
 struct meta_queue *
 meta_queue_new ()
+=======
+static struct meta_queue *
+meta_queue_new (void)
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:zebra/zebra_rib.c
 {
   struct meta_queue *new;
   unsigned i, failed = 0;
@@ -1441,6 +1587,8 @@ rib_link (struct route_node *rn, struct rib *rib)
 
 static void
 rib_addnode (struct route_node *rn, struct rib *rib)
+<<<<<<< HEAD:zebra/zebra_rib.c
+=======
 {
   /* RIB node has been un-removed before route-node is processed. 
    * route_node must hence already be on the queue for processing.. 
@@ -1462,7 +1610,32 @@ rib_addnode (struct route_node *rn, struct rib *rib)
 
 static void
 rib_unlink (struct route_node *rn, struct rib *rib)
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:zebra/zebra_rib.c
 {
+<<<<<<< HEAD:zebra/zebra_rib.c
+  /* RIB node has been un-removed before route-node is processed. 
+   * route_node must hence already be on the queue for processing.. 
+   */
+  if (CHECK_FLAG (rib->status, RIB_ENTRY_REMOVED))
+    {
+      if (IS_ZEBRA_DEBUG_RIB)
+      {
+        char buf[INET6_ADDRSTRLEN];
+        inet_ntop (rn->p.family, &rn->p.u.prefix, buf, INET6_ADDRSTRLEN);
+        zlog_debug ("%s: %s/%d: rn %p, un-removed rib %p",
+                    __func__, buf, rn->p.prefixlen, rn, rib);
+      }
+      UNSET_FLAG (rib->status, RIB_ENTRY_REMOVED);
+      return;
+    }
+  rib_link (rn, rib);
+}
+
+static void
+rib_unlink (struct route_node *rn, struct rib *rib)
+{
+=======
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:zebra/zebra_rib.c
   struct nexthop *nexthop, *next;
   char buf[INET6_ADDRSTRLEN];
 

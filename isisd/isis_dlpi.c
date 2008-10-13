@@ -42,8 +42,11 @@
 #include "isisd/isis_circuit.h"
 #include "isisd/isis_flags.h"
 #include "isisd/isisd.h"
+<<<<<<< HEAD:isisd/isis_dlpi.c
 #include "isisd/isis_constants.h"
 #include "isisd/isis_circuit.h"
+=======
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:isisd/isis_dlpi.c
 #include "isisd/isis_network.h"
 
 #include "privs.h"
@@ -315,12 +318,32 @@ open_dlpi_dev (struct isis_circuit *circuit)
 	circuit->interface->name);
       return ISIS_WARNING;
     }
+<<<<<<< HEAD:isisd/isis_dlpi.c
 
   /* Try first as Style 1 */
   (void) snprintf(devpath, sizeof (devpath), "/dev/%s",
     circuit->interface->name);
   unit = -1;
   fd = dlpiopen (devpath, &acklen);
+=======
+  
+  /* Try the vanity node first, if permitted */
+  if (getenv("DLPI_DEVONLY") == NULL)
+    {
+      (void) snprintf (devpath, sizeof(devpath), "/dev/net/%s",
+                      circuit->interface->name);
+      fd = dlpiopen (devpath, &acklen);
+    }
+  
+  /* Now try as an ordinary Style 1 node */
+  if (fd == -1)
+    {
+      (void) snprintf (devpath, sizeof (devpath), "/dev/%s",
+                      circuit->interface->name);
+      unit = -1;
+      fd = dlpiopen (devpath, &acklen);
+    }
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:isisd/isis_dlpi.c
 
   /* If that fails, try again as Style 2 */
   if (fd == -1)
@@ -452,11 +475,26 @@ open_dlpi_dev (struct isis_circuit *circuit)
   if (ioctl (fd, I_PUSH, "pfmod") == 0)
     {
       struct packetfilt pfil;
+<<<<<<< HEAD:isisd/isis_dlpi.c
+=======
+      struct strioctl sioc;
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:isisd/isis_dlpi.c
 
       pfil.Pf_Priority = 0;
       pfil.Pf_FilterLen = sizeof (pf_filter) / sizeof (u_short);
       memcpy (pfil.Pf_Filter, pf_filter, sizeof (pf_filter));
+<<<<<<< HEAD:isisd/isis_dlpi.c
       ioctl (fd, PFIOCSETF, &pfil);
+=======
+      /* pfmod does not support transparent ioctls */
+      sioc.ic_cmd = PFIOCSETF;
+      sioc.ic_timout = 5;
+      sioc.ic_len = sizeof (struct packetfilt);
+      sioc.ic_dp = (char *)&pfil;
+      if (ioctl (fd, I_STR, &sioc) == -1)
+         zlog_warn("%s: could not perform PF_IOCSETF on %s",
+           __func__, circuit->interface->name); 
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:isisd/isis_dlpi.c
     }
 
   circuit->fd = fd;

@@ -87,7 +87,6 @@ static int
 ospf_interface_add (int command, struct zclient *zclient, zebra_size_t length)
 {
   struct interface *ifp;
-  struct ospf *ospf;
 
   ifp = zebra_interface_add_read (zclient->ibuf);
 
@@ -103,9 +102,7 @@ ospf_interface_add (int command, struct zclient *zclient, zebra_size_t length)
       IF_DEF_PARAMS (ifp)->type = ospf_default_iftype(ifp);
     }
 
-  ospf = ospf_lookup ();
-  if (ospf != NULL)
-    ospf_if_update (ospf);
+  ospf_if_update (NULL, ifp);
 
 #ifdef HAVE_SNMP
   ospf_snmp_if_update (ifp);
@@ -255,7 +252,6 @@ static int
 ospf_interface_address_add (int command, struct zclient *zclient,
                             zebra_size_t length)
 {
-  struct ospf *ospf;
   struct connected *c;
 
   c = zebra_interface_address_read (command, zclient->ibuf);
@@ -270,9 +266,13 @@ ospf_interface_address_add (int command, struct zclient *zclient,
       zlog_debug("Zebra: interface %s address add %s", c->ifp->name, buf);
     }
 
+<<<<<<< HEAD:ospfd/ospf_zebra.c
   ospf = ospf_lookup ();
   if (ospf != NULL)
     ospf_if_update (ospf);
+=======
+  ospf_if_update (NULL, c->ifp);
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:ospfd/ospf_zebra.c
 
 #ifdef HAVE_SNMP
   ospf_snmp_if_update (c->ifp);
@@ -285,7 +285,6 @@ static int
 ospf_interface_address_delete (int command, struct zclient *zclient,
                                zebra_size_t length)
 {
-  struct ospf *ospf;
   struct connected *c;
   struct interface *ifp;
   struct ospf_interface *oi;
@@ -326,10 +325,6 @@ ospf_interface_address_delete (int command, struct zclient *zclient,
 #endif /* HAVE_SNMP */
 
   connected_free (c);
-
-  ospf = ospf_lookup ();
-  if (ospf != NULL)
-    ospf_if_update (ospf);
 
   return 0;
 }

@@ -23,6 +23,7 @@
 
 #include <zebra.h>
 #include "iso_checksum.h"
+#include "checksum.h"
 
 /*
  * Calculations of the OSI checksum.
@@ -47,14 +48,10 @@
 int
 iso_csum_verify (u_char * buffer, int len, uint16_t * csum)
 {
-  u_int8_t *p;
+  u_int16_t checksum;
   u_int32_t c0;
   u_int32_t c1;
-  u_int16_t checksum;
-  int i, partial_len;
 
-  p = buffer;
-  checksum = 0;
   c0 = *csum & 0xff00;
   c1 = *csum & 0x00ff;
 
@@ -70,33 +67,15 @@ iso_csum_verify (u_char * buffer, int len, uint16_t * csum)
   if (c0 == 0 || c1 == 0)
     return 1;
 
-  /*
-   * Otherwise initialize to zero and calculate...
-   */
-  c0 = 0;
-  c1 = 0;
+  /* Offset of checksum from the start of the buffer */
+  int offset = (u_char *) csum - buffer;
 
-  while (len)
-    {
-      partial_len = MIN(len, 5803);
-
-      for (i = 0; i < partial_len; i++)
-	{
-	  c0 = c0 + *(p++);
-	  c1 += c0;
-	}
-
-      c0 = c0 % 255;
-      c1 = c1 % 255;
-
-      len -= partial_len;
-    }
-
-  if (c0 == 0 && c1 == 0)
+  checksum = fletcher_checksum(buffer, len, offset);
+  if (checksum == *csum)
     return 0;
-
   return 1;
 }
+<<<<<<< HEAD:isisd/iso_checksum.c
 
 /*
  * Creates the checksum. *csum points to the position of the checksum in the 
@@ -191,3 +170,5 @@ iso_csum_create (u_char * buffer, int len, u_int16_t n)
   /* return the checksum for user usage */
   return checksum;
 }
+=======
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:isisd/iso_checksum.c

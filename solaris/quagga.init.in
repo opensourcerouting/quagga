@@ -20,7 +20,11 @@
 # Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 # 02111-1307, USA.
 #
+<<<<<<< HEAD:solaris/quagga.init.in
 # $Id: quagga.init.in,v 1.8 2008/07/03 20:41:08 paul Exp $
+=======
+# $Id$
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:solaris/quagga.init.in
 #
 # Starts/stops the given daemon
 

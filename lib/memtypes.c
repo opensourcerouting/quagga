@@ -6,7 +6,11 @@
  * The script is sensitive to the format (though not whitespace), see
  * the top of memtypes.awk for more details.
  *
+<<<<<<< HEAD:lib/memtypes.c
  * $Id: memtypes.c,v 1.13 2008/07/21 21:02:50 paul Exp $
+=======
+ * $Id$
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:lib/memtypes.c
  */
 
 #include "zebra.h"

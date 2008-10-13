@@ -1,0 +1,16 @@
+Makefile
+Makefile.in
+*.o
+*.lo
+*.la
+version.c
+version.h
+.deps
+.nfs*
+.libs
+.arch-inventory
+.arch-ids
+*~
+*.loT
+memtypes.h
+route_types.h

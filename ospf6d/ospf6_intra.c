@@ -56,7 +56,7 @@ u_int32_t conf_debug_ospf6_brouter_specific_area_id;
 /* RFC2740 3.4.3.1 Router-LSA */
 /******************************/
 
-int
+static int
 ospf6_router_lsa_show (struct vty *vty, struct ospf6_lsa *lsa)
 {
   char *start, *end, *current;
@@ -316,7 +316,7 @@ ospf6_router_lsa_originate (struct thread *thread)
 /* RFC2740 3.4.3.2 Network-LSA */
 /*******************************/
 
-int
+static int
 ospf6_network_lsa_show (struct vty *vty, struct ospf6_lsa *lsa)
 {
   char *start, *end, *current;
@@ -462,7 +462,7 @@ ospf6_network_lsa_originate (struct thread *thread)
 /* RFC2740 3.4.3.6 Link-LSA */
 /****************************/
 
-int
+static int
 ospf6_link_lsa_show (struct vty *vty, struct ospf6_lsa *lsa)
 {
   char *start, *end, *current;
@@ -615,7 +615,7 @@ ospf6_link_lsa_originate (struct thread *thread)
 /* RFC2740 3.4.3.7 Intra-Area-Prefix-LSA */
 /*****************************************/
 
-int
+static int
 ospf6_intra_prefix_lsa_show (struct vty *vty, struct ospf6_lsa *lsa)
 {
   char *start, *end, *current;
@@ -1236,6 +1236,58 @@ ospf6_intra_route_calculation (struct ospf6_area *oa)
 
   if (IS_OSPF6_DEBUG_EXAMIN (INTRA_PREFIX))
     zlog_debug ("Re-examin intra-routes for area %s: Done", oa->name);
+}
+
+static void
+ospf6_brouter_debug_print (struct ospf6_route *brouter)
+{
+  u_int32_t brouter_id;
+  char brouter_name[16];
+  char area_name[16];
+  char destination[64];
+  char installed[16], changed[16];
+  struct timeval now, res;
+  char id[16], adv_router[16];
+  char capa[16], options[16];
+
+  brouter_id = ADV_ROUTER_IN_PREFIX (&brouter->prefix);
+  inet_ntop (AF_INET, &brouter_id, brouter_name, sizeof (brouter_name));
+  inet_ntop (AF_INET, &brouter->path.area_id, area_name, sizeof (area_name));
+  ospf6_linkstate_prefix2str (&brouter->prefix, destination,
+                              sizeof (destination));
+
+  gettimeofday (&now, (struct timezone *) NULL);
+  timersub (&now, &brouter->installed, &res);
+  timerstring (&res, installed, sizeof (installed));
+
+  gettimeofday (&now, (struct timezone *) NULL);
+  timersub (&now, &brouter->changed, &res);
+  timerstring (&res, changed, sizeof (changed));
+
+  inet_ntop (AF_INET, &brouter->path.origin.id, id, sizeof (id));
+  inet_ntop (AF_INET, &brouter->path.origin.adv_router, adv_router,
+             sizeof (adv_router));
+
+  ospf6_options_printbuf (brouter->path.options, options, sizeof (options));
+  ospf6_capability_printbuf (brouter->path.router_bits, capa, sizeof (capa));
+
+  zlog_info ("Brouter: %s via area %s", brouter_name, area_name);
+  zlog_info ("  memory: prev: %p this: %p next: %p parent rnode: %p",
+             brouter->prev, brouter, brouter->next, brouter->rnode);
+  zlog_info ("  type: %d prefix: %s installed: %s changed: %s",
+             brouter->type, destination, installed, changed);
+  zlog_info ("  lock: %d flags: %s%s%s%s", brouter->lock,
+           (CHECK_FLAG (brouter->flag, OSPF6_ROUTE_BEST)   ? "B" : "-"),
+           (CHECK_FLAG (brouter->flag, OSPF6_ROUTE_ADD)    ? "A" : "-"),
+           (CHECK_FLAG (brouter->flag, OSPF6_ROUTE_REMOVE) ? "R" : "-"),
+           (CHECK_FLAG (brouter->flag, OSPF6_ROUTE_CHANGE) ? "C" : "-"));
+  zlog_info ("  path type: %s ls-origin %s id: %s adv-router %s",
+             OSPF6_PATH_TYPE_NAME (brouter->path.type),
+             ospf6_lstype_name (brouter->path.origin.type),
+             id, adv_router);
+  zlog_info ("  options: %s router-bits: %s metric-type: %d metric: %d/%d",
+             options, capa, brouter->path.metric_type,
+             brouter->path.cost, brouter->path.cost_e2);
 }
 
 void

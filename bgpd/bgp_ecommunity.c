@@ -247,15 +247,24 @@ ecommunity_hash_make (void *arg)
 
 /* Compare two Extended Communities Attribute structure.  */
 int
+<<<<<<< HEAD:bgpd/bgp_ecommunity.c
 ecommunity_cmp (void *arg1, void *arg2)
+=======
+ecommunity_cmp (const void *arg1, const void *arg2)
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:bgpd/bgp_ecommunity.c
 {
   const struct ecommunity *ecom1 = arg1;
   const struct ecommunity *ecom2 = arg2;
   
+<<<<<<< HEAD:bgpd/bgp_ecommunity.c
   if (ecom1->size == ecom2->size
       && memcmp (ecom1->val, ecom2->val, ecom1->size * ECOMMUNITY_SIZE) == 0)
     return 1;
   return 0;
+=======
+  return (ecom1->size == ecom2->size
+	  && memcmp (ecom1->val, ecom2->val, ecom1->size * ECOMMUNITY_SIZE) == 0);
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:bgpd/bgp_ecommunity.c
 }
 
 /* Initialize Extended Comminities related hash. */

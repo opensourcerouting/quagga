@@ -1,5 +1,9 @@
 # Solaris packages automake file
+<<<<<<< HEAD:solaris/Makefile.am
 # $Id: Makefile.am,v 1.9 2008/01/13 18:52:15 paul Exp $
+=======
+# $Id$
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:solaris/Makefile.am
 
 # XXX This file uses GNU make extensions.
 

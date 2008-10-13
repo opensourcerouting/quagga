@@ -1,5 +1,9 @@
 /*
+<<<<<<< HEAD:lib/log.h
  * $Id: log.h,v 1.20 2008/02/28 23:26:02 paul Exp $
+=======
+ * $Id$
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:lib/log.h
  *
  * Zebra logging funcions.
  * Copyright (C) 1997, 1998, 1999 Kunihiro Ishiguro
@@ -144,7 +148,11 @@ extern int zlog_rotate (struct zlog *);
 /* For hackey massage lookup and check */
 #define LOOKUP(x, y) mes_lookup(x, x ## _max, y, "(no item found)")
 
+<<<<<<< HEAD:lib/log.h
 extern const char *lookup (struct message *, int);
+=======
+extern const char *lookup (const struct message *, int);
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:lib/log.h
 extern const char *mes_lookup (struct message *meslist, 
                                int max, int index,
                                const char *no_item);

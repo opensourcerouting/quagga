@@ -1,4 +1,8 @@
+<<<<<<< HEAD:lib/route_types.awk
 # $Id: route_types.awk,v 1.3 2006/06/27 10:42:18 paul Exp $
+=======
+# $Id$
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:lib/route_types.awk
 #
 # Scan a file of route-type definitions (see eg route_types.txt) and
 # generate a corresponding header file with:

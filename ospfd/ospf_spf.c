@@ -200,11 +200,21 @@ ospf_vertex_free (void *data)
    * vertices
    */
   //assert (listcount (v->parents) == 0);
+<<<<<<< HEAD:ospfd/ospf_spf.c
+=======
   
   if (v->children)
     list_delete (v->children);
   v->children = NULL;
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:ospfd/ospf_spf.c
   
+<<<<<<< HEAD:ospfd/ospf_spf.c
+  if (v->children)
+    list_delete (v->children);
+  v->children = NULL;
+  
+=======
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:ospfd/ospf_spf.c
   if (v->parents)
     list_delete (v->parents);
   v->parents = NULL;
@@ -432,6 +442,8 @@ ospf_spf_add_parent (struct vertex *v, struct vertex *w,
   /* we must have a newhop, and a distance */
   assert (v && w && newhop);
   assert (distance);
+<<<<<<< HEAD:ospfd/ospf_spf.c
+=======
   
   /* IFF w has already been assigned a distance, then we shouldn't get here
    * unless callers have determined V(l)->W is shortest / equal-shortest
@@ -441,7 +453,20 @@ ospf_spf_add_parent (struct vertex *v, struct vertex *w,
     assert (distance <= w->distance);
   else
     w->distance = distance;
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:ospfd/ospf_spf.c
   
+<<<<<<< HEAD:ospfd/ospf_spf.c
+  /* IFF w has already been assigned a distance, then we shouldn't get here
+   * unless callers have determined V(l)->W is shortest / equal-shortest
+   * path (0 is a special case distance (no distance yet assigned)).
+   */
+  if (w->distance)
+    assert (distance <= w->distance);
+  else
+    w->distance = distance;
+  
+=======
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:ospfd/ospf_spf.c
   if (IS_DEBUG_OSPF_EVENT)
     {
       char buf[2][INET_ADDRSTRLEN];
@@ -946,7 +971,8 @@ ospf_spf_dump (struct vertex *v, int i)
 /* Second stage of SPF calculation. */
 static void
 ospf_spf_process_stubs (struct ospf_area *area, struct vertex *v,
-                        struct route_table *rt)
+                        struct route_table *rt,
+                        int parent_is_root)
 {
   struct listnode *cnode, *cnnode;
   struct vertex *child;
@@ -981,7 +1007,7 @@ ospf_spf_process_stubs (struct ospf_area *area, struct vertex *v,
                 (l->m[0].tos_count * ROUTER_LSA_TOS_SIZE));
 
           if (l->m[0].type == LSA_LINK_TYPE_STUB)
-            ospf_intra_add_stub (rt, l, v, area);
+            ospf_intra_add_stub (rt, l, v, area, parent_is_root);
         }
     }
 
@@ -991,8 +1017,17 @@ ospf_spf_process_stubs (struct ospf_area *area, struct vertex *v,
     {
       if (CHECK_FLAG (child->flags, OSPF_VERTEX_PROCESSED))
         continue;
-
-      ospf_spf_process_stubs (area, child, rt);
+      
+      /* the first level of routers connected to the root
+       * should have 'parent_is_root' set, including those 
+       * connected via a network vertex.
+       */
+      if (area->spf == v)
+        parent_is_root = 1;
+      else if (v->type == OSPF_VERTEX_ROUTER)
+        parent_is_root = 0;
+        
+      ospf_spf_process_stubs (area, child, rt, parent_is_root);
 
       SET_FLAG (child->flags, OSPF_VERTEX_PROCESSED);
     }
@@ -1179,7 +1214,7 @@ ospf_spf_calculate (struct ospf_area *area, struct route_table *new_table,
     }
 
   /* Second stage of SPF calculation procedure's  */
-  ospf_spf_process_stubs (area, area->spf, new_table);
+  ospf_spf_process_stubs (area, area->spf, new_table, 0);
 
   /* Free candidate queue. */
   pqueue_delete (candidate);

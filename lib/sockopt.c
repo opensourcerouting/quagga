@@ -343,6 +343,19 @@ setsockopt_ipv4_ifindex (int sock, int val)
 }
 
 int
+setsockopt_ipv4_tos(int sock, int tos)
+{
+  int ret;
+
+  ret = setsockopt (sock, IPPROTO_IP, IP_TOS, &tos, sizeof (tos));
+  if (ret < 0)
+    zlog_warn ("Can't set IP_TOS option for fd %d to %#x: %s",
+	       sock, tos, safe_strerror(errno));
+  return ret;
+}
+
+
+int
 setsockopt_ifindex (int af, int sock, int val)
 {
   int ret = -1;
@@ -486,6 +499,10 @@ int
 sockopt_tcp_signature (int sock, union sockunion *su, const char *password)
 {
 #if HAVE_DECL_TCP_MD5SIG
+<<<<<<< HEAD:lib/sockopt.c
+=======
+  int ret;
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:lib/sockopt.c
 #ifndef GNU_LINUX
   /*
    * XXX Need to do PF_KEY operation here to add/remove an SA entry,
@@ -496,7 +513,10 @@ sockopt_tcp_signature (int sock, union sockunion *su, const char *password)
   int keylen = password ? strlen (password) : 0;
   struct tcp_md5sig md5sig;
   union sockunion *su2, *susock;
+<<<<<<< HEAD:lib/sockopt.c
   int ret;
+=======
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:lib/sockopt.c
   
   /* Figure out whether the socket and the sockunion are the same family..
    * adding AF_INET to AF_INET6 needs to be v4 mapped, you'd think..
@@ -540,9 +560,16 @@ sockopt_tcp_signature (int sock, union sockunion *su, const char *password)
   md5sig.tcpm_keylen = keylen;
   if (keylen)
     memcpy (md5sig.tcpm_key, password, keylen);
+<<<<<<< HEAD:lib/sockopt.c
+=======
+  sockunion_free (susock);
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:lib/sockopt.c
 #endif /* GNU_LINUX */
   ret = setsockopt (sock, IPPROTO_TCP, TCP_MD5SIG, &md5sig, sizeof md5sig);
+<<<<<<< HEAD:lib/sockopt.c
   sockunion_free (susock);
+=======
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:lib/sockopt.c
   return ret;
 #else /* HAVE_TCP_MD5SIG */
   return -2;

@@ -72,10 +72,19 @@ baa_hash_key (void *p)
 }
 
 static int
+<<<<<<< HEAD:bgpd/bgp_advertise.c
 baa_hash_cmp (void *p1, void *p2)
+=======
+baa_hash_cmp (const void *p1, const void *p2)
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:bgpd/bgp_advertise.c
 {
+<<<<<<< HEAD:bgpd/bgp_advertise.c
   struct bgp_advertise_attr * baa1 = (struct bgp_advertise_attr *) p1;
   struct bgp_advertise_attr * baa2 = (struct bgp_advertise_attr *) p2;
+=======
+  const struct bgp_advertise_attr * baa1 = p1;
+  const struct bgp_advertise_attr * baa2 = p2;
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:bgpd/bgp_advertise.c
 
   return attrhash_cmp (baa1->attr, baa2->attr);
 }

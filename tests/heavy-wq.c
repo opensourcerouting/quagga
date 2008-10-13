@@ -1,5 +1,9 @@
 /*
+<<<<<<< HEAD:tests/heavy-wq.c
  * $Id: heavy-wq.c,v 1.4 2006/08/27 06:53:24 paul Exp $
+=======
+ * $Id$
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:tests/heavy-wq.c
  *
  * This file is part of Quagga.
  *

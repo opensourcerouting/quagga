@@ -28,6 +28,10 @@ extern int ifam_read (struct ifa_msghdr *);
 extern int ifm_read (struct if_msghdr *);
 extern int rtm_write (int, union sockunion *, union sockunion *,
                       union sockunion *, unsigned int, int, int);
+<<<<<<< HEAD:zebra/kernel_socket.h
 extern struct message rtm_type_str[];
+=======
+extern const struct message rtm_type_str[];
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:zebra/kernel_socket.h
 
 #endif /* __ZEBRA_KERNEL_SOCKET_H */

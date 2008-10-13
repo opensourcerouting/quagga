@@ -14,8 +14,13 @@
  * into proprietary software; there is no requirement for such software to
  * contain a copyright notice related to this source.
  *
+<<<<<<< HEAD:isisd/dict.c
  * $Id: dict.c,v 1.5 2007/08/07 18:49:18 paul Exp $
  * $Name:  $
+=======
+ * $Id$
+ * $Name$
+>>>>>>> 41dc3488cf127a1e23333459a0c316ded67f7ff3:isisd/dict.c
  */
 
 #include <stdlib.h>
