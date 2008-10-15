@@ -1,3 +1,17 @@
+vyatta-quagga (0.99.9-14) unstable; urgency=low
+
+	  3.1.4
+  [ Mark O'Brien ]
+
+
+  [ Paul Jakma ]
+  * [bgpd] bug #419: partial aspath-limit incorrectly causes session
+    reset
+
+  [ Mark O'Brien ]
+
+ -- Mark O'Brien <mobrien@firebolt.vyatta.com>  Tue, 14 Oct 2008 17:30:19 -0700
+
 vyatta-quagga (0.99.9-13) unstable; urgency=low
 
 	  3.1.3
