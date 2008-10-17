@@ -76,7 +76,7 @@ enum
 };
 
 /* RIP command strings. */
-struct message rip_msg[] = 
+static const struct message rip_msg[] =
 {
   {RIP_REQUEST,    "REQUEST"},
   {RIP_RESPONSE,   "RESPONSE"},
@@ -84,6 +84,7 @@ struct message rip_msg[] =
   {RIP_TRACEOFF,   "TRACEOFF"},
   {RIP_POLL,       "POLL"},
   {RIP_POLL_ENTRY, "POLL ENTRY"},
+  {0, NULL},
 };
 
 /* Utility function to set boradcast option to the socket. */
@@ -111,11 +112,7 @@ rip_route_rte (struct rip_info *rinfo)
 static struct rip_info *
 rip_info_new ()
 {
-  struct rip_info *new;
-
-  new = XMALLOC (MTYPE_RIP_INFO, sizeof (struct rip_info));
-  memset (new, 0, sizeof (struct rip_info));
-  return new;
+  return XCALLOC (MTYPE_RIP_INFO, sizeof (struct rip_info));
 }
 
 void
@@ -2696,8 +2693,7 @@ rip_redistribute_withdraw (int type)
 static int
 rip_create (void)
 {
-  rip = XMALLOC (MTYPE_RIP, sizeof (struct rip));
-  memset (rip, 0, sizeof (struct rip));
+  rip = XCALLOC (MTYPE_RIP, sizeof (struct rip));
 
   /* Set initial value. */
   rip->version_send = RI_RIP_VERSION_2;
@@ -3118,10 +3114,7 @@ struct rip_distance
 static struct rip_distance *
 rip_distance_new (void)
 {
-  struct rip_distance *new;
-  new = XMALLOC (MTYPE_RIP_DISTANCE, sizeof (struct rip_distance));
-  memset (new, 0, sizeof (struct rip_distance));
-  return new;
+  return XCALLOC (MTYPE_RIP_DISTANCE, sizeof (struct rip_distance));
 }
 
 static void
@@ -3510,7 +3503,7 @@ DEFUN (show_ip_rip_status,
   struct listnode *node;
   struct interface *ifp;
   struct rip_interface *ri;
-  extern struct message ri_version_msg[];
+  extern const struct message ri_version_msg[];
   const char *send_version;
   const char *receive_version;
 
@@ -3689,7 +3682,7 @@ config_write_rip (struct vty *vty)
 }
 
 /* RIP node structure. */
-struct cmd_node rip_node =
+static struct cmd_node rip_node =
 {
   RIP_NODE,
   "%s(config-router)# ",

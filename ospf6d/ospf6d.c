@@ -97,7 +97,7 @@ DEFUN (show_version_ospf6,
   return CMD_SUCCESS;
 }
 
-struct cmd_node debug_node =
+static struct cmd_node debug_node =
 {
   DEBUG_NODE,
   "",

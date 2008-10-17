@@ -31,6 +31,10 @@ immediately.
 @itemx --keep_kernel
 When zebra starts up, don't delete old self inserted routes.
 
+@item -S
+@itemx --rib_system
+Causes zebra to manage system routes (those not created by zebra) on link events.
+
 @item -r
 @itemx --retain
 When program terminates, retain routes added by zebra.

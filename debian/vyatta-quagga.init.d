@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 ### BEGIN INIT INFO
-# Provides: quagga
+# Provides: vyatta-quagga
 # Required-Start: $local_fs $network $remote_fs $syslog
 # Required-Stop: $local_fs $network $remote_fs $syslog
 # Default-Start:  2 3 4 5
@@ -32,7 +32,7 @@ for dir in $pid_dir $log_dir ; do
 done
 
 declare -a common_args=( -d -P 0 )
-declare -a zebra_args=( ${common_args[@]} -l -s 1048576 -i $pid_dir/zebra.pid )
+declare -a zebra_args=( ${common_args[@]} -l -S -s 1048576 -i $pid_dir/zebra.pid )
 declare -a ripd_args=( ${common_args[@]} -i $pid_dir/ripd.pid )
 declare -a ripngd_args=( ${common_args[@]} -i $pid_dir/ripngd.pid )
 declare -a ospfd_args=( ${common_args[@]} -i $pid_dir/ospfd.pid )

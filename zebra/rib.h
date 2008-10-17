@@ -60,6 +60,9 @@ struct rib
   /* Type for this route. < ZEBRA_ROUTE_MAX */
   u_int8_t type;
 
+  /* Scope for this route. */
+  u_int8_t scope;
+
   /* Status Flags for the *route_node*, but kept in the head RIB.. */
   u_char rn_status;
 #define RIB_ROUTE_QUEUED(x)	(1 << (x))
@@ -76,6 +79,7 @@ struct rib
   /* RIB internal status */
   u_char status;
 #define RIB_ENTRY_REMOVED	(1 << 0)
+#define RIB_ENTRY_PRESERVE	(2 << 0)
 
   /* Nexthop information. */
   u_char nexthop_num;
@@ -221,7 +225,8 @@ struct vrf
   struct route_table *stable[AFI_MAX][SAFI_MAX];
 };
 
-extern struct nexthop *nexthop_ifindex_add (struct rib *, unsigned int);
+extern struct nexthop *nexthop_ifindex_add (struct rib *, unsigned int, 
+					    struct in_addr *);
 extern struct nexthop *nexthop_ifname_add (struct rib *, char *);
 extern struct nexthop *nexthop_blackhole_add (struct rib *);
 extern struct nexthop *nexthop_ipv4_add (struct rib *, struct in_addr *,
@@ -250,7 +255,7 @@ extern struct route_table *vrf_static_table (afi_t afi, safi_t safi, u_int32_t i
 extern int rib_add_ipv4 (int type, int flags, struct prefix_ipv4 *p, 
 			 struct in_addr *gate, struct in_addr *src,
 			 unsigned int ifindex, u_int32_t vrf_id,
-			 u_int32_t, u_char);
+			 u_int32_t metric, u_int8_t distance, u_int8_t scope);
 
 extern int rib_add_ipv4_multipath (struct prefix_ipv4 *, struct rib *);
 

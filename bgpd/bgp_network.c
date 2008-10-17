@@ -92,12 +92,6 @@ bgp_md5_set (struct peer *peer)
   struct listnode *node;
   int fret = 0, ret;
   int *socket;
-
-  if ( bgpd_privs.change (ZPRIVS_RAISE) )
-    {
-      zlog_err ("%s: could not raise privs", __func__);
-      return -1;
-    }
   
   /* Just set the password on the listen socket(s). Outbound connections
    * are taken care of in bgp_connect() below.
@@ -108,9 +102,6 @@ bgp_md5_set (struct peer *peer)
       if (ret < 0)
         fret = ret;
     }
-  if (bgpd_privs.change (ZPRIVS_LOWER) )
-    zlog_err ("%s: could not lower privs", __func__);
-  
   return fret;
 }
 
@@ -314,6 +305,11 @@ bgp_connect (struct peer *peer)
   sockopt_reuseaddr (peer->fd);
   sockopt_reuseport (peer->fd);
   
+#ifdef IPTOS_PREC_INTERNETCONTROL
+  if (sockunion_family (&peer->su) == AF_INET)
+    setsockopt_ipv4_tos (peer->fd, IPTOS_PREC_INTERNETCONTROL);
+#endif
+
   if (peer->password)
     bgp_md5_set_connect (peer->fd, &peer->su, peer->password);
 
@@ -402,6 +398,20 @@ bgp_socket (struct bgp *bgp, unsigned short port, char *address)
       sockopt_reuseaddr (sock);
       sockopt_reuseport (sock);
       
+#ifdef IPTOS_PREC_INTERNETCONTROL
+      if (ainfo->ai_family == AF_INET)
+	setsockopt_ipv4_tos (sock, IPTOS_PREC_INTERNETCONTROL);
+#endif
+
+#ifdef IPV6_V6ONLY
+      /* Want only IPV6 on ipv6 socket (not mapped addresses) */
+      if (ainfo->ai_family == AF_INET6) {
+	int on = 1;
+	setsockopt (sock, IPPROTO_IPV6, IPV6_V6ONLY, 
+		    (void *) &on, sizeof (on));
+      }
+#endif
+
       if (bgpd_privs.change (ZPRIVS_RAISE) )
         zlog_err ("bgp_socket: could not raise privs");
 
@@ -453,6 +463,10 @@ bgp_socket (struct bgp *bgp, unsigned short port, char *address)
 
   sockopt_reuseaddr (sock);
   sockopt_reuseport (sock);
+
+#ifdef IPTOS_PREC_INTERNETCONTROL
+  setsockopt_ipv4_tos (sock, IPTOS_PREC_INTERNETCONTROL);
+#endif
 
   memset (&sin, 0, sizeof (struct sockaddr_in));
 

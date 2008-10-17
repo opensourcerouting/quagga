@@ -105,27 +105,48 @@ extern void closezlog (struct zlog *zl);
 
 /* GCC have printf type attribute check.  */
 #ifdef __GNUC__
-#define PRINTF_ATTRIBUTE(a,b) __attribute__ ((__format__ (__printf__, a, b)))
+#define PRINTF_ATTRIBUTE(a,b) __attribute__ ((format (printf, a, b)))
 #else
 #define PRINTF_ATTRIBUTE(a,b)
 #endif /* __GNUC__ */
 
+#if !(__GNUC__ == 4)
+/* Mark functions as cold. gcc will assume any path leading to a call
+   to them will be unlikely.  This means a lot of paths leading up
+   to log messages are easily marked as not likely.
+*/
+#define COLD_ATTRIBUTE		__attribute__((__cold__))
+#else
+#define COLD_ATTRIBUTE
+#endif
+
 /* Generic function for zlog. */
-extern void zlog (struct zlog *zl, int priority, const char *format, ...) PRINTF_ATTRIBUTE(3, 4);
+extern void zlog (struct zlog *zl, int priority, const char *format, ...)
+  PRINTF_ATTRIBUTE(3, 4);
 
 /* Handy zlog functions. */
-extern void zlog_err (const char *format, ...) PRINTF_ATTRIBUTE(1, 2);
-extern void zlog_warn (const char *format, ...) PRINTF_ATTRIBUTE(1, 2);
-extern void zlog_info (const char *format, ...) PRINTF_ATTRIBUTE(1, 2);
-extern void zlog_notice (const char *format, ...) PRINTF_ATTRIBUTE(1, 2);
-extern void zlog_debug (const char *format, ...) PRINTF_ATTRIBUTE(1, 2);
+extern void zlog_err (const char *format, ...)
+  PRINTF_ATTRIBUTE(1, 2) COLD_ATTRIBUTE;
+extern void zlog_warn (const char *format, ...)
+  PRINTF_ATTRIBUTE(1, 2) COLD_ATTRIBUTE;
+extern void zlog_info (const char *format, ...)
+  PRINTF_ATTRIBUTE(1, 2) COLD_ATTRIBUTE;
+extern void zlog_notice (const char *format, ...)
+  PRINTF_ATTRIBUTE(1, 2) COLD_ATTRIBUTE;
+extern void zlog_debug (const char *format, ...)
+  PRINTF_ATTRIBUTE(1, 2) COLD_ATTRIBUTE;
 
 /* For bgpd's peer oriented log. */
-extern void plog_err (struct zlog *, const char *format, ...);
-extern void plog_warn (struct zlog *, const char *format, ...);
-extern void plog_info (struct zlog *, const char *format, ...);
-extern void plog_notice (struct zlog *, const char *format, ...);
-extern void plog_debug (struct zlog *, const char *format, ...);
+extern void plog_err (struct zlog *, const char *format, ...)
+  PRINTF_ATTRIBUTE(2, 3) COLD_ATTRIBUTE;
+extern void plog_warn (struct zlog *, const char *format, ...)
+  PRINTF_ATTRIBUTE(2, 3) COLD_ATTRIBUTE;
+extern void plog_info (struct zlog *, const char *format, ...)
+  PRINTF_ATTRIBUTE(2, 3) COLD_ATTRIBUTE;
+extern void plog_notice (struct zlog *, const char *format, ...)
+  PRINTF_ATTRIBUTE(2, 3) COLD_ATTRIBUTE;
+extern void plog_debug (struct zlog *, const char *format, ...)
+  PRINTF_ATTRIBUTE(2, 3) COLD_ATTRIBUTE;
 
 /* Set logging level for the given destination.  If the log_level
    argument is ZLOG_DISABLED, then the destination is disabled.
@@ -144,7 +165,7 @@ extern int zlog_rotate (struct zlog *);
 /* For hackey massage lookup and check */
 #define LOOKUP(x, y) mes_lookup(x, x ## _max, y, "(no item found)")
 
-extern const char *lookup (struct message *, int);
+extern const char *lookup (const struct message *, int);
 extern const char *mes_lookup (struct message *meslist, 
                                int max, int index,
                                const char *no_item);

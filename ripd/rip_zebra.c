@@ -233,6 +233,7 @@ DEFUN (no_router_zebra,
   return CMD_SUCCESS;
 }
 
+#if 0
 static int
 rip_redistribute_set (int type)
 {
@@ -246,6 +247,7 @@ rip_redistribute_set (int type)
 
   return CMD_SUCCESS;
 }
+#endif
 
 static int
 rip_redistribute_unset (int type)
@@ -651,7 +653,7 @@ config_write_rip_redistribute (struct vty *vty, int config_mode)
 }
 
 /* Zebra node structure. */
-struct cmd_node zebra_node =
+static struct cmd_node zebra_node =
 {
   ZEBRA_NODE,
   "%s(config-router)# ",

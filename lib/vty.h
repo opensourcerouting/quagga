@@ -141,13 +141,6 @@ struct vty
 #define IS_DIRECTORY_SEP(c) ((c) == DIRECTORY_SEP)
 #endif
 
-/* GCC have printf type attribute check.  */
-#ifdef __GNUC__
-#define PRINTF_ATTRIBUTE(a,b) __attribute__ ((__format__ (__printf__, a, b)))
-#else
-#define PRINTF_ATTRIBUTE(a,b)
-#endif /* __GNUC__ */
-
 /* Utility macros to convert VTY argument to unsigned long or integer. */
 #define VTY_GET_LONG(NAME,V,STR) \
 do { \

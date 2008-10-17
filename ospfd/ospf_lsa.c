@@ -326,12 +326,7 @@ ospf_lsa_discard (struct ospf_lsa *lsa)
 struct lsa_header *
 ospf_lsa_data_new (size_t size)
 {
-  struct lsa_header *new;
-
-  new = (struct lsa_header *) XMALLOC (MTYPE_OSPF_LSA_DATA, size);
-  memset (new, 0, size);
-
-  return new;
+  return XCALLOC (MTYPE_OSPF_LSA_DATA, size);
 }
 
 /* Duplicate LSA data. */

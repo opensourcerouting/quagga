@@ -36,6 +36,7 @@
 #include "zebra/interface.h"
 #include "zebra/connected.h"
 extern struct zebra_t zebrad;
+
 
 /* withdraw a connected address */
 static void
@@ -174,6 +175,7 @@ void
 connected_up_ipv4 (struct interface *ifp, struct connected *ifc)
 {
   struct prefix_ipv4 p;
+  struct in_addr src = ((struct prefix_ipv4 *) ifc->address)->prefix;
 
   if (! CHECK_FLAG (ifc->conf, ZEBRA_IFC_REAL))
     return;
@@ -188,14 +190,14 @@ connected_up_ipv4 (struct interface *ifp, struct connected *ifc)
   if (prefix_ipv4_any (&p))
     return;
 
-  rib_add_ipv4 (ZEBRA_ROUTE_CONNECT, 0, &p, NULL, NULL, ifp->ifindex,
-	RT_TABLE_MAIN, ifp->metric, 0);
+  rib_add_ipv4 (ZEBRA_ROUTE_CONNECT, 0, &p, NULL, &src,
+		ifp->ifindex, RT_TABLE_MAIN, ifp->metric, 0, RT_SCOPE_LINK);
 
   rib_update ();
 }
 
 /* Add connected IPv4 route to the interface. */
-void
+struct connected *
 connected_add_ipv4 (struct interface *ifp, int flags, struct in_addr *addr, 
 		    u_char prefixlen, struct in_addr *broad, 
 		    const char *label)
@@ -270,10 +272,10 @@ connected_add_ipv4 (struct interface *ifp, int flags, struct in_addr *addr,
     ifc->label = XSTRDUP (MTYPE_CONNECTED_LABEL, label);
 
   /* nothing to do? */
-  if ((ifc = connected_implicit_withdraw (ifp, ifc)) == NULL)
-    return;
-  
+  ifc = connected_implicit_withdraw (ifp, ifc);
   connected_announce (ifp, ifc);
+  
+  return ifc;
 }
 
 void
@@ -347,7 +349,7 @@ connected_up_ipv6 (struct interface *ifp, struct connected *ifc)
 }
 
 /* Add connected IPv6 route to the interface. */
-void
+struct connected *
 connected_add_ipv6 (struct interface *ifp, int flags, struct in6_addr *addr,
 		    u_char prefixlen, struct in6_addr *broad,
 		    const char *label)
@@ -394,10 +396,10 @@ connected_add_ipv6 (struct interface *ifp, int flags, struct in6_addr *addr,
   if (label)
     ifc->label = XSTRDUP (MTYPE_CONNECTED_LABEL, label);
   
-  if ((ifc = connected_implicit_withdraw (ifp, ifc)) == NULL)
-    return;
-  
+  ifc = connected_implicit_withdraw (ifp, ifc);
   connected_announce (ifp, ifc);
+
+  return ifc;
 }
 
 void

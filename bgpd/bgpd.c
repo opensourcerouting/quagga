@@ -114,46 +114,6 @@ bgp_option_check (int flag)
   return CHECK_FLAG (bm->options, flag);
 }
 
-/* BGP flag manipulation.  */
-int
-bgp_flag_set (struct bgp *bgp, int flag)
-{
-  SET_FLAG (bgp->flags, flag);
-  return 0;
-}
-
-int
-bgp_flag_unset (struct bgp *bgp, int flag)
-{
-  UNSET_FLAG (bgp->flags, flag);
-  return 0;
-}
-
-int
-bgp_flag_check (struct bgp *bgp, int flag)
-{
-  return CHECK_FLAG (bgp->flags, flag);
-}
-
-/* Internal function to set BGP structure configureation flag.  */
-static void
-bgp_config_set (struct bgp *bgp, int config)
-{
-  SET_FLAG (bgp->config, config);
-}
-
-static void
-bgp_config_unset (struct bgp *bgp, int config)
-{
-  UNSET_FLAG (bgp->config, config);
-}
-
-static int
-bgp_config_check (struct bgp *bgp, int config)
-{
-  return CHECK_FLAG (bgp->config, config);
-}
-
 /* Set BGP router identifier. */
 int
 bgp_router_id_set (struct bgp *bgp, struct in_addr *id)

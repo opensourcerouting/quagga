@@ -640,7 +640,6 @@ bgp_nexthop_set (union sockunion *local, union sockunion *remote,
 }
 
 #if 0
-#ifdef HAVE_IPV6
 static unsigned int
 bgp_ifindex_by_nexthop (struct in6_addr *addr)
 {
@@ -671,7 +670,6 @@ bgp_ifindex_by_nexthop (struct in6_addr *addr)
     }
   return 0;
 }
-#endif /* HAVE_IPV6 */
 #endif
 
 void

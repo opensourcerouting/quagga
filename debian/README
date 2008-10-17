@@ -1,4 +1,4 @@
-The Debian Package quagga
+The Debian Package vyatta-quagga
 ----------------------------
 
 This package is the Vyatta build of the Quagga routing protocol
@@ -19,7 +19,8 @@ To build from the source package, first add the following to
     deb-src http://archive1.vyatta.com/vyatta community testing
 
 Then:
-    apt-get source quagga
+    apt-get source vyatta-quagga
+    cd vyatta-quagga-VERSION
     debuild -nc -b -uc -us
 
  -- Tom Grennan <tgrennan@vyatta.com>  Wed, 19 DEC 2007

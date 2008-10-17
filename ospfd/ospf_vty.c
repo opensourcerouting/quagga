@@ -8056,7 +8056,7 @@ ospf_vty_show_init (void)
 
 
 /* ospfd's interface node. */
-struct cmd_node interface_node =
+static struct cmd_node interface_node =
 {
   INTERFACE_NODE,
   "%s(config-if)# ",
@@ -8165,13 +8165,6 @@ ospf_vty_if_init (void)
   install_element (INTERFACE_NODE, &no_ospf_transmit_delay_cmd);
 }
 
-/* Zebra node structure. */
-struct cmd_node zebra_node =
-{
-  ZEBRA_NODE,
-  "%s(config-router)#",
-};
-
 static void
 ospf_vty_zebra_init (void)
 {
@@ -8264,7 +8257,7 @@ ospf_vty_zebra_init (void)
 #endif /* 0 */
 }
 
-struct cmd_node ospf_node =
+static struct cmd_node ospf_node =
 {
   OSPF_NODE,
   "%s(config-router)# ",

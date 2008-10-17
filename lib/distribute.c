@@ -38,12 +38,7 @@ void (*distribute_delete_hook) (struct distribute *);
 static struct distribute *
 distribute_new (void)
 {
-  struct distribute *new;
-
-  new = XMALLOC (MTYPE_DISTRIBUTE, sizeof (struct distribute));
-  memset (new, 0, sizeof (struct distribute));
-
-  return new;
+  return XCALLOC (MTYPE_DISTRIBUTE, sizeof (struct distribute));
 }
 
 /* Free distribute object. */
@@ -134,7 +129,7 @@ distribute_hash_make (struct distribute *dist)
 /* If two distribute-list have same value then return 1 else return
    0. This function is used by hash package. */
 static int
-distribute_cmp (struct distribute *dist1, struct distribute *dist2)
+distribute_cmp (const struct distribute *dist1, const struct distribute *dist2)
 {
   if (dist1->ifname && dist2->ifname)
     if (strcmp (dist1->ifname, dist2->ifname) == 0)
@@ -769,7 +764,7 @@ void
 distribute_list_init (int node)
 {
   disthash = hash_create ((unsigned int (*) (void *)) distribute_hash_make,
-                          (int (*) (void *, void *)) distribute_cmp);
+                          (int (*) (const void *, const void *)) distribute_cmp);
 
   if(node==RIP_NODE) {
     install_element (RIP_NODE, &distribute_list_all_cmd);

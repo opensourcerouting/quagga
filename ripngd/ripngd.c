@@ -1820,8 +1820,7 @@ ripng_create ()
   assert (ripng == NULL);
 
   /* Allocaste RIPng instance. */
-  ripng = XMALLOC (MTYPE_RIPNG, sizeof (struct ripng));
-  memset (ripng, 0, sizeof (struct ripng));
+  ripng = XCALLOC (MTYPE_RIPNG, sizeof (struct ripng));
 
   /* Default version and timer values. */
   ripng->version = RIPNG_V1;
@@ -2685,7 +2684,7 @@ ripng_config_write (struct vty *vty)
 }
 
 /* RIPng node structure. */
-struct cmd_node cmd_ripng_node =
+static struct cmd_node cmd_ripng_node =
 {
   RIPNG_NODE,
   "%s(config-router)# ",

@@ -773,7 +773,7 @@ zread_ipv4_add (struct zserv *client, u_short length)
 	    {
 	    case ZEBRA_NEXTHOP_IFINDEX:
 	      ifindex = stream_getl (s);
-	      nexthop_ifindex_add (rib, ifindex);
+	      nexthop_ifindex_add (rib, ifindex, NULL);
 	      break;
 	    case ZEBRA_NEXTHOP_IFNAME:
 	      ifname_len = stream_getc (s);
@@ -1569,7 +1569,7 @@ config_write_table (struct vty *vty)
 }
 
 /* table node for routing tables. */
-struct cmd_node table_node =
+static struct cmd_node table_node =
 {
   TABLE_NODE,
   "",				/* This node has no interface. */
@@ -1689,7 +1689,7 @@ config_write_forwarding (struct vty *vty)
 }
 
 /* table node for routing tables. */
-struct cmd_node forwarding_node =
+static struct cmd_node forwarding_node =
 {
   FORWARDING_NODE,
   "",				/* This node has no interface. */

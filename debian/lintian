@@ -1,2 +1,2 @@
-quagga: binary-without-manpage usr/sbin/vyatta-ospfclient
-quagga: binary-without-manpage usr/sbin/vyatta-watchquagga
+vyatta-quagga: binary-without-manpage usr/sbin/vyatta-ospfclient
+vyatta-quagga: binary-without-manpage usr/sbin/vyatta-watchquagga

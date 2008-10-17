@@ -17,13 +17,12 @@ config.status
 config.sub
 configure
 debian/build-stamp
+debian/quagga
 debian/vyatta-quagga
-debian/vyatta-quagga.substvars
+debian/*.substvars
 debian/files
-debian/vyatta-quagga.postinst.debhelper
-debian/vyatta-quagga.postrm.debhelper
-debian/vyatta-quagga.prerm.debhelper
-debian/vyatta-quagga.debhelper.log
+debian/*.debhelper
+debian/*.log
 depcomp
 doc/defines.texi
 doc/mdate-sh

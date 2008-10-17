@@ -42,11 +42,7 @@ struct list *peer_list;
 struct ripng_peer *
 ripng_peer_new ()
 {
-  struct ripng_peer *new;
-
-  new = XMALLOC (MTYPE_RIPNG_PEER, sizeof (struct ripng_peer));
-  memset (new, 0, sizeof (struct ripng_peer));
-  return new;
+  return XCALLOC (MTYPE_RIPNG_PEER, sizeof (struct ripng_peer));
 }
 
 void

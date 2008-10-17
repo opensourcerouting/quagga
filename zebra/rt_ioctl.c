@@ -553,8 +553,8 @@ kernel_delete_ipv6 (struct prefix *p, struct rib *rib)
 /* Delete IPv6 route from the kernel. */
 int
 kernel_delete_ipv6_old (struct prefix_ipv6 *dest, struct in6_addr *gate,
-		    unsigned int index, int flags, int table)
+		    unsigned int index, int table)
 {
-  return kernel_ioctl_ipv6 (SIOCDELRT, dest, gate, index, flags);
+  return kernel_ioctl_ipv6 (SIOCDELRT, dest, gate, index, 0;
 }
 #endif /* HAVE_IPV6 */

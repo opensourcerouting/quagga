@@ -114,8 +114,7 @@ ospf6_create ()
 {
   struct ospf6 *o;
 
-  o = XMALLOC (MTYPE_OSPF6_TOP, sizeof (struct ospf6));
-  memset (o, 0, sizeof (struct ospf6));
+  o = XCALLOC (MTYPE_OSPF6_TOP, sizeof (struct ospf6));
 
   /* initialize */
   gettimeofday (&o->starttime, (struct timezone *) NULL);
@@ -651,7 +650,7 @@ config_write_ospf6 (struct vty *vty)
 }
 
 /* OSPF6 node structure. */
-struct cmd_node ospf6_node =
+static struct cmd_node ospf6_node =
 {
   OSPF6_NODE,
   "%s(config-ospf6)# ",

@@ -50,11 +50,12 @@ static int rip_enable_if_lookup (const char *ifname);
 static int rip_enable_network_lookup2 (struct connected *connected);
 static void rip_enable_apply_all (void);
 
-struct message ri_version_msg[] = 
+const struct message ri_version_msg[] =
 {
   {RI_RIP_VERSION_1,       "1"},
   {RI_RIP_VERSION_2,       "2"},
   {RI_RIP_VERSION_1_AND_2, "1 2"},
+  {0, NULL}
 };
 
 extern struct zebra_privs_t ripd_privs;
@@ -118,8 +119,7 @@ rip_interface_new (void)
 {
   struct rip_interface *ri;
 
-  ri = XMALLOC (MTYPE_RIP_INTERFACE, sizeof (struct rip_interface));
-  memset (ri, 0, sizeof (struct rip_interface));
+  ri = XCALLOC (MTYPE_RIP_INTERFACE, sizeof (struct rip_interface));
 
   /* Default authentication type is simple password for Cisco
      compatibility. */
@@ -240,6 +240,7 @@ rip_request_interface (struct interface *ifp)
   }
 }
 
+#if 0
 /* Send RIP request to the neighbor. */
 static void
 rip_request_neighbor (struct in_addr addr)
@@ -253,7 +254,6 @@ rip_request_neighbor (struct in_addr addr)
   rip_request_send (&to, NULL, rip->version_send, NULL);
 }
 
-#if 0
 /* Request routes at all interfaces. */
 static void
 rip_request_neighbor_all (void)
@@ -406,8 +406,8 @@ rip_interface_down (int command, struct zclient *zclient, zebra_size_t length)
  
   if (IS_RIP_DEBUG_ZEBRA)
     zlog_debug ("interface %s index %d flags %#llx metric %d mtu %d is down",
-	       ifp->name, ifp->ifindex, (unsigned long long) ifp->flags, 
-	       ifp->metric, ifp->mtu);
+	       ifp->name, ifp->ifindex, 
+		(unsigned long long) ifp->flags, ifp->metric, ifp->mtu);
 
   return 0;
 }
@@ -427,7 +427,7 @@ rip_interface_up (int command, struct zclient *zclient, zebra_size_t length)
 
   if (IS_RIP_DEBUG_ZEBRA)
     zlog_debug ("interface %s index %d flags %#llx metric %d mtu %d is up",
-		ifp->name, ifp->ifindex, (unsigned long long)ifp->flags,
+		ifp->name, ifp->ifindex, (unsigned long long) ifp->flags,
 		ifp->metric, ifp->mtu);
 
   /* Check if this interface is RIP enabled or not.*/
@@ -492,7 +492,7 @@ rip_interface_delete (int command, struct zclient *zclient,
   } 
   
   zlog_info("interface delete %s index %d flags %#llx metric %d mtu %d",
-	    ifp->name, ifp->ifindex, (unsigned long long)ifp->flags,
+	    ifp->name, ifp->ifindex, (unsigned long long) ifp->flags,
 	    ifp->metric, ifp->mtu);  
   
   /* To support pseudo interface do not free interface structure.  */
@@ -2058,7 +2058,7 @@ config_write_rip_network (struct vty *vty, int config_mode)
   return 0;
 }
 
-struct cmd_node interface_node =
+static struct cmd_node interface_node =
 {
   INTERFACE_NODE,
   "%s(config-if)# ",
