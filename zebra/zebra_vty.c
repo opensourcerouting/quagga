@@ -674,29 +674,21 @@ vty_show_ip_route (struct vty *vty, struct route_node *rn, struct rib *rib)
   /* Nexthop information. */
   for (nexthop = rib->nexthop; nexthop; nexthop = nexthop->next)
     {
-      if (nexthop == rib->nexthop)
-	{
-	  /* Prefix information. */
-	  len = vty_out (vty, "%c%c%c %s/%d",
-			 zebra_route_char (rib->type),
-			 CHECK_FLAG (rib->flags, ZEBRA_FLAG_SELECTED)
-			 ? '>' : ' ',
-			 CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_FIB)
-			 ? '*' : ' ',
-			 inet_ntop (AF_INET, &rn->p.u.prefix, buf, BUFSIZ),
-			 rn->p.prefixlen);
-		
-	  /* Distance and metric display. */
-	  if (rib->type != ZEBRA_ROUTE_CONNECT 
-	      && rib->type != ZEBRA_ROUTE_KERNEL)
-	    len += vty_out (vty, " [%d/%d]", rib->distance,
-			    rib->metric);
-	}
-      else
-	vty_out (vty, "  %c%*c",
-		 CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_FIB)
-		 ? '*' : ' ',
-		 len - 3, ' ');
+      /* Prefix information. */
+      len = vty_out (vty, "%c%c%c %s/%d",
+		     zebra_route_char (rib->type),
+		     CHECK_FLAG (rib->flags, ZEBRA_FLAG_SELECTED)
+		     ? '>' : ' ',
+		     CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_FIB)
+		     ? '*' : ' ',
+		     inet_ntop (AF_INET, &rn->p.u.prefix, buf, BUFSIZ),
+		     rn->p.prefixlen);
+
+      /* Distance and metric display. */
+      if (rib->type != ZEBRA_ROUTE_CONNECT 
+	  && rib->type != ZEBRA_ROUTE_KERNEL)
+	len += vty_out (vty, " [%d/%d]", rib->distance,
+			rib->metric);
 
       switch (nexthop->type)
 	{
