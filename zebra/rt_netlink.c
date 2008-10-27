@@ -80,7 +80,6 @@ static const char *nexthop_types_desc[] =
   "Null0 nexthop",
 };
 
-
 extern struct zebra_t zebrad;
 
 extern struct zebra_privs_t zserv_privs;
@@ -149,7 +148,6 @@ netlink_socket (struct nlsock *nl, unsigned long groups)
             safe_strerror (errno));
       return -1;
     }
-
 
   memset (&snl, 0, sizeof snl);
   snl.nl_family = AF_NETLINK;
@@ -1335,6 +1333,8 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
   req.r.rtm_family = family;
   req.r.rtm_table = rib->table;
   req.r.rtm_dst_len = p->prefixlen;
+  req.r.rtm_protocol = RTPROT_ZEBRA;
+  req.r.rtm_scope = RT_SCOPE_UNIVERSE;
 
   if ((rib->flags & ZEBRA_FLAG_BLACKHOLE) || (rib->flags & ZEBRA_FLAG_REJECT))
     discard = 1;

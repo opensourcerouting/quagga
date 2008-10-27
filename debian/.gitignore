@@ -1,0 +1,7 @@
+build-stamp
+quagga
+vyatta-quagga
+*.substvars
+files
+*.debhelper
+*.log

@@ -5,10 +5,10 @@
 ##  Copyright (c) 1996, 97, 98, 99, 2000 Kunihiro Ishiguro <kunihiro@zebra.org>
 ##  Portions Copyright (c) 2003 Paul Jakma <paul@dishone.st>
 ##
-## $Id: configure.ac,v 1.144 2008/07/22 21:11:48 paul Exp $
+## $Id$
 AC_PREREQ(2.53)
 
-AC_INIT(Quagga, 0.99.10, [http://bugzilla.quagga.net])
+AC_INIT(Quagga, 0.99.11, [http://bugzilla.quagga.net])
 AC_CONFIG_SRCDIR(lib/zebra.h)
 
 dnl -----------------------------------
@@ -60,9 +60,10 @@ fi
 dnl --------------------
 dnl Check CC and friends
 dnl --------------------
+AC_LANG([C])
 AC_PROG_CC
 AC_PROG_CPP
-
+AM_PROG_CC_C_O
 AC_PROG_EGREP
 
 dnl autoconf 2.59 appears not to support AC_PROG_SED
@@ -210,6 +211,8 @@ AC_ARG_ENABLE(netlink,
 [  --enable-netlink        force to use Linux netlink interface])
 AC_ARG_ENABLE(broken-aliases,
 [  --enable-broken-aliases enable aliases as distinct interfaces for Linux 2.2.X])
+AC_ARG_WITH(crypto,
+[  --without-crypto        do not use libcrypto in SNMP])
 AC_ARG_ENABLE(snmp,
 [  --enable-snmp           enable SNMP support])
 AC_ARG_WITH(libpam,
@@ -228,10 +231,10 @@ AC_ARG_ENABLE(ospf-te,
 [  --enable-ospf-te        enable Traffic Engineering Extension to OSPF])
 AC_ARG_ENABLE(multipath,
 [  --enable-multipath=ARG  enable multipath function, ARG must be digit])
-AC_ARG_ENABLE(quagga_user,
-[  --enable-user=ARG       user to run Quagga suite as (default quagga)])
-AC_ARG_ENABLE(quagga_group,
-[  --enable-group=ARG      group to run Quagga suite as (default quagga)])
+AC_ARG_ENABLE(user,
+  AC_HELP_STRING([--enable-user=user], [user to run Quagga suite as (default quagga)]))
+AC_ARG_ENABLE(group,
+  AC_HELP_STRING([--enable-group=group], [group to run Quagga suite as (default quagga)]))
 AC_ARG_ENABLE(vty_group,
 [  --enable-vty-group=ARG  set vty sockets to have specified group as owner])
 AC_ARG_ENABLE(configfile_mask,
@@ -1258,29 +1261,19 @@ dnl ------------------
 dnl check Net-SNMP library
 dnl ------------------
 if test "${enable_snmp}" = "yes"; then
-    LIBS="${LIBS} -lcrypto"
+    if test "$with_crypto" != "no"; then
+        LIBS="${LIBS} -lcrypto";
+    fi
     AC_CHECK_LIB(netsnmp, asn_parse_int,
     	[AC_DEFINE(HAVE_NETSNMP,,Net SNMP) 
     	 AC_DEFINE(HAVE_SNMP,,SNMP)
     	 LIBS="${LIBS} -lnetsnmp"],
     	[AC_MSG_ERROR([--enable-snmp given, but cannot find support for SNMP])])
-    
-    for ac_snmp in /usr/include \
-    		/usr/local/include \
-    		/dev/null; do
-    	test -f "${ac_snmp}/net-snmp/library/asn1.h" && break
-    done
-    
-    case ${ac_snmp} in
-    	/dev/null)
-    		AC_MSG_ERROR([--enable-snmp given, but can not find header])
-    		;;
-    	*)
-    		SNMP_INCLUDES="-I${ac_snmp}/net-snmp"
-    		SNMP_INCLUDES="${SNMP_INCLUDES} -I${ac_snmp}/net-snmp/library"
-    		;;
-    esac
-    
+
+    AC_CHECK_HEADER([net-snmp/net-snmp-config.h],
+        [],
+        [AC_MSG_ERROR([--enable-snmp given, but cannot find net-snmp-config.h])],
+	QUAGGA_INCLUDES)
     AC_SUBST(SNMP_INCLUDES)
 fi
 
@@ -1400,6 +1393,29 @@ dnl configure date
 dnl ----------
 CONFDATE=`date '+%Y%m%d'`
 AC_SUBST(CONFDATE)
+
+dnl Conditionally enable PIE support for GNU toolchains.
+AC_ARG_ENABLE(pie, AS_HELP_STRING([--disable-pie], [Do not build tools as a Position Independent Executables]))
+if test "$enable_pie" != "no"; then
+  AC_CACHE_CHECK([whether $CC accepts PIE flags], [ap_cv_cc_pie], [
+    save_CFLAGS=$CFLAGS
+    save_LDFLAGS=$LDFLAGS
+    CFLAGS="$CFLAGS -fPIE"
+    LDFLAGS="$LDFLAGS -pie"
+    AC_LINK_IFELSE([AC_LANG_SOURCE([[static int foo[30000]; int main () { return 0; }]])],
+      [ap_cv_cc_pie=yes], [ap_cv_cc_pie=no]
+    )
+    CFLAGS=$save_CFLAGS
+    LDFLAGS=$save_LDFLAGS
+  ])
+  if test "$ap_cv_cc_pie" = "yes"; then
+    PICFLAGS="-fPIE"
+    PILDFLAGS="-pie"
+  fi
+fi
+
+AC_SUBST(PICFLAGS)
+AC_SUBST(PILDFLAGS)
 
 dnl ------------------------------
 dnl set paths for state directory

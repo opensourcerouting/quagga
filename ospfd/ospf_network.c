@@ -197,11 +197,7 @@ ospf_sock_init (void)
 #elif defined (IPTOS_PREC_INTERNETCONTROL)
 #warning "IP_HDRINCL not available on this system"
 #warning "using IPTOS_PREC_INTERNETCONTROL"
-  {
-  /* Set precedence field. */
-  int tos = IPTOS_PREC_INTERNETCONTROL;
-  ret = setsockopt (ospf_sock, IPPROTO_IP, IP_TOS,
-		    (char *) &tos, sizeof (int));
+  ret = setsockopt_ipv4_tos(ospf_sock, IPTOS_PREC_INTERNETCONTROL);
   if (ret < 0)
     {
       int save_errno = errno;

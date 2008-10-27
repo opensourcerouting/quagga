@@ -1306,9 +1306,54 @@ bgp_open_receive (struct peer *peer, bgp_size_t size)
 	}
 	else if (ret == 0 && realpeer->status != Active
 	         && realpeer->status != OpenSent
-		 && realpeer->status != OpenConfirm)
-
+		 && realpeer->status != OpenConfirm
+		 && realpeer->status != Connect)
  	{
+ 	  /* XXX: This is an awful problem.. 
+ 	   *
+ 	   * According to the RFC we should just let this connection (of the
+ 	   * accepted 'peer') continue on to Established if the other
+ 	   * connection (the 'realpeer' one) is in state Connect, and deal
+ 	   * with the more larval FSM as/when it gets far enough to receive
+ 	   * an Open. We don't do that though, we instead close the (more
+ 	   * developed) accepted connection.
+ 	   *
+ 	   * This means there's a race, which if hit, can loop:
+ 	   *
+ 	   *       FSM for A                        FSM for B
+ 	   *  realpeer     accept-peer       realpeer     accept-peer
+ 	   *
+ 	   *  Connect                        Connect
+ 	   *               Active
+ 	   *               OpenSent          OpenSent
+ 	   *               <arrive here,
+ 	   *               Notify, delete>   
+ 	   *                                 Idle         Active
+ 	   *   OpenSent                                   OpenSent
+ 	   *                                              <arrive here,
+ 	   *                                              Notify, delete>
+ 	   *   Idle
+ 	   *   <wait>                        <wait>
+ 	   *   Connect                       Connect
+ 	   *
+           *
+ 	   * If both sides are Quagga, they're almost certain to wait for
+ 	   * the same amount of time of course (which doesn't preclude other
+ 	   * implementations also waiting for same time). The race is
+ 	   * exacerbated by high-latency (in bgpd and/or the network).
+ 	   *
+ 	   * The reason we do this is because our FSM is tied to our peer
+ 	   * structure, which carries our configuration information, etc. 
+ 	   * I.e. we can't let the accepted-peer FSM continue on as it is,
+ 	   * cause it's not associated with any actual peer configuration -
+ 	   * it's just a dummy.
+ 	   *
+ 	   * It's possible we could hack-fix this by just bgp_stop'ing the
+ 	   * realpeer and continueing on with the 'transfer FSM' below. 
+ 	   * Ideally, we need to seperate FSMs from struct peer.
+ 	   *
+ 	   * Setting one side to passive avoids the race, as a workaround.
+ 	   */
  	  if (BGP_DEBUG (events, EVENTS))
 	    zlog_debug ("%s peer status is %s close connection",
 			realpeer->host, LOOKUP (bgp_status_msg,
@@ -1320,8 +1365,9 @@ bgp_open_receive (struct peer *peer, bgp_size_t size)
  	}
 
       if (BGP_DEBUG (events, EVENTS))
-	zlog_debug ("%s [Event] Transfer temporary BGP peer to existing one",
-		   peer->host);
+	zlog_debug ("%s [Event] Transfer accept BGP peer to real (state %s)",
+		   peer->host, 
+		   LOOKUP (bgp_status_msg, realpeer->status));
 
       bgp_stop (realpeer);
       

@@ -148,13 +148,13 @@ cluster_free (struct cluster_list *cluster)
   XFREE (MTYPE_CLUSTER, cluster);
 }
 
-#if 0
 static struct cluster_list *
 cluster_dup (struct cluster_list *cluster)
 {
   struct cluster_list *new;
 
-  new = XCALLOC (MTYPE_CLUSTER, sizeof (struct cluster_list));
+  new = XMALLOC (MTYPE_CLUSTER, sizeof (struct cluster_list));
+  memset (new, 0, sizeof (struct cluster_list));
   new->length = cluster->length;
 
   if (cluster->length)
@@ -167,7 +167,6 @@ cluster_dup (struct cluster_list *cluster)
   
   return new;
 }
-#endif
 
 static struct cluster_list *
 cluster_intern (struct cluster_list *cluster)
@@ -2299,8 +2298,6 @@ bgp_packet_withdraw (struct peer *peer, struct stream *s, struct prefix *p,
 void
 bgp_attr_init (void)
 {
-  void attrhash_init ();
-
   aspath_init ();
   attrhash_init ();
   community_init ();
