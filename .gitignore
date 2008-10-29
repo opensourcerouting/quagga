@@ -28,6 +28,7 @@ Makefile
 INSTALL
 .deps
 depcomp
+doc/texinfo.tex
 missing
 install-sh
 autom4te*.cache
@@ -69,4 +70,3 @@ build
 .rebase-*
 *~
 *.loT
-
