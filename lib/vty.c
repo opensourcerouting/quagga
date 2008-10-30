@@ -2014,7 +2014,9 @@ vtysh_accept (struct thread *thread)
   vty->fd = sock;
   vty->type = VTY_SHELL_SERV;
   vty->node = VIEW_NODE;
-
+#ifdef LOCKLESS_VTYSH
+  vty->config = 2; /* Don't take the configure lock in vtysh */
+#endif
   vty_event (VTYSH_READ, sock, vty);
 
   return 0;
@@ -2470,6 +2472,8 @@ vty_log_fixed (const char *buf, size_t len)
 int
 vty_config_lock (struct vty *vty)
 {
+  if (vty->config > 1)
+    return 1; /* Lockless */
   if (vty_config == 0)
     {
       vty->config = 1;
@@ -2481,6 +2485,8 @@ vty_config_lock (struct vty *vty)
 int
 vty_config_unlock (struct vty *vty)
 {
+  if (vty->config > 1)
+    return 0; /* Lockless */
   if (vty_config == 1 && vty->config == 1)
     {
       vty->config = 0;
