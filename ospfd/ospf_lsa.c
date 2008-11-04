@@ -201,7 +201,6 @@ ospf_lsa_new ()
   struct ospf_lsa *new;
 
   new = XCALLOC (MTYPE_OSPF_LSA, sizeof (struct ospf_lsa));
-  memset (new, 0, sizeof (struct ospf_lsa));
 
   new->flags = 0;
   new->lock = 1;
@@ -307,7 +306,6 @@ ospf_lsa_data_new (size_t size)
   struct lsa_header *new;
 
   new = (struct lsa_header *) XMALLOC (MTYPE_OSPF_LSA_DATA, size);
-  memset (new, 0, size);
 
   return new;
 }
@@ -827,7 +825,7 @@ ospf_router_lsa_new (struct ospf_area *area)
     }
   
   new->area = area;
-  SET_FLAG (new->flags, OSPF_LSA_SELF);
+  SET_FLAG (new->flags, OSPF_LSA_SELF | OSPF_LSA_SELF_CHECKED);
 
   /* Copy LSA data to store, discard stream. */
   new->data = ospf_lsa_data_new (length);
@@ -1086,7 +1084,7 @@ ospf_network_lsa_new (struct ospf_interface *oi)
     }
   
   new->area = oi->area;
-  SET_FLAG (new->flags, OSPF_LSA_SELF);
+  SET_FLAG (new->flags, OSPF_LSA_SELF | OSPF_LSA_SELF_CHECKED);
 
   /* Copy LSA to store. */
   new->data = ospf_lsa_data_new (length);
@@ -1280,7 +1278,7 @@ ospf_summary_lsa_new (struct ospf_area *area, struct prefix *p,
   /* Create OSPF LSA instance. */
   new = ospf_lsa_new ();
   new->area = area;
-  SET_FLAG (new->flags, OSPF_LSA_SELF);
+  SET_FLAG (new->flags, OSPF_LSA_SELF | OSPF_LSA_SELF_CHECKED);
 
   /* Copy LSA to store. */
   new->data = ospf_lsa_data_new (length);
@@ -1351,9 +1349,6 @@ ospf_summary_lsa_refresh (struct ospf *ospf, struct ospf_lsa *lsa)
     return NULL;
   
   new->data->ls_seqnum = lsa_seqnum_increment (lsa);
-  
-  /* Re-calculate checksum. */
-  ospf_lsa_checksum (new->data);
 
   ospf_lsa_install (ospf, NULL, new);
   
@@ -1429,7 +1424,7 @@ ospf_summary_asbr_lsa_new (struct ospf_area *area, struct prefix *p,
   /* Create OSPF LSA instance. */
   new = ospf_lsa_new ();
   new->area = area;
-  SET_FLAG (new->flags, OSPF_LSA_SELF);
+  SET_FLAG (new->flags, OSPF_LSA_SELF | OSPF_LSA_SELF_CHECKED);
 
   /* Copy LSA to store. */
   new->data = ospf_lsa_data_new (length);
@@ -1500,9 +1495,6 @@ ospf_summary_asbr_lsa_refresh (struct ospf *ospf, struct ospf_lsa *lsa)
     return NULL;
   
   new->data->ls_seqnum = lsa_seqnum_increment (lsa);
-  
-  /* Re-calculate checksum. */
-  ospf_lsa_checksum (new->data);
 
   ospf_lsa_install (ospf, NULL, new);
   
@@ -1729,7 +1721,7 @@ ospf_external_lsa_new (struct ospf *ospf,
   /* Now, create OSPF LSA instance. */
   new = ospf_lsa_new ();
   new->area = NULL;
-  SET_FLAG (new->flags, OSPF_LSA_SELF|OSPF_LSA_APPROVED);
+  SET_FLAG (new->flags, OSPF_LSA_SELF | OSPF_LSA_APPROVED | OSPF_LSA_SELF_CHECKED);
 
   /* Copy LSA data to store, discard stream. */
   new->data = ospf_lsa_data_new (length);
@@ -1816,8 +1808,6 @@ ospf_install_flood_nssa (struct ospf *ospf,
 	    return;
 	  }
 	}
-      /* Re-calculate checksum. */
-      ospf_lsa_checksum (new->data);
 
       /* install also as Type-7 */
       ospf_lsa_install (ospf, NULL, new);   /* Remove Old, Lock New = 2 */
@@ -1867,7 +1857,6 @@ ospf_lsa_translated_nssa_new (struct ospf *ospf,
 
   /* add translated flag, checksum and lock new lsa */
   SET_FLAG (new->flags, OSPF_LSA_LOCAL_XLT); /* Translated from 7  */   
-  ospf_lsa_checksum (new->data);
   new = ospf_lsa_lock (new);
   
   return new; 
@@ -2420,9 +2409,6 @@ ospf_external_lsa_refresh (struct ospf *ospf, struct ospf_lsa *lsa,
     }
   
   new->data->ls_seqnum = lsa_seqnum_increment (lsa);
-
-  /* Re-calculate checksum. */
-  ospf_lsa_checksum (new->data);
 
   ospf_lsa_install (ospf, NULL, new);	/* As type-5. */
 
