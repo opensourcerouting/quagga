@@ -130,7 +130,11 @@ binary-arch: build install
 	dh_installdeb
 #	dh_shlibdeps: removed "-L quagga" for Woody backport compatibility.
 	dh_shlibdeps
-	dh_gencontrol
+	if [ -f "../.VYATTA_DEV_BUILD" ]; then \
+		dh_gencontrol -- -v999.dev; \
+	else \
+		dh_gencontrol; \
+	fi
 	dh_md5sums
 	dh_builddeb
 
