@@ -31,7 +31,7 @@
 #include "sigevent.h"
 
 /* Recent absolute time of day */
-struct timeval recent_time;
+static struct timeval recent_time;
 static struct timeval last_recent_time;
 /* Relative time, since startup */
 static struct timeval relative_time;
@@ -1010,14 +1010,6 @@ thread_getrusage (RUSAGE_T *r)
   getrusage(RUSAGE_SELF, &(r->cpu));
 #endif
   r->real = relative_time;
-
-#ifdef HAVE_CLOCK_MONOTONIC
-  /* quagga_get_relative() only updates recent_time if gettimeofday
-   * based, not when using CLOCK_MONOTONIC. As we export recent_time
-   * and guarantee to update it before threads are run...
-   */
-  quagga_gettimeofday(&recent_time);
-#endif /* HAVE_CLOCK_MONOTONIC */
 }
 
 /* We check thread consumed time. If the system has getrusage, we'll
