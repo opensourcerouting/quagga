@@ -121,16 +121,6 @@ vyatta_quagga_stop ()
 
 case "$action" in
     start)
-	# Try to load this necessary (at least for 2.6) module.
-	if [ -d /lib/modules/`uname -r` ] ; then
-	    log_begin_msg "Loading capability module if not yet done"
-	    set +e; \
-		LC_ALL=C \
-		modprobe -a capability 2>&1 | \
-		egrep -v "(not found|Can't locate)"; \
-		set -e
-	    log_end_msg 0
-	fi
 	vyatta_quagga_start $*
     	;;
 	
