@@ -561,4 +561,3 @@ sockopt_tcp_signature (int sock, union sockunion *su, const char *password)
   return -2;
 #endif /* HAVE_TCP_MD5SIG */
 }
-
