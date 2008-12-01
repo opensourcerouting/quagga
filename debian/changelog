@@ -1,3 +1,57 @@
+vyatta-quagga (0.99.10-2) unstable; urgency=low
+
+	  3.2.0
+  [ Mark O'Brien ]
+
+
+  [ Joakim Tjernlund ]
+  * Fix SEGV in ip ospf neighbor all
+
+  [ Mark O'Brien ]
+  * 3.1.4
+
+  [ Stephen Hemminger ]
+  * Notify on MTU changes
+  * netlink message signed/unsigned cleanup
+  * Building with optimization for size gives better performance
+
+  [ Paul Jakma ]
+  * [bgpd] bug #419: partial aspath-limit incorrectly causes session
+    reset
+
+  [ Stephen Hemminger ]
+  * fix ipv6 typo in recursive route update code
+  * remove incorrect debug message
+  * Add delete interface cleanout
+  * Set metric in RIB for connected routes
+  * Handle device renames correctly
+  * Set proper protocol for routes from command line
+  * Fix bgp ipv4/ipv6 accept handling
+
+  [ rbalocca ]
+  * Ignore derived file
+
+  [ Mark O'Brien ]
+  * 3.1.3
+
+  [ Stephen Hemminger ]
+  * Fix up filtering of netlink pid
+  * Revert "Filter messages so that only netlink messages from kernel
+    are allowed."
+  * Use XCALLOC
+  * Filter messages so that only netlink messages from kernel are
+    allowed.
+  * Ignore both names for this package
+  * Enable zebra to manage system routes
+  * Manage system routes with zebra
+  * Update ignore file list
+  * Ignore more files
+  * Change package name back to vyatta-quagga
+
+  [ Mark O'Brien ]
+
+ -- Mark O'Brien <mobrien@firebolt.vyatta.com>  Tue, 25 Nov 2008 19:10:51 -0800
+
 vyatta-quagga (0.99.10-1) unstable; urgency=low
 
 	  3.1.4
