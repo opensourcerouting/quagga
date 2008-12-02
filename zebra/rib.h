@@ -55,13 +55,16 @@ struct rib
   u_int32_t metric;
 
   /* Which routing table */
-  u_int32_t table;			
+  u_int32_t table;
 
   /* Type for this route. < ZEBRA_ROUTE_MAX */
   u_int8_t type;
 
-  /* Scope for this route. */
+  /* Scope for this route: RTM_UNIVERSE .. RTM_NOWHERE */
   u_int8_t scope;
+
+  /* Routing protocol: RTPROT_UNSPEC .. */
+  u_int8_t protocol;
 
   /* Status Flags for the *route_node*, but kept in the head RIB.. */
   u_char rn_status;
@@ -109,7 +112,7 @@ struct static_ipv4
   struct static_ipv4 *next;
 
   /* Nexthop value. */
-  union 
+  union
   {
     struct in_addr ipv4;
     char *ifname;
@@ -225,7 +228,7 @@ struct vrf
   struct route_table *stable[AFI_MAX][SAFI_MAX];
 };
 
-extern struct nexthop *nexthop_ifindex_add (struct rib *, unsigned int, 
+extern struct nexthop *nexthop_ifindex_add (struct rib *, unsigned int,
 					    struct in_addr *);
 extern struct nexthop *nexthop_ifname_add (struct rib *, char *);
 extern struct nexthop *nexthop_blackhole_add (struct rib *);
@@ -255,7 +258,8 @@ extern struct route_table *vrf_static_table (afi_t afi, safi_t safi, u_int32_t i
 extern int rib_add_ipv4 (int type, int flags, struct prefix_ipv4 *p, 
 			 struct in_addr *gate, struct in_addr *src,
 			 unsigned int ifindex, u_int32_t vrf_id,
-			 u_int32_t metric, u_int8_t distance, u_int8_t scope);
+			 u_int32_t metric, u_int8_t distance,
+			 u_int8_t scope, u_int8_t protocol);
 
 extern int rib_add_ipv4_multipath (struct prefix_ipv4 *, struct rib *);
 

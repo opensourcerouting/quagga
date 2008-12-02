@@ -191,7 +191,8 @@ connected_up_ipv4 (struct interface *ifp, struct connected *ifc)
     return;
 
   rib_add_ipv4 (ZEBRA_ROUTE_CONNECT, 0, &p, NULL, &src,
-		ifp->ifindex, RT_TABLE_MAIN, ifp->metric, 0, RT_SCOPE_LINK);
+		ifp->ifindex, RT_TABLE_MAIN, ifp->metric, 0,
+		RT_SCOPE_LINK, RTPROT_KERNEL);
 
   rib_update ();
 }
@@ -274,7 +275,7 @@ connected_add_ipv4 (struct interface *ifp, int flags, struct in_addr *addr,
   /* nothing to do? */
   ifc = connected_implicit_withdraw (ifp, ifc);
   connected_announce (ifp, ifc);
-  
+
   return ifc;
 }
 

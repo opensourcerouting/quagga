@@ -41,7 +41,6 @@
 #include "zebra/redistribute.h"
 #include "zebra/interface.h"
 #include "zebra/debug.h"
-#include <stddef.h>
 
 /* Socket interface to kernel */
 struct nlsock
@@ -66,7 +65,7 @@ static const struct message nlmsg_str[] = {
   {0, NULL}
 };
 
-static const char *nexthop_types_desc[] =  
+static const char *nexthop_types_desc[] =
 {
   "none",
   "Directly connected",
@@ -260,7 +259,6 @@ netlink_parse_info (int (*filter) (struct sockaddr_nl *, struct nlmsghdr *),
 
   while (1)
     {
-      //increased from 4096 to 32768 as recvmsg overrun error
       char buf[32768];
       struct iovec iov = { buf, sizeof buf };
       struct sockaddr_nl snl;
@@ -274,7 +272,6 @@ netlink_parse_info (int (*filter) (struct sockaddr_nl *, struct nlmsghdr *),
             continue;
           if (errno == EWOULDBLOCK || errno == EAGAIN)
             break;
-
           zlog (NULL, LOG_ERR, "%s recvmsg overrun: %s",
 	  	nl->name, safe_strerror(errno));
           continue;
@@ -293,13 +290,6 @@ netlink_parse_info (int (*filter) (struct sockaddr_nl *, struct nlmsghdr *),
           return -1;
         }
       
-      /* JF: Ignore messages that aren't from the kernel */
-      if ( snl.nl_pid != 0 )
-	{
-	  zlog_debug ("Ignoring message from pid %u", snl.nl_pid );
-	  continue;
-	}
-
       for (h = (struct nlmsghdr *) buf; NLMSG_OK (h, (unsigned int) status);
            h = NLMSG_NEXT (h, status))
         {
@@ -701,6 +691,7 @@ netlink_routing_table (struct sockaddr_nl *snl, struct nlmsghdr *h)
     return 0;
   if (rtm->rtm_protocol == RTPROT_REDIRECT)
     return 0;
+
   if (rtm->rtm_protocol == RTPROT_KERNEL)
     return 0;
 
@@ -743,7 +734,7 @@ netlink_routing_table (struct sockaddr_nl *snl, struct nlmsghdr *h)
       p.prefixlen = rtm->rtm_dst_len;
 
       rib_add_ipv4 (ZEBRA_ROUTE_KERNEL, flags, &p, gate, src, index,
-		    table, metric, 0, rtm->rtm_scope);
+		    table, metric, 0, rtm->rtm_scope, rtm->rtm_protocol);
     }
 #ifdef HAVE_IPV6
   if (rtm->rtm_family == AF_INET6)
@@ -882,7 +873,7 @@ netlink_route_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 
       if (h->nlmsg_type == RTM_NEWROUTE)
         rib_add_ipv4 (ZEBRA_ROUTE_KERNEL, 0, &p, gate, src, index, table, 0,
-		      0, rtm->rtm_scope);
+		      0, rtm->rtm_scope, rtm->rtm_protocol);
       else
         rib_delete_ipv4 (ZEBRA_ROUTE_KERNEL, 0, &p, gate, index, table);
     }
@@ -970,7 +961,6 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
       unsigned int mtu = *(uint32_t *) RTA_DATA (tb[IFLA_MTU]);
       ifp = if_lookup_by_index (ifi->ifi_index);
 
-      /* New interface */
       if (ifp == NULL || !CHECK_FLAG (ifp->status, ZEBRA_INTERFACE_ACTIVE))
         {
           if (ifp == NULL)
@@ -987,11 +977,12 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 	  zlog_info ("interface %s index %d %s added.",
 		     name, ifi->ifi_index, if_flag_dump(new_flags));
 
+
           ifp->flags = new_flags;
           ifp->mtu6 = ifp->mtu = mtu; 
 
-	  /* If new link is added. */
-	  if_add_update (ifp);
+          /* If new link is added. */
+          if_add_update (ifp);
         }
       /* Interface status change. */
       else if (new_flags != ifp->flags)
@@ -1030,8 +1021,8 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
       /* Interface mtu change */
       else if (mtu != ifp->mtu)
 	{
-	  zlog_info("interface index %d mtu changed from %u to %u",
-		    ifp->mtu, mtu);
+	  zlog_info("interface %s mtu changed from %u to %u",
+		    ifp->name, ifp->mtu, mtu);
 	  ifp->mtu = ifp->mtu6 = mtu;
 	  if (if_is_operative (ifp))
 	    zebra_interface_up_update (ifp);
@@ -1054,6 +1045,7 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
       if_delete_update (ifp);
       if_delete (ifp);
     }
+
   return 0;
 }
 
@@ -1288,9 +1280,10 @@ netlink_delroute (int family, void *dest, int length, void *gate,
   req.n.nlmsg_flags = NLM_F_REQUEST;
   req.n.nlmsg_type = RTM_DELROUTE;
   req.r.rtm_family = family;
-  req.r.rtm_scope = RT_SCOPE_NOWHERE;
-  req.r.rtm_table = table;
   req.r.rtm_dst_len = length;
+  req.r.rtm_scope = RT_SCOPE_NOWHERE;
+  req.r.rtm_protocol = RTPROT_UNSPEC;
+  req.r.rtm_table = table;
 
   if (dest)
     addattr_l (&req.n, sizeof req, RTA_DST, dest, bytelen);
@@ -1333,8 +1326,7 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
   req.r.rtm_family = family;
   req.r.rtm_table = rib->table;
   req.r.rtm_dst_len = p->prefixlen;
-  req.r.rtm_protocol = RTPROT_ZEBRA;
-  req.r.rtm_scope = RT_SCOPE_UNIVERSE;
+  req.r.rtm_scope = rib->scope;
 
   if ((rib->flags & ZEBRA_FLAG_BLACKHOLE) || (rib->flags & ZEBRA_FLAG_REJECT))
     discard = 1;
@@ -1343,8 +1335,7 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
 
   switch (rib->type) {
   case ZEBRA_ROUTE_KERNEL:
-    /* FIXME: should remember original protocol from RTM_NEWLINK */
-    req.r.rtm_protocol = RTPROT_BOOT;
+    req.r.rtm_protocol = rib->protocol;
     break;
   case ZEBRA_ROUTE_CONNECT:
     req.r.rtm_protocol = RTPROT_KERNEL;
@@ -1352,8 +1343,6 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
   default:
     req.r.rtm_protocol = RTPROT_ZEBRA;
   }
-
-  req.r.rtm_scope = rib->scope;
 
   if (cmd == RTM_NEWROUTE)
     {
