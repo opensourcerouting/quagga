@@ -84,32 +84,17 @@ vyatta_quagga_stop ()
     log_action_begin_msg "Stopping Quagga"
     for daemon in ${daemons[@]} ; do
 	pidfile=$pid_dir/${daemon}.pid
-	if [ -r $pidfile ] ; then
-	    pid=`cat $pidfile 2>/dev/null`
-	else
-	    pid=`ps -o pid= -C vyatta-${daemon}`
-	fi
-	if [ -n "$pid" ] ; then
-	    [ "$daemon" != zebra ] && \
+	[ "$daemon" != zebra ] && \
 		log_action_cont_msg "$daemon"
-	    start-stop-daemon \
-		--stop \
-		--quiet \
-		--oknodo \
-		--exec /usr/sbin/vyatta-${daemon}
-#
-# Now we have to wait until $DAEMON has _really_ stopped.
-#
-	    for (( tries=0; tries<30; tries++ )) ; do
-		if [[ -d /proc/$pid ]] ; then
-		    sleep 3
-		    kill -0 $pid 2>/dev/null
-		else
-		    break
-		fi
-	    done
+	if [ -r $pidfile ]; then
+	    start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 \
+		--pidfile $pidfile --name vyatta-$daemon
 	    rm -f $pidfile
 	fi
+	# wait for any children as well
+	start-stop-daemon \
+	    --stop --quiet --oknodo \
+	    --retry=0/30/KILL/5  --exec /usr/sbin/vyatta-${daemon}
     done
     log_action_end_msg $?
     if echo ${daemons[@]} | grep -q zebra ; then
