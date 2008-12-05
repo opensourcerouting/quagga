@@ -20,7 +20,7 @@ BUILD_STAMP=debian/build-stamp
 CFLAGS = -Wall -g
 WANT_SNMP=1
 
-CFLAGS += -Os
+CFLAGS += -Os -freorder-blocks
 
 ifeq ($(WANT_SNMP),1)
 	xable_snmp = --enable-snmp
