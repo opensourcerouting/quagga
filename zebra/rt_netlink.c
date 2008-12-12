@@ -1043,7 +1043,6 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 		   name, ifi->ifi_index);
 
       if_delete_update (ifp);
-      if_delete (ifp);
     }
 
   return 0;
