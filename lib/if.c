@@ -117,23 +117,26 @@ if_create (const char *name, int namelen)
 {
   struct interface *ifp;
 
-  ifp = XCALLOC (MTYPE_IF, sizeof (struct interface));
-  ifp->ifindex = IFINDEX_INTERNAL;
+  ifp = if_lookup_by_name(name);
+  if (ifp) {
+    if (ifp->ifindex != IFINDEX_INTERNAL)
+      zlog_err("if_create(%s): corruption detected -- interface with this "
+	       "name exists already!", ifp->name);
+  } else {
+    ifp = XCALLOC (MTYPE_IF, sizeof (struct interface));
+    ifp->ifindex = IFINDEX_INTERNAL;
   
-  assert (name);
-  assert (namelen <= INTERFACE_NAMSIZ);	/* Need space for '\0' at end. */
-  strncpy (ifp->name, name, namelen);
-  ifp->name[namelen] = '\0';
-  if (if_lookup_by_name(ifp->name) == NULL)
-    listnode_add_sort (iflist, ifp);
-  else
-    zlog_err("if_create(%s): corruption detected -- interface with this "
-	     "name exists already!", ifp->name);
-  ifp->connected = list_new ();
-  ifp->connected->del = (void (*) (void *)) connected_free;
+    assert (namelen <= INTERFACE_NAMSIZ);	/* Need space for '\0' at end. */
+    strncpy (ifp->name, name, namelen);
+    ifp->name[namelen] = '\0';
 
-  if (if_master.if_new_hook)
-    (*if_master.if_new_hook) (ifp);
+    listnode_add_sort (iflist, ifp);
+    ifp->connected = list_new ();
+    ifp->connected->del = (void (*) (void *)) connected_free;
+    
+    if (if_master.if_new_hook)
+      (*if_master.if_new_hook) (ifp);
+  }
 
   return ifp;
 }
