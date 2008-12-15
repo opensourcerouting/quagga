@@ -109,6 +109,7 @@ endif
 
 # Build architecture-dependent files here.
 binary-arch: build install
+	rm -f debian/files
 	dh_testdir
 	dh_testroot
 
