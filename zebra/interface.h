@@ -215,6 +215,7 @@ extern void if_delete_update (struct interface *ifp);
 extern void if_add_update (struct interface *ifp);
 extern void if_up (struct interface *);
 extern void if_down (struct interface *);
+extern void if_rename (struct interface *, const char *);
 extern void if_refresh (struct interface *);
 extern void if_flags_update (struct interface *, uint64_t);
 extern int if_subnet_add (struct interface *, struct connected *);

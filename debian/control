@@ -1,7 +1,7 @@
 Source: vyatta-quagga
 Section: contrib/net
 Priority: extra
-Maintainer: Stephen Hemminger <shemminger@vyatta.com>
+Maintainer: Vyatta Package Maintainers <maintainers@vyatta.com>
 Build-Depends: debhelper (>= 5),
  autotools-dev,
  libncurses5-dev,

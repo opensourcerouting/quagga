@@ -1017,9 +1017,8 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 	  ifp->mtu = ifp->mtu6 = mtu;
 	  zlog_info("interface index %d was renamed from %s to %s",
 		    ifi->ifi_index, ifp->name, name);
-	      
-	  strncpy(ifp->name, name, INTERFACE_NAMSIZ);
-	  rib_update();
+
+	  if_rename (ifp, name);
 	}
       /* Interface mtu change */
       else if (mtu != ifp->mtu)
@@ -1046,7 +1045,6 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 		   name, ifi->ifi_index);
 
       if_delete_update (ifp);
-      if_delete (ifp);
     }
 
   return 0;
