@@ -532,6 +532,9 @@ netlink_interface_addr (struct sockaddr_nl *snl, struct nlmsghdr *h)
   ifp = if_lookup_by_index (ifa->ifa_index);
   if (ifp == NULL)
     {
+      if (h->nlmsg_type == RTM_DELADDR)
+	return 0;
+
       zlog_err ("netlink_interface_addr can't find interface by index %d",
                 ifa->ifa_index);
       return -1;
