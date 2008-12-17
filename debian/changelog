@@ -1,3 +1,10 @@
+vyatta-quagga (0.99.10-4) UNRELEASED; urgency=low
+
+  * update changelog
+  * Revised version if interface renaming
+
+ -- Stephen Hemminger <shemminger@amd2.home>  Tue, 16 Dec 2008 16:14:13 -0800
+
 vyatta-quagga (0.99.10-3) UNRELEASED; urgency=low
 
   * Don't delete interface completely when kernel notifies of loss of
