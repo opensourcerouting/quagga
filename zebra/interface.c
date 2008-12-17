@@ -483,22 +483,6 @@ if_delete_update (struct interface *ifp)
   ifp->ifindex = IFINDEX_INTERNAL;
 }
 
-/* Quagga daemons don't handle rename, so delete then add */
-void
-if_rename (struct interface *ifp, const char *name)
-{
-	int ifindex = ifp->ifindex;
-
-	if_delete_update(ifp);
-	listnode_delete (iflist, ifp);
-
-	strncpy(ifp->name, name, INTERFACE_NAMSIZ);
-	ifp->ifindex = ifindex;
-
-	listnode_add_sort (iflist, ifp);
-	if_add_update (ifp);
-}
-
 /* Interface is up. */
 void
 if_up (struct interface *ifp)
