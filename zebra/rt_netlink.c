@@ -1006,7 +1006,7 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 	  if_delete_update(ifp);
 
 	  ifp = if_create(name, strlen(name));
-	  ifp->ifindex = ifp->ifi_index;
+	  ifp->ifindex = ifi->ifi_index;
 	  ifp->metric = 1;
 	  ifp->mtu = ifp->mtu6 = mtu;
 	  ifp->flags = new_flags;
