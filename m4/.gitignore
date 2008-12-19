@@ -4,4 +4,4 @@ Makefile.in
 .arch-ids
 *~
 *.loT
-
+*.m4
