@@ -148,7 +148,6 @@ cluster_free (struct cluster_list *cluster)
   XFREE (MTYPE_CLUSTER, cluster);
 }
 
-#if 0
 static struct cluster_list *
 cluster_dup (struct cluster_list *cluster)
 {
@@ -167,7 +166,6 @@ cluster_dup (struct cluster_list *cluster)
   
   return new;
 }
-#endif
 
 static struct cluster_list *
 cluster_intern (struct cluster_list *cluster)
@@ -1496,10 +1494,7 @@ bgp_attr_unknown (struct peer *peer, struct attr *attr, u_char flag,
 
   /* Store transitive attribute to the end of attr->transit. */
   if (! ((attre = bgp_attr_extra_get(attr))->transit) )
-    {
-      attre->transit = XMALLOC (MTYPE_TRANSIT, sizeof (struct transit));
-      memset (attre->transit, 0, sizeof (struct transit));
-    }
+      attre->transit = XCALLOC (MTYPE_TRANSIT, sizeof (struct transit));
 
   transit = attre->transit;
 
@@ -2299,8 +2294,6 @@ bgp_packet_withdraw (struct peer *peer, struct stream *s, struct prefix *p,
 void
 bgp_attr_init (void)
 {
-  void attrhash_init ();
-
   aspath_init ();
   attrhash_init ();
   community_init ();

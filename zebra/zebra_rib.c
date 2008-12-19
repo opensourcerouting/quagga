@@ -1623,7 +1623,8 @@ int
 rib_add_ipv4 (int type, int flags, struct prefix_ipv4 *p, 
 	      struct in_addr *gate, struct in_addr *src,
 	      unsigned int ifindex, u_int32_t vrf_id,
-	      u_int32_t metric, u_int8_t distance, u_int8_t scope)
+	      u_int32_t metric, u_int8_t distance,
+	      u_int8_t scope, u_int8_t proto)
 {
   struct rib *rib;
   struct rib *same = NULL;
@@ -1688,6 +1689,7 @@ rib_add_ipv4 (int type, int flags, struct prefix_ipv4 *p,
   rib->nexthop_num = 0;
   rib->uptime = time (NULL);
   rib->scope = scope;
+  rib->protocol = proto;
 
   /* Nexthop settings. */
   if (gate)
@@ -1701,7 +1703,7 @@ rib_add_ipv4 (int type, int flags, struct prefix_ipv4 *p,
     nexthop_ifindex_add (rib, ifindex, src);
 
   /* If this route is kernel route, set FIB flag to the route. */
-  if (RIB_SYSTEM_ROUTE (rib)) 
+  if (RIB_SYSTEM_ROUTE (rib))
     {
       /* Mark system routes with the don't touch me flag */
       if (! rib_system_routes)

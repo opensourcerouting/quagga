@@ -1,5 +1,5 @@
 /*
- * $Id: log.h,v 1.20 2008/02/28 23:26:02 paul Exp $
+ * $Id$
  *
  * Zebra logging funcions.
  * Copyright (C) 1997, 1998, 1999 Kunihiro Ishiguro
@@ -105,48 +105,33 @@ extern void closezlog (struct zlog *zl);
 
 /* GCC have printf type attribute check.  */
 #ifdef __GNUC__
-#define PRINTF_ATTRIBUTE(a,b) __attribute__ ((format (printf, a, b)))
+#define PRINTF_ATTRIBUTE(a,b) __attribute__ ((__format__ (__printf__, a, b)))
 #else
 #define PRINTF_ATTRIBUTE(a,b)
 #endif /* __GNUC__ */
-
-#if !(__GNUC__ == 4)
-/* Mark functions as cold. gcc will assume any path leading to a call
-   to them will be unlikely.  This means a lot of paths leading up
-   to log messages are easily marked as not likely.
-*/
-#define COLD_ATTRIBUTE		__attribute__((__cold__))
-#else
-#define COLD_ATTRIBUTE
-#endif
 
 /* Generic function for zlog. */
 extern void zlog (struct zlog *zl, int priority, const char *format, ...)
   PRINTF_ATTRIBUTE(3, 4);
 
 /* Handy zlog functions. */
-extern void zlog_err (const char *format, ...)
-  PRINTF_ATTRIBUTE(1, 2) COLD_ATTRIBUTE;
-extern void zlog_warn (const char *format, ...)
-  PRINTF_ATTRIBUTE(1, 2) COLD_ATTRIBUTE;
-extern void zlog_info (const char *format, ...)
-  PRINTF_ATTRIBUTE(1, 2) COLD_ATTRIBUTE;
-extern void zlog_notice (const char *format, ...)
-  PRINTF_ATTRIBUTE(1, 2) COLD_ATTRIBUTE;
-extern void zlog_debug (const char *format, ...)
-  PRINTF_ATTRIBUTE(1, 2) COLD_ATTRIBUTE;
+extern void zlog_err (const char *format, ...) PRINTF_ATTRIBUTE(1, 2);
+extern void zlog_warn (const char *format, ...) PRINTF_ATTRIBUTE(1, 2);
+extern void zlog_info (const char *format, ...) PRINTF_ATTRIBUTE(1, 2);
+extern void zlog_notice (const char *format, ...) PRINTF_ATTRIBUTE(1, 2);
+extern void zlog_debug (const char *format, ...) PRINTF_ATTRIBUTE(1, 2);
 
 /* For bgpd's peer oriented log. */
 extern void plog_err (struct zlog *, const char *format, ...)
-  PRINTF_ATTRIBUTE(2, 3) COLD_ATTRIBUTE;
+  PRINTF_ATTRIBUTE(2, 3);
 extern void plog_warn (struct zlog *, const char *format, ...)
-  PRINTF_ATTRIBUTE(2, 3) COLD_ATTRIBUTE;
+  PRINTF_ATTRIBUTE(2, 3);
 extern void plog_info (struct zlog *, const char *format, ...)
-  PRINTF_ATTRIBUTE(2, 3) COLD_ATTRIBUTE;
+  PRINTF_ATTRIBUTE(2, 3);
 extern void plog_notice (struct zlog *, const char *format, ...)
-  PRINTF_ATTRIBUTE(2, 3) COLD_ATTRIBUTE;
+  PRINTF_ATTRIBUTE(2, 3);
 extern void plog_debug (struct zlog *, const char *format, ...)
-  PRINTF_ATTRIBUTE(2, 3) COLD_ATTRIBUTE;
+  PRINTF_ATTRIBUTE(2, 3);
 
 /* Set logging level for the given destination.  If the log_level
    argument is ZLOG_DISABLED, then the destination is disabled.

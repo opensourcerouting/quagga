@@ -112,7 +112,11 @@ rip_route_rte (struct rip_info *rinfo)
 static struct rip_info *
 rip_info_new ()
 {
-  return XCALLOC (MTYPE_RIP_INFO, sizeof (struct rip_info));
+  struct rip_info *new;
+
+  new = XMALLOC (MTYPE_RIP_INFO, sizeof (struct rip_info));
+  memset (new, 0, sizeof (struct rip_info));
+  return new;
 }
 
 void
@@ -2693,7 +2697,8 @@ rip_redistribute_withdraw (int type)
 static int
 rip_create (void)
 {
-  rip = XCALLOC (MTYPE_RIP, sizeof (struct rip));
+  rip = XMALLOC (MTYPE_RIP, sizeof (struct rip));
+  memset (rip, 0, sizeof (struct rip));
 
   /* Set initial value. */
   rip->version_send = RI_RIP_VERSION_2;
@@ -2973,7 +2978,6 @@ DEFUN (no_rip_route,
   return CMD_SUCCESS;
 }
 
-#if 0
 static void
 rip_update_default_metric (void)
 {
@@ -2985,7 +2989,6 @@ rip_update_default_metric (void)
       if (rinfo->type != ZEBRA_ROUTE_RIP && rinfo->type != ZEBRA_ROUTE_CONNECT)
         rinfo->metric = rip->default_metric;
 }
-#endif
 
 DEFUN (rip_default_metric,
        rip_default_metric_cmd,
@@ -3114,7 +3117,10 @@ struct rip_distance
 static struct rip_distance *
 rip_distance_new (void)
 {
-  return XCALLOC (MTYPE_RIP_DISTANCE, sizeof (struct rip_distance));
+  struct rip_distance *new;
+  new = XMALLOC (MTYPE_RIP_DISTANCE, sizeof (struct rip_distance));
+  memset (new, 0, sizeof (struct rip_distance));
+  return new;
 }
 
 static void
@@ -3682,7 +3688,7 @@ config_write_rip (struct vty *vty)
 }
 
 /* RIP node structure. */
-static struct cmd_node rip_node =
+struct cmd_node rip_node =
 {
   RIP_NODE,
   "%s(config-router)# ",

@@ -45,3 +45,70 @@ in_cksum(void *parg, int nbytes)
 	answer = ~sum;		/* ones-complement, then truncate to 16 bits */
 	return(answer);
 }
+
+/* Fletcher Checksum -- Refer to RFC1008. */
+#define MODX                 4102   /* 5802 should be fine */
+
+/* To be consistent, offset is 0-based index, rather than the 1-based 
+   index required in the specification ISO 8473, Annex C.1 */
+u_int16_t
+fletcher_checksum(u_char * buffer, const size_t len, const uint16_t offset)
+{
+  u_int8_t *p;
+  int x, y, c0, c1;
+  u_int16_t checksum;
+  u_int16_t *csum;
+  size_t partial_len, i, left = len;
+  
+  checksum = 0;
+
+  assert (offset < len);
+
+  /*
+   * Zero the csum in the packet.
+   */
+  csum = (u_int16_t *) (buffer + offset);
+  *(csum) = 0;
+
+  p = buffer;
+  c0 = 0;
+  c1 = 0;
+
+  while (left != 0)
+    {
+      partial_len = MIN(left, MODX);
+
+      for (i = 0; i < partial_len; i++)
+	{
+	  c0 = c0 + *(p++);
+	  c1 += c0;
+	}
+
+      c0 = c0 % 255;
+      c1 = c1 % 255;
+
+      left -= partial_len;
+    }
+  
+  /* The cast is important, to ensure the mod is taken as a signed value. */
+  x = ((int)(len - offset - 1) * c0 - c1) % 255;
+
+  if (x <= 0)
+    x += 255;
+  y = 510 - c0 - x;
+  if (y > 255)  
+    y -= 255;
+  
+  /*
+   * Now we write this to the packet.
+   * We could skip this step too, since the checksum returned would
+   * be stored into the checksum field by the caller.
+   */
+  buffer[offset] = x;
+  buffer[offset + 1] = y;
+
+  /* Take care of the endian issue */
+  checksum = htons((x << 8) | (y & 0xFF));
+
+  return checksum;
+}

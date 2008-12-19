@@ -6509,6 +6509,32 @@ ALIAS (clear_ip_bgp_peer_rsclient,
        "BGP IPv6 neighbor to clear\n"
        "Soft reconfig for rsclient RIB\n")
 
+DEFUN (show_bgp_views,
+       show_bgp_views_cmd,
+       "show bgp views",
+       SHOW_STR
+       BGP_STR
+       "Show the defined BGP views\n")
+{
+  struct list *inst = bm->bgp;
+  struct listnode *node;
+  struct bgp *bgp;
+
+  if (!bgp_option_check (BGP_OPT_MULTIPLE_INSTANCE))
+    {
+      vty_out (vty, "Multiple BGP views are not defined%s", VTY_NEWLINE);
+      return CMD_WARNING;
+    }
+  
+  vty_out (vty, "Defined BGP views:%s", VTY_NEWLINE);
+  for (ALL_LIST_ELEMENTS_RO(inst, node, bgp))
+    vty_out (vty, "\t%s (AS%u)%s", 
+             bgp->name ? bgp->name : "(null)",
+             bgp->as, VTY_NEWLINE);
+  
+  return CMD_SUCCESS;
+}
+
 DEFUN (show_bgp_memory, 
        show_bgp_memory_cmd,
        "show bgp memory",
@@ -9722,6 +9748,18 @@ bgp_vty_init (void)
   install_element (VIEW_NODE, &show_bgp_ipv6_summary_cmd);
   install_element (VIEW_NODE, &show_bgp_instance_ipv6_summary_cmd);
 #endif /* HAVE_IPV6 */
+  install_element (RESTRICTED_NODE, &show_ip_bgp_summary_cmd);
+  install_element (RESTRICTED_NODE, &show_ip_bgp_instance_summary_cmd);
+  install_element (RESTRICTED_NODE, &show_ip_bgp_ipv4_summary_cmd);
+  install_element (RESTRICTED_NODE, &show_ip_bgp_instance_ipv4_summary_cmd);
+  install_element (RESTRICTED_NODE, &show_ip_bgp_vpnv4_all_summary_cmd);
+  install_element (RESTRICTED_NODE, &show_ip_bgp_vpnv4_rd_summary_cmd);
+#ifdef HAVE_IPV6
+  install_element (RESTRICTED_NODE, &show_bgp_summary_cmd);
+  install_element (RESTRICTED_NODE, &show_bgp_instance_summary_cmd);
+  install_element (RESTRICTED_NODE, &show_bgp_ipv6_summary_cmd);
+  install_element (RESTRICTED_NODE, &show_bgp_instance_ipv6_summary_cmd);
+#endif /* HAVE_IPV6 */
   install_element (ENABLE_NODE, &show_ip_bgp_summary_cmd);
   install_element (ENABLE_NODE, &show_ip_bgp_instance_summary_cmd);
   install_element (ENABLE_NODE, &show_ip_bgp_ipv4_summary_cmd);
@@ -9746,6 +9784,11 @@ bgp_vty_init (void)
   install_element (VIEW_NODE, &show_ip_bgp_vpnv4_rd_neighbors_peer_cmd);
   install_element (VIEW_NODE, &show_ip_bgp_instance_neighbors_cmd);
   install_element (VIEW_NODE, &show_ip_bgp_instance_neighbors_peer_cmd);
+  install_element (RESTRICTED_NODE, &show_ip_bgp_neighbors_peer_cmd);
+  install_element (RESTRICTED_NODE, &show_ip_bgp_ipv4_neighbors_peer_cmd);
+  install_element (RESTRICTED_NODE, &show_ip_bgp_vpnv4_all_neighbors_peer_cmd);
+  install_element (RESTRICTED_NODE, &show_ip_bgp_vpnv4_rd_neighbors_peer_cmd);
+  install_element (RESTRICTED_NODE, &show_ip_bgp_instance_neighbors_peer_cmd);
   install_element (ENABLE_NODE, &show_ip_bgp_neighbors_cmd);
   install_element (ENABLE_NODE, &show_ip_bgp_ipv4_neighbors_cmd);
   install_element (ENABLE_NODE, &show_ip_bgp_neighbors_peer_cmd);
@@ -9766,6 +9809,10 @@ bgp_vty_init (void)
   install_element (VIEW_NODE, &show_bgp_instance_ipv6_neighbors_cmd);
   install_element (VIEW_NODE, &show_bgp_instance_neighbors_peer_cmd);
   install_element (VIEW_NODE, &show_bgp_instance_ipv6_neighbors_peer_cmd);
+  install_element (RESTRICTED_NODE, &show_bgp_neighbors_peer_cmd);
+  install_element (RESTRICTED_NODE, &show_bgp_ipv6_neighbors_peer_cmd);
+  install_element (RESTRICTED_NODE, &show_bgp_instance_neighbors_peer_cmd);
+  install_element (RESTRICTED_NODE, &show_bgp_instance_ipv6_neighbors_peer_cmd);
   install_element (ENABLE_NODE, &show_bgp_neighbors_cmd);
   install_element (ENABLE_NODE, &show_bgp_ipv6_neighbors_cmd);
   install_element (ENABLE_NODE, &show_bgp_neighbors_peer_cmd);
@@ -9787,6 +9834,10 @@ bgp_vty_init (void)
   install_element (VIEW_NODE, &show_ip_bgp_instance_rsclient_summary_cmd);
   install_element (VIEW_NODE, &show_ip_bgp_ipv4_rsclient_summary_cmd);
   install_element (VIEW_NODE, &show_ip_bgp_instance_ipv4_rsclient_summary_cmd);
+  install_element (RESTRICTED_NODE, &show_ip_bgp_rsclient_summary_cmd);
+  install_element (RESTRICTED_NODE, &show_ip_bgp_instance_rsclient_summary_cmd);
+  install_element (RESTRICTED_NODE, &show_ip_bgp_ipv4_rsclient_summary_cmd);
+  install_element (RESTRICTED_NODE, &show_ip_bgp_instance_ipv4_rsclient_summary_cmd);
   install_element (ENABLE_NODE, &show_ip_bgp_rsclient_summary_cmd);
   install_element (ENABLE_NODE, &show_ip_bgp_instance_rsclient_summary_cmd);
   install_element (ENABLE_NODE, &show_ip_bgp_ipv4_rsclient_summary_cmd);
@@ -9797,6 +9848,10 @@ bgp_vty_init (void)
   install_element (VIEW_NODE, &show_bgp_ipv6_rsclient_summary_cmd);
   install_element (VIEW_NODE, &show_bgp_instance_rsclient_summary_cmd);
   install_element (VIEW_NODE, &show_bgp_instance_ipv6_rsclient_summary_cmd);
+  install_element (RESTRICTED_NODE, &show_bgp_rsclient_summary_cmd);
+  install_element (RESTRICTED_NODE, &show_bgp_ipv6_rsclient_summary_cmd);
+  install_element (RESTRICTED_NODE, &show_bgp_instance_rsclient_summary_cmd);
+  install_element (RESTRICTED_NODE, &show_bgp_instance_ipv6_rsclient_summary_cmd);
   install_element (ENABLE_NODE, &show_bgp_rsclient_summary_cmd);
   install_element (ENABLE_NODE, &show_bgp_ipv6_rsclient_summary_cmd);
   install_element (ENABLE_NODE, &show_bgp_instance_rsclient_summary_cmd);
@@ -9843,7 +9898,13 @@ bgp_vty_init (void)
 
   /* "show bgp memory" commands. */
   install_element (VIEW_NODE, &show_bgp_memory_cmd);
+  install_element (RESTRICTED_NODE, &show_bgp_memory_cmd);
   install_element (ENABLE_NODE, &show_bgp_memory_cmd);
+  
+  /* "show bgp views" commands. */
+  install_element (VIEW_NODE, &show_bgp_views_cmd);
+  install_element (RESTRICTED_NODE, &show_bgp_views_cmd);
+  install_element (ENABLE_NODE, &show_bgp_views_cmd);
   
   /* Community-list. */
   community_list_vty ();
