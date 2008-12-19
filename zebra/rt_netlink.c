@@ -466,13 +466,8 @@ netlink_interface (struct sockaddr_nl *snl, struct nlmsghdr *h)
     }
 
   /* Add interface. */
-  ifp = if_lookup_by_index(ifi->ifi_index);
-  if (!ifp)
-    {
-      ifp = if_create(name, strlen(name));
-      ifp->ifindex = ifi->ifi_index;
-    }
-  strncpy(ifp->name, name, INTERFACE_NAMSIZ);
+  ifp = if_get_by_name (name);
+  ifp->ifindex = ifi->ifi_index;
   ifp->flags = ifi->ifi_flags & 0x0000fffff;
   ifp->mtu6 = ifp->mtu = *(uint32_t *) RTA_DATA (tb[IFLA_MTU]);
   ifp->metric = 1;
@@ -977,7 +972,7 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
         {
           if (ifp == NULL)
 	    {
-	      ifp = if_create(name, strlen(name));
+	      ifp = if_get_by_name (name);
 	      ifp->ifindex = ifi->ifi_index;
 	      ifp->metric = 1;
 	    } 
@@ -995,24 +990,6 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 	  /* If new link is added. */
 	  if_add_update (ifp);
         }
-      /* Interface name change */
-      else if (strcmp(ifp->name, name) != 0)
-	{
-	  ifp->mtu6 = ifp->mtu = mtu;
-
-	  zlog_info("interface index %d was renamed from %s to %s",
-		    ifi->ifi_index, ifp->name, name);
-
-	  if_delete_update(ifp);
-
-	  ifp = if_create(name, strlen(name));
-	  ifp->ifindex = ifi->ifi_index;
-	  ifp->metric = 1;
-	  ifp->mtu = ifp->mtu6 = mtu;
-	  ifp->flags = new_flags;
-
-	  if_add_update (ifp);
-	}
       /* Interface status change. */
       else if (new_flags != ifp->flags)
 	{
@@ -1036,6 +1013,15 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 	      if (if_is_operative (ifp))
 		if_up (ifp);
 	    }
+	}
+      /* Interface name change */
+      else if (strcmp(ifp->name, name) != 0)
+	{
+	  ifp->mtu = ifp->mtu6 = mtu;
+	  zlog_info("interface index %d was renamed from %s to %s",
+		    ifi->ifi_index, ifp->name, name);
+
+	  if_rename (ifp, name);
 	}
       /* Interface mtu change */
       else if (mtu != ifp->mtu)

@@ -1,17 +1,8 @@
-vyatta-quagga (0.99.10-4) UNRELEASED; urgency=low
+vyatta-quagga (0.99.10-3.1) UNRELEASED; urgency=low
 
-  * Revised version of interface renaming
+  * Merge in jenner changes to handle interface renames
 
- -- Stephen Hemminger <shemminger@amd2.home>  Tue, 16 Dec 2008 16:14:13 -0800
-
-vyatta-quagga (0.99.10-3) UNRELEASED; urgency=low
-
-  * Don't delete interface completely when kernel notifies of loss of
-    link
-  * Handle interfaces coming back from dead
-  * Fix management of interface renames
-
- -- Stephen Hemminger <shemminger@amd2.home>  Mon, 15 Dec 2008 09:32:58 -0800
+ -- Stephen Hemminger <shemminger@vyatta.com>  Fri, 19 Dec 2008 15:08:52 -0800
 
 vyatta-quagga (0.99.10-2) unstable; urgency=low
 
