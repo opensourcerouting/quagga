@@ -454,13 +454,8 @@ netlink_interface (struct sockaddr_nl *snl, struct nlmsghdr *h)
     }
 
   /* Add interface. */
-  ifp = if_lookup_by_index(ifi->ifi_index);
-  if (!ifp)
-    {
-      ifp = if_create(name, strlen(name));
-      ifp->ifindex = ifi->ifi_index;
-    }
-  strncpy(ifp->name, name, INTERFACE_NAMSIZ);
+  ifp = if_get_by_name (name);
+  ifp->ifindex = ifi->ifi_index;
   ifp->flags = ifi->ifi_flags & 0x0000fffff;
   ifp->mtu6 = ifp->mtu = *(uint32_t *) RTA_DATA (tb[IFLA_MTU]);
   ifp->metric = 1;
@@ -968,14 +963,10 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
         {
           if (ifp == NULL)
 	    {
-	      ifp = if_create(name, strlen(name));
+	      ifp = if_get_by_name (name);
 	      ifp->ifindex = ifi->ifi_index;
 	      ifp->metric = 1;
 	    } 
-	  else if (strcmp(ifp->name, name) != 0)
-	    {
-	      strncpy(ifp->name, name, INTERFACE_NAMSIZ);
-	    }
 
 	  zlog_info ("interface %s index %d %s added.",
 		     name, ifi->ifi_index, if_flag_dump(new_flags));

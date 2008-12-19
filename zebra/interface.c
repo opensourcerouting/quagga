@@ -483,20 +483,36 @@ if_delete_update (struct interface *ifp)
   ifp->ifindex = IFINDEX_INTERNAL;
 }
 
-/* Quagga daemons don't handle rename, so delete then add */
+/* Interfaces can only be renamed when DOWN */
 void
 if_rename (struct interface *ifp, const char *name)
 {
-	int ifindex = ifp->ifindex;
+	struct interface *oifp;
 
-	if_delete_update(ifp);
+	zebra_interface_delete_update (ifp);
 	listnode_delete (iflist, ifp);
 
-	strncpy(ifp->name, name, INTERFACE_NAMSIZ);
-	ifp->ifindex = ifindex;
+	/* rename overlaps earlier interface */
+	oifp = if_lookup_by_name(name);
+	if (oifp)
+	  {
+	    if (oifp->ifindex != IFINDEX_INTERNAL)
+	      {
+		zlog_warn ("interface rname %s to %s overlaps earlier interface",
+			   ifp->name, name);
+		if_delete_update (oifp);
+	      }
+	    if (IS_ZEBRA_DEBUG_KERNEL)
+	      zlog_debug ("interface %s superseded by rename of %s",
+			  oifp->name, ifp->name);
+	    if_delete (oifp);
+	  }
 
+	strncpy(ifp->name, name, INTERFACE_NAMSIZ);
+	ifp->name[INTERFACE_NAMSIZ] = 0;
 	listnode_add_sort (iflist, ifp);
-	if_add_update (ifp);
+
+	zebra_interface_add_update (ifp);
 }
 
 /* Interface is up. */
