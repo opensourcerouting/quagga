@@ -17,7 +17,7 @@ DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
 PACKAGE=vyatta-quagga
 PKGDIR=$(CURDIR)/debian/$(PACKAGE)
 BUILD_STAMP=debian/build-stamp
-CFLAGS = -Wall -g
+CFLAGS = -Wall
 WANT_SNMP=1
 
 CFLAGS += -Os -freorder-blocks
@@ -124,7 +124,7 @@ binary-arch: build install
 	dh_installpam --name=quagga
 	dh_installlogrotate
 
-	dh_strip
+#	dh_strip
 	dh_compress
 	dh_fixperms
 	dh_makeshlibs --noscripts
