@@ -131,12 +131,13 @@ if_create (const char *name, int namelen)
     ifp->name[namelen] = '\0';
 
     listnode_add_sort (iflist, ifp);
-    ifp->connected = list_new ();
-    ifp->connected->del = (void (*) (void *)) connected_free;
-    
-    if (if_master.if_new_hook)
-      (*if_master.if_new_hook) (ifp);
   }
+
+  ifp->connected = list_new ();
+  ifp->connected->del = (void (*) (void *)) connected_free;
+    
+  if (if_master.if_new_hook)
+    (*if_master.if_new_hook) (ifp);
 
   return ifp;
 }
@@ -149,7 +150,11 @@ if_delete_retain (struct interface *ifp)
     (*if_master.if_delete_hook) (ifp);
 
   /* Free connected address list */
-  list_delete (ifp->connected);
+  if (ifp->connected)
+    {
+      list_delete (ifp->connected);
+      ifp->connected = NULL;
+    }
 }
 
 /* Delete and free interface structure. */

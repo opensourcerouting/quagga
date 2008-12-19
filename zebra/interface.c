@@ -102,6 +102,7 @@ if_zebra_delete_hook (struct interface *ifp)
 	route_table_finish (zebra_if->ipv4_subnets);
 
       XFREE (MTYPE_TMP, zebra_if);
+      ifp->info = NULL;
     }
 
   return 0;
@@ -496,16 +497,18 @@ if_rename (struct interface *ifp, const char *name)
 	oifp = if_lookup_by_name(name);
 	if (oifp)
 	  {
-	    if (oifp->ifindex != IFINDEX_INTERNAL)
-	      {
-		zlog_warn ("interface rname %s to %s overlaps earlier interface",
-			   ifp->name, name);
-		if_delete_update (oifp);
-	      }
-	    if (IS_ZEBRA_DEBUG_KERNEL)
-	      zlog_debug ("interface %s superseded by rename of %s",
-			  oifp->name, ifp->name);
-	    if_delete (oifp);
+	      if (oifp->ifindex != IFINDEX_INTERNAL)
+		{
+		  zlog_err ("interface %s rename to %s overlaps with index %d",
+			    ifp->name, name, oifp->ifindex);
+		  if_delete_update (oifp);
+		}
+	      else if (IS_ZEBRA_DEBUG_KERNEL)
+		zlog_debug ("interface %s index %d superseded by rename of %s",
+			    oifp->name, oifp->ifindex, ifp->name);
+
+	      listnode_delete (iflist, oifp);
+	      XFREE (MTYPE_IF, oifp);
 	  }
 
 	strncpy(ifp->name, name, INTERFACE_NAMSIZ);
