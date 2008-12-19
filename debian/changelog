@@ -1,3 +1,33 @@
+vyatta-quagga (0.99.11-1) UNRELEASED; urgency=low
+
+  [ Stephen Hemminger ]
+  * ignore derived files
+  * Interface rename changes
+  * Ignore delete address message interface is gone
+  * Fix management of interface renames
+
+  [ An-Cheng Huang ]
+  * "files" file should be removed before package build
+  * update maintainer information
+
+  [ Stephen Hemminger ]
+  * Handle interfaces coming back from dead
+  * Don't delete interface completely when kernel notifies of loss of
+    link
+  * Use start-stop-daemon to retry
+  * Turn on block rearranging.
+  * Remember protocol as well as scope in RIB
+  * Fix inversion of likely/unlikely in assert
+  * Minor whitespace
+  * Revert "Add compiler directive to mark code paths that log as cold"
+  * Make command nodes static (again)
+  * Make command nodes static (again)
+  * Use XCALLOC instead of XMALLOC/memset
+  * Remove unnecessary modprobe
+  * Merge in upstream 0.99.11
+
+ -- Stephen Hemminger <shemminger@extreme>  Fri, 19 Dec 2008 11:43:26 -0800
+
 vyatta-quagga (0.99.10-2) unstable; urgency=low
 
 	  3.2.0
