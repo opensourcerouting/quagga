@@ -929,7 +929,10 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 
   len = h->nlmsg_len - NLMSG_LENGTH (sizeof (struct ifinfomsg));
   if (len < 0)
-    return -1;
+    {
+      zlog_err ("%s: truncated netlink message", __func__);
+      return -1;
+    }
 
   /* Looking up interface name. */
   memset (tb, 0, sizeof tb);
@@ -957,8 +960,11 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
     {
       unsigned long new_flags = ifi->ifi_flags & 0x0000fffff;
       unsigned int mtu = *(uint32_t *) RTA_DATA (tb[IFLA_MTU]);
-      ifp = if_lookup_by_index (ifi->ifi_index);
 
+      if (IS_ZEBRA_DEBUG_KERNEL)
+	zlog_debug ("%s: new link flags %#lx mtu %d", __func__, new_flags, mtu);
+
+      ifp = if_lookup_by_index (ifi->ifi_index);
       if (ifp == NULL || !CHECK_FLAG (ifp->status, ZEBRA_INTERFACE_ACTIVE))
         {
           if (ifp == NULL)
