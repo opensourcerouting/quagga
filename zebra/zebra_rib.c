@@ -1214,8 +1214,9 @@ rib_process (struct route_node *rn)
   if (select && select == fib)
     {
       if (IS_ZEBRA_DEBUG_RIB)
-        zlog_debug ("%s: %s/%d: Updating existing route, select %p, fib %p",
-                     __func__, buf, rn->p.prefixlen, select, fib);
+        zlog_debug ("%s: %s/%d: Updating existing route, fib %p flags %#lx status %#lx",
+		    __func__, buf, rn->p.prefixlen, fib, 
+		    select->flags, select->status);
       if (CHECK_FLAG (select->flags, ZEBRA_FLAG_CHANGED))
         {
           redistribute_delete (&rn->p, select);
