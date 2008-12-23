@@ -488,34 +488,47 @@ if_delete_update (struct interface *ifp)
 void
 if_rename (struct interface *ifp, const char *name)
 {
-	struct interface *oifp;
+  struct interface *oifp;
 
-	zebra_interface_delete_update (ifp);
-	listnode_delete (iflist, ifp);
+  UNSET_FLAG (ifp->status, ZEBRA_INTERFACE_ACTIVE);
+  zebra_interface_delete_update (ifp);
+  listnode_delete (iflist, ifp);
 
-	/* rename overlaps earlier interface */
-	oifp = if_lookup_by_name(name);
-	if (oifp)
-	  {
-	      if (oifp->ifindex != IFINDEX_INTERNAL)
-		{
-		  zlog_err ("interface %s rename to %s overlaps with index %d",
-			    ifp->name, name, oifp->ifindex);
-		  if_delete_update (oifp);
-		}
-	      else if (IS_ZEBRA_DEBUG_KERNEL)
-		zlog_debug ("interface %s index %d superseded by rename of %s",
-			    oifp->name, oifp->ifindex, ifp->name);
+  /* rename overlaps earlier interface */
+  oifp = if_lookup_by_name(name);
+  if (oifp)
+    {
+      if (oifp->ifindex != IFINDEX_INTERNAL)
+	{
+	  zlog_err ("interface %s rename to %s overlaps with index %d",
+		    ifp->name, name, oifp->ifindex);
+	  if_delete_update (oifp);
+	}
+      else if (IS_ZEBRA_DEBUG_KERNEL)
+	zlog_debug ("interface %s index %d superseded by rename of %s",
+		    oifp->name, oifp->ifindex, ifp->name);
 
-	      listnode_delete (iflist, oifp);
-	      XFREE (MTYPE_IF, oifp);
-	  }
+      listnode_delete (iflist, oifp);
+      XFREE (MTYPE_IF, oifp);
+    }
 
-	strncpy(ifp->name, name, INTERFACE_NAMSIZ);
-	ifp->name[INTERFACE_NAMSIZ] = 0;
-	listnode_add_sort (iflist, ifp);
+  strncpy(ifp->name, name, INTERFACE_NAMSIZ);
+  ifp->name[INTERFACE_NAMSIZ] = 0;
+  listnode_add_sort (iflist, ifp);
 
-	zebra_interface_add_update (ifp);
+  zebra_interface_add_update (ifp);
+
+  SET_FLAG (ifp->status, ZEBRA_INTERFACE_ACTIVE);
+
+  if (ifp->connected)
+    {
+      struct connected *ifc;
+      struct listnode *node;
+      for (ALL_LIST_ELEMENTS_RO (ifp->connected, node, ifc))
+	zebra_interface_address_add_update (ifp, ifc);
+    }
+
+  rib_update();
 }
 
 /* Interface is up. */
