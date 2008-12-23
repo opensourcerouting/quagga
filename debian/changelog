@@ -1,3 +1,9 @@
+vyatta-quagga (0.99.10-3.3) UNRELEASED; urgency=low
+
+  * Fix handling of recursive routes
+
+ -- Stephen Hemminger <shemminger@vyatta.com>  Mon, 22 Dec 2008 16:17:21 -0800
+
 vyatta-quagga (0.99.10-3.2) UNRELEASED; urgency=low
 
   * Ignore address deletion after interface deletion

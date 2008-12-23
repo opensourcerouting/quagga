@@ -474,9 +474,20 @@ nexthop_active_ipv4 (struct rib *rib, struct nexthop *nexthop, int set,
 			  nexthop->ifindex = newhop->ifindex;
 		      }
 		    else if (! CHECK_FLAG(nexthop->flags, NEXTHOP_FLAG_RECURSIVE)
-			     || newhop->ifindex != nexthop->ifindex
-			     || nexthop->gate.ipv4.s_addr != newhop->gate.ipv4.s_addr)
-		      SET_FLAG (rib->flags, ZEBRA_FLAG_CHANGED);
+			     || nexthop->rtype != newhop->type
+			     || ((newhop->type == NEXTHOP_TYPE_IPV4 ||
+				  newhop->type == NEXTHOP_TYPE_IPV4_IFINDEX) &&
+				 nexthop->gate.ipv4.s_addr != newhop->gate.ipv4.s_addr)
+			     || ((newhop->type == NEXTHOP_TYPE_IFINDEX
+				  || newhop->type == NEXTHOP_TYPE_IFNAME
+				  || newhop->type == NEXTHOP_TYPE_IPV4_IFINDEX) &&
+				 nexthop->rifindex != newhop->ifindex)
+			     || ((nexthop->type == NEXTHOP_TYPE_IPV4) &&
+				 nexthop->ifindex != newhop->ifindex))
+		      {
+			SET_FLAG (rib->flags, ZEBRA_FLAG_CHANGED);
+		      }
+
 		    return 1;
 		  }
 	      return 0;
@@ -603,10 +614,22 @@ nexthop_active_ipv6 (struct rib *rib, struct nexthop *nexthop, int set,
 			  nexthop->ifindex = newhop->ifindex;
 		      }
 		    else if (! CHECK_FLAG(nexthop->flags, NEXTHOP_FLAG_RECURSIVE)
-			     || newhop->ifindex != nexthop->ifindex
-			     || !IPV6_ADDR_SAME(&nexthop->gate.ipv6,
-						&newhop->gate.ipv6))
-		      SET_FLAG (rib->flags, ZEBRA_FLAG_CHANGED);
+			     || nexthop->rtype != newhop->type
+			     || ((newhop->type == NEXTHOP_TYPE_IPV6
+				  || newhop->type == NEXTHOP_TYPE_IPV6_IFINDEX
+				  || newhop->type == NEXTHOP_TYPE_IPV6_IFNAME) &&
+				 !IPV6_ADDR_SAME (&nexthop->rgate.ipv6,
+						  &newhop->gate.ipv6))
+			     || ((newhop->type == NEXTHOP_TYPE_IFINDEX
+				  || newhop->type == NEXTHOP_TYPE_IFNAME
+				  || newhop->type == NEXTHOP_TYPE_IPV6_IFINDEX
+				  || newhop->type == NEXTHOP_TYPE_IPV6_IFNAME) &&
+				 nexthop->rifindex != newhop->ifindex)
+			     || (nexthop->type == NEXTHOP_TYPE_IPV6) &&
+			     nexthop->ifindex != newhop->ifindex)
+		      {
+			SET_FLAG (rib->flags, ZEBRA_FLAG_CHANGED);
+		      }
 
 		    return 1;
 		  }
