@@ -290,6 +290,13 @@ netlink_parse_info (int (*filter) (struct sockaddr_nl *, struct nlmsghdr *),
           return -1;
         }
       
+      /* JF: Ignore messages that aren't from the kernel */
+      if ( snl.nl_pid != 0 )
+	{
+	  zlog ( NULL, LOG_ERR, "Ignoring message from pid %u", snl.nl_pid );
+	  continue;
+	}
+
       for (h = (struct nlmsghdr *) buf; NLMSG_OK (h, (unsigned int) status);
            h = NLMSG_NEXT (h, status))
         {
@@ -1050,13 +1057,6 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 static int
 netlink_information_fetch (struct sockaddr_nl *snl, struct nlmsghdr *h)
 {
-  /* JF: Ignore messages that aren't from the kernel */
-  if ( snl->nl_pid != 0 )
-    {
-      zlog ( NULL, LOG_ERR, "Ignoring message from pid %u", snl->nl_pid );
-      return 0;
-    }
-
   switch (h->nlmsg_type)
     {
     case RTM_NEWROUTE:
