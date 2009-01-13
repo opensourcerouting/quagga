@@ -1,16 +1,16 @@
-vyatta-quagga (0.99.10-3.3) UNRELEASED; urgency=low
+vyatta-quagga (0.99.10-3.3) unstable; urgency=low
 
   * Fix handling of recursive routes
 
  -- Stephen Hemminger <shemminger@vyatta.com>  Mon, 22 Dec 2008 16:17:21 -0800
 
-vyatta-quagga (0.99.10-3.2) UNRELEASED; urgency=low
+vyatta-quagga (0.99.10-3.2) unstable; urgency=low
 
   * Ignore address deletion after interface deletion
 
  -- Stephen Hemminger <shemminger@vyatta.com>  Mon, 22 Dec 2008 10:17:51 -0800
 
-vyatta-quagga (0.99.10-3.1) UNRELEASED; urgency=low
+vyatta-quagga (0.99.10-3.1) unstable; urgency=low
 
   * Merge in jenner changes to handle interface renames
 
