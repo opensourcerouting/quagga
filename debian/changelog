@@ -1,3 +1,13 @@
+vyatta-quagga (0.99.10-3.3+islavista1) unstable; urgency=low
+
+  [ Stephen Hemminger ]
+  * Add more to interface rename updates
+
+  [ An-Cheng Huang ]
+  * UNRELEASED -> unstable
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Mon, 12 Jan 2009 16:56:45 -0800
+
 vyatta-quagga (0.99.10-3.3) unstable; urgency=low
 
   * Fix handling of recursive routes
