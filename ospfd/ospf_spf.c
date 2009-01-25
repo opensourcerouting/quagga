@@ -650,6 +650,7 @@ ospf_nexthop_calculation (struct ospf_area *area, struct vertex *v,
   /* Check if W's parent is a network connected to root. */
   else if (v->type == OSPF_VERTEX_NETWORK)
     {
+      int root_found = 0;
       /* See if any of V's parents are the root. */
       for (ALL_LIST_ELEMENTS (v->parents, node, nnode, vp))
         {
@@ -660,7 +661,7 @@ ospf_nexthop_calculation (struct ospf_area *area, struct vertex *v,
 	       * router.  The list of next hops is then determined by
 	       * examining the destination's router-LSA...
 	       */
-
+	      root_found = 1; /* We are connected to the root */
 	      assert(w->type == OSPF_VERTEX_ROUTER);
               while ((l = ospf_get_next_link (w, v, l)))
                 {
@@ -678,7 +679,7 @@ ospf_nexthop_calculation (struct ospf_area *area, struct vertex *v,
                 }
             }
         }
-      if (added)
+      if (root_found)
         return added;
     }
 
