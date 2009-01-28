@@ -1,4 +1,4 @@
-vyatta-quagga (0.99.11-1) UNRELEASED; urgency=low
+vyatta-quagga (0.99.11-1) unstable; urgency=low
 
   [ Stephen Hemminger ]
   * ignore derived files
@@ -25,6 +25,8 @@ vyatta-quagga (0.99.11-1) UNRELEASED; urgency=low
   * Use XCALLOC instead of XMALLOC/memset
   * Remove unnecessary modprobe
   * Merge in upstream 0.99.11
+
+  (Tag release)
 
  -- Stephen Hemminger <shemminger@extreme>  Fri, 19 Dec 2008 11:43:26 -0800
 
