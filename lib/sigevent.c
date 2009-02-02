@@ -177,6 +177,14 @@ program_counter(void *context)
 #ifdef REG_EIP
   if (context)
     return (void *)(((ucontext_t *)context)->uc_mcontext.gregs[REG_EIP]);
+#elif defined(__powerpc__)
+#if (__GNUC__ >= 3)
+  if (context)
+    return (void *)(((ucontext_t *)context)->uc_mcontext.uc_regs->gregs[32]);
+  #else
+  if (context)
+    return (void *)(((ucontext_t *)context)->uc_mcontext.regs->nip);
+  #endif
 #endif /* REG_EIP */
 #endif /* GNU_LINUX */
 #endif /* HAVE_UCONTEXT_H */
