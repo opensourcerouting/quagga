@@ -135,12 +135,17 @@ ospf_ase_complete_direct_routes (struct ospf_route *ro, struct in_addr nexthop)
 {
   struct listnode *node;
   struct ospf_path *op;
+  struct interface *ifp;
 
   for (ALL_LIST_ELEMENTS_RO (ro->paths, node, op))
-    if (if_is_pointopoint (op->oi->ifp))
-      op->nexthop.s_addr = 0; /* PtoP I/F's are always directly connected */
-    else if (op->nexthop.s_addr == 0)
-      op->nexthop.s_addr = nexthop.s_addr;
+    {
+      if (!(ifp = if_lookup_by_index (op->ifindex)))
+	  continue;
+      if (if_is_pointopoint (ifp))
+	op->nexthop.s_addr = 0; /* PtoP I/F's are always directly connected */
+      else if (op->nexthop.s_addr == 0)
+	op->nexthop.s_addr = nexthop.s_addr;
+    }
 }
 
 static int
@@ -595,7 +600,7 @@ ospf_ase_route_match_same (struct route_table *rt, struct prefix *prefix,
        
        if (! IPV4_ADDR_SAME (&op->nexthop, &newop->nexthop))
 	 return 0;
-       if (op->oi->ifp->ifindex != newop->oi->ifp->ifindex)
+       if (op->ifindex != newop->ifindex)
 	 return 0;
      }
    return 1;
