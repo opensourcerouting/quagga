@@ -1,3 +1,10 @@
+vyatta-quagga (0.99.11-2) unstable; urgency=low
+
+  * Move pid check back to original location
+  * Don't start daemons till needed
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Wed, 04 Feb 2009 15:19:49 -0800
+
 vyatta-quagga (0.99.11-1) unstable; urgency=low
 
   [ Stephen Hemminger ]
