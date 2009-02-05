@@ -45,9 +45,21 @@ vyatta_quagga_start ()
 
 vyatta_quagga_stop ()
 {
-    log_daemon_msg "Stopping routing manager" "zebra"
+    log_action_begin_msg "Stopping routing manager"
+    for daemon in bgpd isisd ospfd ospf6d ripd ripngd
+    do
+	pidfile=$pid_dir/${daemon}.pid
+	if [ -f $pidfile ]; then 
+	    log_action_cont_msg "$daemon"
+	    start-stop-daemon --stop --quiet --oknodo \
+		--exec /usr/sbin/vyatta-${daemon}
+	    rm $pidfile
+	fi
+    done    
+
+    log_action_cont_msg "zebra"
     start-stop-daemon --stop --quiet --oknodo --retry 2 --exec /usr/sbin/vyatta-zebra
-    log_end_msg $?
+    log_action_end_msg $?
 
     log_begin_msg "Removing all Quagga Routes"
     ip route flush proto zebra
