@@ -1,3 +1,9 @@
+vyatta-quagga (0.99.11-3) unstable; urgency=low
+
+  * stop all daemons on shutdown
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Thu, 05 Feb 2009 11:45:55 -0800
+
 vyatta-quagga (0.99.11-2) unstable; urgency=low
 
   * Move pid check back to original location
