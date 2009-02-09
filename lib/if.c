@@ -320,60 +320,6 @@ if_get_by_name_len(const char *name, size_t namelen)
 	 if_create(name, namelen);
 }
 
-/* Does interface up ? */
-int
-if_is_up (struct interface *ifp)
-{
-  return ifp->flags & IFF_UP;
-}
-
-/* Is interface running? */
-int
-if_is_running (struct interface *ifp)
-{
-  return ifp->flags & IFF_RUNNING;
-}
-
-/* Is the interface operative, eg. either UP & RUNNING
-   or UP & !ZEBRA_INTERFACE_LINK_DETECTION */
-int
-if_is_operative (struct interface *ifp)
-{
-  return ((ifp->flags & IFF_UP) &&
-	  (ifp->flags & IFF_RUNNING || !CHECK_FLAG(ifp->status, ZEBRA_INTERFACE_LINKDETECTION)));
-}
-
-/* Is this loopback interface ? */
-int
-if_is_loopback (struct interface *ifp)
-{
-  /* XXX: Do this better, eg what if IFF_WHATEVER means X on platform M
-   * but Y on platform N?
-   */
-  return (ifp->flags & (IFF_LOOPBACK|IFF_NOXMIT|IFF_VIRTUAL));
-}
-
-/* Does this interface support broadcast ? */
-int
-if_is_broadcast (struct interface *ifp)
-{
-  return ifp->flags & IFF_BROADCAST;
-}
-
-/* Does this interface support broadcast ? */
-int
-if_is_pointopoint (struct interface *ifp)
-{
-  return ifp->flags & IFF_POINTOPOINT;
-}
-
-/* Does this interface support multicast ? */
-int
-if_is_multicast (struct interface *ifp)
-{
-  return ifp->flags & IFF_MULTICAST;
-}
-
 /* Printout flag information into log */
 const char *
 if_flag_dump (unsigned long flag)
