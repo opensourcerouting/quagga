@@ -209,7 +209,6 @@ ospf_sock_init (void)
       close (ospf_sock);	/* Prevent sd leak. */
       return ret;
     }
-  }
 #else /* !IPTOS_PREC_INTERNETCONTROL */
 #warning "IP_HDRINCL not available, nor is IPTOS_PREC_INTERNETCONTROL"
   zlog_warn ("IP_HDRINCL option not available");
