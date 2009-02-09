@@ -1,3 +1,29 @@
+vyatta-quagga (0.99.11-4) unstable; urgency=low
+
+  [ Paul Jakma ]
+  * [rpm] some defaults for Fedora are way out of date
+
+  [ Joakim Tjernlund ]
+  * [lib] Move type cast in Fletcher checksum
+  * [lib] Fix timer precision.
+
+  [ Stephen Hemminger ]
+  * Set TOS on RIP packets
+  * bgp: change () to (void)
+  * revert: don't bother with gcc builtin_expect()
+  * whitespace fix
+  * Convert XMALLOC/memset to XCALLOC
+  * Align bgp with upstream
+  * Comment out unused code
+  * zebra: rtadv use ansi-c prototoype
+  * Comment out unused code
+  * ospf: fix function to ansi-c
+  * zebra: disambiguate up from operative
+  * ospf: extra brace
+  * zebra: minor whitespace stuff
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Mon, 09 Feb 2009 15:51:10 -0800
+
 vyatta-quagga (0.99.11-3) unstable; urgency=low
 
   * stop all daemons on shutdown
