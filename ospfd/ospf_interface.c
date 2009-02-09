@@ -508,12 +508,10 @@ ospf_new_if_params (void)
 {
   struct ospf_if_params *oip;
 
-  oip = XMALLOC (MTYPE_OSPF_IF_PARAMS, sizeof (struct ospf_if_params));
+  oip = XCALLOC (MTYPE_OSPF_IF_PARAMS, sizeof (struct ospf_if_params));
 
   if (!oip)
     return NULL;
-
-  memset (oip, 0, sizeof (struct ospf_if_params));
 
   UNSET_IF_PARAM (oip, output_cost_cmd);
   UNSET_IF_PARAM (oip, transmit_delay);
