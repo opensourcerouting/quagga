@@ -148,6 +148,7 @@ cluster_free (struct cluster_list *cluster)
   XFREE (MTYPE_CLUSTER, cluster);
 }
 
+#if 0
 static struct cluster_list *
 cluster_dup (struct cluster_list *cluster)
 {
@@ -166,6 +167,7 @@ cluster_dup (struct cluster_list *cluster)
   
   return new;
 }
+#endif
 
 static struct cluster_list *
 cluster_intern (struct cluster_list *cluster)

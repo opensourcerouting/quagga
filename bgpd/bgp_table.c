@@ -364,7 +364,6 @@ bgp_node_delete (struct bgp_node *node)
 
   assert (node->lock == 0);
   assert (node->info == NULL);
-  assert (node->table->count > 0);
 
   if (node->l_left && node->l_right)
     return;

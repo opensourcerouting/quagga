@@ -1954,7 +1954,7 @@ bgp_get (struct bgp **bgp_val, as_t *as, const char *name)
 }
 
 /* Delete BGP instance. */
-void
+int
 bgp_delete (struct bgp *bgp)
 {
   struct peer *peer;
@@ -2002,6 +2002,8 @@ bgp_delete (struct bgp *bgp)
 	  XFREE (MTYPE_ROUTE_TABLE,bgp->rib[afi][safi]);
       }
   XFREE (MTYPE_BGP, bgp);
+
+  return 0;
 }
 
 struct peer *

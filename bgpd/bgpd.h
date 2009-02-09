@@ -856,7 +856,7 @@ extern int bgp_option_unset (int);
 extern int bgp_option_check (int);
 
 extern int bgp_get (struct bgp **, as_t *, const char *);
-extern void bgp_delete (struct bgp *);
+extern int bgp_delete (struct bgp *);
 extern void bgp_free (struct bgp *);
 
 /* BGP flag manipulation.  */

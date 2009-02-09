@@ -92,6 +92,12 @@ bgp_md5_set (struct peer *peer)
   struct listnode *node;
   int fret = 0, ret;
   int *socket;
+
+  if ( bgpd_privs.change (ZPRIVS_RAISE) )
+    {
+      zlog_err ("%s: could not raise privs", __func__);
+      return -1;
+    }
   
   /* Just set the password on the listen socket(s). Outbound connections
    * are taken care of in bgp_connect() below.
@@ -102,6 +108,9 @@ bgp_md5_set (struct peer *peer)
       if (ret < 0)
         fret = ret;
     }
+  if (bgpd_privs.change (ZPRIVS_LOWER) )
+    zlog_err ("%s: could not lower privs", __func__);
+  
   return fret;
 }
 
