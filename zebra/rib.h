@@ -220,7 +220,8 @@ struct vrf
   struct route_table *stable[AFI_MAX][SAFI_MAX];
 };
 
-extern struct nexthop *nexthop_ifindex_add (struct rib *, unsigned int);
+extern struct nexthop *nexthop_ifindex_add (struct rib *, unsigned int,
+					    struct in_addr *);
 extern struct nexthop *nexthop_ifname_add (struct rib *, char *);
 extern struct nexthop *nexthop_blackhole_add (struct rib *);
 extern struct nexthop *nexthop_ipv4_add (struct rib *, struct in_addr *,

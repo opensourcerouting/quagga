@@ -209,13 +209,16 @@ nexthop_free (struct nexthop *nexthop)
 }
 
 struct nexthop *
-nexthop_ifindex_add (struct rib *rib, unsigned int ifindex)
+nexthop_ifindex_add (struct rib *rib, unsigned int ifindex,
+		     struct in_addr *src)
 {
   struct nexthop *nexthop;
 
   nexthop = XCALLOC (MTYPE_NEXTHOP, sizeof (struct nexthop));
   nexthop->type = NEXTHOP_TYPE_IFINDEX;
   nexthop->ifindex = ifindex;
+  if (src)
+    nexthop->src.ipv4 = *src;
 
   nexthop_add (rib, nexthop);
 
@@ -1617,7 +1620,7 @@ rib_add_ipv4 (int type, int flags, struct prefix_ipv4 *p,
 	nexthop_ipv4_add (rib, gate, src);
     }
   else
-    nexthop_ifindex_add (rib, ifindex);
+    nexthop_ifindex_add (rib, ifindex, src);
 
   /* If this route is kernel route, set FIB flag to the route. */
   if (type == ZEBRA_ROUTE_KERNEL || type == ZEBRA_ROUTE_CONNECT)
@@ -2409,7 +2412,7 @@ rib_add_ipv6 (int type, int flags, struct prefix_ipv6 *p,
 	nexthop_ipv6_add (rib, gate);
     }
   else
-    nexthop_ifindex_add (rib, ifindex);
+    nexthop_ifindex_add (rib, ifindex, NULL);
 
   /* If this route is kernel route, set FIB flag to the route. */
   if (type == ZEBRA_ROUTE_KERNEL || type == ZEBRA_ROUTE_CONNECT)
