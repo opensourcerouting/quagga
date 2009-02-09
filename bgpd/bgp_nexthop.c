@@ -96,7 +96,7 @@ bnc_nexthop_free (struct bgp_nexthop_cache *bnc)
 }
 
 static struct bgp_nexthop_cache *
-bnc_new ()
+bnc_new (void)
 {
   return XCALLOC (MTYPE_BGP_NEXTHOP_CACHE, sizeof (struct bgp_nexthop_cache));
 }
@@ -697,7 +697,7 @@ bgp_nexthop_self (afi_t afi, struct attr *attr)
 }
 
 static struct bgp_nexthop_cache *
-zlookup_read ()
+zlookup_read (void)
 {
   struct stream *s;
   uint16_t length;
@@ -807,7 +807,7 @@ zlookup_query (struct in_addr addr)
 
 #ifdef HAVE_IPV6
 static struct bgp_nexthop_cache *
-zlookup_read_ipv6 ()
+zlookup_read_ipv6 (void)
 {
   struct stream *s;
   uint16_t length;
@@ -1281,7 +1281,7 @@ bgp_config_write_scan_time (struct vty *vty)
 }
 
 void
-bgp_scan_init ()
+bgp_scan_init (void)
 {
   zlookup = zclient_new ();
   zlookup->sock = -1;
