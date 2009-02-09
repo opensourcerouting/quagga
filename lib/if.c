@@ -117,18 +117,22 @@ if_create (const char *name, int namelen)
 {
   struct interface *ifp;
 
-  ifp = XCALLOC (MTYPE_IF, sizeof (struct interface));
-  ifp->ifindex = IFINDEX_INTERNAL;
+  ifp = if_lookup_by_name(name);
+  if (ifp) {
+    if (ifp->ifindex != IFINDEX_INTERNAL)
+      zlog_err("if_create(%s): corruption detected -- interface with this "
+	       "name exists already!", ifp->name);
+  } else {
+    ifp = XCALLOC (MTYPE_IF, sizeof (struct interface));
+    ifp->ifindex = IFINDEX_INTERNAL;
   
-  assert (name);
-  assert (namelen <= INTERFACE_NAMSIZ);	/* Need space for '\0' at end. */
-  strncpy (ifp->name, name, namelen);
-  ifp->name[namelen] = '\0';
-  if (if_lookup_by_name(ifp->name) == NULL)
+    assert (namelen <= INTERFACE_NAMSIZ);	/* Need space for '\0' at end. */
+    strncpy (ifp->name, name, namelen);
+    ifp->name[namelen] = '\0';
+
     listnode_add_sort (iflist, ifp);
-  else
-    zlog_err("if_create(%s): corruption detected -- interface with this "
-	     "name exists already!", ifp->name);
+  }
+
   ifp->connected = list_new ();
   ifp->connected->del = (void (*) (void *)) connected_free;
 
@@ -146,7 +150,11 @@ if_delete_retain (struct interface *ifp)
     (*if_master.if_delete_hook) (ifp);
 
   /* Free connected address list */
-  list_delete (ifp->connected);
+  if (ifp->connected)
+    {
+      list_delete (ifp->connected);
+      ifp->connected = NULL;
+    }
 }
 
 /* Delete and free interface structure. */
