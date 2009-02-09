@@ -817,13 +817,32 @@ extern struct peer_group *peer_group_lookup (struct bgp *, const char *);
 extern struct peer_group *peer_group_get (struct bgp *, const char *);
 extern struct peer *peer_lookup_with_open (union sockunion *, as_t, struct in_addr *,
 				    int *);
-extern struct peer *peer_lock (struct peer *);
-extern struct peer *peer_unlock (struct peer *);
+extern void peer_free (struct peer *peer);
 extern int peer_sort (struct peer *peer);
 extern int peer_active (struct peer *);
 extern int peer_active_nego (struct peer *);
 extern struct peer *peer_create_accept (struct bgp *);
 extern char *peer_uptime (time_t, char *, size_t);
+
+static inline struct peer *
+peer_lock (struct peer *peer)
+{
+  assert (peer && (peer->lock >= 0));
+  assert (peer->status != Deleted);
+    
+  peer->lock++;
+  return peer;
+}
+
+static inline void
+peer_unlock (struct peer *peer)
+{
+  assert (peer && (peer->lock > 0));
+  
+  if (--peer->lock == 0)
+      peer_free (peer);
+}
+
 extern int bgp_config_write (struct vty *);
 extern void bgp_config_write_family_header (struct vty *, afi_t, safi_t, int *);
 
