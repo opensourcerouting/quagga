@@ -8262,7 +8262,7 @@ ospf_vty_zebra_init (void)
 #endif /* 0 */
 }
 
-struct cmd_node ospf_node =
+static struct cmd_node ospf_node =
 {
   OSPF_NODE,
   "%s(config-router)# ",
