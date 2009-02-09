@@ -239,6 +239,7 @@ rip_request_interface (struct interface *ifp)
   }
 }
 
+#if 0
 /* Send RIP request to the neighbor. */
 static void
 rip_request_neighbor (struct in_addr addr)
@@ -269,6 +270,7 @@ rip_request_neighbor_all (void)
     if (rp->info)
       rip_request_neighbor (rp->p.u.prefix4);
 }
+#endif
 
 /* Multicast packet receive socket. */
 static int

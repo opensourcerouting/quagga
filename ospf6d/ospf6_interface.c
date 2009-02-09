@@ -690,6 +690,7 @@ neighbor_change (struct thread *thread)
   return 0;
 }
 
+#if 0
 static int
 loopind (struct thread *thread)
 {
@@ -706,6 +707,7 @@ loopind (struct thread *thread)
 
   return 0;
 }
+#endif
 
 int
 interface_down (struct thread *thread)

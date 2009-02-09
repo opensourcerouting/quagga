@@ -821,6 +821,7 @@ if_dump_vty (struct vty *vty, struct interface *ifp)
 #endif /* HAVE_NET_RT_IFLIST */
 }
 
+#if 0
 /* Check supported address family. */
 static int
 if_supported_family (int family)
@@ -833,6 +834,7 @@ if_supported_family (int family)
 #endif /* HAVE_IPV6 */
   return 0;
 }
+#endif
 
 /* Wrapper hook point for zebra daemon so that ifindex can be set 
  * DEFUN macro not used as extract.pl HAS to ignore this

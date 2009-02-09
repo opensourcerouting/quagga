@@ -157,6 +157,7 @@ ripng_if_ipv6_lladdress_check (struct interface *ifp)
   return count;
 }
 
+#if 0
 /* Check max mtu size. */
 static unsigned int
 ripng_check_max_mtu (void)
@@ -172,6 +173,7 @@ ripng_check_max_mtu (void)
 
   return mtu;
 }
+#endif
 
 static int
 ripng_if_down (struct interface *ifp)

@@ -173,7 +173,7 @@ if_set_defaults(struct interface *ifp)
 }
 
 
-struct Adv *Adv_new (void)
+static struct Adv *Adv_new (void)
 {
   return XCALLOC (MTYPE_TMP, sizeof (struct Adv));
 }

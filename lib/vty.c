@@ -1835,6 +1835,7 @@ vty_serv_sock_addrinfo (const char *hostname, unsigned short port)
 }
 #endif /* HAVE_IPV6 && ! NRL */
 
+#if 0
 /* Make vty server socket. */
 static void
 vty_serv_sock_family (const char* addr, unsigned short port, int family)
@@ -1899,6 +1900,7 @@ vty_serv_sock_family (const char* addr, unsigned short port, int family)
   /* Add vty server event. */
   vty_event (VTY_SERV, accept_sock, NULL);
 }
+#endif
 
 #ifdef VTYSH
 /* For sockaddr_un. */

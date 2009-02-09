@@ -1034,6 +1034,7 @@ ospf_rtrs_free (struct route_table *rtrs)
   route_table_finish (rtrs);
 }
 
+#if 0
 static void
 ospf_rtrs_print (struct route_table *rtrs)
 {
@@ -1092,6 +1093,7 @@ ospf_rtrs_print (struct route_table *rtrs)
 
   zlog_debug ("ospf_rtrs_print() end");
 }
+#endif
 
 /* Calculating the shortest-path tree for an area. */
 static void
