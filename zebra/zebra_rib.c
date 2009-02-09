@@ -2238,6 +2238,9 @@ static_add_ipv4 (struct prefix *p, struct in_addr *gate, const char *ifname,
   /* Install into rib. */
   static_install_ipv4 (p, si);
 
+  /* Scan for possible recursive route changes */
+  rib_update();
+
   return 1;
 }
 
@@ -2301,6 +2304,9 @@ static_delete_ipv4 (struct prefix *p, struct in_addr *gate, const char *ifname,
   XFREE (MTYPE_STATIC_IPV4, si);
 
   route_unlock_node (rn);
+
+  /* Scan for possible recursive route changes */
+  rib_update();
 
   return 1;
 }
@@ -2780,6 +2786,9 @@ static_add_ipv6 (struct prefix *p, u_char type, struct in6_addr *gate,
   /* Install into rib. */
   static_install_ipv6 (p, si);
 
+  /* Scan for possible recursive route changes */
+  rib_update();
+
   return 1;
 }
 
@@ -2833,6 +2842,7 @@ static_delete_ipv6 (struct prefix *p, u_char type, struct in6_addr *gate,
     XFREE (0, si->ifname);
   XFREE (MTYPE_STATIC_IPV6, si);
 
+  rib_update();
   return 1;
 }
 #endif /* HAVE_IPV6 */
