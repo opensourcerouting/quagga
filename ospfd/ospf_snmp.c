@@ -1389,7 +1389,7 @@ struct ospf_snmp_if
 };
 
 struct ospf_snmp_if *
-ospf_snmp_if_new ()
+ospf_snmp_if_new (void)
 {
   return XCALLOC (0, sizeof (struct ospf_snmp_if));
 }
