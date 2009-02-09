@@ -272,7 +272,7 @@ vtysh_pager_init (void)
 }
 
 /* Command execution over the vty interface. */
-static void
+static int
 vtysh_execute_func (const char *line, int pager)
 {
   int ret, cmd_stat;
@@ -288,7 +288,7 @@ vtysh_execute_func (const char *line, int pager)
   vline = cmd_make_strvec (line);
 
   if (vline == NULL)
-    return;
+    return CMD_SUCCESS;
 
   saved_ret = ret = cmd_execute_command (vline, vty, &cmd, 1);
   saved_node = vty->node;
@@ -336,6 +336,7 @@ vtysh_execute_func (const char *line, int pager)
 
   cmd_free_strvec (vline);
 
+  cmd_stat = ret;
   switch (ret)
     {
     case CMD_WARNING:
@@ -394,7 +395,7 @@ vtysh_execute_func (const char *line, int pager)
 			  }
 			fp = NULL;
 		      }
-		    return;
+		    return CMD_SUCCESS;
 		  }
 
 		ret = cmd_execute_command (vline, vty, &cmd, 1);
@@ -435,18 +436,19 @@ vtysh_execute_func (const char *line, int pager)
 	}
       fp = NULL;
     }
+  return cmd_stat;
 }
 
-void
+int
 vtysh_execute_no_pager (const char *line)
 {
-  vtysh_execute_func (line, 0);
+  return vtysh_execute_func (line, 0);
 }
 
-void
+int
 vtysh_execute (const char *line)
 {
-  vtysh_execute_func (line, 1);
+  return vtysh_execute_func (line, 1);
 }
 
 /* Configration make from file. */

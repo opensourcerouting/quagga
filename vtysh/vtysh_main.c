@@ -159,6 +159,7 @@ struct option longopts[] =
   { "echo",                 no_argument,             NULL, 'E'},
   { "dryrun",		    no_argument,	     NULL, 'C'},
   { "help",                 no_argument,             NULL, 'h'},
+  { "noerror",		    no_argument,	     NULL, 'n'},
   { 0 }
 };
 
@@ -206,6 +207,7 @@ main (int argc, char **argv, char **env)
   } *cmd = NULL;
   struct cmd_rec *tail = NULL;
   int echo_command = 0;
+  int no_error = 0;
 
   /* Preserve name of myself. */
   progname = ((p = strrchr (argv[0], '/')) ? ++p : argv[0]);
@@ -213,7 +215,7 @@ main (int argc, char **argv, char **env)
   /* Option handling. */
   while (1) 
     {
-      opt = getopt_long (argc, argv, "be:c:d:EhC", longopts, 0);
+      opt = getopt_long (argc, argv, "be:c:d:nEhC", longopts, 0);
     
       if (opt == EOF)
 	break;
@@ -241,6 +243,9 @@ main (int argc, char **argv, char **env)
 	  break;
 	case 'd':
 	  daemon_name = optarg;
+	  break;
+	case 'n':
+	  no_error = 1;
 	  break;
 	case 'E':
 	  echo_command = 1;
@@ -280,6 +285,10 @@ main (int argc, char **argv, char **env)
   if(dryrun)
     return(0);
   
+  /* Ignore error messages */
+  if (no_error)
+    freopen("/dev/null", "w", stdout);
+
   /* Make sure we pass authentication before proceeding. */
   vtysh_auth ();
 
@@ -298,19 +307,35 @@ main (int argc, char **argv, char **env)
 
       while (cmd != NULL)
         {
+	  int ret;
 	  char *eol;
 
 	  while ((eol = strchr(cmd->line, '\n')) != NULL)
 	    {
 	      *eol = '\0';
+
 	      if (echo_command)
-	        printf("%s%s\n", vtysh_prompt(), cmd->line);
-	      vtysh_execute_no_pager(cmd->line);
+		printf("%s%s\n", vtysh_prompt(), cmd->line);
+	      
+	      ret = vtysh_execute_no_pager(cmd->line);
+	      if (!no_error &&
+		  ! (ret == CMD_SUCCESS ||
+		     ret == CMD_SUCCESS_DAEMON ||
+		     ret == CMD_WARNING))
+		exit(1);
+
 	      cmd->line = eol+1;
 	    }
+
 	  if (echo_command)
 	    printf("%s%s\n", vtysh_prompt(), cmd->line);
-	  vtysh_execute_no_pager (cmd->line);
+
+	  ret = vtysh_execute_no_pager(cmd->line);
+	  if (!no_error &&
+	      ! (ret == CMD_SUCCESS ||
+		 ret == CMD_SUCCESS_DAEMON ||
+		 ret == CMD_WARNING))
+	    exit(1);
 
 	  {
 	    struct cmd_rec *cr;
