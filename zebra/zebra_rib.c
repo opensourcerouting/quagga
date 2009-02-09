@@ -1705,6 +1705,7 @@ rib_add_ipv4 (int type, int flags, struct prefix_ipv4 *p,
 
   /* Allocate new rib structure. */
   rib = XCALLOC (MTYPE_RIB, sizeof (struct rib));
+
   rib->type = type;
   rib->distance = distance;
   rib->flags = flags;

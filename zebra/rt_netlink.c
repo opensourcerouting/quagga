@@ -984,7 +984,6 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 	  zlog_info ("interface %s index %d %s added.",
 		     name, ifi->ifi_index, if_flag_dump(new_flags));
 
-
           ifp->flags = new_flags;
           ifp->mtu6 = ifp->mtu = mtu; 
 
