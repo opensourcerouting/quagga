@@ -85,33 +85,6 @@ extern struct zebra_privs_t zserv_privs;
 
 extern u_int32_t nl_rcvbufsize;
 
-/* Note: on netlink systems, there should be a 1-to-1 mapping between interface
-   names and ifindex values. */
-static void
-set_ifindex(struct interface *ifp, unsigned int ifi_index)
-{
-  struct interface *oifp;
-
-  if (((oifp = if_lookup_by_index(ifi_index)) != NULL) && (oifp != ifp))
-    {
-      if (ifi_index == IFINDEX_INTERNAL)
-        zlog_err("Netlink is setting interface %s ifindex to reserved "
-		 "internal value %u", ifp->name, ifi_index);
-      else
-        {
-	  if (IS_ZEBRA_DEBUG_KERNEL)
-	    zlog_debug("interface index %d was renamed from %s to %s",
-	    	       ifi_index, oifp->name, ifp->name);
-	  if (if_is_up(oifp))
-	    zlog_err("interface rename detected on up interface: index %d "
-		     "was renamed from %s to %s, results are uncertain!", 
-	    	     ifi_index, oifp->name, ifp->name);
-	  if_delete_update(oifp);
-        }
-    }
-  ifp->ifindex = ifi_index;
-}
-
 static int
 netlink_recvbuf (struct nlsock *nl, uint32_t newsize)
 {
@@ -467,7 +440,7 @@ netlink_interface (struct sockaddr_nl *snl, struct nlmsghdr *h)
 
   /* Add interface. */
   ifp = if_get_by_name (name);
-  set_ifindex(ifp, ifi->ifi_index);
+  ifp->ifindex = ifi->ifi_index;
   ifp->flags = ifi->ifi_flags & 0x0000fffff;
   ifp->mtu6 = ifp->mtu = *(int *) RTA_DATA (tb[IFLA_MTU]);
   ifp->metric = 1;
@@ -942,31 +915,42 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
   /* Add interface. */
   if (h->nlmsg_type == RTM_NEWLINK)
     {
-      ifp = if_lookup_by_name (name);
+      unsigned long new_flags = ifi->ifi_flags & 0x0000fffff;
+      unsigned int mtu = *(uint32_t *) RTA_DATA (tb[IFLA_MTU]);
 
+      if (IS_ZEBRA_DEBUG_KERNEL)
+	zlog_debug ("%s: new link flags %#lx mtu %d", __func__, new_flags, mtu);
+
+      ifp = if_lookup_by_index (ifi->ifi_index);
       if (ifp == NULL || !CHECK_FLAG (ifp->status, ZEBRA_INTERFACE_ACTIVE))
         {
-          if (ifp == NULL)
-            ifp = if_get_by_name (name);
+	  if (ifp == NULL)
+	    {
+	      ifp = if_get_by_name (name);
+	      ifp->ifindex = ifi->ifi_index;
+	      ifp->metric = 1;
+	    }
 
-          set_ifindex(ifp, ifi->ifi_index);
+	  zlog_info ("interface %s index %d %s added.",
+		     name, ifi->ifi_index, if_flag_dump(new_flags));
+
           ifp->flags = ifi->ifi_flags & 0x0000fffff;
           ifp->mtu6 = ifp->mtu = *(int *) RTA_DATA (tb[IFLA_MTU]);
-          ifp->metric = 1;
 
           /* If new link is added. */
           if_add_update (ifp);
         }
-      else
-        {
-          /* Interface status change. */
-          set_ifindex(ifp, ifi->ifi_index);
-          ifp->mtu6 = ifp->mtu = *(int *) RTA_DATA (tb[IFLA_MTU]);
-          ifp->metric = 1;
+      /* Interface status change. */
+      else if (new_flags != ifp->flags)
+	{
+	  ifp->mtu6 = ifp->mtu = mtu;
+
+	  zlog_info ("interface %s index %d changed %s.",
+		     name, ifi->ifi_index,  if_flag_dump(new_flags));
 
           if (if_is_operative (ifp))
             {
-              ifp->flags = ifi->ifi_flags & 0x0000fffff;
+              ifp->flags = new_flags;
               if (!if_is_operative (ifp))
                 if_down (ifp);
 	      else
@@ -975,11 +959,29 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
             }
           else
             {
-              ifp->flags = ifi->ifi_flags & 0x0000fffff;
+              ifp->flags = new_flags;
               if (if_is_operative (ifp))
                 if_up (ifp);
             }
-        }
+	}
+      /* Interface name change */
+      else if (strcmp(ifp->name, name) != 0)
+	{
+	  ifp->mtu = ifp->mtu6 = mtu;
+	  zlog_info("interface index %d was renamed from %s to %s",
+		    ifi->ifi_index, ifp->name, name);
+
+	  if_rename (ifp, name);
+	}
+      /* Interface mtu change */
+      else if (mtu != ifp->mtu)
+	{
+	  zlog_info("interface %s mtu changed from %u to %u",
+		    ifp->name, ifp->mtu, mtu);
+	  ifp->mtu = ifp->mtu6 = mtu;
+	  if (if_is_operative (ifp))
+	    zebra_interface_up_update (ifp);
+	}
     }
   else
     {
