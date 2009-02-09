@@ -49,7 +49,7 @@ community_list_master_lookup (struct community_list_handler *ch, int master)
 
 /* Allocate a new community list entry.  */
 static struct community_entry *
-community_entry_new ()
+community_entry_new (void)
 {
   struct community_entry *new;
 
@@ -90,7 +90,7 @@ community_entry_free (struct community_entry *entry)
 
 /* Allocate a new community-list.  */
 static struct community_list *
-community_list_new ()
+community_list_new (void)
 {
   struct community_list *new;
 

@@ -47,10 +47,10 @@ struct as_list_master
   struct as_list_list str;
 
   /* Hook function which is executed when new access_list is added. */
-  void (*add_hook) ();
+  void (*add_hook) (void);
 
   /* Hook function which is executed when access_list is deleted. */
-  void (*delete_hook) ();
+  void (*delete_hook) (void);
 };
 
 /* Element of AS path filter. */
@@ -97,7 +97,7 @@ static struct as_list_master as_list_master =
 
 /* Allocate new AS filter. */
 static struct as_filter *
-as_filter_new ()
+as_filter_new (void)
 {
   struct as_filter *new;
 
@@ -177,7 +177,7 @@ as_list_lookup (const char *name)
 }
 
 static struct as_list *
-as_list_new ()
+as_list_new (void)
 {
   struct as_list *new;
 
@@ -403,14 +403,14 @@ as_list_apply (struct as_list *aslist, void *object)
 
 /* Add hook function. */
 void
-as_list_add_hook (void (*func) ())
+as_list_add_hook (void (*func) (void))
 {
   as_list_master.add_hook = func;
 }
 
 /* Delete hook function. */
 void
-as_list_delete_hook (void (*func) ())
+as_list_delete_hook (void (*func) (void))
 {
   as_list_master.delete_hook = func;
 }
