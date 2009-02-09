@@ -368,7 +368,7 @@ if_flag_dump (unsigned long flag)
 
 /* For debugging */
 static void
-if_dump (struct interface *ifp)
+if_dump (const struct interface *ifp)
 {
   struct listnode *node;
   struct connected *c;
@@ -390,7 +390,7 @@ if_dump (struct interface *ifp)
 
 /* Interface printing for all interface. */
 void
-if_dump_all ()
+if_dump_all (void)
 {
   struct listnode *node;
   void *p;
