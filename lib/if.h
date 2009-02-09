@@ -277,7 +277,7 @@ static inline int
 if_is_operative (const struct interface *ifp)
 {
   return ((ifp->flags & IFF_UP) &&
-	  (ifp->flags & IFF_RUNNING || 
+	  ((ifp->flags & IFF_RUNNING) ||
 	   !CHECK_FLAG(ifp->status, ZEBRA_INTERFACE_LINKDETECTION)));
 }
 

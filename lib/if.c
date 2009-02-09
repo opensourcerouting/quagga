@@ -135,7 +135,7 @@ if_create (const char *name, int namelen)
 
   ifp->connected = list_new ();
   ifp->connected->del = (void (*) (void *)) connected_free;
-    
+  
   if (if_master.if_new_hook)
     (*if_master.if_new_hook) (ifp);
 

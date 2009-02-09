@@ -8796,7 +8796,7 @@ static struct cmd_node bgp_ipv4_multicast_node =
   1,
 };
 
-static struct cmd_node bgp_ipv6_unicast_node = 
+static struct cmd_node bgp_ipv6_unicast_node =
 {
   BGP_IPV6_NODE,
   "%s(config-router-af)# ",
