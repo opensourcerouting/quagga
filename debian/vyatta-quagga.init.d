@@ -31,39 +31,51 @@ for dir in $pid_dir $log_dir ; do
     fi
 done
 
-pidfile=$pid_dir/zebra.pid
-
 vyatta_quagga_start ()
 {
-    log_daemon_msg "Starting routing manager" "zebra"
-    start-stop-daemon --start --quiet --oknodo \
-	--chdir $log_dir \
-	--exec /usr/sbin/vyatta-zebra \
-    	-- -d -P 0 -l -S -s 1048576 -i $pidfile
-    log_end_msg $?
+    local -a daemons
+    if [ $# -gt 0 ] ; then
+	daemons=( $* )
+    else
+	daemons=( zebra )
+	daemons+=( `/opt/vyatta/bin/vyatta-show-protocols configured` )
+	daemons+=( watchquagga )
+    fi
+
+    log_action_begin_msg "Starting routing services"
+    for daemon in ${daemons[@]} ; do
+	log_action_cont_msg "$daemon"
+	/opt/vyatta/sbin/quagga-manager start $daemon || \
+	    ( log_action_end_msg 1 ; return 1 )
+    done
+
+    log_action_end_msg 0
 }
 
 vyatta_quagga_stop ()
 {
-    log_action_begin_msg "Stopping routing manager"
-    for daemon in bgpd isisd ospfd ospf6d ripd ripngd
-    do
-	pidfile=$pid_dir/${daemon}.pid
-	if [ -f $pidfile ]; then 
-	    log_action_cont_msg "$daemon"
-	    start-stop-daemon --stop --quiet --oknodo \
-		--exec /usr/sbin/vyatta-${daemon}
-	    rm $pidfile
-	fi
+    local -a daemons
+    if [ $# -gt 0 ] ; then
+	daemons=( $* )
+    else
+	daemons=( watchquagga )
+	daemons+=( `/opt/vyatta/bin/vyatta-show-protocols configured` )
+	daemons+=( zebra )
+    fi
+
+    log_action_begin_msg "Stopping routing services"
+    for daemon in ${daemons[@]} ; do
+	log_action_cont_msg "$daemon"
+	/opt/vyatta/sbin/quagga-manager stop $daemon
     done    
 
-    log_action_cont_msg "zebra"
-    start-stop-daemon --stop --quiet --oknodo --retry 2 --exec /usr/sbin/vyatta-zebra
     log_action_end_msg $?
 
-    log_begin_msg "Removing all Quagga Routes"
-    ip route flush proto zebra
-    log_end_msg $?
+    if echo ${daemons[@]} | grep -q zebra ; then
+	log_begin_msg "Removing all Quagga Routes"
+	ip route flush proto zebra
+	log_end_msg $?
+    fi
 }
 
 case "$action" in
