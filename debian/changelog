@@ -1,3 +1,10 @@
+vyatta-quagga (0.99.11-7) unstable; urgency=low
+
+  * sockopt_tcp_signature: sin6 requires IPV6
+  * Change to only start zebra and watchquagga
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Tue, 24 Feb 2009 14:40:49 -0800
+
 vyatta-quagga (0.99.11-6) unstable; urgency=low
 
   * Modified version of daemon startup
