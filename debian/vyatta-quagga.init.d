@@ -31,25 +31,24 @@ for dir in $pid_dir $log_dir ; do
     fi
 done
 
+# Only start zebra and watchquagga (for zebra) here
+# Other daemons if any started in vyatta config
 vyatta_quagga_start ()
 {
     local -a daemons
     if [ $# -gt 0 ] ; then
 	daemons=( $* )
     else
-	daemons=( zebra )
-	daemons+=( `/opt/vyatta/bin/vyatta-show-protocols configured` )
-	daemons+=( watchquagga )
+	daemons=( zebra watchquagga )
     fi
 
-    log_action_begin_msg "Starting routing services"
+    log_daemon_msg "Starting routing services"
     for daemon in ${daemons[@]} ; do
-	log_action_cont_msg "$daemon"
+	log_progress_msg "$daemon"
 	/opt/vyatta/sbin/quagga-manager start $daemon || \
-	    ( log_action_end_msg 1 ; return 1 )
+	    ( log_end_msg 1 ; return 1 )
     done
-
-    log_action_end_msg 0
+    log_end_msg $?
 }
 
 vyatta_quagga_stop ()
@@ -59,7 +58,7 @@ vyatta_quagga_stop ()
 	daemons=( $* )
     else
 	daemons=( watchquagga )
-	daemons+=( `/opt/vyatta/bin/vyatta-show-protocols configured` )
+	daemons+=( bgpd ospfd ripd ripngd ospf6d isisd )
 	daemons+=( zebra )
     fi
 
