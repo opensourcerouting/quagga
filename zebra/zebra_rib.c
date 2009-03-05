@@ -1942,7 +1942,7 @@ rib_delete_ipv4 (int type, int flags, struct prefix_ipv4 *p,
 	      (IPV4_ADDR_SAME (&nexthop->gate.ipv4, gate) ||
 	       IPV4_ADDR_SAME (&nexthop->rgate.ipv4, gate)))
 	    {
-	      if (nexthop->ifindex != ifindex)
+	      if (ifindex && ifindex != nexthop->ifindex)
 		continue; /* ifindex doesn't match */
 	      same = rib;
 	      break;
@@ -2500,7 +2500,7 @@ rib_delete_ipv6 (int type, int flags, struct prefix_ipv6 *p,
 	      (IPV6_ADDR_SAME (&nexthop->gate.ipv6, gate) ||
 	       IPV6_ADDR_SAME (&nexthop->rgate.ipv6, gate)))
 	    {
-	      if (nexthop->ifindex != ifindex)
+	      if (ifindex && ifindex != nexthop->ifindex)
 		continue; /* ifindex doesn't match */
 	      same = rib;
 	      break;
