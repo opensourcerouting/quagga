@@ -64,7 +64,7 @@ vyatta_quagga_stop ()
 
     log_action_begin_msg "Stopping routing services"
     for daemon in ${daemons[@]} ; do
-	log_action_cont_msg "$daemon"
+	[ -f $pid_dir/${daemon}.pid ] && log_action_cont_msg "$daemon"
 	/opt/vyatta/sbin/quagga-manager stop $daemon
     done    
 
