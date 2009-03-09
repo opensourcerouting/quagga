@@ -124,7 +124,7 @@ binary-arch: build install
 	dh_installpam --name=quagga
 	dh_installlogrotate
 
-#	dh_strip
+	dh_strip
 	dh_compress
 	dh_fixperms
 	dh_makeshlibs --noscripts
