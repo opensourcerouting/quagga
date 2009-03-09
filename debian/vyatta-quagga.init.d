@@ -9,7 +9,6 @@
 # Short-Description: start and stop the Quagga routing suite
 # Description: Quagga is a routing suite for IP routing protocols like 
 #              BGP, OSPF, RIP and others. 
-#
 #	       Only zebra is started here, others are started by protocols
 #	       during config process.
 ### END INIT INFO
