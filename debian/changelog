@@ -1,3 +1,13 @@
+vyatta-quagga (0.99.11-8) unstable; urgency=low
+
+  * Only print message on shutdown if daemon is running
+  * Put symbolic backtrace on system log
+  * fix email in changelog
+  * fix LSB warning
+  * Strip the code
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Mon, 09 Mar 2009 16:29:35 -0700
+
 vyatta-quagga (0.99.11-7) unstable; urgency=low
 
   * sockopt_tcp_signature: sin6 requires IPV6
