@@ -22,7 +22,7 @@ vyatta-quagga (0.99.11-5) unstable; urgency=low
   [ Stephen Hemminger ]
   * Remove 'no router' from OSPF6_NODE
 
- -- Stephen Hemminger <shemminger@debian>  Thu, 12 Feb 2009 01:38:22 -0800
+ -- Stephen Hemminger <shemminger@vyatta.com>  Thu, 12 Feb 2009 01:38:22 -0800
 
 vyatta-quagga (0.99.11-4) unstable; urgency=low
 
@@ -93,7 +93,7 @@ vyatta-quagga (0.99.11-1) unstable; urgency=low
 
   (Tag release)
 
- -- Stephen Hemminger <shemminger@extreme>  Fri, 19 Dec 2008 11:43:26 -0800
+ -- Stephen Hemminger <shemminger@vyatta.com>  Fri, 19 Dec 2008 11:43:26 -0800
 
 vyatta-quagga (0.99.10-2) unstable; urgency=low
 
