@@ -38,3 +38,10 @@ Description: BGP/OSPF/RIP routing daemon
  .
  It is more than a routed replacement, it can be used as a Route Server and
  a Route Reflector.
+
+Package: vyatta-quagga-dbg
+Architecture: any
+Priority: extra
+Depends: ${shlibs:Depends}
+Description: BGP/OSPF/RIP debug symbols
+ Debug symbols for Quagga routing daemons

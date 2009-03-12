@@ -21,6 +21,7 @@ CFLAGS = -Wall
 WANT_SNMP=1
 
 CFLAGS += -Os -freorder-blocks
+CFLAGS += -g1 -fno-omit-frame-pointer -fno-optimize-sibling-calls
 
 ifeq ($(WANT_SNMP),1)
 	xable_snmp = --enable-snmp
@@ -124,7 +125,7 @@ binary-arch: build install
 	dh_installpam --name=quagga
 	dh_installlogrotate
 
-	dh_strip
+	dh_strip --dbg-package=vyatta-quagga-dbg
 	dh_compress
 	dh_fixperms
 	dh_makeshlibs --noscripts

@@ -1,6 +1,7 @@
 build-stamp
 quagga
 vyatta-quagga
+vyatta-quagga-dbg
 *.substvars
 files
 *.debhelper
