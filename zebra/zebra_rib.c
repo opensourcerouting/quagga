@@ -1894,12 +1894,19 @@ rib_delete_ipv4 (int type, int flags, struct prefix_ipv4 *p,
   /* Apply mask. */
   apply_mask_ipv4 (p);
 
-  if (IS_ZEBRA_DEBUG_KERNEL && gate)
-    zlog_debug ("rib_delete_ipv4(): route delete %s/%d via %s ifindex %d",
-		       inet_ntop (AF_INET, &p->prefix, buf1, BUFSIZ),
-		       p->prefixlen, 
-		       inet_ntoa (*gate), 
-		       ifindex);
+  if (IS_ZEBRA_DEBUG_KERNEL)
+    if (gate)
+      zlog_debug ("rib_delete_ipv4(): route delete %s/%d via %s ifindex %d",
+		  inet_ntop (AF_INET, &p->prefix, buf1, BUFSIZ),
+		  p->prefixlen,
+		  inet_ntoa (*gate),
+		  ifindex);
+    else
+      zlog_debug ("rib_delete_ipv4(): route delete %s/%d ifname %s ifindex %d",
+		  inet_ntop (AF_INET, &p->prefix, buf1, BUFSIZ),
+		  p->prefixlen,
+		  ifindex2ifname(ifindex),
+		  ifindex);
 
   /* Lookup route node. */
   rn = route_node_lookup (table, (struct prefix *) p);
@@ -1933,25 +1940,34 @@ rib_delete_ipv4 (int type, int flags, struct prefix_ipv4 *p,
 
       if (rib->type != type)
 	continue;
-      if (rib->type == ZEBRA_ROUTE_CONNECT && (nexthop = rib->nexthop) &&
-	  nexthop->type == NEXTHOP_TYPE_IFINDEX && nexthop->ifindex == ifindex)
+
+      if (gate)
 	{
-	  if (rib->refcnt)
+	  if ((nexthop = rib->nexthop) &&
+	      (IPV4_ADDR_SAME (&nexthop->gate.ipv4, gate) ||
+	       IPV4_ADDR_SAME (&nexthop->rgate.ipv4, gate)))
 	    {
+	      if (ifindex && ifindex != nexthop->ifindex)
+		continue; /* ifindex doesn't match */
+	      same = rib;
+	      break;
+	    }
+	}
+      else
+	{
+	  nexthop = rib->nexthop;
+	  if (nexthop && nexthop->ifindex != ifindex)
+	    continue;
+	  if (nexthop &&
+	      rib->type == ZEBRA_ROUTE_CONNECT &&
+	      nexthop->type == NEXTHOP_TYPE_IFINDEX &&
+	      rib->refcnt)
+	    { /* Duplicated connected route. */
 	      rib->refcnt--;
 	      route_unlock_node (rn);
 	      route_unlock_node (rn);
 	      return 0;
 	    }
-	  same = rib;
-	  break;
-	}
-      /* Make sure that the route found has the same gateway. */
-      else if (gate == NULL ||
-	       ((nexthop = rib->nexthop) &&
-	        (IPV4_ADDR_SAME (&nexthop->gate.ipv4, gate) ||
-		 IPV4_ADDR_SAME (&nexthop->rgate.ipv4, gate)))) 
-        {
 	  same = rib;
 	  break;
 	}
@@ -2484,11 +2500,29 @@ rib_delete_ipv6 (int type, int flags, struct prefix_ipv6 *p,
 
       if (rib->type != type)
         continue;
-      if (rib->type == ZEBRA_ROUTE_CONNECT && (nexthop = rib->nexthop) &&
-	  nexthop->type == NEXTHOP_TYPE_IFINDEX && nexthop->ifindex == ifindex)
+
+      if (gate)
 	{
-	  if (rib->refcnt)
+	  if ((nexthop = rib->nexthop) &&
+	      (IPV6_ADDR_SAME (&nexthop->gate.ipv6, gate) ||
+	       IPV6_ADDR_SAME (&nexthop->rgate.ipv6, gate)))
 	    {
+	      if (ifindex && ifindex != nexthop->ifindex)
+		continue; /* ifindex doesn't match */
+	      same = rib;
+	      break;
+	    }
+	}
+      else
+	{
+	  nexthop = rib->nexthop;
+	  if (nexthop && nexthop->ifindex != ifindex)
+	    continue;
+	  if (nexthop &&
+	      rib->type == ZEBRA_ROUTE_CONNECT &&
+	      nexthop->type == NEXTHOP_TYPE_IFINDEX &&
+	      rib->refcnt)
+	    { /* Duplicated connected route. */
 	      rib->refcnt--;
 	      route_unlock_node (rn);
 	      route_unlock_node (rn);
@@ -2497,15 +2531,7 @@ rib_delete_ipv6 (int type, int flags, struct prefix_ipv6 *p,
 	  same = rib;
 	  break;
 	}
-      /* Make sure that the route found has the same gateway. */
-      else if (gate == NULL ||
-	       ((nexthop = rib->nexthop) &&
-	        (IPV6_ADDR_SAME (&nexthop->gate.ipv6, gate) ||
-		 IPV6_ADDR_SAME (&nexthop->rgate.ipv6, gate))))
-	{
-	  same = rib;
-	  break;
-	}
+
     }
 
   /* If same type of route can't be found and this message is from

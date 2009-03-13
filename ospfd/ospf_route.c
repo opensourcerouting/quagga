@@ -165,6 +165,8 @@ ospf_route_match_same (struct route_table *rt, struct prefix_ipv4 *prefix,
 
 	       if (! IPV4_ADDR_SAME (&op->nexthop, &newop->nexthop))
 		 return 0;
+	       if (op->ifindex != newop->ifindex)
+		 return 0;
 	     }
 	   return 1;
 	 }
@@ -640,7 +642,7 @@ ospf_intra_add_stub (struct route_table *rt, struct router_lsa_link *link,
 
 	  path = ospf_path_new ();
 	  path->nexthop.s_addr = 0;
-	  path->oi = oi;
+	  path->ifindex = oi->ifp->ifindex;
 	  listnode_add (or->paths, path);
 	}
       else
@@ -788,7 +790,8 @@ ospf_path_exist (struct list *plist, struct in_addr nexthop,
   struct ospf_path *path;
 
   for (ALL_LIST_ELEMENTS (plist, node, nnode, path))
-    if (IPV4_ADDR_SAME (&path->nexthop, &nexthop) && path->oi == oi)
+    if (IPV4_ADDR_SAME (&path->nexthop, &nexthop) &&
+	path->ifindex == oi->ifp->ifindex)
       return 1;
 
   return 0;
@@ -815,7 +818,7 @@ ospf_route_copy_nexthops_from_vertex (struct ospf_route *to,
 	    {
 	      path = ospf_path_new ();
 	      path->nexthop = nexthop->router;
-	      path->oi = nexthop->oi;
+	      path->ifindex = nexthop->oi->ifp->ifindex;
 	      listnode_add (to->paths, path);
 	    }
 	}
@@ -829,10 +832,15 @@ ospf_path_lookup (struct list *plist, struct ospf_path *path)
   struct ospf_path *op;
 
   for (ALL_LIST_ELEMENTS_RO (plist, node, op))
-    if (IPV4_ADDR_SAME (&op->nexthop, &path->nexthop) &&
-        IPV4_ADDR_SAME (&op->adv_router, &path->adv_router))
-      return op;
-
+  {
+    if (!IPV4_ADDR_SAME (&op->nexthop, &path->nexthop))
+      continue;
+    if (!IPV4_ADDR_SAME (&op->adv_router, &path->adv_router))
+      continue;
+    if (op->ifindex != path->ifindex)
+      continue;
+    return op;
+  }
   return NULL;
 }
 
