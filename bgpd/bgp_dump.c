@@ -368,7 +368,7 @@ bgp_dump_routes_func (int afi, int first_run, unsigned int seq)
 
           /* Dump attribute. */
           /* Skip prefix & AFI/SAFI for MP_NLRI */
-          bgp_dump_routes_attr (obuf, info->attr, &rn->p);
+          bgp_dump_routes_attr (obuf, info->attr, &rn->p, info->flags);
         }
 
       /* Overwrite the entry count, now that we know the right number */
