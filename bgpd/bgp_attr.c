@@ -2307,7 +2307,7 @@ bgp_attr_init (void)
 /* Make attribute packet. */
 void
 bgp_dump_routes_attr (struct stream *s, struct attr *attr, 
-                      struct prefix *prefix)
+                      struct prefix *prefix, uint16_t flags)
 {
   unsigned long cp;
   unsigned long len;
@@ -2447,6 +2447,14 @@ bgp_dump_routes_attr (struct stream *s, struct attr *attr,
       stream_putc (s, attr->pathlimit.ttl);
       stream_putl (s, attr->pathlimit.as);
     }
+
+  /* Quagga extended dump attribute. */
+  stream_putc (s, BGP_ATTR_FLAG_OPTIONAL);
+  stream_putc (s, BGP_ATTR_QUAGGA_DUMPEXT);
+  stream_putc (s, 3);
+  /* put a version byte to allow clean extensions */
+  stream_putc (s, 0);
+  stream_putw (s, flags);
 
   /* Return total size of attribute. */
   len = stream_get_endp (s) - cp - 2;

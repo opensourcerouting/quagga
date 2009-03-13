@@ -613,6 +613,9 @@ struct bgp_nlri
 #define BGP_ATTR_AS4_AGGREGATOR                 18
 #define BGP_ATTR_AS_PATHLIMIT                   21
 
+/* BGP attribute 255, "development". Used in dumps for extended information. */
+#define BGP_ATTR_QUAGGA_DUMPEXT                255
+
 /* BGP update origin.  */
 #define BGP_ORIGIN_IGP                           0
 #define BGP_ORIGIN_EGP                           1

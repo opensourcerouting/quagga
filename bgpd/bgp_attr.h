@@ -162,7 +162,7 @@ extern bgp_size_t bgp_packet_withdraw (struct peer *peer, struct stream *s,
                                 struct prefix *p, afi_t, safi_t, 
                                 struct prefix_rd *, u_char *);
 extern void bgp_dump_routes_attr (struct stream *, struct attr *,
-				  struct prefix *);
+				  struct prefix *, uint16_t);
 extern int attrhash_cmp (const void *, const void *);
 extern unsigned int attrhash_key_make (void *);
 extern void attr_show_all (struct vty *);
