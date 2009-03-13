@@ -432,6 +432,28 @@ if_lookup_by_ipv4_exact (struct in_addr *addr)
   return NULL;
 }
 
+static int
+if_get_ipv4 (struct interface *ifp, struct in_addr *addr)
+{
+  struct listnode *cnode;
+  struct connected *connected;
+  struct prefix *cp;
+  int hit = 0;
+
+  for (ALL_LIST_ELEMENTS_RO (ifp->connected, cnode, connected))
+    {
+      cp = connected->address;
+
+      if (cp->family == AF_INET)
+	if (!hit || ntohl(cp->u.prefix4.s_addr) < ntohl(addr->s_addr))
+	  {
+	    memcpy (addr, &cp->u.prefix4, IPV4_MAX_BYTELEN);
+	    hit = 1;
+	  }
+    }
+  return hit;
+}
+
 #ifdef HAVE_IPV6
 struct interface *
 if_lookup_by_ipv6 (struct in6_addr *addr)
@@ -586,7 +608,8 @@ bgp_nexthop_set (union sockunion *local, union sockunion *remote,
       struct interface *direct = NULL;
 
       /* IPv4 nexthop.  I don't care about it. */
-      if (peer->local_id.s_addr)
+      ret = if_get_ipv4 (ifp, &nexthop->v4);
+      if (!ret && peer->local_id.s_addr)
 	nexthop->v4 = peer->local_id;
 
       /* Global address*/
