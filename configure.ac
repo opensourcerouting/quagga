@@ -653,11 +653,19 @@ dnl ----------------------------
 AC_FUNC_CHOWN
 AC_FUNC_FNMATCH
 AC_FUNC_FORK
-AC_FUNC_MALLOC
+if test x$cross_compiling == xyes; then
+  case $host in
+  *-uclibc)
+    ;;
+  *)
+    AC_FUNC_MALLOC
+    AC_FUNC_REALLOC
+    ;;
+  esac
+fi
 AC_FUNC_MEMCMP
 AC_FUNC_MKTIME
 AC_FUNC_STRFTIME
-AC_FUNC_REALLOC
 AC_FUNC_STAT
 AC_FUNC_SELECT_ARGTYPES
 AC_FUNC_STRFTIME
@@ -960,10 +968,18 @@ dnl -----------------------------
 dnl check ipforward detect method
 dnl -----------------------------
 AC_CACHE_CHECK(ipforward method check, zebra_ipforward_path,
-[for zebra_ipforward_path in /proc/net/snmp /dev/ip /dev/null;
-do
-  test x`ls $zebra_ipforward_path 2>/dev/null` = x"$zebra_ipforward_path" && break
-done
+[if test x$cross_compiling == xyes; then
+  if test x"$opsys" = x"gnu-linux"; then
+    zebra_ipforward_path=/proc/net/snmp
+  else
+    zebra_ipforward_path=/dev/ip
+  fi
+else
+  for zebra_ipforward_path in /proc/net/snmp /dev/ip /dev/null;
+  do
+    test x`ls $zebra_ipforward_path 2>/dev/null` = x"$zebra_ipforward_path" && break
+  done
+fi
 case $zebra_ipforward_path in
   "/proc/net/snmp")  IPFORWARD=ipforward_proc.o
                      zebra_ipforward_path="proc";;
