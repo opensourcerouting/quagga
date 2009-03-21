@@ -34,7 +34,12 @@
 static int
 zebra_static_ipv4 (struct vty *vty, int add_cmd, const char *dest_str,
 		   const char *mask_str, const char *gate_str,
+#ifndef SUPPORT_REALMS		   
 		   const char *flag_str, const char *distance_str)
+#else
+                   const char *flag_str, const char *distance_str, const char *realm_str)
+#endif /* SUPPORT_REALMS */
+		   
 {
   int ret;
   u_char distance;
@@ -43,6 +48,23 @@ zebra_static_ipv4 (struct vty *vty, int add_cmd, const char *dest_str,
   struct in_addr mask;
   const char *ifname;
   u_char flag = 0;
+  
+#ifdef SUPPORT_REALMS
+  u_int16_t realmto = 0;
+  u_int32_t realmid;
+  int res;
+
+  if (realm_str != NULL) {
+    res = rtnl_rtrealm_a2n (&realmid, realm_str);
+    if (res < 0) {
+      vty_out (vty, "%%Realm '%s' not found in rt_realms has invalid value%s",
+              realm_str, VTY_NEWLINE);
+      return CMD_ERR_INCOMPLETE;
+    }
+    realmto = (u_int16_t)realmid;
+  }
+#endif /* SUPPORT_REALMS */
+  
   
   ret = str2prefix (dest_str, &p);
   if (ret <= 0)
@@ -81,7 +103,11 @@ zebra_static_ipv4 (struct vty *vty, int add_cmd, const char *dest_str,
           return CMD_WARNING;
         }
       if (add_cmd)
+#ifndef SUPPORT_REALMS      
         static_add_ipv4 (&p, NULL, NULL, ZEBRA_FLAG_BLACKHOLE, distance, 0);
+#else
+	static_add_ipv4 (&p, NULL, NULL, ZEBRA_FLAG_BLACKHOLE, distance, 0, realmto);
+#endif /* SUPPORT_REALMS */	
       else
         static_delete_ipv4 (&p, NULL, NULL, distance, 0);
       return CMD_SUCCESS;
@@ -107,7 +133,11 @@ zebra_static_ipv4 (struct vty *vty, int add_cmd, const char *dest_str,
   if (gate_str == NULL)
   {
     if (add_cmd)
+#ifndef SUPPORT_REALMS
       static_add_ipv4 (&p, NULL, NULL, flag, distance, 0);
+#else
+      static_add_ipv4 (&p, NULL, NULL, flag, distance, 0, realmto);
+#endif /* SUPPORT_REALMS */
     else
       static_delete_ipv4 (&p, NULL, NULL, distance, 0);
 
@@ -122,8 +152,14 @@ zebra_static_ipv4 (struct vty *vty, int add_cmd, const char *dest_str,
   else
     ifname = gate_str;
 
-  if (add_cmd)
+  if (add_cmd) {
+#ifndef SUPPORT_REALMS
     static_add_ipv4 (&p, ifname ? NULL : &gate, ifname, flag, distance, 0);
+#else
+        static_add_ipv4 (&p, ifname ? NULL : &gate, ifname, flag, distance, 0, realmto);
+#endif /* SUPPORT_REALMS */
+
+  }
   else
     static_delete_ipv4 (&p, ifname ? NULL : &gate, ifname, distance, 0);
 
@@ -141,7 +177,11 @@ DEFUN (ip_route,
        "IP gateway interface name\n"
        "Null interface\n")
 {
+#ifndef SUPPORT_REALMS
   return zebra_static_ipv4 (vty, 1, argv[0], NULL, argv[1], NULL, NULL);
+#else
+  return zebra_static_ipv4 (vty, 1, argv[0], NULL, argv[1], NULL, NULL, NULL);
+#endif /* SUPPORT_REALMS */
 }
 
 DEFUN (ip_route_flags,
@@ -155,7 +195,11 @@ DEFUN (ip_route_flags,
        "Emit an ICMP unreachable when matched\n"
        "Silently discard pkts when matched\n")
 {
+#ifndef SUPPORT_REALMS
   return zebra_static_ipv4 (vty, 1, argv[0], NULL, argv[1], argv[2], NULL);
+#else
+  return zebra_static_ipv4 (vty, 1, argv[0], NULL, argv[1], argv[2], NULL, NULL);
+#endif /* SUPPORT_REALMS */
 }
 
 DEFUN (ip_route_flags2,
@@ -167,7 +211,11 @@ DEFUN (ip_route_flags2,
        "Emit an ICMP unreachable when matched\n"
        "Silently discard pkts when matched\n")
 {
+#ifndef SUPPORT_REALMS
   return zebra_static_ipv4 (vty, 1, argv[0], NULL, NULL, argv[1], NULL);
+#else
+  return zebra_static_ipv4 (vty, 1, argv[0], NULL, NULL, argv[1], NULL, NULL);
+#endif /* SUPPORT_REALMS */
 }
 
 /* Mask as A.B.C.D format.  */
@@ -182,7 +230,11 @@ DEFUN (ip_route_mask,
        "IP gateway interface name\n"
        "Null interface\n")
 {
+#ifndef SUPPORT_REALMS
   return zebra_static_ipv4 (vty, 1, argv[0], argv[1], argv[2], NULL, NULL);
+#else
+  return zebra_static_ipv4 (vty, 1, argv[0], argv[1], argv[2], NULL, NULL, NULL);
+#endif /* SUPPORT_REALMS */
 }
 
 DEFUN (ip_route_mask_flags,
@@ -197,7 +249,11 @@ DEFUN (ip_route_mask_flags,
        "Emit an ICMP unreachable when matched\n"
        "Silently discard pkts when matched\n")
 {
+#ifndef SUPPORT_REALMS
   return zebra_static_ipv4 (vty, 1, argv[0], argv[1], argv[2], argv[3], NULL);
+#else
+  return zebra_static_ipv4 (vty, 1, argv[0], argv[1], argv[2], argv[3], NULL, NULL);
+#endif /* SUPPORT_REALMS */
 }
 
 DEFUN (ip_route_mask_flags2,
@@ -210,7 +266,11 @@ DEFUN (ip_route_mask_flags2,
        "Emit an ICMP unreachable when matched\n"
        "Silently discard pkts when matched\n")
 {
+#ifndef SUPPORT_REALMS
   return zebra_static_ipv4 (vty, 1, argv[0], argv[1], NULL, argv[2], NULL);
+#else
+  return zebra_static_ipv4 (vty, 1, argv[0], argv[1], NULL, argv[2], NULL, NULL);
+#endif /* SUPPORT_REALMS */
 }
 
 /* Distance option value.  */
@@ -225,7 +285,11 @@ DEFUN (ip_route_distance,
        "Null interface\n"
        "Distance value for this route\n")
 {
+#ifndef SUPPORT_REALMS
   return zebra_static_ipv4 (vty, 1, argv[0], NULL, argv[1], NULL, argv[2]);
+#else
+  return zebra_static_ipv4 (vty, 1, argv[0], NULL, argv[1], NULL, argv[2], NULL);
+#endif /* SUPPORT_REALMS */
 }
 
 DEFUN (ip_route_flags_distance,
@@ -240,7 +304,12 @@ DEFUN (ip_route_flags_distance,
        "Silently discard pkts when matched\n"
        "Distance value for this route\n")
 {
+#ifndef SUPPORT_REALMS
   return zebra_static_ipv4 (vty, 1, argv[0], NULL, argv[1], argv[2], argv[3]);
+#else
+  return zebra_static_ipv4 (vty, 1, argv[0], NULL, argv[1], argv[2], argv[3], NULL);
+#endif /* SUPPORT_REALMS */
+
 }
 
 DEFUN (ip_route_flags_distance2,
@@ -253,7 +322,11 @@ DEFUN (ip_route_flags_distance2,
        "Silently discard pkts when matched\n"
        "Distance value for this route\n")
 {
+#ifndef SUPPORT_REALMS
   return zebra_static_ipv4 (vty, 1, argv[0], NULL, NULL, argv[1], argv[2]);
+#else
+  return zebra_static_ipv4 (vty, 1, argv[0], NULL, NULL, argv[1], argv[2], NULL);
+#endif /* SUPPORT_REALMS */
 }
 
 DEFUN (ip_route_mask_distance,
@@ -268,7 +341,12 @@ DEFUN (ip_route_mask_distance,
        "Null interface\n"
        "Distance value for this route\n")
 {
+#ifndef SUPPORT_REALMS
   return zebra_static_ipv4 (vty, 1, argv[0], argv[1], argv[2], NULL, argv[3]);
+#else
+  return zebra_static_ipv4 (vty, 1, argv[0], argv[1], argv[2], NULL, argv[3], NULL);
+#endif /* SUPPORT_REALMS */
+
 }
 
 DEFUN (ip_route_mask_flags_distance,
@@ -284,7 +362,12 @@ DEFUN (ip_route_mask_flags_distance,
        "Emit an ICMP unreachable when matched\n"
        "Silently discard pkts when matched\n")
 {
+#ifndef SUPPORT_REALMS
   return zebra_static_ipv4 (vty, 1, argv[0], argv[1], argv[2], argv[3], argv[4]);
+#else
+  return zebra_static_ipv4 (vty, 1, argv[0], argv[1], argv[2], argv[3], argv[4], NULL);
+#endif /* SUPPORT_REALMS */
+
 }
 
 DEFUN (ip_route_mask_flags_distance2,
@@ -298,7 +381,12 @@ DEFUN (ip_route_mask_flags_distance2,
        "Emit an ICMP unreachable when matched\n"
        "Silently discard pkts when matched\n")
 {
+#ifndef SUPPORT_REALMS
   return zebra_static_ipv4 (vty, 1, argv[0], argv[1], NULL, argv[2], argv[3]);
+#else
+  return zebra_static_ipv4 (vty, 1, argv[0], argv[1], NULL, argv[2], argv[3], NULL);
+#endif /* SUPPORT_REALMS */
+
 }
 
 DEFUN (no_ip_route, 
@@ -312,7 +400,12 @@ DEFUN (no_ip_route,
        "IP gateway interface name\n"
        "Null interface\n")
 {
+#ifndef SUPPORT_REALMS
   return zebra_static_ipv4 (vty, 0, argv[0], NULL, argv[1], NULL, NULL);
+#else
+  return zebra_static_ipv4 (vty, 0, argv[0], NULL, argv[1], NULL, NULL, NULL);
+#endif /* SUPPORT_REALMS */
+
 }
 
 ALIAS (no_ip_route,
@@ -337,7 +430,12 @@ DEFUN (no_ip_route_flags2,
        "Emit an ICMP unreachable when matched\n"
        "Silently discard pkts when matched\n")
 {
+#ifndef SUPPORT_REALMS
   return zebra_static_ipv4 (vty, 0, argv[0], NULL, NULL, NULL, NULL);
+#else
+  return zebra_static_ipv4 (vty, 0, argv[0], NULL, NULL, NULL, NULL, NULL);
+#endif /* SUPPORT_REALMS */
+
 }
 
 DEFUN (no_ip_route_mask,
@@ -352,7 +450,12 @@ DEFUN (no_ip_route_mask,
        "IP gateway interface name\n"
        "Null interface\n")
 {
+#ifndef SUPPORT_REALMS
   return zebra_static_ipv4 (vty, 0, argv[0], argv[1], argv[2], NULL, NULL);
+#else
+  return zebra_static_ipv4 (vty, 0, argv[0], argv[1], argv[2], NULL, NULL, NULL);
+#endif /* SUPPORT_REALMS */
+
 }
 
 ALIAS (no_ip_route_mask,
@@ -379,7 +482,12 @@ DEFUN (no_ip_route_mask_flags2,
        "Emit an ICMP unreachable when matched\n"
        "Silently discard pkts when matched\n")
 {
+#ifndef SUPPORT_REALMS
   return zebra_static_ipv4 (vty, 0, argv[0], argv[1], NULL, NULL, NULL);
+#else
+  return zebra_static_ipv4 (vty, 0, argv[0], argv[1], NULL, NULL, NULL, NULL);
+#endif /* SUPPORT_REALMS */
+
 }
 
 DEFUN (no_ip_route_distance,
@@ -394,7 +502,12 @@ DEFUN (no_ip_route_distance,
        "Null interface\n"
        "Distance value for this route\n")
 {
+#ifndef SUPPORT_REALMS
   return zebra_static_ipv4 (vty, 0, argv[0], NULL, argv[1], NULL, argv[2]);
+#else
+  return zebra_static_ipv4 (vty, 0, argv[0], NULL, argv[1], NULL, argv[2], NULL);
+#endif /* SUPPORT_REALMS */
+
 }
 
 DEFUN (no_ip_route_flags_distance,
@@ -410,7 +523,12 @@ DEFUN (no_ip_route_flags_distance,
        "Silently discard pkts when matched\n"
        "Distance value for this route\n")
 {
+#ifndef SUPPORT_REALMS
   return zebra_static_ipv4 (vty, 0, argv[0], NULL, argv[1], argv[2], argv[3]);
+#else
+  return zebra_static_ipv4 (vty, 0, argv[0], NULL, argv[1], argv[2], argv[3], NULL);
+#endif /* SUPPORT_REALMS */
+
 }
 
 DEFUN (no_ip_route_flags_distance2,
@@ -424,7 +542,12 @@ DEFUN (no_ip_route_flags_distance2,
        "Silently discard pkts when matched\n"
        "Distance value for this route\n")
 {
+#ifndef SUPPORT_REALMS
   return zebra_static_ipv4 (vty, 0, argv[0], NULL, NULL, argv[1], argv[2]);
+#else
+  return zebra_static_ipv4 (vty, 0, argv[0], NULL, NULL, argv[1], argv[2], NULL);
+#endif /* SUPPORT_REALMS */
+
 }
 
 DEFUN (no_ip_route_mask_distance,
@@ -440,7 +563,12 @@ DEFUN (no_ip_route_mask_distance,
        "Null interface\n"
        "Distance value for this route\n")
 {
+#ifndef SUPPORT_REALMS
   return zebra_static_ipv4 (vty, 0, argv[0], argv[1], argv[2], NULL, argv[3]);
+#else
+  return zebra_static_ipv4 (vty, 0, argv[0], argv[1], argv[2], NULL, argv[3], NULL);
+#endif /* SUPPORT_REALMS */
+
 }
 
 DEFUN (no_ip_route_mask_flags_distance,
@@ -457,7 +585,12 @@ DEFUN (no_ip_route_mask_flags_distance,
        "Silently discard pkts when matched\n"
        "Distance value for this route\n")
 {
+#ifndef SUPPORT_REALMS
   return zebra_static_ipv4 (vty, 0, argv[0], argv[1], argv[2], argv[3], argv[4]);
+#else
+  return zebra_static_ipv4 (vty, 0, argv[0], argv[1], argv[2], argv[3], argv[4], NULL);
+#endif /* SUPPORT_REALMS */
+
 }
 
 DEFUN (no_ip_route_mask_flags_distance2,
@@ -472,9 +605,70 @@ DEFUN (no_ip_route_mask_flags_distance2,
        "Silently discard pkts when matched\n"
        "Distance value for this route\n")
 {
+#ifndef SUPPORT_REALMS
   return zebra_static_ipv4 (vty, 0, argv[0], argv[1], NULL, argv[2], argv[3]);
+#else
+  return zebra_static_ipv4 (vty, 0, argv[0], argv[1], NULL, argv[2], argv[3], NULL);
+#endif /* SUPPORT_REALMS */
 }
 
+#ifdef SUPPORT_REALMS
+DEFUN (ip_route_realm,
+       ip_route_realm_cmd,
+       "ip route A.B.C.D/M (A.B.C.D|INTERFACE) realm (<1-255>|WORD)",
+       IP_STR
+       "Establish static routes\n"
+       "IP destination prefix (e.g. 10.0.0.0/8)\n"
+       "IP gateway address\n"
+       "IP gateway interface name\n"
+       "Destination realm value or name\n")
+{
+  return zebra_static_ipv4 (vty, 1, argv[0], NULL, argv[1], NULL, NULL, argv[2]);
+}
+
+DEFUN (ip_route_mask_realm,
+       ip_route_mask_realm_cmd,
+       "ip route A.B.C.D A.B.C.D (A.B.C.D|INTERFACE) realm (<1-255>|WORD)",
+       IP_STR
+       "Establish static routes\n"
+       "IP destination prefix\n"
+       "IP destination prefix mask\n"
+       "IP gateway address\n"
+       "IP gateway interface name\n"
+       "Destination realm value or name\n")
+{
+  return zebra_static_ipv4 (vty, 1, argv[0], argv[1], argv[2], NULL, NULL, argv[3]);
+}
+
+DEFUN (ip_route_pref_realm,
+       ip_route_pref_realm_cmd,
+       "ip route A.B.C.D/M (A.B.C.D|INTERFACE) <1-255> realm (<1-255>|WORD)",
+       IP_STR
+       "Establish static routes\n"
+       "IP destination prefix (e.g. 10.0.0.0/8)\n"
+       "IP gateway address\n"
+       "IP gateway interface name\n"
+       "Distance value for this route\n"
+       "Destination realm value or name\n")
+{
+  return zebra_static_ipv4 (vty, 1, argv[0], NULL, argv[1], NULL, argv[2], argv[3]);
+}
+ 
+DEFUN (ip_route_mask_pref_realm,
+       ip_route_mask_pref_realm_cmd,
+       "ip route A.B.C.D A.B.C.D (A.B.C.D|INTERFACE) <1-255> realm (<1-255>|WORD)",
+       IP_STR
+       "Establish static routes\n"
+       "IP destination prefix\n"
+       "IP destination prefix mask\n"
+       "IP gateway address\n"
+       "IP gateway interface name\n"
+       "Distance value for this route\n")
+{
+  return zebra_static_ipv4 (vty, 1, argv[0], argv[1], argv[2], NULL, argv[3], argv[4]);
+}
+#endif /* SUPPORT_REALMS */
+ 
 char *proto_rm[AFI_MAX][ZEBRA_ROUTE_MAX+1];	/* "any" == ZEBRA_ROUTE_MAX */
 
 DEFUN (ip_protocol,
@@ -546,6 +740,10 @@ vty_show_ip_route_detail (struct vty *vty, struct route_node *rn)
 	vty_out (vty, ", best");
       if (rib->refcnt)
 	vty_out (vty, ", refcnt %ld", rib->refcnt);
+#ifdef SUPPORT_REALMS
+      if (rib->realmto)
+       vty_out (vty, ", realm %5u", rib->realmto);
+#endif /* SUPPORT_REALMS */
       if (CHECK_FLAG (rib->flags, ZEBRA_FLAG_BLACKHOLE))
        vty_out (vty, ", blackhole");
       if (CHECK_FLAG (rib->flags, ZEBRA_FLAG_REJECT))
@@ -611,7 +809,12 @@ vty_show_ip_route_detail (struct vty *vty, struct route_node *rn)
 	    }
 	  if (! CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_ACTIVE))
 	    vty_out (vty, " inactive");
-
+#ifdef SUPPORT_REALMS
+    	  if (rib->realmto) {
+    	    char realmbuf[50];
+    	    vty_out (vty, " realm %5s", rtnl_rtrealm_n2a (rib->realmto, realmbuf, sizeof (realmbuf)));
+    	  }
+#endif /* SUPPORT_REALMS */
 	  if (CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_RECURSIVE))
 	    {
 	      vty_out (vty, " (recursive");
@@ -1177,6 +1380,13 @@ static_config_ipv4 (struct vty *vty)
 
         if (si->distance != ZEBRA_STATIC_DISTANCE_DEFAULT)
           vty_out (vty, " %d", si->distance);
+
+#ifdef SUPPORT_REALMS
+       if (si->realmto) {
+         char realmbuf[11];
+         vty_out (vty, " realm %s", rtnl_rtrealm_n2a (si->realmto, realmbuf, sizeof realmbuf));
+       }
+#endif /* SUPPORT_REALMS */
 
         vty_out (vty, "%s", VTY_NEWLINE);
 
@@ -2102,6 +2312,12 @@ zebra_vty_init (void)
   install_element (CONFIG_NODE, &no_ip_route_mask_cmd);
   install_element (CONFIG_NODE, &no_ip_route_mask_flags_cmd);
   install_element (CONFIG_NODE, &no_ip_route_mask_flags2_cmd);
+#ifdef SUPPORT_REALMS
+  install_element (CONFIG_NODE, &ip_route_realm_cmd);
+  install_element (CONFIG_NODE, &ip_route_mask_realm_cmd);
+  install_element (CONFIG_NODE, &ip_route_pref_realm_cmd);
+  install_element (CONFIG_NODE, &ip_route_mask_pref_realm_cmd);
+#endif /* SUPPORT_REALMS */
   install_element (CONFIG_NODE, &ip_route_distance_cmd);
   install_element (CONFIG_NODE, &ip_route_flags_distance_cmd);
   install_element (CONFIG_NODE, &ip_route_flags_distance2_cmd);

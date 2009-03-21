@@ -238,7 +238,8 @@ AC_ARG_ENABLE(configfile_mask,
 [  --enable-configfile-mask=ARG  set mask for config files])
 AC_ARG_ENABLE(logfile_mask,
 [  --enable-logfile-mask=ARG     set mask for log files])
-
+AC_ARG_ENABLE(realms,
+[  --enable-realms	   enable REALMS support under Linux])
 AC_ARG_ENABLE(rtadv,
 [  --disable-rtadv               disable IPV6 router advertisement feature])
 AC_ARG_ENABLE(irdp,
@@ -532,6 +533,14 @@ case "$host" in
       AC_DEFINE(IRIX_65,,IRIX 6.5)
   ;;
 esac
+
+if test "${enable_realms}" = "yes"; then
+    if test "${opsys}" != "gnu-linux"; then
+	echo "Sorry, only Linux has REALMS support"
+	exit 1
+    fi
+    AC_DEFINE(SUPPORT_REALMS,, Realms support)
+fi
 
 dnl ---------------------
 dnl Integrated VTY option

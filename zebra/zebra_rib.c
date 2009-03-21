@@ -1547,7 +1547,11 @@ int
 rib_add_ipv4 (int type, int flags, struct prefix_ipv4 *p, 
 	      struct in_addr *gate, struct in_addr *src,
 	      unsigned int ifindex, u_int32_t vrf_id,
-	      u_int32_t metric, u_char distance)
+#ifndef SUPPORT_REALMS
+  	      u_int32_t metric, u_char distance)
+#else
+          u_int32_t metric, u_char distance, u_int16_t realmto)
+#endif /* SUPPORT_REALMS */
 {
   struct rib *rib;
   struct rib *same = NULL;
@@ -1632,6 +1636,10 @@ rib_add_ipv4 (int type, int flags, struct prefix_ipv4 *p,
     zlog_debug ("%s: calling rib_addnode (%p, %p)", __func__, rn, rib);
   rib_addnode (rn, rib);
   
+#ifdef SUPPORT_REALMS
+  rib->realmto = realmto;
+#endif /* SUPPORT_REALMS */
+
   /* Free implicit route.*/
   if (same)
   {
@@ -2066,6 +2074,10 @@ static_install_ipv4 (struct prefix *p, struct static_ipv4 *si)
       rib->distance = si->distance;
       rib->metric = 0;
       rib->nexthop_num = 0;
+#ifdef SUPPORT_REALMS
+      rib->realmto = si->realmto;
+#endif /* SUPPORT_REALMS */
+
 
       switch (si->type)
         {
@@ -2169,7 +2181,11 @@ static_uninstall_ipv4 (struct prefix *p, struct static_ipv4 *si)
 /* Add static route into static route configuration. */
 int
 static_add_ipv4 (struct prefix *p, struct in_addr *gate, const char *ifname,
+#ifndef SUPPORT_REALMS
 		 u_char flags, u_char distance, u_int32_t vrf_id)
+#else
+		 u_char flags, u_char distance, u_int32_t vrf_id, u_int16_t realmto)
+#endif /* SUPPORT_REALMS */		
 {
   u_char type = 0;
   struct route_node *rn;
@@ -2221,6 +2237,10 @@ static_add_ipv4 (struct prefix *p, struct in_addr *gate, const char *ifname,
   si->type = type;
   si->distance = distance;
   si->flags = flags;
+
+#ifdef SUPPORT_REALMS
+  si->realmto = realmto;
+#endif /* SUPPORT_REALMS */
 
   if (gate)
     si->gate.ipv4 = *gate;

@@ -424,6 +424,11 @@ struct peer
   u_int32_t connect;
   u_int32_t routeadv;
 
+#ifdef SUPPORT_REALMS
+#define PEER_CONFIG_REALM             (1 << 4) /* Default realm. */
+  u_int32_t realm;
+#endif /* SUPPORT_REALMS */
+
   /* Timer values. */
   u_int32_t v_start;
   u_int32_t v_connect;
@@ -962,6 +967,11 @@ extern int peer_weight_unset (struct peer *);
 
 extern int peer_timers_set (struct peer *, u_int32_t, u_int32_t);
 extern int peer_timers_unset (struct peer *);
+
+#ifdef SUPPORT_REALMS
+extern int peer_realm_set (struct peer *, u_int32_t);
+extern int peer_realm_unset (struct peer *);
+#endif /* SUPPORT_REALMS */
 
 extern int peer_timers_connect_set (struct peer *, u_int32_t);
 extern int peer_timers_connect_unset (struct peer *);

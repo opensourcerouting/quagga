@@ -591,6 +591,10 @@ peer_global_config_reset (struct peer *peer)
   peer->keepalive = 0;
   peer->connect = 0;
   peer->v_connect = BGP_DEFAULT_CONNECT_RETRY;
+  
+#ifdef SUPPORT_REALMS
+  peer->realm = 0;
+#endif /* SUPPORT_REALMS */
 }
 
 /* Check peer's AS number and determin is this peer IBGP or EBGP */
@@ -708,6 +712,10 @@ peer_new (struct bgp *bgp)
   peer->password = NULL;
   peer->bgp = bgp;
   peer = peer_lock (peer); /* initial reference */
+
+#ifdef SUPPORT_REALMS
+  peer->realm = 0;
+#endif /* SUPPORT_REALMS */
 
   /* Set default flags.  */
   for (afi = AFI_IP; afi < AFI_MAX; afi++)
@@ -1323,6 +1331,13 @@ peer_group2peer_config_copy (struct peer_group *group, struct peer *peer,
 
   /* Weight */
   peer->weight = conf->weight;
+
+#ifdef SUPPORT_REALMS
+
+  /* Realm */
+  peer->realm = conf->realm;
+
+#endif /* SUPPORT_REALMS */
 
   /* peer flags apply */
   peer->flags = conf->flags;
@@ -2987,7 +3002,60 @@ peer_weight_unset (struct peer *peer)
     }
   return 0;
 }
-
+
+#ifdef SUPPORT_REALMS
+
+/* neighbor realm. */
+int
+peer_realm_set (struct peer *peer, u_int32_t realm)
+{
+  struct peer_group *group;
+  struct listnode *node, *nnode;
+
+  SET_FLAG (peer->config, PEER_CONFIG_REALM);
+  peer->realm = realm;
+
+  if (! CHECK_FLAG (peer->sflags, PEER_STATUS_GROUP))
+    return 0;
+
+  /* peer-group member updates. */
+  group = peer->group;
+  for (ALL_LIST_ELEMENTS (group->peer, node, nnode, peer))
+    {
+      peer->realm = group->conf->realm;
+    }
+  return 0;
+}
+
+int
+peer_realm_unset (struct peer *peer)
+{
+  struct peer_group *group;
+  struct listnode *node, *nnode;
+
+  /* Set default realm. */
+  if (peer_group_active (peer))
+    peer->realm = peer->group->conf->realm;
+  else
+    peer->realm = 0;
+
+  UNSET_FLAG (peer->config, PEER_CONFIG_REALM);
+
+  if (! CHECK_FLAG (peer->sflags, PEER_STATUS_GROUP))
+    return 0;
+
+  /* peer-group member updates. */
+  group = peer->group;
+  for (ALL_LIST_ELEMENTS (group->peer, node, nnode, peer))
+    {
+      peer->realm = 0;
+    }
+  return 0;
+}
+
+
+#endif /* SUPPORT_REALMS */
+
 int
 peer_timers_set (struct peer *peer, u_int32_t keepalive, u_int32_t holdtime)
 {
@@ -4533,6 +4601,35 @@ bgp_config_write_peer (struct vty *vty, struct bgp *bgp,
 	    g_peer->weight != peer->weight)
 	  vty_out (vty, " neighbor %s weight %d%s", addr, peer->weight,
 		   VTY_NEWLINE);
+
+#ifdef SUPPORT_REALMS
+
+#define REALM_PEER_AS	0xFFFFA
+#define REALM_ORIGIN_AS	0xFFFFB
+
+      /* Default realm. */
+      if (CHECK_FLAG (peer->config, PEER_CONFIG_REALM))
+        if (! peer_group_active (peer) ||
+	    g_peer->realm != peer->realm) 
+	{
+	  char realmbuf[64];
+	  if (peer->realm == REALM_PEER_AS)	  
+	    vty_out (vty, " neighbor %s realm peer-as%s", addr,
+		   VTY_NEWLINE);	    	  
+	  else if (peer->realm == REALM_ORIGIN_AS)	  
+	    vty_out (vty, " neighbor %s realm origin-as%s", addr,
+		   VTY_NEWLINE);	  
+	  else vty_out (vty, " neighbor %s realm %s%s", addr, 
+	       rtnl_rtrealm_n2a (peer->realm, realmbuf, sizeof (realmbuf)), VTY_NEWLINE);
+	}
+#endif /* SUPPORT_REALMS */
+
+
+
+
+
+
+
 
       /* Dynamic capability.  */
       if (CHECK_FLAG (peer->flags, PEER_FLAG_DYNAMIC_CAPABILITY))
