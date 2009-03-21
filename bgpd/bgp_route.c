@@ -5525,23 +5525,7 @@ route_vty_out_route (struct prefix *p, struct vty *vty)
   u_int32_t destination; 
   char buf[BUFSIZ];
 
-  if (p->family == AF_INET)
-    {
-      len = vty_out (vty, "%s", inet_ntop (p->family, &p->u.prefix, buf, BUFSIZ));
-      destination = ntohl (p->u.prefix4.s_addr);
-
-      if ((IN_CLASSC (destination) && p->prefixlen == 24)
-	  || (IN_CLASSB (destination) && p->prefixlen == 16)
-	  || (IN_CLASSA (destination) && p->prefixlen == 8)
-	  || p->u.prefix4.s_addr == 0)
-	{
-	  /* When mask is natural, mask is not displayed. */
-	}
-      else
-	len += vty_out (vty, "/%d", p->prefixlen);
-    }
-  else
-    len = vty_out (vty, "%s/%d", inet_ntop (p->family, &p->u.prefix, buf, BUFSIZ),
+  len = vty_out (vty, "%s/%d", inet_ntop (p->family, &p->u.prefix, buf, BUFSIZ),
 		   p->prefixlen);
 
   len = 17 - len;
@@ -11419,18 +11403,9 @@ bgp_config_write_network (struct vty *vty, struct bgp *bgp,
 
 	    destination = ntohl (p->u.prefix4.s_addr);
 	    masklen2ip (p->prefixlen, &netmask);
-	    vty_out (vty, " network %s",
-		     inet_ntop (p->family, &p->u.prefix, buf, SU_ADDRSTRLEN));
-
-	    if ((IN_CLASSC (destination) && p->prefixlen == 24)
-		|| (IN_CLASSB (destination) && p->prefixlen == 16)
-		|| (IN_CLASSA (destination) && p->prefixlen == 8)
-		|| p->u.prefix4.s_addr == 0)
-	      {
-		/* Natural mask is not display. */
-	      }
-	    else
-	      vty_out (vty, " mask %s", inet_ntoa (netmask));
+	    vty_out (vty, " network %s mask %s",
+		     inet_ntop (p->family, &p->u.prefix, buf, SU_ADDRSTRLEN),
+			 inet_ntoa (netmask));
 	  }
 	else
 	  {
