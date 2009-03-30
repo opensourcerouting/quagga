@@ -498,6 +498,7 @@ if_rename (struct interface *ifp, const char *name)
   oifp = if_lookup_by_name(name);
   if (oifp)
     {
+      ifp->status |= oifp->status; /* inherit config bits */
       if (oifp->ifindex != IFINDEX_INTERNAL)
 	{
 	  zlog_err ("interface %s rename to %s overlaps with index %d",
