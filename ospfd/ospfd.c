@@ -644,8 +644,31 @@ ospf_area_free (struct ospf_area *area)
 void
 ospf_area_check_free (struct ospf *ospf, struct in_addr area_id)
 {
+  struct interface *ifp;
+  struct listnode *node;
+  struct ospf_if_params *params;
+  struct route_node *rn;
+  struct ospf_network *network;
   struct ospf_area *area;
 
+  /* Check if any interface is a member of this area */
+  for (ALL_LIST_ELEMENTS_RO (om->iflist, node, ifp))
+    {
+      params = IF_DEF_PARAMS (ifp);
+      if (OSPF_IF_PARAM_CONFIGURED(params, if_area)
+	  && IPV4_ADDR_SAME (&area_id, &params->if_area))
+	return;
+    }
+  /* Check if any network is a member of this area */
+  for (rn = route_top (ospf->networks); rn; rn = route_next (rn))
+    {
+      network = rn->info;
+      if (network && IPV4_ADDR_SAME (&area_id, &network->area_id))
+	{
+	  route_unlock_node (rn);
+	  return;
+	}
+    }
   area = ospf_area_lookup_by_area_id (ospf, area_id);
   if (area &&
       listcount (area->oiflist) == 0 &&
