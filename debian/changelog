@@ -1,3 +1,9 @@
+vyatta-quagga (0.99.11-11) unstable; urgency=low
+
+  * Zebra: remember metric of kernel route
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Tue, 07 Apr 2009 14:20:00 -0700
+
 vyatta-quagga (0.99.11-10) unstable; urgency=low
 
   [ Joakim Tjernlund ]
