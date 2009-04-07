@@ -1,3 +1,13 @@
+vyatta-quagga (0.99.11-10) unstable; urgency=low
+
+  [ Joakim Tjernlund ]
+  * copy config for renamed interfaces.
+
+  [ Stephen Hemminger ]
+  * Cancel thread in work_queue_free
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Mon, 06 Apr 2009 22:14:10 -0700
+
 vyatta-quagga (0.99.11-9) unstable; urgency=low
 
   * Provide debug symbols package
