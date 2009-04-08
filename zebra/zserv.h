@@ -76,7 +76,7 @@ struct zebra_t
   struct list *client_list;
 
   /* default table */
-  int rtm_table_default;
+  u_int32_t rtm_table_default;
 
   /* rib work queue */
   struct work_queue *ribq;

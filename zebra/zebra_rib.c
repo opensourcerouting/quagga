@@ -625,8 +625,8 @@ nexthop_active_ipv6 (struct rib *rib, struct nexthop *nexthop, int set,
 				  || newhop->type == NEXTHOP_TYPE_IPV6_IFINDEX
 				  || newhop->type == NEXTHOP_TYPE_IPV6_IFNAME) &&
 				 nexthop->rifindex != newhop->ifindex)
-			     || (nexthop->type == NEXTHOP_TYPE_IPV6) &&
-			     nexthop->ifindex != newhop->ifindex)
+			     || ((nexthop->type == NEXTHOP_TYPE_IPV6) &&
+				 (nexthop->ifindex != newhop->ifindex)))
 		      {
 			SET_FLAG (rib->flags, ZEBRA_FLAG_CHANGED);
 		      }
@@ -1214,9 +1214,9 @@ rib_process (struct route_node *rn)
   if (select && select == fib)
     {
       if (IS_ZEBRA_DEBUG_RIB)
-        zlog_debug ("%s: %s/%d: Updating existing route, fib %p flags %#lx status %#lx",
+        zlog_debug ("%s: %s/%d: Updating existing route, fib %p flags %#x status %#x",
 		    __func__, buf, rn->p.prefixlen, fib, 
-		    select->flags, select->status);
+		    (unsigned) select->flags, (unsigned) select->status);
       if (CHECK_FLAG (select->flags, ZEBRA_FLAG_CHANGED))
         {
           redistribute_delete (&rn->p, select);
