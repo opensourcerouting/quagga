@@ -1,3 +1,11 @@
+vyatta-quagga (0.99.11-12) unstable; urgency=low
+
+  * Fix compiler warnings
+  * Ignore non-running interfaces in rip status
+  * Keep quagga away from kernel routes
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Mon, 13 Apr 2009 12:30:49 -0700
+
 vyatta-quagga (0.99.11-11) unstable; urgency=low
 
   * Zebra: remember metric of kernel route
