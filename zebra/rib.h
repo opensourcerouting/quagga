@@ -82,7 +82,6 @@ struct rib
   /* RIB internal status */
   u_char status;
 #define RIB_ENTRY_REMOVED	(1 << 0)
-#define RIB_ENTRY_PRESERVE	(2 << 0)
 
   /* Nexthop information. */
   u_char nexthop_num;

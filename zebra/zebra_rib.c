@@ -892,8 +892,10 @@ rib_match_ipv6 (struct in6_addr *addr)
 
 #define RIB_SYSTEM_ROUTE(R)  \
         ((R)->type == ZEBRA_ROUTE_KERNEL || (R)->type == ZEBRA_ROUTE_CONNECT)
+
 #define RIB_SHOULD_UPDATE(R)  \
-	(! CHECK_FLAG((R)->status, RIB_ENTRY_PRESERVE) )
+  ( ! (RIB_SYSTEM_ROUTE(R) || \
+      ((rib_system_routes && (R)->type == ZEBRA_ROUTE_CONNECT))))
 
 /* This function verifies reachability of one given nexthop, which can be
  * numbered or unnumbered, IPv4 or IPv6. The result is unconditionally stored
@@ -1728,15 +1730,9 @@ rib_add_ipv4 (int type, int flags, struct prefix_ipv4 *p,
     nexthop_ifindex_add (rib, ifindex, src);
 
   /* If this route is kernel route, set FIB flag to the route. */
-  if (RIB_SYSTEM_ROUTE (rib))
-    {
-      /* Mark system routes with the don't touch me flag */
-      if (! rib_system_routes)
-	SET_FLAG(rib->status, RIB_ENTRY_PRESERVE);
-
-      for (nexthop = rib->nexthop; nexthop; nexthop = nexthop->next)
+  if (type == ZEBRA_ROUTE_KERNEL || type == ZEBRA_ROUTE_CONNECT)
+    for (nexthop = rib->nexthop; nexthop; nexthop = nexthop->next)
 	SET_FLAG (nexthop->flags, NEXTHOP_FLAG_FIB);
-    }
 
   /* Link new rib to node.*/
   if (IS_ZEBRA_DEBUG_RIB)
@@ -2529,14 +2525,8 @@ rib_add_ipv6 (int type, int flags, struct prefix_ipv6 *p,
 
   /* If this route is kernel route, set FIB flag to the route. */
   if (type == ZEBRA_ROUTE_KERNEL || type == ZEBRA_ROUTE_CONNECT)
-    {
-      /* Mark system routes with the don't touch me flag */
-      if (! rib_system_routes)
-	SET_FLAG(rib->status, RIB_ENTRY_PRESERVE);
-
-      for (nexthop = rib->nexthop; nexthop; nexthop = nexthop->next)
-	SET_FLAG (nexthop->flags, NEXTHOP_FLAG_FIB);
-    }
+    for (nexthop = rib->nexthop; nexthop; nexthop = nexthop->next)
+      SET_FLAG (nexthop->flags, NEXTHOP_FLAG_FIB);
 
   /* Link new rib to node.*/
   rib_addnode (rn, rib);
