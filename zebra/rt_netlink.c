@@ -799,26 +799,6 @@ netlink_route_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
       return 0;
     }
 
-  /* Connected route. */
-  if (IS_ZEBRA_DEBUG_KERNEL)
-    zlog_debug ("%s %s %s proto %s",
-               h->nlmsg_type ==
-               RTM_NEWROUTE ? "RTM_NEWROUTE" : "RTM_DELROUTE",
-               rtm->rtm_family == AF_INET ? "ipv4" : "ipv6",
-               rtm->rtm_type == RTN_UNICAST ? "unicast" : "multicast",
-               lookup (rtproto_str, rtm->rtm_protocol));
-
-  if (rtm->rtm_type != RTN_UNICAST)
-    {
-      return 0;
-    }
-
-  table = rtm->rtm_table;
-  if (table != RT_TABLE_MAIN && table != zebrad.rtm_table_default)
-    {
-      return 0;
-    }
-
   len = h->nlmsg_len - NLMSG_LENGTH (sizeof (struct rtmsg));
   if (len < 0)
     return -1;
@@ -826,6 +806,28 @@ netlink_route_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
   memset (tb, 0, sizeof tb);
   netlink_parse_rtattr (tb, RTA_MAX, RTM_RTA (rtm), len);
 
+  if (tb[RTA_DST])
+    dest = RTA_DATA (tb[RTA_DST]);
+  else
+    dest = anyaddr;
+
+  /* Connected route. */
+  if (IS_ZEBRA_DEBUG_KERNEL)
+    {
+      char buf[INET6_ADDRSTRLEN];
+      zlog_debug ("%s %s %s proto %s",
+		  h->nlmsg_type == RTM_NEWROUTE ? "RTM_NEWROUTE" : "RTM_DELROUTE",
+		  inet_ntop(rtm->rtm_family, dest, buf, sizeof(buf)),
+		  rtm->rtm_type == RTN_UNICAST ? "unicast" : "multicast",
+		  lookup (rtproto_str, rtm->rtm_protocol));
+    }
+
+  if (rtm->rtm_type != RTN_UNICAST)
+      return 0;
+
+  table = rtm->rtm_table;
+  if (table != RT_TABLE_MAIN && table != zebrad.rtm_table_default)
+      return 0;
   if (rtm->rtm_flags & RTM_F_CLONED)
     return 0;
   if (rtm->rtm_protocol == RTPROT_REDIRECT)
@@ -844,17 +846,11 @@ netlink_route_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 
   index = 0;
   metric = 0;
-  dest = NULL;
   gate = NULL;
   src = NULL;
 
   if (tb[RTA_OIF])
     index = *(uint32_t *) RTA_DATA (tb[RTA_OIF]);
-
-  if (tb[RTA_DST])
-    dest = RTA_DATA (tb[RTA_DST]);
-  else
-    dest = anyaddr;
 
   if (tb[RTA_GATEWAY])
     gate = RTA_DATA (tb[RTA_GATEWAY]);
@@ -872,16 +868,6 @@ netlink_route_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
       memcpy (&p.prefix, dest, 4);
       p.prefixlen = rtm->rtm_dst_len;
 
-      if (IS_ZEBRA_DEBUG_KERNEL)
-        {
-          if (h->nlmsg_type == RTM_NEWROUTE)
-            zlog_debug ("RTM_NEWROUTE %s/%d",
-                       inet_ntoa (p.prefix), p.prefixlen);
-          else
-            zlog_debug ("RTM_DELROUTE %s/%d",
-                       inet_ntoa (p.prefix), p.prefixlen);
-        }
-
       if (h->nlmsg_type == RTM_NEWROUTE)
         rib_add_ipv4 (ZEBRA_ROUTE_KERNEL, 0, &p, gate, src, index, table, 
 		      metric, 0, rtm->rtm_scope, rtm->rtm_protocol);
@@ -893,23 +879,10 @@ netlink_route_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
   if (rtm->rtm_family == AF_INET6)
     {
       struct prefix_ipv6 p;
-      char buf[BUFSIZ];
 
       p.family = AF_INET6;
       memcpy (&p.prefix, dest, 16);
       p.prefixlen = rtm->rtm_dst_len;
-
-      if (IS_ZEBRA_DEBUG_KERNEL)
-        {
-          if (h->nlmsg_type == RTM_NEWROUTE)
-            zlog_debug ("RTM_NEWROUTE %s/%d",
-                       inet_ntop (AF_INET6, &p.prefix, buf, BUFSIZ),
-                       p.prefixlen);
-          else
-            zlog_debug ("RTM_DELROUTE %s/%d",
-                       inet_ntop (AF_INET6, &p.prefix, buf, BUFSIZ),
-                       p.prefixlen);
-        }
 
       if (h->nlmsg_type == RTM_NEWROUTE)
         rib_add_ipv6 (ZEBRA_ROUTE_KERNEL, 0, &p, gate, index, 0, metric, 0);
