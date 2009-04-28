@@ -63,8 +63,8 @@ int keep_kernel_mode = 0;
 u_int32_t nl_rcvbufsize = 0;
 #endif /* HAVE_NETLINK */
 
-/* Manage system routes. */
-extern int rib_system_routes;
+/* Manage connected routes */
+extern int set_interface_mode;
 
 /* Command line options. */
 struct option longopts[] = 
@@ -72,7 +72,7 @@ struct option longopts[] =
   { "batch",       no_argument,       NULL, 'b'},
   { "daemon",      no_argument,       NULL, 'd'},
   { "keep_kernel", no_argument,       NULL, 'k'},
-  { "rib_system",  no_argument,       NULL, 'S'},
+  { "set_interface",  no_argument,       NULL, 'S'},
   { "log_mode",    no_argument,       NULL, 'l'},
   { "config_file", required_argument, NULL, 'f'},
   { "pid_file",    required_argument, NULL, 'i'},
@@ -257,7 +257,7 @@ main (int argc, char **argv)
 	  keep_kernel_mode = 1;
 	  break;
 	case 'S':
-	  rib_system_routes = 1;
+	  set_interface_mode = 1;
 	  break;
 	case 'C':
 	  dryrun = 1;

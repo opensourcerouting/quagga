@@ -85,7 +85,7 @@ extern struct zebra_privs_t zserv_privs;
 
 extern u_int32_t nl_rcvbufsize;
 
-extern int rib_system_routes;
+extern int set_interface_mode;
 
 static void
 netlink_delroute (int family, void *dest, int length, void *gate,
@@ -621,7 +621,7 @@ netlink_interface_addr (struct sockaddr_nl *snl, struct nlmsghdr *h)
 	  /* If address added, but interface is down,
 	     then remove the FIB entry from kernel.
 	  */
-	  if (rib_system_routes && ifc && !if_is_operative (ifp))
+	  if (set_interface_mode && ifc && !if_is_operative (ifp))
 	    {
 	      struct prefix_ipv4 p;
 	      PREFIX_COPY_IPV4(&p, CONNECTED_PREFIX(ifc));
