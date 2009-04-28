@@ -1,3 +1,12 @@
+vyatta-quagga (0.99.11-13) unstable; urgency=low
+
+  * Rename rib_system_route to interface_manage_mode
+  * Rearrange code to print out more info from netlink messages
+  * Use correct buffer size for inet_ntop()
+  * Use INET6_ADDRSTRLEN instead of BUFSIZ
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Tue, 28 Apr 2009 15:26:43 -0700
+
 vyatta-quagga (0.99.11-12) unstable; urgency=low
 
   * Fix compiler warnings
