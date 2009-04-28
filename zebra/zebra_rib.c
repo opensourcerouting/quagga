@@ -45,7 +45,7 @@
 extern struct zebra_t zebrad;
 
 /* Should kernel routes be removed on link down? */
-int rib_system_routes = 0;
+int set_interface_mode;
 
 /* Hold time for RIB process, should be very minimal.
  * it is useful to able to set it otherwise for testing, hence exported
@@ -893,9 +893,14 @@ rib_match_ipv6 (struct in6_addr *addr)
 #define RIB_SYSTEM_ROUTE(R)  \
         ((R)->type == ZEBRA_ROUTE_KERNEL || (R)->type == ZEBRA_ROUTE_CONNECT)
 
-#define RIB_SHOULD_UPDATE(R)  \
-  ( ! (RIB_SYSTEM_ROUTE(R) || \
-      ((rib_system_routes && (R)->type == ZEBRA_ROUTE_CONNECT))))
+static inline int rib_is_managed(const struct rib *rib)
+{
+  switch (rib->type) {
+  case ZEBRA_ROUTE_KERNEL:    	return 0;
+  case ZEBRA_ROUTE_CONNECT:	return set_interface_mode;
+  default:			return 1;
+  }
+}
 
 /* This function verifies reachability of one given nexthop, which can be
  * numbered or unnumbered, IPv4 or IPv6. The result is unconditionally stored
@@ -1096,7 +1101,7 @@ rib_uninstall (struct route_node *rn, struct rib *rib)
   if (CHECK_FLAG (rib->flags, ZEBRA_FLAG_SELECTED))
     {
       redistribute_delete (&rn->p, rib);
-      if (RIB_SHOULD_UPDATE (rib))
+      if (rib_is_managed (rib))
 	rib_uninstall_kernel (rn, rib);
       UNSET_FLAG (rib->flags, ZEBRA_FLAG_SELECTED);
     }
@@ -1222,17 +1227,17 @@ rib_process (struct route_node *rn)
       if (CHECK_FLAG (select->flags, ZEBRA_FLAG_CHANGED))
         {
           redistribute_delete (&rn->p, select);
-	  if (RIB_SHOULD_UPDATE (select))
+	  if (rib_is_managed (select))
             rib_uninstall_kernel (rn, select);
 
           /* Set real nexthop. */
           nexthop_active_update (rn, select, 1);
   
-	  if (RIB_SHOULD_UPDATE (select))
+	  if (rib_is_managed (select))
             rib_install_kernel (rn, select);
           redistribute_add (&rn->p, select);
         }
-      else if (RIB_SHOULD_UPDATE (select))
+      else if (rib_is_managed (select))
         {
           /* Housekeeping code to deal with 
              race conditions in kernel with linux
@@ -1263,7 +1268,7 @@ rib_process (struct route_node *rn)
         zlog_debug ("%s: %s/%d: Removing existing route, fib %p", __func__,
           buf, rn->p.prefixlen, fib);
       redistribute_delete (&rn->p, fib);
-      if (RIB_SHOULD_UPDATE (fib))
+      if (rib_is_managed (fib))
 	rib_uninstall_kernel (rn, fib);
       UNSET_FLAG (fib->flags, ZEBRA_FLAG_SELECTED);
 
@@ -1283,7 +1288,7 @@ rib_process (struct route_node *rn)
       /* Set real nexthop. */
       nexthop_active_update (rn, select, 1);
 
-      if (RIB_SHOULD_UPDATE (select))
+      if (rib_is_managed (select))
         rib_install_kernel (rn, select);
       SET_FLAG (select->flags, ZEBRA_FLAG_SELECTED);
       redistribute_add (&rn->p, select);
@@ -1890,7 +1895,7 @@ void rib_lookup_and_pushup (struct prefix_ipv4 * p)
    */
   for (rib = rn->info; rib; rib = rib->next)
   {
-    if (CHECK_FLAG (rib->flags, ZEBRA_FLAG_SELECTED) && RIB_SHOULD_UPDATE (rib))
+    if (CHECK_FLAG (rib->flags, ZEBRA_FLAG_SELECTED) && rib_is_managed (rib))
     {
       changed = 1;
       if (IS_ZEBRA_DEBUG_RIB)
@@ -3074,7 +3079,7 @@ rib_close_table (struct route_table *table)
     for (rn = route_top (table); rn; rn = route_next (rn))
       for (rib = rn->info; rib; rib = rib->next)
         {
-          if (RIB_SHOULD_UPDATE (rib)
+          if (rib_is_managed (rib)
 	      && CHECK_FLAG (rib->flags, ZEBRA_FLAG_SELECTED))
             rib_uninstall_kernel (rn, rib);
         }
