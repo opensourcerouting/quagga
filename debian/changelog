@@ -1,3 +1,12 @@
+vyatta-quagga (0.99.11-14) unstable; urgency=low
+
+  * Force rib_update when connected route deleted
+  * Remove unused structure element
+  * Use INET6_ADDRSTRLEN rather than BUFSIZ
+  * Handle kernel flush when address is deleted
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Wed, 29 Apr 2009 23:09:34 -0700
+
 vyatta-quagga (0.99.11-13) unstable; urgency=low
 
   * Rename rib_system_route to interface_manage_mode
