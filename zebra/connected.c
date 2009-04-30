@@ -42,18 +42,25 @@ extern struct zebra_t zebrad;
 static void
 connected_withdraw (struct connected *ifc)
 {
+
   if (! ifc)
     return;
 
   /* Update interface address information to protocol daemon. */
   if (CHECK_FLAG (ifc->conf, ZEBRA_IFC_REAL))
     {
+      int count;
+
       zebra_interface_address_delete_update (ifc->ifp, ifc);
 
-      if_subnet_delete (ifc->ifp, ifc);
+      count = if_subnet_delete (ifc->ifp, ifc);
       
       if (ifc->address->family == AF_INET)
+	{
         connected_down_ipv4 (ifc->ifp, ifc);
+	if (count == 0)
+	  rib_flush_interface (AFI_IP, ifc->ifp);
+	}
 #ifdef HAVE_IPV6
       else
         connected_down_ipv6 (ifc->ifp, ifc);

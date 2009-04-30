@@ -273,6 +273,8 @@ extern struct rib *rib_lookup_ipv4 (struct prefix_ipv4 *);
 extern void rib_update (void);
 extern void rib_weed_tables (void);
 extern void rib_sweep_route (void);
+struct interface;
+extern void rib_flush_interface (afi_t afi, struct interface *ifp);
 extern void rib_close (void);
 extern void rib_init (void);
 

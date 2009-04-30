@@ -1308,6 +1308,7 @@ end:
     zlog_debug ("%s: %s/%d: rn %p dequeued", __func__, buf, rn->p.prefixlen, rn);
 }
 
+
 /* Take a list of route_node structs and return 1, if there was a record
  * picked from it and processed by rib_process(). Don't process more, 
  * than one RN record; operate only in the specified sub-queue.
@@ -3066,6 +3067,66 @@ rib_sweep_route (void)
 {
   rib_sweep_table (vrf_table (AFI_IP, SAFI_UNICAST, 0));
   rib_sweep_table (vrf_table (AFI_IP6, SAFI_UNICAST, 0));
+}
+
+/* When all IPV4 subnets are gone on Linux, the kernel frees all routes */
+void
+rib_flush_interface(afi_t afi, struct interface *ifp)
+{
+  struct route_table *table;
+  struct route_node *rn;
+  struct rib *rib, *next;
+
+  table = vrf_table(afi, SAFI_UNICAST, 0);
+  if (!table)
+    return;
+  
+  if (IS_ZEBRA_DEBUG_RIB)
+    zlog_debug ("%s: flushing references to %s", __func__, ifp->name);
+
+  for (rn = route_top (table); rn; rn = route_next (rn))
+    for (rib = rn->info; rib; rib = next)
+      {
+	struct nexthop *nexthop;
+
+	next = rib->next;
+	
+	if (CHECK_FLAG (rib->status, RIB_ENTRY_REMOVED))
+	  continue;
+
+	switch(rib->type) {
+	case ZEBRA_ROUTE_KERNEL:
+	  if ( (nexthop = rib->nexthop) &&
+	       (nexthop->type == NEXTHOP_TYPE_IPV4_IFINDEX ||
+		nexthop->type == NEXTHOP_TYPE_IFINDEX) &&
+	       nexthop->ifindex == ifp->ifindex)
+	    {
+	      if (IS_ZEBRA_DEBUG_RIB)
+		zlog_debug ("%s: calling rib_delnode (%p, %p) on kernel RIB entry",
+			    __func__, rn, rib);
+	      rib_delnode(rn, rib);
+	    }
+	  break;
+
+	case ZEBRA_ROUTE_STATIC:
+	  for (nexthop = rib->nexthop; nexthop; nexthop = nexthop->next)
+	    switch(nexthop->type) {
+	    case NEXTHOP_TYPE_IPV4:
+	    case NEXTHOP_TYPE_IPV6:
+	    case NEXTHOP_TYPE_IFINDEX:
+	    case NEXTHOP_TYPE_IPV4_IFINDEX:
+	    case NEXTHOP_TYPE_IPV6_IFINDEX:
+	      if (nexthop->ifindex == ifp->ifindex)
+		UNSET_FLAG (nexthop->flags, NEXTHOP_FLAG_FIB);
+	      break;
+	    case NEXTHOP_TYPE_IFNAME:
+	    case NEXTHOP_TYPE_IPV4_IFNAME:
+	    case NEXTHOP_TYPE_IPV6_IFNAME:
+	      if (strcmp(nexthop->ifname, ifp->name) == 0)
+		UNSET_FLAG (nexthop->flags, NEXTHOP_FLAG_FIB);
+	    }
+	}
+      }
 }
 
 /* Close RIB and clean up kernel routes. */
