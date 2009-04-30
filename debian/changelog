@@ -1,3 +1,9 @@
+vyatta-quagga (0.99.10-3.3+islavista2) unstable; urgency=low
+
+  * Expanding asn path buffer
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Thu, 30 Apr 2009 16:34:18 -0700
+
 vyatta-quagga (0.99.10-3.3+islavista1) unstable; urgency=low
 
   [ Stephen Hemminger ]
