@@ -138,7 +138,7 @@ oid_compare (oid *o1, int o1_len, oid *o2, int o2_len)
   return 0;
 }
 
-int
+static int
 oid_compare_part (oid *o1, int o1_len, oid *o2, int o2_len)
 {
   int i;
@@ -156,7 +156,7 @@ oid_compare_part (oid *o1, int o1_len, oid *o2, int o2_len)
   return 0;
 }
 
-void
+static void
 smux_oid_dump (const char *prefix, oid *oid, size_t oid_len)
 {
   unsigned int i;
@@ -173,7 +173,7 @@ smux_oid_dump (const char *prefix, oid *oid, size_t oid_len)
   zlog_debug ("%s: %s", prefix, buf);
 }
 
-int
+static int
 smux_socket ()
 {
   int ret;
@@ -268,7 +268,7 @@ smux_socket ()
   return sock;
 }
 
-void
+static void
 smux_getresp_send (oid objid[], size_t objid_len, long reqid, long errstat,
 		   long errindex, u_char val_type, void *arg, size_t arg_len)
 {
@@ -432,7 +432,7 @@ smux_var (u_char *ptr, size_t len, oid objid[], size_t *objid_len,
    ucd-snmp smux and as such suppose, that the peer receives in the message
    only one variable. Fortunately, IBM seems to do the same in AIX. */
 
-int
+static int
 smux_set (oid *reqid, size_t *reqid_len,
           u_char val_type, void *val, size_t val_len, int action)
 {
@@ -500,7 +500,7 @@ smux_set (oid *reqid, size_t *reqid_len,
   return SNMP_ERR_NOSUCHNAME;
 }
 
-int
+static int
 smux_get (oid *reqid, size_t *reqid_len, int exact, 
 	  u_char *val_type,void **val, size_t *val_len)
 {
@@ -566,7 +566,7 @@ smux_get (oid *reqid, size_t *reqid_len, int exact,
   return SNMP_ERR_NOSUCHNAME;
 }
 
-int
+static int
 smux_getnext (oid *reqid, size_t *reqid_len, int exact, 
 	      u_char *val_type,void **val, size_t *val_len)
 {
@@ -885,7 +885,7 @@ process_rest: /* see note below: YYY */
 }
 
 /* SMUX message read function. */
-int
+static int
 smux_read (struct thread *t)
 {
   int sock;
@@ -1120,7 +1120,7 @@ smux_trap (oid *name, size_t namelen,
   return send (smux_sock, buf, (ptr - buf), 0);
 }
 
-int
+static int
 smux_register (int sock)
 {
   u_char buf[BUFSIZ];
@@ -1177,7 +1177,7 @@ smux_register (int sock)
 }
 
 /* Try to connect to SNMP agent. */
-int
+static int
 smux_connect (struct thread *t)
 {
   int ret;
@@ -1233,7 +1233,7 @@ smux_connect (struct thread *t)
 }
 
 /* Clear all SMUX related resources. */
-void
+static void
 smux_stop ()
 {
   if (smux_read_thread)
@@ -1276,7 +1276,7 @@ smux_event (enum smux_event event, int sock)
     }
 }
 
-int
+static int
 smux_str2oid (const char *str, oid *oid, size_t *oid_len)
 {
   int len;
@@ -1319,7 +1319,7 @@ smux_str2oid (const char *str, oid *oid, size_t *oid_len)
   return 0;
 }
 
-oid *
+static oid *
 smux_oid_dup (oid *objid, size_t objid_len)
 {
   oid *new;
@@ -1330,7 +1330,7 @@ smux_oid_dup (oid *objid, size_t objid_len)
   return new;
 }
 
-int
+static int
 smux_peer_oid (struct vty *vty, const char *oid_str, const char *passwd_str)
 {
   int ret;
@@ -1394,7 +1394,7 @@ smux_header_generic (struct variable *v, oid *name, size_t *length, int exact,
   return MATCH_SUCCEEDED;
 }
 
-int
+static int
 smux_peer_default ()
 {
   if (smux_oid)
@@ -1474,7 +1474,7 @@ ALIAS (no_smux_peer,
        "SMUX peering object ID\n"
        "SMUX peering password\n")
 
-int
+static int
 config_write_smux (struct vty *vty)
 {
   int first = 1;
@@ -1509,13 +1509,6 @@ smux_register_mib (const char *descr, struct variable *var,
   tree->variables_width = width;
   tree->registered = 0;
   listnode_add_sort(treelist, tree);
-}
-
-void
-smux_reset ()
-{
-  /* Setting configuration to default. */
-  smux_peer_default ();
 }
 
 /* Compare function to keep treelist sorted */

@@ -142,6 +142,7 @@ extern char * bgp_get_reuse_time (unsigned int, char*, size_t);
 extern int bgp_damp_decay (time_t, int);
 extern void bgp_config_write_damp (struct vty *);
 extern void bgp_damp_info_vty (struct vty *, struct bgp_info *);
-extern char * bgp_damp_reuse_time_vty (struct vty *, struct bgp_info *);
+extern char * bgp_damp_reuse_time_vty (struct vty *, struct bgp_info *,
+				       char *, size_t);
 
 #endif /* _QUAGGA_BGP_DAMP_H */
