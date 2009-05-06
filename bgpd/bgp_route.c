@@ -5788,6 +5788,7 @@ damp_route_vty_out (struct vty *vty, struct prefix *p,
 {
   struct attr *attr;
   int len;
+  char timebuf[BGP_UPTIME_LEN];
 
   /* short status lead text */ 
   route_vty_short_status_out (vty, binfo);
@@ -5805,7 +5806,7 @@ damp_route_vty_out (struct vty *vty, struct prefix *p,
   else
     vty_out (vty, "%*s", len, " ");
 
-  vty_out (vty, "%s ", bgp_damp_reuse_time_vty (vty, binfo));
+  vty_out (vty, "%s ", bgp_damp_reuse_time_vty (vty, binfo, timebuf, BGP_UPTIME_LEN));
 
   /* Print attribute */
   attr = binfo->attr;
@@ -5820,8 +5821,6 @@ damp_route_vty_out (struct vty *vty, struct prefix *p,
     }
   vty_out (vty, "%s", VTY_NEWLINE);
 }
-
-#define BGP_UPTIME_LEN 25
 
 /* flap route */
 static void
@@ -5866,7 +5865,7 @@ flap_route_vty_out (struct vty *vty, struct prefix *p,
 
   if (CHECK_FLAG (binfo->flags, BGP_INFO_DAMPED)
       && ! CHECK_FLAG (binfo->flags, BGP_INFO_HISTORY))
-    vty_out (vty, "%s ", bgp_damp_reuse_time_vty (vty, binfo));
+    vty_out (vty, "%s ", bgp_damp_reuse_time_vty (vty, binfo, timebuf, BGP_UPTIME_LEN));
   else
     vty_out (vty, "%*s ", 8, " ");
 
