@@ -30,15 +30,14 @@ for dir in $pid_dir $log_dir ; do
     fi
 done
 
-# Only start zebra and watchquagga (for zebra) here
-# Other daemons if any started in vyatta config
+# Only start zebra here. other daemons started in vyatta config
 vyatta_quagga_start ()
 {
     local -a daemons
     if [ $# -gt 0 ] ; then
 	daemons=( $* )
     else
-	daemons=( zebra watchquagga )
+	daemons=( zebra )
     fi
 
     log_daemon_msg "Starting routing services"
