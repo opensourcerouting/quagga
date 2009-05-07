@@ -37,10 +37,11 @@ vyatta_quagga_start ()
     if [ $# -gt 0 ] ; then
 	daemons=( $* )
     else
+	# Only start zebra
 	daemons=( zebra )
     fi
 
-    log_daemon_msg "Starting routing services"
+    log_daemon_msg "Starting routing manager"
     for daemon in ${daemons[@]} ; do
 	log_progress_msg "$daemon"
 	/opt/vyatta/sbin/quagga-manager start $daemon || \

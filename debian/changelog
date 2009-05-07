@@ -1,3 +1,22 @@
+vyatta-quagga (0.99.11-16) unstable; urgency=low
+
+  [ Stephen Hemminger ]
+  * Only start zebra as part of initial boot
+
+  [ Chris Caputo ]
+  * Compiler warning fixes for when --enable-snmp is configured.
+  * Fix "show ip bgp dampened-paths" garbage output.
+
+  [ Joakim Tjernlund ]
+  * Don't delete too many routes.
+
+  [ Chris Caputo ]
+  * 64-bit fix for lib/smux.h SNMP_INTEGER() macro
+
+  [ Stephen Hemminger ]
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Wed, 06 May 2009 15:35:39 -0700
+
 vyatta-quagga (0.99.11-15) unstable; urgency=low
 
   [ Denis Ovsienko ]
