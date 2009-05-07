@@ -30,24 +30,34 @@ for dir in $pid_dir $log_dir ; do
     fi
 done
 
-# Only start zebra here. other daemons started in vyatta config
+# Normally only start zebra here. other daemons started in vyatta config
+declare -a common_args=( -d -P 0 )
+
 vyatta_quagga_start ()
 {
     local -a daemons
+
     if [ $# -gt 0 ] ; then
 	daemons=( $* )
     else
-	# Only start zebra
 	daemons=( zebra )
     fi
 
-    log_daemon_msg "Starting routing manager"
+    log_daemon_msg "Starting routing daemons"
     for daemon in ${daemons[@]} ; do
+	[ "$daemon" != zebra ] && log_action_cont_msg "$daemon"
+
+	local -a args=( ${common_args[@]} )
+	[ "$daemon" = zebra ] && args+=( -l -S -s 1048576 )
+	args+=( -i ${pid_dir}/${daemon}.pid )
+
+	start-stop-daemon --start --quiet --oknodo \
+	    --chdir $log_dir \
+	    --exec "/usr/sbin/vyatta-${daemon}" \
+	    -- $args || \
+	    ( log_action_end_msg 1 ; return 1 )
 	log_progress_msg "$daemon"
-	/opt/vyatta/sbin/quagga-manager start $daemon || \
-	    ( log_end_msg 1 ; return 1 )
     done
-    log_end_msg $?
 }
 
 vyatta_quagga_stop ()
@@ -63,8 +73,11 @@ vyatta_quagga_stop ()
 
     log_action_begin_msg "Stopping routing services"
     for daemon in ${daemons[@]} ; do
-	[ -f $pid_dir/${daemon}.pid ] && log_action_cont_msg "$daemon"
-	/opt/vyatta/sbin/quagga-manager stop $daemon
+	local pidfile=${pid_dir}/${daemon}.pid
+	[ -f $pidfile && "$daemon" != zebra ] && log_action_cont_msg "$daemon"
+
+	start-stop-daemon --stop --quiet --oknodo --retry 2 \
+	    --exec /usr/sbin/vyatta-${daemon}
     done    
 
     log_action_end_msg $?
@@ -76,14 +89,26 @@ vyatta_quagga_stop ()
     fi
 }
 
+vyatta_quagga_status ()
+{
+    local pidfile=$pid_dir/zebra.pid
+    local binpath=/usr/sbin/vyatta-zebra
+
+    status_of_proc -p $pidfile $binpath vyatta-zebra && exit 0 || exit $?
+}
+
 case "$action" in
     start)
 	vyatta_quagga_start $*
-    	;;
-	
-    stop|0)
+	;;
+
+    stop)
 	vyatta_quagga_stop $*
    	;;
+
+    status)
+	vyatta_quagga_status
+	;;
 
     restart|force-reload)
 	vyatta_quagga_stop $*
