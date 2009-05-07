@@ -1,3 +1,19 @@
+vyatta-quagga (0.99.11-17) unstable; urgency=low
+
+  [ Stephen Hemminger ]
+  * Don't start watchquagga during boot
+
+  [ Timo Teräs ]
+  * avoid zombie accepted peer entries
+
+  [ Chris Caputo ]
+  * RFC 4191 Default Router Preference support for router advertisements
+
+  [ Stephen Hemminger ]
+  * Updates to init script
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Thu, 07 May 2009 12:58:34 -0700
+
 vyatta-quagga (0.99.11-16) unstable; urgency=low
 
   [ Stephen Hemminger ]
