@@ -1,3 +1,11 @@
+vyatta-quagga (0.99.11-18) unstable; urgency=low
+
+  * Use quagga-manager for start-stop
+  * Fix startup log message
+  * Be safer in bgp_terminate
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Fri, 08 May 2009 10:40:49 -0700
+
 vyatta-quagga (0.99.11-17) unstable; urgency=low
 
   [ Stephen Hemminger ]
