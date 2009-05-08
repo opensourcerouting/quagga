@@ -5067,9 +5067,13 @@ bgp_terminate (void)
                            BGP_NOTIFY_CEASE_PEER_UNCONFIG);
   
   bgp_cleanup_routes ();
-  if (bm->process_main_queue)
+  if (bm->process_main_queue) {
     work_queue_free (bm->process_main_queue);
-  if (bm->process_rsclient_queue)
+    bm->process_main_queue = NULL;
+  }
+  if (bm->process_rsclient_queue) {
     work_queue_free (bm->process_rsclient_queue);
+    bm->process_rsclient_queue = NULL;
+  }
 }
 
