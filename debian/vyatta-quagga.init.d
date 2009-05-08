@@ -67,9 +67,12 @@ vyatta_quagga_stop ()
     log_action_begin_msg "Stopping routing services"
     for daemon in ${daemons[@]} ; do
 	local pidfile=${pid_dir}/${daemon}.pid
+	if [ -f $pidfile ]; then
+	    log_action_cont_msg "$daemon"
+	fi
+
 	$quagga_manager stop $daemon
     done    
-
     log_action_end_msg $?
 
     if echo ${daemons[@]} | grep -q zebra ; then
