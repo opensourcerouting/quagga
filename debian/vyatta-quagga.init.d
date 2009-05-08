@@ -21,6 +21,10 @@ declare action=$1; shift
 
 pid_dir=/var/run/vyatta/quagga
 log_dir=/var/log/vyatta/quagga
+quagga_manager=/opt/vyatta/sbin/quagga-manager
+
+# Check if quagga manager installed
+test -x $quagga_manager || exit 1
 
 for dir in $pid_dir $log_dir ; do
     if [ ! -d $dir ]; then
@@ -31,8 +35,6 @@ for dir in $pid_dir $log_dir ; do
 done
 
 # Normally only start zebra here. other daemons started in vyatta config
-declare -a common_args=( -d -P 0 )
-
 vyatta_quagga_start ()
 {
     local -a daemons
@@ -47,15 +49,7 @@ vyatta_quagga_start ()
     for daemon in ${daemons[@]} ; do
 	[ "$daemon" != zebra ] && log_action_cont_msg "$daemon"
 
-	local -a args=( ${common_args[@]} )
-	[ "$daemon" = zebra ] && args+=( -l -S -s 1048576 )
-	args+=( -i ${pid_dir}/${daemon}.pid )
-
-	start-stop-daemon --start --quiet --oknodo \
-	    --chdir $log_dir \
-	    --exec "/usr/sbin/vyatta-${daemon}" \
-	    -- $args || \
-	    ( log_action_end_msg 1 ; return 1 )
+	$quagga_manager start $daemon
 	log_progress_msg "$daemon"
     done
 }
@@ -66,18 +60,13 @@ vyatta_quagga_stop ()
     if [ $# -gt 0 ] ; then
 	daemons=( $* )
     else
-	daemons=( watchquagga )
-	daemons+=( bgpd ospfd ripd ripngd ospf6d isisd )
-	daemons+=( zebra )
+	daemons=( bgpd ospfd ripd ripngd ospf6d isisd zebra )
     fi
 
     log_action_begin_msg "Stopping routing services"
     for daemon in ${daemons[@]} ; do
 	local pidfile=${pid_dir}/${daemon}.pid
-	[ -f $pidfile && "$daemon" != zebra ] && log_action_cont_msg "$daemon"
-
-	start-stop-daemon --stop --quiet --oknodo --retry 2 \
-	    --exec /usr/sbin/vyatta-${daemon}
+	$quagga_manager stop $daemon
     done    
 
     log_action_end_msg $?
