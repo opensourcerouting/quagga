@@ -49,9 +49,10 @@ vyatta_quagga_start ()
     for daemon in ${daemons[@]} ; do
 	[ "$daemon" != zebra ] && log_action_cont_msg "$daemon"
 
-	$quagga_manager start $daemon
-	log_progress_msg "$daemon"
+	$quagga_manager start $daemon || \
+    	    ( log_action_end_msg 1 ; return 1 )
     done
+    log_action_end_msg 0
 }
 
 vyatta_quagga_stop ()
