@@ -1,3 +1,11 @@
+vyatta-quagga (0.99.11-19) unstable; urgency=low
+
+  * Add daemons being shutdown to log
+  * Make declarations match
+  * Wait for peers to clear on BGP shutdown
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Mon, 11 May 2009 12:46:29 -0700
+
 vyatta-quagga (0.99.11-18) unstable; urgency=low
 
   * Use quagga-manager for start-stop
