@@ -2670,6 +2670,18 @@ bgp_clear_node_queue_init (struct peer *peer)
   peer->clear_node_queue->spec.data = peer;
 }
 
+/* Route clearing may not be done yet.
+ * Otherwise events in peer->clear_node_queue could happen after bgp is freed.
+ */
+void
+bgp_clear_route_wait (struct peer *peer)
+{
+  struct work_queue *wq = peer->clear_node_queue;
+
+  while (listcount (wq->items) > 0)
+	work_queue_run(wq->thread);
+}
+
 static void
 bgp_clear_route_table (struct peer *peer, afi_t afi, safi_t safi,
                       struct bgp_table *table, struct peer *rsclient)

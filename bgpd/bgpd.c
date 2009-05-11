@@ -1133,6 +1133,8 @@ peer_delete (struct peer *peer)
   
   bgp_timer_set (peer); /* stops all timers for Deleted */
   
+  bgp_clear_route_wait (peer);
+
   /* Delete from all peer list. */
   if (! CHECK_FLAG (peer->sflags, PEER_STATUS_GROUP))
     {
