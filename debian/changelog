@@ -1,3 +1,10 @@
+vyatta-quagga (0.99.12-1) unstable; urgency=low
+
+  [ Paul Jakma ]
+  * [release] Bump version to 0.99.12
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Mon, 11 May 2009 16:12:33 -0700
+
 vyatta-quagga (0.99.11-19) unstable; urgency=low
 
   * Add daemons being shutdown to log
