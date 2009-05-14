@@ -648,7 +648,9 @@ void
 peer_free (struct peer *peer)
 {
   assert (peer->status == Deleted);
-  
+
+  bgp_unlock(peer->bgp);
+
   /* this /ought/ to have been done already through bgp_stop earlier,
    * but just to be sure.. 
    */
@@ -708,6 +710,7 @@ peer_new (struct bgp *bgp)
   peer->password = NULL;
   peer->bgp = bgp;
   peer = peer_lock (peer); /* initial reference */
+  bgp_lock (bgp);
 
   /* Set default flags.  */
   for (afi = AFI_IP; afi < AFI_MAX; afi++)
@@ -1826,6 +1829,7 @@ bgp_create (as_t *as, const char *name)
   if ( (bgp = XCALLOC (MTYPE_BGP, sizeof (struct bgp))) == NULL)
     return NULL;
   
+  bgp_lock (bgp);
   bgp->peer_self = peer_new (bgp);
   bgp->peer_self->host = strdup ("Static announcement");
 
@@ -1962,7 +1966,6 @@ bgp_delete (struct bgp *bgp)
   struct listnode *node;
   struct listnode *next;
   afi_t afi;
-  safi_t safi;
   int i;
 
   /* Delete static route. */
@@ -1976,14 +1979,31 @@ bgp_delete (struct bgp *bgp)
 
   for (ALL_LIST_ELEMENTS (bgp->group, node, next, group))
     peer_group_delete (group);
-  list_delete (bgp->group);
 
   for (ALL_LIST_ELEMENTS (bgp->peer, node, next, peer))
     peer_delete (peer);
-  list_delete (bgp->peer);
 
   for (ALL_LIST_ELEMENTS (bgp->rsclient, node, next, peer))
     peer_delete (peer);
+
+  if (bgp->peer_self) {
+    peer_delete(bgp->peer_self);
+    bgp->peer_self = NULL;
+  }
+
+  bgp_unlock(bgp);  /* initial reference */
+
+  return 0;
+}
+
+void
+bgp_free(struct bgp *bgp)
+{
+  afi_t afi;
+  safi_t safi;
+
+  list_delete (bgp->group);
+  list_delete (bgp->peer);
   list_delete (bgp->rsclient);
 
   listnode_delete (bm->bgp, bgp);
@@ -2002,8 +2022,6 @@ bgp_delete (struct bgp *bgp)
 	  XFREE (MTYPE_ROUTE_TABLE,bgp->rib[afi][safi]);
       }
   XFREE (MTYPE_BGP, bgp);
-
-  return 0;
 }
 
 struct peer *
