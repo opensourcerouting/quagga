@@ -1047,7 +1047,7 @@ peer_deactivate (struct peer *peer, afi_t afi, safi_t safi)
   return 0;
 }
 
-void
+static void
 peer_nsf_stop (struct peer *peer)
 {
   afi_t afi;
@@ -2157,7 +2157,7 @@ struct peer_flag_action
   u_char peer_down;
 };
 
-struct peer_flag_action peer_flag_action_list[] = 
+static const struct peer_flag_action peer_flag_action_list[] = 
   {
     { PEER_FLAG_PASSIVE,                  0, peer_change_reset },
     { PEER_FLAG_SHUTDOWN,                 0, peer_change_reset },
@@ -2169,7 +2169,7 @@ struct peer_flag_action peer_flag_action_list[] =
     { 0, 0, 0 }
   };
 
-struct peer_flag_action peer_af_flag_action_list[] = 
+static const struct peer_flag_action peer_af_flag_action_list[] = 
   {
     { PEER_FLAG_NEXTHOP_SELF,             1, peer_change_reset_out },
     { PEER_FLAG_SEND_COMMUNITY,           1, peer_change_reset_out },
@@ -2190,14 +2190,14 @@ struct peer_flag_action peer_af_flag_action_list[] =
 
 /* Proper action set. */
 static int
-peer_flag_action_set (struct peer_flag_action *action_list, int size,
+peer_flag_action_set (const struct peer_flag_action *action_list, int size,
 		      struct peer_flag_action *action, u_int32_t flag)
 {
   int i;
   int found = 0;
   int reset_in = 0;
   int reset_out = 0;
-  struct peer_flag_action *match = NULL;
+  const struct peer_flag_action *match = NULL;
 
   /* Check peer's frag action.  */
   for (i = 0; i < size; i++)
@@ -2951,12 +2951,14 @@ peer_port_set (struct peer *peer, u_int16_t port)
   return 0;
 }
 
+#ifdef unused
 int
 peer_port_unset (struct peer *peer)
 {
   peer->port = BGP_PORT_DEFAULT;
   return 0;
 }
+#endif
 
 /* neighbor weight. */
 int
