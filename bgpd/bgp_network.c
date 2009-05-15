@@ -371,17 +371,16 @@ int
 bgp_socket (struct bgp *bgp, unsigned short port, char *address)
 {
   int ret, en;
-  struct addrinfo req;
   struct addrinfo *ainfo;
   struct addrinfo *ainfo_save;
+  static const struct addrinfo req = {
+    .ai_family = AF_UNSPEC,
+    .ai_flags = AI_PASSIVE,
+    .ai_socktype = SOCK_STREAM,
+  };
   int sock = 0;
   char port_str[BUFSIZ];
 
-  memset (&req, 0, sizeof (struct addrinfo));
-
-  req.ai_flags = AI_PASSIVE;
-  req.ai_family = AF_UNSPEC;
-  req.ai_socktype = SOCK_STREAM;
   snprintf (port_str, sizeof(port_str), "%d", port);
   port_str[sizeof (port_str) - 1] = '\0';
 

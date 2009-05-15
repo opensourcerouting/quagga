@@ -2211,7 +2211,7 @@ bgp_capability_msg_parse (struct peer *peer, u_char *pnt, bgp_size_t length)
 }
 
 /* Dynamic Capability is received. */
-int
+static int
 bgp_capability_receive (struct peer *peer, bgp_size_t size)
 {
   u_char *pnt;

@@ -194,20 +194,22 @@ bgp_capability_orf_not_support (struct peer *peer, afi_t afi, safi_t safi,
 	       peer->host, afi, safi, type, mode);
 }
 
-static struct message orf_type_str[] =
+static const struct message orf_type_str[] =
 {
   { ORF_TYPE_PREFIX,		"Prefixlist"		},
   { ORF_TYPE_PREFIX_OLD,	"Prefixlist (old)"	},
 };
-static int orf_type_str_max = sizeof(orf_type_str)/sizeof(orf_type_str[0]);
+static const int orf_type_str_max
+	= sizeof(orf_type_str)/sizeof(orf_type_str[0]);
 
-static struct message orf_mode_str[] =
+static const struct message orf_mode_str[] =
 {
   { ORF_MODE_RECEIVE,	"Receive"	},
   { ORF_MODE_SEND,	"Send"		},
   { ORF_MODE_BOTH,	"Both"		},
 };
-static int orf_mode_str_max = sizeof(orf_mode_str)/sizeof(orf_mode_str[0]);
+static const int orf_mode_str_max
+	 = sizeof(orf_mode_str)/sizeof(orf_mode_str[0]);
 
 static int
 bgp_capability_orf_entry (struct peer *peer, struct capability_header *hdr)
@@ -441,7 +443,7 @@ bgp_capability_as4 (struct peer *peer, struct capability_header *hdr)
   return as4;
 }
 
-static struct message capcode_str[] =
+static const struct message capcode_str[] =
 {
   { CAPABILITY_CODE_MP,			"MultiProtocol Extensions"	},
   { CAPABILITY_CODE_REFRESH,		"Route Refresh"			},
@@ -452,10 +454,10 @@ static struct message capcode_str[] =
   { CAPABILITY_CODE_REFRESH_OLD,	"Route Refresh (Old)"		},
   { CAPABILITY_CODE_ORF_OLD,		"ORF (Old)"			},
 };
-int capcode_str_max = sizeof(capcode_str)/sizeof(capcode_str[0]);
+static const int capcode_str_max = sizeof(capcode_str)/sizeof(capcode_str[0]);
 
 /* Minimum sizes for length field of each cap (so not inc. the header) */
-static size_t cap_minsizes[] = 
+static const size_t cap_minsizes[] = 
 {
   [CAPABILITY_CODE_MP]		= sizeof (struct capability_mp_data),
   [CAPABILITY_CODE_REFRESH]	= CAPABILITY_CODE_REFRESH_LEN,
@@ -529,7 +531,8 @@ bgp_capability_parse (struct peer *peer, size_t length, u_char **error)
                              " expected at least %u",
                              peer->host, 
                              LOOKUP (capcode_str, caphdr.code),
-                             caphdr.length, cap_minsizes[caphdr.code]);
+                             caphdr.length, 
+			     (unsigned) cap_minsizes[caphdr.code]);
                   bgp_notify_send (peer, BGP_NOTIFY_CEASE, 0);
                   return -1;
                 }

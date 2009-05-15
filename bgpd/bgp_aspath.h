@@ -64,7 +64,6 @@ struct aspath
 
 /* Prototypes. */
 extern void aspath_init (void);
-extern void aspath_finish (void);
 extern struct aspath *aspath_parse (struct stream *, size_t, int);
 extern struct aspath *aspath_dup (struct aspath *);
 extern struct aspath *aspath_aggregate (struct aspath *, struct aspath *);
@@ -97,7 +96,6 @@ extern size_t aspath_put (struct stream *, struct aspath *, int);
 
 extern struct aspath *aspath_reconcile_as4 (struct aspath *, struct aspath *);
 extern unsigned int aspath_has_as4 (struct aspath *);
-extern unsigned int aspath_count_numas (struct aspath *);
 
 /* For SNMP BGP4PATHATTRASPATHSEGMENT, might be useful for debug */
 extern u_char *aspath_snmp_pathseg (struct aspath *, size_t *);

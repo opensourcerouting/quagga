@@ -2812,19 +2812,6 @@ bgp_clear_route (struct peer *peer, afi_t afi, safi_t safi)
    */
   if (!peer->clear_node_queue->thread)
     bgp_clear_node_complete (peer->clear_node_queue);
-  else
-    {
-      /* clearing queue scheduled. Normal if in Established state
-       * (and about to transition out of it), but otherwise...
-       */
-      if (peer->status != Established)
-        {
-          plog_err (peer->log, "%s [Error] State %s is not Established,"
-                    " but routes were cleared - bug!",
-                    peer->host, LOOKUP (bgp_status_msg, peer->status));
-          assert (peer->status == Established);
-        }
-    }
 }
   
 void
