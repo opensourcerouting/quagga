@@ -1,3 +1,27 @@
+vyatta-quagga (0.99.12-3) unstable; urgency=low
+
+  * Remove assertion when route clears and peer !Established
+  * Bgp socket use static initialization
+  * Allow message tables to be constant
+  * Fix compile warnings
+  * Use const in smux interface
+  * BGP make attribute variables local
+  * Make BGP FSM table read-only static
+  * BGP make some bgp_attr functions static
+  * BGP aspath eliminate dead code
+  * BGP make flag action table read-only
+  * BGP make receive capability static
+  * BGP make message list in bgp_open const
+  * BGP make community hash table static
+  * BGP make some damp function static
+  * BGP make ecommunity variables/functions local
+  * BGP main program cleanup
+  * ZEBRA make message table read only
+  * OSPF make message lists read only
+  * BGP make message lists read only
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Fri, 15 May 2009 11:21:38 -0700
+
 vyatta-quagga (0.99.12-2) unstable; urgency=low
 
   * Revert "Wait for peers to clear on BGP shutdown"
