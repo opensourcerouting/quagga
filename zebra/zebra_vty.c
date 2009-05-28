@@ -87,6 +87,9 @@ zebra_static_ipv4 (struct vty *vty, int add_cmd, const char *dest_str,
       return CMD_SUCCESS;
     }
 
+  /* Mark static routes as internal so they get evaluated as recursive */
+  SET_FLAG (flag, ZEBRA_FLAG_INTERNAL);
+
   /* Route flags */
   if (flag_str) {
     switch(flag_str[0]) {
