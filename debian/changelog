@@ -1,3 +1,13 @@
+vyatta-quagga (0.99.12-4) unstable; urgency=low
+
+  [ Michael Lambert ]
+  * BGP Community Deletion Bug
+
+  [ Stephen Hemminger ]
+  * Allow recursive route with any nexthop
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Wed, 27 May 2009 17:58:57 -0700
+
 vyatta-quagga (0.99.12-3) unstable; urgency=low
 
   * Remove assertion when route clears and peer !Established
