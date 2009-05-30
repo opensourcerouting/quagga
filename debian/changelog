@@ -1,3 +1,9 @@
+vyatta-quagga (0.99.12-5+jenner1) unstable; urgency=low
+
+  * UNRELEASED
+
+ -- An-Cheng Huang <ancheng@vyatta.com>  Fri, 29 May 2009 18:32:48 -0700
+
 vyatta-quagga (0.99.12-5) unstable; urgency=low
 
   * Detect support for monotonic clock
