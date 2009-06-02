@@ -1,3 +1,9 @@
+vyatta-quagga (0.99.12-5+jenner2) unstable; urgency=low
+
+  * Add show ospf6 debuggging
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Tue, 02 Jun 2009 11:23:34 -0700
+
 vyatta-quagga (0.99.12-5+jenner1) unstable; urgency=low
 
   * UNRELEASED
