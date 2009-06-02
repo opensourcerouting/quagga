@@ -708,8 +708,8 @@ ospf6_lsa_init (void)
 }
 
 
-static char *
-ospf6_lsa_handler_name (struct ospf6_lsa_handler *h)
+const char *
+ospf6_lsa_handler_name (const struct ospf6_lsa_handler *h)
 {
   static char buf[64];
   unsigned int i; 

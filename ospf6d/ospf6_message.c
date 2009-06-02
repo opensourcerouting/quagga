@@ -2057,11 +2057,11 @@ ALIAS (no_debug_ospf6_message,
        "Debug only receiving message\n"
        )
 
+const char *ospf6_packet_type_str[] = {"unknown", "hello", "dbdesc",
+				       "lsreq", "lsupdate", "lsack"};
 int
 config_write_ospf6_debug_message (struct vty *vty)
 {
-  const char *type_str[] = {"unknown", "hello", "dbdesc",
-                      "lsreq", "lsupdate", "lsack"};
   unsigned char s = 0, r = 0;
   int i;
 
@@ -2103,13 +2103,14 @@ config_write_ospf6_debug_message (struct vty *vty)
     {
       if (IS_OSPF6_DEBUG_MESSAGE (i, SEND) &&
           IS_OSPF6_DEBUG_MESSAGE (i, RECV))
-        vty_out (vty, "debug ospf6 message %s%s", type_str[i], VNL);
+        vty_out (vty, "debug ospf6 message %s%s",
+		 ospf6_packet_type_str[i], VNL);
       else if (IS_OSPF6_DEBUG_MESSAGE (i, SEND))
-        vty_out (vty, "debug ospf6 message %s send%s", type_str[i],
-                 VNL);
+        vty_out (vty, "debug ospf6 message %s send%s", 
+		 ospf6_packet_type_str[i], VNL);
       else if (IS_OSPF6_DEBUG_MESSAGE (i, RECV))
-        vty_out (vty, "debug ospf6 message %s recv%s", type_str[i],
-                 VNL);
+        vty_out (vty, "debug ospf6 message %s recv%s",
+		 ospf6_packet_type_str[i], VNL);
     }
 
   return 0;

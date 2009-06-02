@@ -48,7 +48,9 @@
 #include "ospf6_snmp.h"
 #endif /*HAVE_SNMP*/
 
-char ospf6_daemon_version[] = OSPF6_DAEMON_VERSION;
+const char ospf6_daemon_version[] = OSPF6_DAEMON_VERSION;
+
+extern vector ospf6_lsa_handler_vector;
 
 struct route_node *
 route_prev (struct route_node *node)
@@ -88,6 +90,117 @@ DEFUN (show_version_ospf6,
 {
   vty_out (vty, "Zebra OSPF6d Version: %s%s",
            ospf6_daemon_version, VNL);
+
+  return CMD_SUCCESS;
+}
+
+
+DEFUN (show_debugging_ospf6,
+       show_debugging_ospf6_cmd,
+       "show debugging ospf6",
+       SHOW_STR
+       DEBUG_STR
+       OSPF6_STR)
+{
+  int i;
+  char buf[INET6_ADDRSTRLEN];
+
+  vty_out (vty, "OSPF6 debugging status:%s", VNL);
+
+  if (IS_OSPF6_DEBUG_ABR)
+    vty_out (vty, "  OSPF6 ABR debugging is on%s", VNL);
+
+  if (IS_OSPF6_DEBUG_ASBR)
+    vty_out (vty, "  OSPF6 ASBR debugging is on%s", VNL);
+
+  if (IS_OSPF6_DEBUG_INTERFACE)
+    vty_out (vty, "  OSPF6 Interface debugging is on%s", VNL);
+
+  if (IS_OSPF6_DEBUG_FLOODING)
+    vty_out (vty, "  OSPF6 flooding debugging is on%s", VNL);
+
+  /* show packet debugging */
+  for (i = 0; i < 6; i++)
+    {
+      if (IS_OSPF6_DEBUG_MESSAGE (i, SEND) && IS_OSPF6_DEBUG_MESSAGE (i, RECV))
+	vty_out (vty, "  OSPF6 packet %s debugging is on%s",
+		 ospf6_packet_type_str[i], VNL);
+
+      else if (IS_OSPF6_DEBUG_MESSAGE (i, SEND))
+	vty_out (vty, "  OSPF6 packet %s send debugging is on%s",
+		 ospf6_packet_type_str[i], VNL);
+      else if (IS_OSPF6_DEBUG_MESSAGE (i, RECV))
+	vty_out (vty, "  OSPF6 packet %s receive debugging is on%s",
+		 ospf6_packet_type_str[i], VNL);
+    }
+
+  if (IS_OSPF6_DEBUG_SPF (PROCESS))
+    vty_out (vty, "  OSPF6 SPF process debugging is on%s", VNL);
+  if (IS_OSPF6_DEBUG_SPF (TIME))
+    vty_out (vty, "  OSPF6 SPF time debugging is on%s", VNL);
+  if (IS_OSPF6_DEBUG_SPF (DATABASE))
+    vty_out (vty, "  OSPF6 SPF database debugging is on%s", VNL);
+
+  if (IS_OSPF6_DEBUG_ROUTE (TABLE))
+    vty_out (vty, "  OSPF6 route table debugging is on%s", VNL);
+  if (IS_OSPF6_DEBUG_ROUTE (INTRA))
+    vty_out (vty, "  OSPF6 route intra-area debugging is on%s", VNL);
+  if (IS_OSPF6_DEBUG_ROUTE (INTER))
+    vty_out (vty, "  OSPF6 route inter-area debugging is on%s", VNL);
+  if (IS_OSPF6_DEBUG_ROUTE (MEMORY))
+    vty_out (vty, "  OSPF6 route memory debugging is on%s", VNL);
+  
+
+  /* Show neighbor debugging */
+  if (IS_OSPF6_DEBUG_NEIGHBOR (STATE) && IS_OSPF6_DEBUG_NEIGHBOR (EVENT))
+    vty_out (vty, "  OSPF6 neighbor debugging is on%s", VNL);
+  else if (IS_OSPF6_DEBUG_NEIGHBOR (STATE))
+    vty_out (vty, "  OSPF6 neighbor state debugging is on%s", VNL);
+  else if (IS_OSPF6_DEBUG_NEIGHBOR (EVENT))
+    vty_out (vty, "  OSPF6 neighbor event debugging is on%s", VNL);
+
+  /* Show debug status for OSPF LSAs. */
+  for (i = 0; i < vector_active (ospf6_lsa_handler_vector); i++)
+    {
+      const struct ospf6_lsa_handler *handler
+	= vector_slot (ospf6_lsa_handler_vector, i);
+      if (handler == NULL)
+        continue;
+
+      if (CHECK_FLAG (handler->debug, OSPF6_LSA_DEBUG))
+        vty_out (vty, "  OSPF6 LSA %s debugging is on%s",
+                 ospf6_lsa_handler_name (handler), VNL);
+      if (CHECK_FLAG (handler->debug, OSPF6_LSA_DEBUG_ORIGINATE))
+	vty_out (vty, "  OSPF6 LSA %s origination debugging is on%s",
+                 ospf6_lsa_handler_name (handler), VNL);
+      if (CHECK_FLAG (handler->debug, OSPF6_LSA_DEBUG_EXAMIN))
+	vty_out (vty, "  OSPF6 LSA %s examination debugging is on%s",
+		 ospf6_lsa_handler_name (handler), VNL);
+      if (CHECK_FLAG (handler->debug, OSPF6_LSA_DEBUG_FLOOD))
+        vty_out (vty, "  OSPF6 LSA %s flooding debugging is on%s",
+                 ospf6_lsa_handler_name (handler), VNL);
+    }
+
+  /* Show debug status for brouter */
+  if (IS_OSPF6_DEBUG_BROUTER)
+    vty_out (vty, "  OSPF6 border-router debugging is on%s", VNL);
+  if (IS_OSPF6_DEBUG_BROUTER_SPECIFIC_ROUTER)
+    vty_out (vty, "  OSPF6 border-routers router-id %s debugging is on%s",
+	     inet_ntop (AF_INET, &conf_debug_ospf6_brouter_specific_router_id,
+			buf, sizeof (buf)), VNL);
+  if (IS_OSPF6_DEBUG_BROUTER_SPECIFIC_AREA)
+    vty_out (vty, "  OSPF6 border-routers area-id %s debugging is on%s",
+	     inet_ntop (AF_INET, &conf_debug_ospf6_brouter_specific_area_id,
+			buf, sizeof (buf)), VNL);
+
+
+  /* Show debug status for Zebra. */
+  if (IS_OSPF6_DEBUG_ZEBRA (SEND) && IS_OSPF6_DEBUG_ZEBRA (RECV))
+    vty_out (vty, "  OSPF6 Zebra debugging is on%s", VNL);
+  else if (IS_OSPF6_DEBUG_ZEBRA (SEND))
+    vty_out (vty, "  OSPF6 Zebra send debugging is on%s", VNL);
+  else if (IS_OSPF6_DEBUG_ZEBRA (RECV))
+    vty_out (vty, "  OSPF6 Zebra recv debugging is on%s", VNL);
 
   return CMD_SUCCESS;
 }
@@ -1778,6 +1891,7 @@ ospf6_init (void)
 
   install_node (&debug_node, config_write_ospf6_debug);
 
+  install_element (ENABLE_NODE, &show_debugging_ospf6_cmd);
   install_element_ospf6_debug_message ();
   install_element_ospf6_debug_lsa ();
   install_element_ospf6_debug_interface ();

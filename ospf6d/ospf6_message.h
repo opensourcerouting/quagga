@@ -47,6 +47,7 @@ extern unsigned char conf_debug_ospf6_message[];
 #define OSPF6_MESSAGE_TYPE_CANONICAL(T) \
   ((T) > OSPF6_MESSAGE_TYPE_LSACK ? OSPF6_MESSAGE_TYPE_UNKNOWN : (T))
 
+extern const char *ospf6_packet_type_str[];
 extern const char *ospf6_message_type_str[];
 #define OSPF6_MESSAGE_TYPE_NAME(T) \
   (ospf6_message_type_str[ OSPF6_MESSAGE_TYPE_CANONICAL (T) ])

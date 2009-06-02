@@ -223,6 +223,7 @@ extern void ospf6_lsa_show_summary (struct vty *vty, struct ospf6_lsa *lsa);
 extern void ospf6_lsa_show_dump (struct vty *vty, struct ospf6_lsa *lsa);
 extern void ospf6_lsa_show_internal (struct vty *vty, struct ospf6_lsa *lsa);
 extern void ospf6_lsa_show (struct vty *vty, struct ospf6_lsa *lsa);
+extern const char *ospf6_lsa_handler_name (const struct ospf6_lsa_handler *h);
 
 extern struct ospf6_lsa *ospf6_lsa_create (struct ospf6_lsa_header *header);
 extern struct ospf6_lsa *ospf6_lsa_create_headeronly (struct ospf6_lsa_header *header);
