@@ -1861,6 +1861,9 @@ bgp_create (as_t *as, const char *name)
   if (name)
     bgp->name = strdup (name);
 
+  if (bgp_option_check (BGP_OPT_IMPORT_CHECK))
+    bgp_flag_set (bgp, BGP_FLAG_IMPORT_CHECK);
+
   return bgp;
 }
 
