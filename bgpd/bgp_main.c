@@ -53,6 +53,7 @@ static const struct option longopts[] =
   { "version",     no_argument,       NULL, 'v'},
   { "dryrun",      no_argument,       NULL, 'C'},
   { "help",        no_argument,       NULL, 'h'},
+  { "import-check", no_argument,      NULL, 'I'},
   { 0 }
 };
 
@@ -220,7 +221,7 @@ main (int argc, char **argv)
   /* Command line argument treatment. */
   while (1) 
     {
-      opt = getopt_long (argc, argv, "df:i:hp:l:A:P:rnu:g:vC", longopts, 0);
+      opt = getopt_long (argc, argv, "df:i:hp:l:A:P:rnu:g:vCI", longopts, 0);
     
       if (opt == EOF)
 	break;
@@ -281,6 +282,9 @@ main (int argc, char **argv)
 	  break;
 	case 'C':
 	  dryrun = 1;
+	  break;
+	case 'I':
+	  bgp_option_set (BGP_OPT_IMPORT_CHECK);
 	  break;
 	case 'h':
 	  usage (progname, 0);
