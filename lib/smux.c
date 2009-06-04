@@ -941,7 +941,7 @@ smux_read (struct thread *t)
   return 0;
 }
 
-int
+static int
 smux_open (int sock)
 {
   u_char buf[BUFSIZ];
@@ -985,7 +985,7 @@ smux_open (int sock)
   ptr = asn_build_string (ptr, &len, 
 			  (u_char)
 			  (ASN_UNIVERSAL | ASN_PRIMITIVE | ASN_OCTET_STR),
-			  (u_char *) smux_passwd, strlen (smux_passwd));
+			  (u_char *)smux_passwd, strlen (smux_passwd));
 
   /* Fill in real SMUX header.  We exclude ASN header size (2). */
   len = BUFSIZ;

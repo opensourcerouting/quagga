@@ -559,7 +559,7 @@ aspath_make_str_count (struct aspath *as)
       
       if (seg->type != AS_SEQUENCE)
 	{
-	  str_buf = aspath_expand(str_buf, &str_size, len, 1);
+	  str_buf = aspath_expand(str_buf, &str_size, len, 1); /* %c */
 	  len += snprintf (str_buf + len, str_size - len, 
 			   "%c", 
 			   aspath_delimiter_char (seg->type, AS_SEG_START));
@@ -1743,8 +1743,8 @@ aspath_key_make (void *p)
 static int
 aspath_cmp (const void *arg1, const void *arg2)
 {
-  const struct assegment *seg1 = ((struct aspath *)arg1)->segments;
-  const struct assegment *seg2 = ((struct aspath *)arg2)->segments;
+  const struct assegment *seg1 = ((const struct aspath *)arg1)->segments;
+  const struct assegment *seg2 = ((const struct aspath *)arg2)->segments;
   
   while (seg1 || seg2)
     {

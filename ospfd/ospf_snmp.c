@@ -1574,19 +1574,19 @@ ospf_snmp_if_lookup_next (struct in_addr *ifaddr, unsigned int *ifindex,
       /* Usual interface */
       if (ifaddr->s_addr) 
 	{
-        /* The interface must have valid AF_INET connected address */
-        /* it must have lager IPv4 address value than the lookup entry */
-        if ((ospf_snmp_is_if_have_addr(osif->ifp)) &&
-            (ntohl (osif->addr.s_addr) > ntohl (ifaddr->s_addr)))
-          {
-            *ifaddr = osif->addr;
-            *ifindex = osif->ifindex;
+	  /* The interface must have valid AF_INET connected address */
+	  /* it must have lager IPv4 address value than the lookup entry */
+	  if ((ospf_snmp_is_if_have_addr(osif->ifp)) &&
+	      (ntohl (osif->addr.s_addr) > ntohl (ifaddr->s_addr)))
+	    {
+	      *ifaddr = osif->addr;
+	      *ifindex = osif->ifindex;
         
-            /* and it must be an OSPF interface */
-            oi = ospf_if_lookup_by_local_addr (ospf, osif->ifp, *ifaddr);
-            if (oi)
-              return oi;
-          }
+	      /* and it must be an OSPF interface */
+	      oi = ospf_if_lookup_by_local_addr (ospf, osif->ifp, *ifaddr);
+	      if (oi)
+		return oi;
+	    }
 	}
       /* Unnumbered interface */
       else  
