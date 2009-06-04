@@ -201,24 +201,6 @@ set_link (struct route_node *node, struct route_node *new)
   new->parent = node;
 }
 
-/* Lock node. */
-struct route_node *
-route_lock_node (struct route_node *node)
-{
-  node->lock++;
-  return node;
-}
-
-/* Unlock node. */
-void
-route_unlock_node (struct route_node *node)
-{
-  node->lock--;
-
-  if (node->lock == 0)
-    route_node_delete (node);
-}
-
 /* Dump routing table. */
 static void __attribute__ ((unused))
 route_dump_node (struct route_table *t)
