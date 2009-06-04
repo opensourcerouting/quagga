@@ -1,3 +1,45 @@
+vyatta-quagga (0.99.12-5+jenner5) unstable; urgency=low
+
+  [ Denis Ovsienko ]
+  * Justified OSPF cost function names and added support for:
+  * Dmitry Tejblum <tejblum@yandex-team.ru>
+  * [bgpd] AS4 bugfix by Chris Caputo <ccaputo@alt.net>
+
+  [ Paul Jakma ]
+  * [build] tools/multiple-bgpd.sh should be in 'make dist'
+
+  [ Stephen Hemminger ]
+  * Fix bgp ipv4/ipv6 accept handling
+
+  [ Paul Jakma ]
+  * [release] Bump version to 0.99.12
+
+  [ Andrew J. Schorr ]
+  * [bgpd] 64-bit bugfix in community_del_val by Jeremy Jackson
+    <jerj@coplanar.net>
+
+  [ Denis Ovsienko ]
+  * [doc] Stick with quagga.net for consistency (#436)
+  * [trivia] Fixed typos in communities text (#334)
+
+  [ Steve Hill ]
+  * [bgp] Fix crash on SIGHUP, deref of freed workqueues
+
+  [ Krisztian Kovacs ]
+  * [ripd] Fix metrix in call to rip_zebra_ipv4_delete
+
+  [ Francesco Dolcini ]
+  * [ospfd] fix vty ospfd no ospf abr-type standard
+
+  [ Chris Caputo ]
+  * [smux] 64-bit fix for lib/smux.h SNMP_INTEGER() macro
+  * [snmp] Compiler warning fixes for when "--enable-snmp" is
+    configured.
+
+  [ Stephen Hemminger ]
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Thu, 04 Jun 2009 10:37:00 -0700
+
 vyatta-quagga (0.99.12-5+jenner4) unstable; urgency=low
 
   * Fix OSPF route refcount leak
