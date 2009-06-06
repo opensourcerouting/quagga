@@ -4959,6 +4959,8 @@ bgp_config_write (struct vty *vty)
       /* BGP network import check. */
       if (bgp_flag_check (bgp, BGP_FLAG_IMPORT_CHECK))
 	vty_out (vty, " bgp network import-check%s", VTY_NEWLINE);
+      else
+	vty_out (vty, " no bgp network import-check%s", VTY_NEWLINE);
 
       /* BGP scan interval. */
       bgp_config_write_scan_time (vty);
