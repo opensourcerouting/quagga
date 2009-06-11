@@ -1,3 +1,11 @@
+vyatta-quagga (0.99.12-5+jenner6) unstable; urgency=low
+
+  * Move route_lock_node to fix warnings
+  * OSPF vty cleanup
+  * Avoid N^2 behaviour on redistribute withdraw
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Fri, 05 Jun 2009 14:52:20 -0700
+
 vyatta-quagga (0.99.12-5+jenner5) unstable; urgency=low
 
   [ Denis Ovsienko ]
