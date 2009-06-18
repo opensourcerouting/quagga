@@ -1,3 +1,15 @@
+vyatta-quagga (0.99.12-5+jenner7) unstable; urgency=low
+
+  [ Stephen Hemminger ]
+  * Show no import-check
+
+  [ Denis Ovsienko ]
+  * [bgpd] Fixed as-path prepend/exclude ASN handling
+
+  [ Stig Thormodsrud ]
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Thu, 18 Jun 2009 15:20:10 -0700
+
 vyatta-quagga (0.99.12-5+jenner6) unstable; urgency=low
 
   * Move route_lock_node to fix warnings
