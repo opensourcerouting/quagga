@@ -1,3 +1,10 @@
+vyatta-quagga (0.99.12-7) unstable; urgency=low
+
+  [ Denis Ovsienko ]
+  * [bgpd] Fixed as-path prepend/exclude ASN handling
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Thu, 18 Jun 2009 15:23:36 -0700
+
 vyatta-quagga (0.99.12-6) unstable; urgency=low
 
   * UNRELEASED
