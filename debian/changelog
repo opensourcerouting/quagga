@@ -1,3 +1,14 @@
+vyatta-quagga (0.99.12-5+jenner8) unstable; urgency=low
+
+  [ Denis Ovsienko ]
+  * [bgpd] Fixed as-path prepend/exclude ASN handling
+
+  [ Stephen Hemminger ]
+  * ospfd: make some functions static
+  * ospf: fix performance of ospf_lsa_maxage
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Fri, 19 Jun 2009 15:58:05 -0700
+
 vyatta-quagga (0.99.12-5+jenner7) unstable; urgency=low
 
   [ Stephen Hemminger ]
