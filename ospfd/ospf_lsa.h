@@ -80,6 +80,7 @@ struct ospf_lsa
 #define OSPF_LSA_DISCARD	  0x10
 #define OSPF_LSA_LOCAL_XLT	  0x20
 #define OSPF_LSA_PREMATURE_AGE	  0x40
+#define OSPF_LSA_MAXAGE           0x80
 
   /* LSA data. */
   struct lsa_header *data;
@@ -244,7 +245,13 @@ extern struct ospf_neighbor *ospf_nbr_lookup_ptop (struct ospf_interface *);
 extern struct ospf_lsa *ospf_lsa_new (void);
 extern struct ospf_lsa *ospf_lsa_dup (struct ospf_lsa *);
 extern void ospf_lsa_free (struct ospf_lsa *);
-extern struct ospf_lsa *ospf_lsa_lock (struct ospf_lsa *);
+
+static inline struct ospf_lsa *ospf_lsa_lock (struct ospf_lsa *lsa)
+{
+  lsa->lock++;
+  return lsa;
+}
+
 extern void ospf_lsa_unlock (struct ospf_lsa **);
 extern void ospf_lsa_discard (struct ospf_lsa *);
 
