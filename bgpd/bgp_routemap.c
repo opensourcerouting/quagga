@@ -28,11 +28,15 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #include "plist.h"
 #include "memory.h"
 #include "log.h"
-#ifdef HAVE_GNU_REGEX
-#include <regex.h>
+#ifdef HAVE_LIBPCREPOSIX
+# include <pcreposix.h>
 #else
-#include "regex-gnu.h"
-#endif /* HAVE_GNU_REGEX */
+# ifdef HAVE_GNU_REGEX
+#  include <regex.h>
+# else
+#  include "regex-gnu.h"
+# endif /* HAVE_GNU_REGEX */
+#endif /* HAVE_LIBPCREPOSIX */
 #include "buffer.h"
 #include "sockunion.h"
 
@@ -3207,7 +3211,7 @@ ALIAS (no_set_weight,
 
 DEFUN (set_aspath_prepend,
        set_aspath_prepend_cmd,
-       "set as-path prepend .<1-65535>",
+       "set as-path prepend ." CMD_AS_RANGE,
        SET_STR
        "Transform BGP AS_PATH attribute\n"
        "Prepend to the as-path\n"
@@ -3245,7 +3249,7 @@ DEFUN (no_set_aspath_prepend,
 
 ALIAS (no_set_aspath_prepend,
        no_set_aspath_prepend_val_cmd,
-       "no set as-path prepend .<1-65535>",
+       "no set as-path prepend ." CMD_AS_RANGE,
        NO_STR
        SET_STR
        "Transform BGP AS_PATH attribute\n"
@@ -3254,7 +3258,7 @@ ALIAS (no_set_aspath_prepend,
 
 DEFUN (set_aspath_exclude,
        set_aspath_exclude_cmd,
-       "set as-path exclude .<1-65535>",
+       "set as-path exclude ." CMD_AS_RANGE,
        SET_STR
        "Transform BGP AS-path attribute\n"
        "Exclude from the as-path\n"
@@ -3291,7 +3295,7 @@ DEFUN (no_set_aspath_exclude,
 
 ALIAS (no_set_aspath_exclude,
        no_set_aspath_exclude_val_cmd,
-       "no set as-path exclude .<1-65535>",
+       "no set as-path exclude ." CMD_AS_RANGE,
        NO_STR
        SET_STR
        "Transform BGP AS_PATH attribute\n"
@@ -3475,7 +3479,7 @@ DEFUN (set_ecommunity_rt,
        "set extcommunity rt .ASN:nn_or_IP-address:nn",
        SET_STR
        "BGP extended community attribute\n"
-       "Route Target extened communityt\n"
+       "Route Target extended community\n"
        "VPN extended community\n")
 {
   int ret;
@@ -3494,7 +3498,7 @@ DEFUN (no_set_ecommunity_rt,
        NO_STR
        SET_STR
        "BGP extended community attribute\n"
-       "Route Target extened communityt\n")
+       "Route Target extended community\n")
 {
   return bgp_route_set_delete (vty, vty->index, "extcommunity rt", NULL);
 }
@@ -3505,7 +3509,7 @@ ALIAS (no_set_ecommunity_rt,
        NO_STR
        SET_STR
        "BGP extended community attribute\n"
-       "Route Target extened communityt\n"
+       "Route Target extended community\n"
        "VPN extended community\n")
 
 DEFUN (set_ecommunity_soo,

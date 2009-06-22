@@ -2115,8 +2115,10 @@ DEFUN (no_ospf_abr_type,
     abr_type = OSPF_ABR_CISCO;
   else if (strncmp (argv[0], "i", 1) == 0)
     abr_type = OSPF_ABR_IBM;
-  else if (strncmp (argv[0], "s", 1) == 0)
+  else if (strncmp (argv[0], "sh", 2) == 0)
     abr_type = OSPF_ABR_SHORTCUT;
+  else if (strncmp (argv[0], "st", 2) == 0)
+    abr_type = OSPF_ABR_STAND;
   else
     return CMD_WARNING;
 
@@ -8076,7 +8078,7 @@ ospf_vty_show_init (void)
 
 
 /* ospfd's interface node. */
-struct cmd_node interface_node =
+static struct cmd_node interface_node =
 {
   INTERFACE_NODE,
   "%s(config-if)# ",
@@ -8186,13 +8188,6 @@ ospf_vty_if_init (void)
   install_element (INTERFACE_NODE, &ospf_transmit_delay_cmd);
   install_element (INTERFACE_NODE, &no_ospf_transmit_delay_cmd);
 }
-
-/* Zebra node structure. */
-struct cmd_node zebra_node =
-{
-  ZEBRA_NODE,
-  "%s(config-router)#",
-};
 
 static void
 ospf_vty_zebra_init (void)

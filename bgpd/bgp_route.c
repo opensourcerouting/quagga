@@ -56,8 +56,8 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #include "bgpd/bgp_vty.h"
 
 /* Extern from bgp_dump.c */
-extern char *bgp_origin_str[];
-extern char *bgp_origin_long_str[];
+extern const char *bgp_origin_str[];
+extern const char *bgp_origin_long_str[];
 
 static struct bgp_node *
 bgp_afi_node_get (struct bgp_table *table, afi_t afi, safi_t safi, struct prefix *p,
@@ -1620,6 +1620,7 @@ bgp_processq_del (struct work_queue *wq, void *data)
 {
   struct bgp_process_queue *pq = data;
   
+  bgp_unlock(pq->bgp);
   bgp_unlock_node (pq->rn);
   XFREE (MTYPE_BGP_PROCESS_QUEUE, pq);
 }
@@ -1669,6 +1670,7 @@ bgp_process (struct bgp *bgp, struct bgp_node *rn, afi_t afi, safi_t safi)
   
   pqnode->rn = bgp_lock_node (rn); /* unlocked by bgp_processq_del */
   pqnode->bgp = bgp;
+  bgp_lock(bgp);
   pqnode->afi = afi;
   pqnode->safi = safi;
   
@@ -2901,19 +2903,6 @@ bgp_clear_route (struct peer *peer, afi_t afi, safi_t safi)
    */
   if (!peer->clear_node_queue->thread)
     bgp_clear_node_complete (peer->clear_node_queue);
-  else
-    {
-      /* clearing queue scheduled. Normal if in Established state
-       * (and about to transition out of it), but otherwise...
-       */
-      if (peer->status != Established)
-        {
-          plog_err (peer->log, "%s [Error] State %s is not Established,"
-                    " but routes were cleared - bug!",
-                    peer->host, LOOKUP (bgp_status_msg, peer->status));
-          assert (peer->status == Established);
-        }
-    }
 }
   
 void

@@ -782,12 +782,13 @@ ospf_network_unset (struct ospf *ospf, struct prefix_ipv4 *p,
     return 0;
 
   network = rn->info;
+  route_unlock_node (rn);
   if (!IPV4_ADDR_SAME (&area_id, &network->area_id))
     return 0;
 
   ospf_network_free (ospf, rn->info);
   rn->info = NULL;
-  route_unlock_node (rn);
+  route_unlock_node (rn);	/* initial reference */
 
   /* Find interfaces that not configured already.  */
   for (ALL_LIST_ELEMENTS (ospf->oiflist, node, nnode, oi))
@@ -1024,13 +1025,13 @@ ospf_remove_vls_through_area (struct ospf *ospf, struct ospf_area *area)
 }
 
 
-struct message ospf_area_type_msg[] =
+static const struct message ospf_area_type_msg[] =
 {
   { OSPF_AREA_DEFAULT,	"Default" },
   { OSPF_AREA_STUB,     "Stub" },
   { OSPF_AREA_NSSA,     "NSSA" },
 };
-int ospf_area_type_msg_max = OSPF_AREA_TYPE_MAX;
+static const int ospf_area_type_msg_max = OSPF_AREA_TYPE_MAX;
 
 static void
 ospf_area_type_set (struct ospf_area *area, int type)

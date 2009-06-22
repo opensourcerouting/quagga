@@ -3549,6 +3549,9 @@ DEFUN (show_ip_rip_status,
     {
       ri = ifp->info;
 
+      if (!ri->running)
+	continue;
+
       if (ri->enable_network || ri->enable_interface)
 	{
 	  if (ri->ri_send == RI_RIP_UNSPEC)
@@ -3685,7 +3688,7 @@ config_write_rip (struct vty *vty)
 }
 
 /* RIP node structure. */
-struct cmd_node rip_node =
+static struct cmd_node rip_node =
 {
   RIP_NODE,
   "%s(config-router)# ",

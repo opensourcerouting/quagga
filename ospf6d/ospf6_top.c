@@ -117,7 +117,7 @@ ospf6_create (void)
   o = XCALLOC (MTYPE_OSPF6_TOP, sizeof (struct ospf6));
 
   /* initialize */
-  gettimeofday (&o->starttime, (struct timezone *) NULL);
+  quagga_gettime (QUAGGA_CLK_MONOTONIC, &o->starttime);
   o->area_list = list_new ();
   o->area_list->cmp = ospf6_area_cmp;
   o->lsdb = ospf6_lsdb_create (o);
@@ -405,6 +405,13 @@ DEFUN (no_ospf6_interface_area,
       return CMD_SUCCESS;
     }
 
+  /* Verify Area */
+  if (oi->area == NULL)
+    {
+      vty_out (vty, "No such Area-ID: %s%s", argv[1], VNL);
+      return CMD_SUCCESS;
+    }
+
   if (oi->area->area_id != area_id)
     {
       vty_out (vty, "Wrong Area-ID: %s is attached to area %s%s",
@@ -442,7 +449,7 @@ ospf6_show (struct vty *vty, struct ospf6 *o)
            router_id, VNL);
 
   /* running time */
-  gettimeofday (&now, (struct timezone *)NULL);
+  quagga_gettime (QUAGGA_CLK_MONOTONIC, &now);
   timersub (&now, &o->starttime, &running);
   timerstring (&running, duration, sizeof (duration));
   vty_out (vty, " Running %s%s", duration, VNL);
@@ -669,6 +676,7 @@ ospf6_top_init (void)
   install_element (VIEW_NODE, &show_ipv6_ospf6_cmd);
   install_element (ENABLE_NODE, &show_ipv6_ospf6_cmd);
   install_element (CONFIG_NODE, &router_ospf6_cmd);
+  install_element (CONFIG_NODE, &no_router_ospf6_cmd);
 
   install_element (VIEW_NODE, &show_ipv6_ospf6_route_cmd);
   install_element (VIEW_NODE, &show_ipv6_ospf6_route_detail_cmd);
@@ -691,7 +699,6 @@ ospf6_top_init (void)
   install_element (OSPF6_NODE, &ospf6_router_id_cmd);
   install_element (OSPF6_NODE, &ospf6_interface_area_cmd);
   install_element (OSPF6_NODE, &no_ospf6_interface_area_cmd);
-  install_element (OSPF6_NODE, &no_router_ospf6_cmd);
 }
 
 

@@ -1563,7 +1563,6 @@ if_config_write (struct vty *vty)
 {
   struct listnode *node;
   struct interface *ifp;
-  char buf[BUFSIZ];
 
   for (ALL_LIST_ELEMENTS_RO (iflist, node, ifp))
     {
@@ -1593,10 +1592,11 @@ if_config_write (struct vty *vty)
 	  {
 	    if (CHECK_FLAG (ifc->conf, ZEBRA_IFC_CONFIGURED))
 	      {
+		char buf[INET6_ADDRSTRLEN];
 		p = ifc->address;
 		vty_out (vty, " ip%s address %s/%d",
 			 p->family == AF_INET ? "" : "v6",
-			 inet_ntop (p->family, &p->u.prefix, buf, BUFSIZ),
+			 inet_ntop (p->family, &p->u.prefix, buf, sizeof(buf)),
 			 p->prefixlen);
 
 		if (ifc->label)

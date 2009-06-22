@@ -70,6 +70,9 @@ struct bgp
   /* Name of this BGP instance.  */
   char *name;
   
+  /* Reference count to allow peer_delete to finish after bgp_delete */
+  int lock;
+
   /* Self peer.  */
   struct peer *peer_self;
 
@@ -904,6 +907,9 @@ bgp_config_check (const struct bgp *bgp, int config)
 {
   return CHECK_FLAG (bgp->config, config);
 }
+
+extern void bgp_lock (struct bgp *);
+extern void bgp_unlock (struct bgp *);
 
 extern int bgp_router_id_set (struct bgp *, struct in_addr *);
 

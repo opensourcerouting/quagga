@@ -26,7 +26,7 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #include "bgpd/bgp_community.h"
 
 /* Hash of community attribute. */
-struct hash *comhash;
+static struct hash *comhash;
 
 /* Allocate a new communities value.  */
 static struct community *
@@ -78,7 +78,7 @@ community_del_val (struct community *com, u_int32_t *val)
 	  c = com->size -i -1;
 
 	  if (c > 0)
-	    memcpy (com->val + i, com->val + (i + 1), c * sizeof (val));
+	    memcpy (com->val + i, com->val + (i + 1), c * sizeof (*val));
 
 	  com->size--;
 

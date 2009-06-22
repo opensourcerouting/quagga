@@ -323,6 +323,8 @@ connected_delete_ipv4 (struct interface *ifp, int flags, struct in_addr *addr,
     return;
     
   connected_withdraw (ifc);
+
+  rib_update();
 }
 
 #ifdef HAVE_IPV6
@@ -442,5 +444,7 @@ connected_delete_ipv6 (struct interface *ifp, struct in6_addr *address,
     return;
 
   connected_withdraw (ifc);
+
+  rib_update();
 }
 #endif /* HAVE_IPV6 */
