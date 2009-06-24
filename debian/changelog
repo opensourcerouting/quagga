@@ -1,3 +1,9 @@
+vyatta-quagga (0.99.12-5+jenner9) unstable; urgency=low
+
+  * Revert "ospf: fix performance of ospf_lsa_maxage"
+
+ -- Stig Thormodsrud <stig@vyatta.com>  Wed, 24 Jun 2009 12:23:25 -0700
+
 vyatta-quagga (0.99.12-5+jenner8) unstable; urgency=low
 
   [ Denis Ovsienko ]
