@@ -8,7 +8,7 @@
 ## $Id$
 AC_PREREQ(2.53)
 
-AC_INIT(Quagga, [0.99.13-dn42.6], [http://bugzilla.quagga.net])
+AC_INIT(Quagga, [0.99.13-dn42.7], [http://bugzilla.quagga.net])
 AC_CONFIG_SRCDIR(lib/zebra.h)
 
 dnl -----------------------------------
@@ -27,6 +27,8 @@ if test "x$GAWK" = "xnot-in-PATH" ; then
 BSD awk complains: awk: gensub doesn't support backreferences (subst "\1") ])
 fi
 AC_ARG_VAR([GAWK],[GNU AWK])
+
+AC_SYS_LARGEFILE
 
 dnl default is to match previous behavior
 exampledir=${sysconfdir}

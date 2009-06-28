@@ -497,19 +497,35 @@ bgp_input_filter (struct peer *peer, struct prefix *p, struct attr *attr,
 
   filter = &peer->filter[afi][safi];
 
-  if (DISTRIBUTE_IN_NAME (filter))
+#define FILTER_EXIST_WARN(F,f,filter) \
+  if (BGP_DEBUG (update, UPDATE_IN) \
+      && !(F ## _IN (filter))) \
+    plog_warn (peer->log, "%s: Could not find configured input %s-list %s!", \
+               peer->host, #f, F ## _IN_NAME(filter));
+  
+  if (DISTRIBUTE_IN_NAME (filter)) {
+    FILTER_EXIST_WARN(DISTRIBUTE, distribute, filter);
+      
     if (access_list_apply (DISTRIBUTE_IN (filter), p) == FILTER_DENY)
       return FILTER_DENY;
+  }
 
-  if (PREFIX_LIST_IN_NAME (filter))
+  if (PREFIX_LIST_IN_NAME (filter)) {
+    FILTER_EXIST_WARN(PREFIX_LIST, prefix, filter);
+    
     if (prefix_list_apply (PREFIX_LIST_IN (filter), p) == PREFIX_DENY)
       return FILTER_DENY;
+  }
   
-  if (FILTER_LIST_IN_NAME (filter))
+  if (FILTER_LIST_IN_NAME (filter)) {
+    FILTER_EXIST_WARN(FILTER_LIST, as, filter);
+    
     if (as_list_apply (FILTER_LIST_IN (filter), attr->aspath)== AS_FILTER_DENY)
       return FILTER_DENY;
-
+  }
+  
   return FILTER_PERMIT;
+#undef FILTER_EXIST_WARN
 }
 
 static enum filter_type
@@ -520,19 +536,35 @@ bgp_output_filter (struct peer *peer, struct prefix *p, struct attr *attr,
 
   filter = &peer->filter[afi][safi];
 
-  if (DISTRIBUTE_OUT_NAME (filter))
+#define FILTER_EXIST_WARN(F,f,filter) \
+  if (BGP_DEBUG (update, UPDATE_OUT) \
+      && !(F ## _OUT (filter))) \
+    plog_warn (peer->log, "%s: Could not find configured output %s-list %s!", \
+               peer->host, #f, F ## _OUT_NAME(filter));
+
+  if (DISTRIBUTE_OUT_NAME (filter)) {
+    FILTER_EXIST_WARN(DISTRIBUTE, distribute, filter);
+    
     if (access_list_apply (DISTRIBUTE_OUT (filter), p) == FILTER_DENY)
       return FILTER_DENY;
+  }
 
-  if (PREFIX_LIST_OUT_NAME (filter))
+  if (PREFIX_LIST_OUT_NAME (filter)) {
+    FILTER_EXIST_WARN(PREFIX_LIST, prefix, filter);
+    
     if (prefix_list_apply (PREFIX_LIST_OUT (filter), p) == PREFIX_DENY)
       return FILTER_DENY;
+  }
 
-  if (FILTER_LIST_OUT_NAME (filter))
+  if (FILTER_LIST_OUT_NAME (filter)) {
+    FILTER_EXIST_WARN(FILTER_LIST, as, filter);
+    
     if (as_list_apply (FILTER_LIST_OUT (filter), attr->aspath) == AS_FILTER_DENY)
       return FILTER_DENY;
+  }
 
   return FILTER_PERMIT;
+#undef FILTER_EXIST_WARN
 }
 
 /* If community attribute includes no_export then return 1. */
@@ -5860,6 +5892,7 @@ damp_route_vty_out (struct vty *vty, struct prefix *p,
 {
   struct attr *attr;
   int len;
+  char timebuf[BGP_UPTIME_LEN];
 
   /* short status lead text */ 
   route_vty_short_status_out (vty, binfo);
@@ -5877,7 +5910,7 @@ damp_route_vty_out (struct vty *vty, struct prefix *p,
   else
     vty_out (vty, "%*s", len, " ");
 
-  vty_out (vty, "%s ", bgp_damp_reuse_time_vty (vty, binfo));
+  vty_out (vty, "%s ", bgp_damp_reuse_time_vty (vty, binfo, timebuf, BGP_UPTIME_LEN));
 
   /* Print attribute */
   attr = binfo->attr;
@@ -5892,8 +5925,6 @@ damp_route_vty_out (struct vty *vty, struct prefix *p,
     }
   vty_out (vty, "%s", VTY_NEWLINE);
 }
-
-#define BGP_UPTIME_LEN 25
 
 /* flap route */
 static void
@@ -5938,7 +5969,7 @@ flap_route_vty_out (struct vty *vty, struct prefix *p,
 
   if (CHECK_FLAG (binfo->flags, BGP_INFO_DAMPED)
       && ! CHECK_FLAG (binfo->flags, BGP_INFO_HISTORY))
-    vty_out (vty, "%s ", bgp_damp_reuse_time_vty (vty, binfo));
+    vty_out (vty, "%s ", bgp_damp_reuse_time_vty (vty, binfo, timebuf, BGP_UPTIME_LEN));
   else
     vty_out (vty, "%*s ", 8, " ");
 
@@ -9697,7 +9728,33 @@ peer_adj_routes (struct vty *vty, struct peer *peer, afi_t afi, safi_t safi, int
   return CMD_SUCCESS;
 }
 
-DEFUN (show_ip_bgp_neighbor_advertised_route,
+DEFUN (show_ip_bgp_view_neighbor_advertised_route,
+       show_ip_bgp_view_neighbor_advertised_route_cmd,
+       "show ip bgp view WORD neighbors (A.B.C.D|X:X::X:X) advertised-routes",
+       SHOW_STR
+       IP_STR
+       BGP_STR
+       "BGP view\n"
+       "View name\n"
+       "Detailed information on TCP and BGP neighbor connections\n"
+       "Neighbor to display information about\n"
+       "Neighbor to display information about\n"
+       "Display the routes advertised to a BGP neighbor\n")
+{
+  struct peer *peer;
+
+  if (argc == 2)
+    peer = peer_lookup_in_view (vty, argv[0], argv[1]);
+  else
+    peer = peer_lookup_in_view (vty, NULL, argv[0]);
+
+  if (! peer) 
+    return CMD_WARNING;
+ 
+  return peer_adj_routes (vty, peer, AFI_IP, SAFI_UNICAST, 0);
+}
+
+ALIAS (show_ip_bgp_view_neighbor_advertised_route,
        show_ip_bgp_neighbor_advertised_route_cmd,
        "show ip bgp neighbors (A.B.C.D|X:X::X:X) advertised-routes",
        SHOW_STR
@@ -9707,15 +9764,6 @@ DEFUN (show_ip_bgp_neighbor_advertised_route,
        "Neighbor to display information about\n"
        "Neighbor to display information about\n"
        "Display the routes advertised to a BGP neighbor\n")
-{
-  struct peer *peer;
-
-  peer = peer_lookup_in_view (vty, NULL, argv[0]);  
-  if (! peer) 
-    return CMD_WARNING;
- 
-  return peer_adj_routes (vty, peer, AFI_IP, SAFI_UNICAST, 0);
-}
 
 DEFUN (show_ip_bgp_ipv4_neighbor_advertised_route,
        show_ip_bgp_ipv4_neighbor_advertised_route_cmd,
@@ -9875,7 +9923,33 @@ DEFUN (ipv6_mbgp_neighbor_advertised_route,
 }
 #endif /* HAVE_IPV6 */
 
-DEFUN (show_ip_bgp_neighbor_received_routes,
+DEFUN (show_ip_bgp_view_neighbor_received_routes,
+       show_ip_bgp_view_neighbor_received_routes_cmd,
+       "show ip bgp view WORD neighbors (A.B.C.D|X:X::X:X) received-routes",
+       SHOW_STR
+       IP_STR
+       BGP_STR
+       "BGP view\n"
+       "View name\n"
+       "Detailed information on TCP and BGP neighbor connections\n"
+       "Neighbor to display information about\n"
+       "Neighbor to display information about\n"
+       "Display the received routes from neighbor\n")
+{
+  struct peer *peer;
+
+  if (argc == 2)
+    peer = peer_lookup_in_view (vty, argv[0], argv[1]);
+  else
+    peer = peer_lookup_in_view (vty, NULL, argv[0]);
+
+  if (! peer)
+    return CMD_WARNING;
+
+  return peer_adj_routes (vty, peer, AFI_IP, SAFI_UNICAST, 1);
+}
+
+ALIAS (show_ip_bgp_view_neighbor_received_routes,
        show_ip_bgp_neighbor_received_routes_cmd,
        "show ip bgp neighbors (A.B.C.D|X:X::X:X) received-routes",
        SHOW_STR
@@ -9885,15 +9959,6 @@ DEFUN (show_ip_bgp_neighbor_received_routes,
        "Neighbor to display information about\n"
        "Neighbor to display information about\n"
        "Display the received routes from neighbor\n")
-{
-  struct peer *peer;
-
-  peer = peer_lookup_in_view (vty, NULL, argv[0]);
-  if (! peer)
-    return CMD_WARNING;
-
-  return peer_adj_routes (vty, peer, AFI_IP, SAFI_UNICAST, 1);
-}
 
 DEFUN (show_ip_bgp_ipv4_neighbor_received_routes,
        show_ip_bgp_ipv4_neighbor_received_routes_cmd,
@@ -11813,6 +11878,8 @@ bgp_route_init (void)
   install_element (VIEW_NODE, &show_ip_bgp_rsclient_cmd);
   install_element (VIEW_NODE, &show_ip_bgp_rsclient_route_cmd);
   install_element (VIEW_NODE, &show_ip_bgp_rsclient_prefix_cmd);
+  install_element (VIEW_NODE, &show_ip_bgp_view_neighbor_advertised_route_cmd);
+  install_element (VIEW_NODE, &show_ip_bgp_view_neighbor_received_routes_cmd);
   install_element (VIEW_NODE, &show_ip_bgp_view_rsclient_cmd);
   install_element (VIEW_NODE, &show_ip_bgp_view_rsclient_route_cmd);
   install_element (VIEW_NODE, &show_ip_bgp_view_rsclient_prefix_cmd);
@@ -11918,6 +11985,8 @@ bgp_route_init (void)
   install_element (ENABLE_NODE, &show_ip_bgp_rsclient_cmd);
   install_element (ENABLE_NODE, &show_ip_bgp_rsclient_route_cmd);
   install_element (ENABLE_NODE, &show_ip_bgp_rsclient_prefix_cmd);
+  install_element (ENABLE_NODE, &show_ip_bgp_view_neighbor_advertised_route_cmd);
+  install_element (ENABLE_NODE, &show_ip_bgp_view_neighbor_received_routes_cmd);
   install_element (ENABLE_NODE, &show_ip_bgp_view_rsclient_cmd);
   install_element (ENABLE_NODE, &show_ip_bgp_view_rsclient_route_cmd);
   install_element (ENABLE_NODE, &show_ip_bgp_view_rsclient_prefix_cmd);

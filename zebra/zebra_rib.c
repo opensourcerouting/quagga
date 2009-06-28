@@ -912,7 +912,7 @@ static int
 nexthop_active_update (struct route_node *rn, struct rib *rib, int set)
 {
   struct nexthop *nexthop;
-  int prev_active, new_active;
+  int prev_active, prev_index, new_active;
 
   rib->nexthop_active_num = 0;
   UNSET_FLAG (rib->flags, ZEBRA_FLAG_CHANGED);
@@ -920,9 +920,11 @@ nexthop_active_update (struct route_node *rn, struct rib *rib, int set)
   for (nexthop = rib->nexthop; nexthop; nexthop = nexthop->next)
   {
     prev_active = CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_ACTIVE);
+    prev_index = nexthop->ifindex;
     if ((new_active = nexthop_active_check (rn, rib, nexthop, set)))
       rib->nexthop_active_num++;
-    if (prev_active != new_active)
+    if (prev_active != new_active ||
+	prev_index != nexthop->ifindex)
       SET_FLAG (rib->flags, ZEBRA_FLAG_CHANGED);
   }
   return rib->nexthop_active_num;
