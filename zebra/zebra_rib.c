@@ -1697,6 +1697,11 @@ rib_add_ipv4 (int type, int flags, struct prefix_ipv4 *p,
       
       if (rib->type != type)
 	continue;
+
+      if (rib->type == ZEBRA_ROUTE_KERNEL &&
+	  (rib->metric != metric || rib->protocol != proto))
+	continue;
+
       if (rib->type != ZEBRA_ROUTE_CONNECT)
         {
           same = rib;
@@ -2502,6 +2507,10 @@ rib_add_ipv6 (int type, int flags, struct prefix_ipv6 *p,
 
       if (rib->type != type)
 	continue;
+
+      if (rib->type == ZEBRA_ROUTE_KERNEL && rib->metric != metric)
+	continue;
+
       if (rib->type != ZEBRA_ROUTE_CONNECT)
 	{
 	  same = rib;
