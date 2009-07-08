@@ -1,3 +1,10 @@
+vyatta-quagga (0.99.12-5+jenner10) unstable; urgency=low
+
+  * Allow iBGP to be used for recusive routes
+  * Allow RIB to store multiple kernel routes
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Wed, 08 Jul 2009 14:38:58 -0700
+
 vyatta-quagga (0.99.12-5+jenner9) unstable; urgency=low
 
   * Revert "ospf: fix performance of ospf_lsa_maxage"
