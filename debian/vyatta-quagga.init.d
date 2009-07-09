@@ -21,10 +21,6 @@ declare action=$1; shift
 
 pid_dir=/var/run/vyatta/quagga
 log_dir=/var/log/vyatta/quagga
-quagga_manager=/opt/vyatta/sbin/quagga-manager
-
-# Check if quagga manager installed
-test -x $quagga_manager || exit 1
 
 for dir in $pid_dir $log_dir ; do
     if [ ! -d $dir ]; then
@@ -34,7 +30,6 @@ for dir in $pid_dir $log_dir ; do
     fi
 done
 
-# Normally only start zebra here. other daemons started in vyatta config
 vyatta_quagga_start ()
 {
     local -a daemons
@@ -42,14 +37,24 @@ vyatta_quagga_start ()
     if [ $# -gt 0 ] ; then
 	daemons=( $* )
     else
-	daemons=( zebra )
+	daemons=( zebra ripd ripngd ospfd ospf6d bgpd )
     fi
 
     log_daemon_msg "Starting routing daemons"
     for daemon in ${daemons[@]} ; do
 	[ "$daemon" != zebra ] && log_action_cont_msg "$daemon"
+	local pidfile=${pid_dir}/${daemon}.pid
 
-	$quagga_manager start $daemon || \
+	# Handle daemon specific args
+	local -a args=( -d -P 0 -i $pidfile )
+	case $daemon in
+	    zebra)	args+=( -l -S -s 1048576 );;
+	    bgpd)	args+=( -I );;
+	esac
+
+	start-stop-daemon --start --oknodo --quiet \
+	    --chdir $log_dir --exec /usr/sbin/vyatta-$daemon \
+	    --pidfile $pidfile -- ${args[@]} || \
     	    ( log_action_end_msg 1 ; return 1 )
     done
     log_action_end_msg 0
@@ -71,7 +76,9 @@ vyatta_quagga_stop ()
 	    log_action_cont_msg "$daemon"
 	fi
 
-	$quagga_manager stop $daemon
+	start-stop-daemon --stop --quiet --oknodo --retry 5 \
+	    --exec /usr/sbin/vyatta-$daemon --pidfile=$pidfile
+	rm -f $pidfile
     done    
     log_action_end_msg $?
 
