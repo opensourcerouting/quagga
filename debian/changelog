@@ -1,3 +1,11 @@
+vyatta-quagga (0.99.12-8) unstable; urgency=low
+
+  * Allow iBGP to be used for recusive routes
+  * Allow RIB to store multiple kernel routes
+  * Start all routing daemons at boot time
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Thu, 09 Jul 2009 16:47:37 -0700
+
 vyatta-quagga (0.99.12-7) unstable; urgency=low
 
   [ Denis Ovsienko ]
