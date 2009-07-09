@@ -1,3 +1,9 @@
+vyatta-quagga (0.99.12-5+jenner11) unstable; urgency=low
+
+  * Start all routing daemons at boot time
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Thu, 09 Jul 2009 16:27:59 -0700
+
 vyatta-quagga (0.99.12-5+jenner10) unstable; urgency=low
 
   * Allow iBGP to be used for recusive routes
