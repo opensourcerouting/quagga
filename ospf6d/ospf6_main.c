@@ -289,8 +289,6 @@ main (int argc, char *argv[], char *envp[])
   pid_output (pid_file);
 
   /* Make ospf6 vty socket. */
-  if (!vty_port)
-    vty_port = OSPF6_VTY_PORT;
   vty_serv_sock (vty_addr, vty_port, OSPF6_VTYSH_PATH);
 
   /* Print start message */
