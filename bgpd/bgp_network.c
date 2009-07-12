@@ -117,19 +117,16 @@ bgp_accept (struct thread *thread)
   union sockunion su;
   struct peer *peer;
   struct peer *peer1;
-  struct bgp *bgp;
   char buf[SU_ADDRSTRLEN];
 
   /* Regiser accept thread. */
   accept_sock = THREAD_FD (thread);
-  bgp = THREAD_ARG (thread);
-
   if (accept_sock < 0)
     {
       zlog_err ("accept_sock is nevative value %d", accept_sock);
       return -1;
     }
-  thread_add_read (master, bgp_accept, bgp, accept_sock);
+  thread_add_read (master, bgp_accept, NULL, accept_sock);
 
   /* Accept client connection. */
   bgp_sock = sockunion_accept (accept_sock, &su);
@@ -143,7 +140,7 @@ bgp_accept (struct thread *thread)
     zlog_debug ("[Event] BGP connection from host %s", inet_sutop (&su, buf));
   
   /* Check remote IP address */
-  peer1 = peer_lookup (bgp, &su);
+  peer1 = peer_lookup (NULL, &su);
   if (! peer1 || peer1->status == Idle)
     {
       if (BGP_DEBUG (events, EVENTS))
@@ -163,9 +160,6 @@ bgp_accept (struct thread *thread)
   if (peer_sort (peer1) == BGP_PEER_EBGP)
     sockopt_ttl (peer1->su.sa.sa_family, bgp_sock, peer1->ttl);
 
-  if (! bgp)
-    bgp = peer1->bgp;
-
   /* Make dummy peer until read Open packet. */
   if (BGP_DEBUG (events, EVENTS))
     zlog_debug ("[Event] Make dummy peer structure until read Open packet");
@@ -173,7 +167,7 @@ bgp_accept (struct thread *thread)
   {
     char buf[SU_ADDRSTRLEN + 1];
 
-    peer = peer_create_accept (bgp);
+    peer = peer_create_accept (peer1->bgp);
     SET_FLAG (peer->sflags, PEER_STATUS_ACCEPT_PEER);
     peer->su = su;
     peer->fd = bgp_sock;
@@ -362,7 +356,7 @@ bgp_getsockname (struct peer *peer)
 /* IPv6 supported version of BGP server socket setup.  */
 #if defined (HAVE_IPV6) && ! defined (NRL)
 int
-bgp_socket (struct bgp *bgp, unsigned short port, char *address)
+bgp_socket (unsigned short port, const char *address)
 {
   int ret, en;
   struct addrinfo *ainfo, *resp;
@@ -427,7 +421,7 @@ bgp_socket (struct bgp *bgp, unsigned short port, char *address)
 	}
       
       bm->listen_socket = sock;
-      thread_add_read (master, bgp_accept, bgp, sock);
+      thread_add_read (master, bgp_accept, NULL, sock);
       break;
     }
   freeaddrinfo (resp);
@@ -437,7 +431,7 @@ bgp_socket (struct bgp *bgp, unsigned short port, char *address)
 #else
 /* Traditional IPv4 only version.  */
 int
-bgp_socket (struct bgp *bgp, unsigned short port, char *address)
+bgp_socket (unsigned short port, const char *address)
 {
   int sock;
   int socklen;
@@ -499,7 +493,7 @@ bgp_socket (struct bgp *bgp, unsigned short port, char *address)
     }
 
   bm->listen_socket = sock;
-  thread_add_read (bm->master, bgp_accept, bgp, sock);
+  thread_add_read (bm->master, bgp_accept, NULL, sock);
 
   return sock;
 }
