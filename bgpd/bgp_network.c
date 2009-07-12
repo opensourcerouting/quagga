@@ -89,9 +89,7 @@ bgp_md5_set_connect (int socket, union sockunion *su, const char *password)
 int
 bgp_md5_set (struct peer *peer)
 {
-  struct listnode *node;
-  int fret = 0, ret;
-  int *socket;
+  int ret;
 
   if ( bgpd_privs.change (ZPRIVS_RAISE) )
     {
@@ -102,16 +100,12 @@ bgp_md5_set (struct peer *peer)
   /* Just set the password on the listen socket(s). Outbound connections
    * are taken care of in bgp_connect() below.
    */
-  for (ALL_LIST_ELEMENTS_RO(bm->listen_sockets, node, socket))
-    {
-      ret = bgp_md5_set_socket ((int )socket, &peer->su, peer->password);
-      if (ret < 0)
-        fret = ret;
-    }
+  ret = bgp_md5_set_socket (bm->listen_socket, &peer->su, peer->password);
+
   if (bgpd_privs.change (ZPRIVS_LOWER) )
     zlog_err ("%s: could not lower privs", __func__);
   
-  return fret;
+  return ret;
 }
 
 /* Accept bgp connection. */
@@ -371,29 +365,26 @@ int
 bgp_socket (struct bgp *bgp, unsigned short port, char *address)
 {
   int ret, en;
-  struct addrinfo *ainfo;
-  struct addrinfo *ainfo_save;
+  struct addrinfo *ainfo, *resp;
   static const struct addrinfo req = {
     .ai_family = AF_UNSPEC,
     .ai_flags = AI_PASSIVE,
     .ai_socktype = SOCK_STREAM,
   };
-  int sock = 0;
+  int sock = -1;
   char port_str[BUFSIZ];
 
   snprintf (port_str, sizeof(port_str), "%d", port);
   port_str[sizeof (port_str) - 1] = '\0';
 
-  ret = getaddrinfo (address, port_str, &req, &ainfo);
+  ret = getaddrinfo (address, port_str, &req, &resp);
   if (ret != 0)
     {
       zlog_err ("getaddrinfo: %s", gai_strerror (ret));
       return -1;
     }
 
-  ainfo_save = ainfo;
-
-  do
+  for (ainfo = resp; ainfo; ainfo = ainfo->ai_next)
     {
       if (ainfo->ai_family != AF_INET && ainfo->ai_family != AF_INET6)
 	continue;
@@ -412,16 +403,6 @@ bgp_socket (struct bgp *bgp, unsigned short port, char *address)
       if (ainfo->ai_family == AF_INET)
 	setsockopt_ipv4_tos (sock, IPTOS_PREC_INTERNETCONTROL);
 #endif
-
-#ifdef IPV6_V6ONLY
-      /* Want only IPV6 on ipv6 socket (not mapped addresses) */
-      if (ainfo->ai_family == AF_INET6) {
-	int on = 1;
-	setsockopt (sock, IPPROTO_IPV6, IPV6_V6ONLY, 
-		    (void *) &on, sizeof (on));
-      }
-#endif
-
       if (bgpd_privs.change (ZPRIVS_RAISE) )
         zlog_err ("bgp_socket: could not raise privs");
 
@@ -445,14 +426,13 @@ bgp_socket (struct bgp *bgp, unsigned short port, char *address)
 	  continue;
 	}
       
-      listnode_add (bm->listen_sockets, (void *)sock);
+      bm->listen_socket = sock;
       thread_add_read (master, bgp_accept, bgp, sock);
+      break;
     }
-  while ((ainfo = ainfo->ai_next) != NULL);
+  freeaddrinfo (resp);
 
-  freeaddrinfo (ainfo_save);
-
-  return sock;
+  return ainfo ? sock : -1;
 }
 #else
 /* Traditional IPv4 only version.  */
@@ -518,6 +498,7 @@ bgp_socket (struct bgp *bgp, unsigned short port, char *address)
       return ret;
     }
 
+  bm->listen_socket = sock;
   thread_add_read (bm->master, bgp_accept, bgp, sock);
 
   return sock;

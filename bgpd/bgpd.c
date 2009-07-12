@@ -5026,7 +5026,6 @@ bgp_master_init (void)
 
   bm = &bgp_master;
   bm->bgp = list_new ();
-  bm->listen_sockets = list_new ();
   bm->port = BGP_PORT_DEFAULT;
   bm->master = thread_master_create ();
   bm->start_time = time (NULL);
