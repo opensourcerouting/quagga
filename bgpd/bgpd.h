@@ -44,6 +44,7 @@ struct bgp_master
   
   /* Listening sockets */
   int listen_socket;
+  struct thread *accept_thread;
   
   /* BGP port number.  */
   u_int16_t port;

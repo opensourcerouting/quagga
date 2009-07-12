@@ -126,7 +126,7 @@ bgp_accept (struct thread *thread)
       zlog_err ("accept_sock is nevative value %d", accept_sock);
       return -1;
     }
-  thread_add_read (master, bgp_accept, NULL, accept_sock);
+  bm->accept_thread = thread_add_read (master, bgp_accept, NULL, accept_sock);
 
   /* Accept client connection. */
   bgp_sock = sockunion_accept (accept_sock, &su);
@@ -421,7 +421,7 @@ bgp_socket (unsigned short port, const char *address)
 	}
       
       bm->listen_socket = sock;
-      thread_add_read (master, bgp_accept, NULL, sock);
+      bm->accept_thread = thread_add_read (master, bgp_accept, NULL, sock);
       break;
     }
   freeaddrinfo (resp);
@@ -493,8 +493,20 @@ bgp_socket (unsigned short port, const char *address)
     }
 
   bm->listen_socket = sock;
-  thread_add_read (bm->master, bgp_accept, NULL, sock);
+  bm->accept_thread = thread_add_read (bm->master, bgp_accept, NULL, sock);
 
   return sock;
 }
 #endif /* HAVE_IPV6 && !NRL */
+
+void
+bgp_close (void)
+{
+  if (bm->accept_thread)
+    {
+      thread_cancel (bm->accept_thread);
+      bm->accept_thread = NULL;
+
+      close (bm->listen_socket);
+    }
+}
