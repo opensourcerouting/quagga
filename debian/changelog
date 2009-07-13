@@ -1,3 +1,14 @@
+vyatta-quagga (0.99.12-5+jenner12) unstable; urgency=low
+
+  * OSPF6: don't enable TCP vty port
+  * Fix bug in IPV6 normalized addresses
+  * Use single socket for both IPV4 and IPV6
+  * bgp_socket : remove unused arg
+  * BGP: delay listening until first AS defined
+  * Remove code in md5sig that attempts to normalize IPV4 mapped socket
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Mon, 13 Jul 2009 10:06:50 -0700
+
 vyatta-quagga (0.99.12-5+jenner11) unstable; urgency=low
 
   * Start all routing daemons at boot time
