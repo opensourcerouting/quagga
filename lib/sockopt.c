@@ -511,7 +511,7 @@ sockopt_tcp_signature (int sock, union sockunion *su, const char *password)
   struct tcp_md5sig md5sig;
 
   memset (&md5sig, 0, sizeof (md5sig));
-  memcpy (&md5sig.tcpm_addr, su, sizeof(*su));
+  memcpy (&md5sig.tcpm_addr, su, sizeof(su));
 
   md5sig.tcpm_keylen = keylen;
   if (keylen)
