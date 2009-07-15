@@ -39,6 +39,14 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 
 extern struct zebra_privs_t bgpd_privs;
 
+/* BGP listening socket. */
+struct bgp_listener
+{
+  int fd;
+  union sockunion su;
+  struct thread *thread;
+};
+
 
 /*
  * Set MD5 key for the socket, for the given IPv4 peer address.
@@ -89,7 +97,9 @@ bgp_md5_set_connect (int socket, union sockunion *su, const char *password)
 int
 bgp_md5_set (struct peer *peer)
 {
-  int ret;
+  struct listnode *node;
+  int fret = 0, ret;
+  struct bgp_listener *listener;
 
   if ( bgpd_privs.change (ZPRIVS_RAISE) )
     {
@@ -100,12 +110,17 @@ bgp_md5_set (struct peer *peer)
   /* Just set the password on the listen socket(s). Outbound connections
    * are taken care of in bgp_connect() below.
    */
-  ret = bgp_md5_set_socket (bm->listen_socket, &peer->su, peer->password);
+  for (ALL_LIST_ELEMENTS_RO(bm->listen_sockets, node, listener))
+    {
+      ret = bgp_md5_set_socket (listener->fd, &peer->su, peer->password);
+      if (ret < 0)
+	fret = ret;
+    }
 
   if (bgpd_privs.change (ZPRIVS_LOWER) )
     zlog_err ("%s: could not lower privs", __func__);
   
-  return ret;
+  return fret;
 }
 
 /* Accept bgp connection. */
@@ -115,6 +130,7 @@ bgp_accept (struct thread *thread)
   int bgp_sock;
   int accept_sock;
   union sockunion su;
+  struct bgp_listener *listener = THREAD_ARG(thread);
   struct peer *peer;
   struct peer *peer1;
   char buf[SU_ADDRSTRLEN];
@@ -126,7 +142,8 @@ bgp_accept (struct thread *thread)
       zlog_err ("accept_sock is nevative value %d", accept_sock);
       return -1;
     }
-  bm->accept_thread = thread_add_read (master, bgp_accept, NULL, accept_sock);
+  listener->thread = thread_add_read (master, bgp_accept,
+				      listener, accept_sock);
 
   /* Accept client connection. */
   bgp_sock = sockunion_accept (accept_sock, &su);
@@ -353,33 +370,89 @@ bgp_getsockname (struct peer *peer)
   bgp_nexthop_set (peer->su_local, peer->su_remote, &peer->nexthop, peer);
 }
 
+static int
+bgp_listener (int sock, struct sockaddr *sa, socklen_t salen)
+{
+  struct bgp_listener *listener;
+  int ret, en;
+
+  sockopt_reuseaddr (sock);
+  sockopt_reuseport (sock);
+      
+#ifdef IPTOS_PREC_INTERNETCONTROL
+  if (sa->sa_family == AF_INET)
+    setsockopt_ipv4_tos (sock, IPTOS_PREC_INTERNETCONTROL);
+#endif
+
+#ifdef IPV6_V6ONLY
+  /* Want only IPV6 on ipv6 socket (not mapped addresses) */
+  if (sa->sa_family == AF_INET6) {
+    int on = 1;
+    setsockopt (sock, IPPROTO_IPV6, IPV6_V6ONLY, 
+		(void *) &on, sizeof (on));
+  }
+#endif
+
+  if (bgpd_privs.change (ZPRIVS_RAISE) )
+    zlog_err ("bgp_socket: could not raise privs");
+
+  ret = bind (sock, sa, salen);
+  en = errno;
+  if (bgpd_privs.change (ZPRIVS_LOWER) )
+    zlog_err ("bgp_bind_address: could not lower privs");
+
+  if (ret < 0)
+    {
+      zlog_err ("bind: %s", safe_strerror (en));
+      return ret;
+    }
+      
+  ret = listen (sock, 3);
+  if (ret < 0) 
+    {
+      zlog_err ("listen: %s", safe_strerror (errno));
+      return ret;
+    }
+      
+  listener = XMALLOC (MTYPE_BGP_LISTENER, sizeof(*listener));
+  listener->fd = sock;
+  memcpy(&listener->su, sa, salen);
+  listener->thread = thread_add_read (master, bgp_accept, listener, sock);
+  listnode_add (bm->listen_sockets, listener);
+
+  return 0;
+}
+
 /* IPv6 supported version of BGP server socket setup.  */
 #if defined (HAVE_IPV6) && ! defined (NRL)
 int
 bgp_socket (unsigned short port, const char *address)
 {
-  int ret, en;
-  struct addrinfo *ainfo, *resp;
+  struct addrinfo *ainfo;
+  struct addrinfo *ainfo_save;
   static const struct addrinfo req = {
     .ai_family = AF_UNSPEC,
     .ai_flags = AI_PASSIVE,
     .ai_socktype = SOCK_STREAM,
   };
-  int sock = -1;
+  int ret, count;
   char port_str[BUFSIZ];
 
   snprintf (port_str, sizeof(port_str), "%d", port);
   port_str[sizeof (port_str) - 1] = '\0';
 
-  ret = getaddrinfo (address, port_str, &req, &resp);
+  ret = getaddrinfo (address, port_str, &req, &ainfo_save);
   if (ret != 0)
     {
       zlog_err ("getaddrinfo: %s", gai_strerror (ret));
       return -1;
     }
 
-  for (ainfo = resp; ainfo; ainfo = ainfo->ai_next)
+  count = 0;
+  for (ainfo = ainfo_save; ainfo; ainfo = ainfo->ai_next)
     {
+      int sock;
+
       if (ainfo->ai_family != AF_INET && ainfo->ai_family != AF_INET6)
 	continue;
      
@@ -390,43 +463,20 @@ bgp_socket (unsigned short port, const char *address)
 	  continue;
 	}
 
-      sockopt_reuseaddr (sock);
-      sockopt_reuseport (sock);
-      
-#ifdef IPTOS_PREC_INTERNETCONTROL
-      if (ainfo->ai_family == AF_INET)
-	setsockopt_ipv4_tos (sock, IPTOS_PREC_INTERNETCONTROL);
-#endif
-      if (bgpd_privs.change (ZPRIVS_RAISE) )
-        zlog_err ("bgp_socket: could not raise privs");
-
-      ret = bind (sock, ainfo->ai_addr, ainfo->ai_addrlen);
-      en = errno;
-      if (bgpd_privs.change (ZPRIVS_LOWER) )
-	zlog_err ("bgp_bind_address: could not lower privs");
-
-      if (ret < 0)
-	{
-	  zlog_err ("bind: %s", safe_strerror (en));
-	  close(sock);
-	  continue;
-	}
-      
-      ret = listen (sock, 3);
-      if (ret < 0) 
-	{
-	  zlog_err ("listen: %s", safe_strerror (errno));
-	  close (sock);
-	  continue;
-	}
-      
-      bm->listen_socket = sock;
-      bm->accept_thread = thread_add_read (master, bgp_accept, NULL, sock);
-      break;
+      ret = bgp_listener (sock, ainfo->ai_addr, ainfo->ai_addrlen);
+      if (ret == 0)
+	++count;
+      else
+	close(sock);
     }
-  freeaddrinfo (resp);
+  freeaddrinfo (ainfo_save);
+  if (count == 0)
+    {
+      zlog_err ("%s: no usable addresses", __func__);
+      return -1;
+    }
 
-  return ainfo ? sock : -1;
+  return 0;
 }
 #else
 /* Traditional IPv4 only version.  */
@@ -445,15 +495,7 @@ bgp_socket (unsigned short port, const char *address)
       return sock;
     }
 
-  sockopt_reuseaddr (sock);
-  sockopt_reuseport (sock);
-
-#ifdef IPTOS_PREC_INTERNETCONTROL
-  setsockopt_ipv4_tos (sock, IPTOS_PREC_INTERNETCONTROL);
-#endif
-
   memset (&sin, 0, sizeof (struct sockaddr_in));
-
   sin.sin_family = AF_INET;
   sin.sin_port = htons (port);
   socklen = sizeof (struct sockaddr_in);
@@ -468,33 +510,12 @@ bgp_socket (unsigned short port, const char *address)
   sin.sin_len = socklen;
 #endif /* HAVE_STRUCT_SOCKADDR_IN_SIN_LEN */
 
-  if ( bgpd_privs.change (ZPRIVS_RAISE) )
-    zlog_err ("bgp_socket: could not raise privs");
-
-  ret = bind (sock, (struct sockaddr *) &sin, socklen);
-  en = errno;
-
-  if (bgpd_privs.change (ZPRIVS_LOWER) )
-    zlog_err ("bgp_socket: could not lower privs");
-
-  if (ret < 0)
-    {
-      zlog_err ("bind: %s", safe_strerror (en));
-      close (sock);
-      return ret;
-    }
-  
-  ret = listen (sock, 3);
+  ret = bgp_listener (sock, (struct sockaddr *) &sin, socklen);
   if (ret < 0) 
     {
-      zlog_err ("listen: %s", safe_strerror (errno));
       close (sock);
       return ret;
     }
-
-  bm->listen_socket = sock;
-  bm->accept_thread = thread_add_read (bm->master, bgp_accept, NULL, sock);
-
   return sock;
 }
 #endif /* HAVE_IPV6 && !NRL */
@@ -502,11 +523,14 @@ bgp_socket (unsigned short port, const char *address)
 void
 bgp_close (void)
 {
-  if (bm->accept_thread)
-    {
-      thread_cancel (bm->accept_thread);
-      bm->accept_thread = NULL;
+  struct listnode *node, *next;
+  struct bgp_listener *listener;
 
-      close (bm->listen_socket);
+  for (ALL_LIST_ELEMENTS (bm->listen_sockets, node, next, listener))
+    {
+      thread_cancel (listener->thread);
+      close (listener->fd);
+      listnode_delete (bm->listen_sockets, listener);
+      XFREE (MTYPE_BGP_LISTENER, listener);
     }
 }

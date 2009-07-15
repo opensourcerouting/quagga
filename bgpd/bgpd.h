@@ -43,8 +43,7 @@ struct bgp_master
   struct work_queue *process_rsclient_queue;
   
   /* Listening sockets */
-  int listen_socket;
-  struct thread *accept_thread;
+  struct list *listen_sockets;
   
   /* BGP port number.  */
   u_int16_t port;
