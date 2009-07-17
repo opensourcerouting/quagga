@@ -786,9 +786,9 @@ zread_ipv4_add (struct zserv *client, u_short length)
 	    case ZEBRA_NEXTHOP_IPV6:
 	      stream_forward_getp (s, IPV6_MAX_BYTELEN);
 	      break;
-      case ZEBRA_NEXTHOP_BLACKHOLE:
-        nexthop_blackhole_add (rib);
-        break;
+	    case ZEBRA_NEXTHOP_BLACKHOLE:
+	      nexthop_blackhole_add (rib);
+	      break;
 	    }
 	}
     }
@@ -804,7 +804,9 @@ zread_ipv4_add (struct zserv *client, u_short length)
   /* Table */
   rib->table=zebrad.rtm_table_default;
   rib_add_ipv4_multipath (&p, rib);
-  rib_update ();
+
+  if (CHECK_FLAG (rib->flags, ZEBRA_FLAG_INTERNAL))
+    rib_update ();
   return 0;
 }
 
@@ -879,7 +881,9 @@ zread_ipv4_delete (struct zserv *client, u_short length)
     
   rib_delete_ipv4 (api.type, api.flags, &p, &nexthop, ifindex,
 		   client->rtm_table);
-  rib_update();
+
+  if (CHECK_FLAG (api.flags, ZEBRA_FLAG_INTERNAL))
+    rib_update ();
 
   return 0;
 }
@@ -972,7 +976,9 @@ zread_ipv6_add (struct zserv *client, u_short length)
   else
     rib_add_ipv6 (api.type, api.flags, &p, &nexthop, ifindex, 0, api.metric,
 		  api.distance);
-  rib_update();
+  
+  if (CHECK_FLAG (api.flags, ZEBRA_FLAG_INTERNAL))
+    rib_update();
   return 0;
 }
 
@@ -1038,7 +1044,8 @@ zread_ipv6_delete (struct zserv *client, u_short length)
   else
     rib_delete_ipv6 (api.type, api.flags, &p, &nexthop, ifindex, 0);
 
-  rib_update();
+  if (CHECK_FLAG (api.flags, ZEBRA_FLAG_INTERNAL))
+    rib_update();
   return 0;
 }
 
