@@ -1,3 +1,9 @@
+vyatta-quagga (0.99.12-5+jenner15) unstable; urgency=low
+
+  * Only do RIB scan if route being updated is INTERNAL
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Fri, 17 Jul 2009 11:52:27 -0700
+
 vyatta-quagga (0.99.12-5+jenner14) unstable; urgency=low
 
   * Force RIB update after routing protocols change routes
