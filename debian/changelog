@@ -1,3 +1,10 @@
+vyatta-quagga (0.99.12-5+jenner16) unstable; urgency=low
+
+  * BGP: update MD5 key on correct listener socket
+  * Zebra: don't use BGP routes for recursive routes
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Mon, 20 Jul 2009 14:16:48 -0700
+
 vyatta-quagga (0.99.12-5+jenner15) unstable; urgency=low
 
   * Only do RIB scan if route being updated is INTERNAL
