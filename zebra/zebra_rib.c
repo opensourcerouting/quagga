@@ -367,12 +367,6 @@ nexthop_isactive(const struct nexthop *nexthop)
     }
 }
 
-static int rib_is_ebgp(const struct rib *rib)
-{
-  return rib->type == ZEBRA_ROUTE_BGP 
-    && !CHECK_FLAG (rib->flags, ZEBRA_FLAG_IBGP);
-}
-
 /* If force flag is not set, do not modify falgs at all for uninstall
    the route from FIB. */
 static int
@@ -423,7 +417,7 @@ nexthop_active_ipv4 (struct rib *rib, struct nexthop *nexthop, int set,
 
       /* If there is no selected route or matched route is EGP, go up
          tree. */
-      if (! match || rib_is_ebgp(match))
+      if (! match || match->type == ZEBRA_ROUTE_BGP)
 	{
 	  do {
 	    rn = rn->parent;
@@ -555,7 +549,7 @@ nexthop_active_ipv6 (struct rib *rib, struct nexthop *nexthop, int set,
 
       /* If there is no selected route or matched route is EGP, go up
          tree. */
-      if (! match || rib_is_ebgp(match))
+      if (! match || match->type == ZEBRA_ROUTE_BGP)
 	{
 	  do {
 	    rn = rn->parent;
@@ -683,8 +677,7 @@ rib_match_ipv4 (struct in_addr addr)
 
       /* If there is no selected route or matched route is EGP, go up
          tree. */
-      if (! match 
-	  || match->type == ZEBRA_ROUTE_BGP)
+      if (! match  || match->type == ZEBRA_ROUTE_BGP)
 	{
 	  do {
 	    rn = rn->parent;
@@ -865,8 +858,7 @@ rib_match_ipv6 (struct in6_addr *addr)
 
       /* If there is no selected route or matched route is EGP, go up
          tree. */
-      if (! match 
-	  || match->type == ZEBRA_ROUTE_BGP)
+      if (! match || match->type == ZEBRA_ROUTE_BGP)
 	{
 	  do {
 	    rn = rn->parent;

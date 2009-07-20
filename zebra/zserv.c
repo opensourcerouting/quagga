@@ -805,7 +805,7 @@ zread_ipv4_add (struct zserv *client, u_short length)
   rib->table=zebrad.rtm_table_default;
   rib_add_ipv4_multipath (&p, rib);
 
-  if (CHECK_FLAG (rib->flags, ZEBRA_FLAG_INTERNAL))
+  if (rib->type != ZEBRA_ROUTE_BGP)
     rib_update ();
   return 0;
 }
@@ -882,7 +882,7 @@ zread_ipv4_delete (struct zserv *client, u_short length)
   rib_delete_ipv4 (api.type, api.flags, &p, &nexthop, ifindex,
 		   client->rtm_table);
 
-  if (CHECK_FLAG (api.flags, ZEBRA_FLAG_INTERNAL))
+  if (api.type != ZEBRA_ROUTE_BGP)
     rib_update ();
 
   return 0;
@@ -977,7 +977,7 @@ zread_ipv6_add (struct zserv *client, u_short length)
     rib_add_ipv6 (api.type, api.flags, &p, &nexthop, ifindex, 0, api.metric,
 		  api.distance);
   
-  if (CHECK_FLAG (api.flags, ZEBRA_FLAG_INTERNAL))
+  if (api.type != ZEBRA_ROUTE_BGP)
     rib_update();
   return 0;
 }
@@ -1044,7 +1044,7 @@ zread_ipv6_delete (struct zserv *client, u_short length)
   else
     rib_delete_ipv6 (api.type, api.flags, &p, &nexthop, ifindex, 0);
 
-  if (CHECK_FLAG (api.flags, ZEBRA_FLAG_INTERNAL))
+  if (api.type != ZEBRA_ROUTE_BGP)
     rib_update();
   return 0;
 }
