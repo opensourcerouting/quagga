@@ -98,7 +98,7 @@ int
 bgp_md5_set (struct peer *peer)
 {
   struct listnode *node;
-  int fret = 0, ret;
+  int ret = 0;
   struct bgp_listener *listener;
 
   if ( bgpd_privs.change (ZPRIVS_RAISE) )
@@ -111,16 +111,16 @@ bgp_md5_set (struct peer *peer)
    * are taken care of in bgp_connect() below.
    */
   for (ALL_LIST_ELEMENTS_RO(bm->listen_sockets, node, listener))
-    {
-      ret = bgp_md5_set_socket (listener->fd, &peer->su, peer->password);
-      if (ret < 0)
-	fret = ret;
-    }
+    if (listener->su.sa.sa_family == peer->su.sa.sa_family)
+      {
+	ret = bgp_md5_set_socket (listener->fd, &peer->su, peer->password);
+	break;
+      }
 
   if (bgpd_privs.change (ZPRIVS_LOWER) )
     zlog_err ("%s: could not lower privs", __func__);
   
-  return fret;
+  return ret;
 }
 
 /* Accept bgp connection. */
