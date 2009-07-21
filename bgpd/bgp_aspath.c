@@ -391,7 +391,7 @@ aspath_delimiter_char (u_char type, u_char which)
 
 /* countup asns from this segment and index onward */
 static int
-assegment_count_asns (const struct assegment *seg, int from)
+assegment_count_asns (struct assegment *seg, int from)
 {
   int count = 0;
   while (seg)
@@ -501,44 +501,12 @@ aspath_has_as4 (struct aspath *aspath)
   return 0;
 }
 
-#ifdef unused 
-/* Return number of as numbers in in path */
-unsigned int
-aspath_count_numas (struct aspath *aspath)
-{
-  struct assegment *seg = aspath->segments;
-  unsigned int num;
-  
-  num=0;
-  while (seg)
-    {
-      num += seg->length;
-      seg = seg->next;
-    }
-  return num;
-}
-#endif
-
-/* Expand aspath string */
-static char *
-aspath_expand (char *buf, size_t *size, size_t len, size_t growth)
-{
-  len += growth + 1;	/* space for null terminator */
-  if (len <= *size)
-    return buf;
-
-  while (len > *size)
-    *size += *size / 2;
-
-  return XREALLOC(MTYPE_AS_STR, buf, *size);
-}
-
 /* Convert aspath structure to string expression. */
 static char *
 aspath_make_str_count (struct aspath *as)
 {
   struct assegment *seg;
-  size_t str_size;
+  int str_size;
   int len = 0;
   char *str_buf;
 
@@ -606,21 +574,13 @@ aspath_make_str_count (struct aspath *as)
 #undef SEGMENT_STR_LEN
       
       if (seg->type != AS_SEQUENCE)
-	{
-	  str_buf = aspath_expand(str_buf, &str_size, len, 1);
-	  len += snprintf (str_buf + len, str_size - len, 
-			   "%c", 
-			   aspath_delimiter_char (seg->type, AS_SEG_START));
-	}
+        len += snprintf (str_buf + len, str_size - len, 
+			 "%c", 
+                         aspath_delimiter_char (seg->type, AS_SEG_START));
       
       /* write out the ASNs, with their seperators, bar the last one*/
       for (i = 0; i < seg->length; i++)
         {
-#define APPROX_DIG_CNT(x) (x < 100000U ? 5 : 10)
-	  /* %u + %c + %c + " " (last two are below loop) */
-	  str_buf = aspath_expand(str_buf, &str_size, len,
-				  APPROX_DIG_CNT(seg->as[i]) + 3);
-
           len += snprintf (str_buf + len, str_size - len, "%u", seg->as[i]);
           
           if (i < (seg->length - 1))

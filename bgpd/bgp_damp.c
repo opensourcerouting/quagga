@@ -615,7 +615,7 @@ bgp_damp_info_vty (struct vty *vty, struct bgp_info *binfo)
 
 const char *
 bgp_damp_reuse_time_vty (struct vty *vty, struct bgp_info *binfo,
-			 char *timebuf, size_t len)
+                         char *timebuf, size_t len)
 {
   struct bgp_damp_info *bdi;
   time_t t_now, t_diff;
