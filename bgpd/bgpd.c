@@ -1954,6 +1954,13 @@ bgp_get (struct bgp **bgp_val, as_t *as, const char *name)
 	}
     }
 
+  /* Create BGP server socket, if first instance.  */
+  if (list_isempty(bm->bgp)) 
+    {
+      if (bgp_socket (bm->port, bm->address) < 0)
+	return BGP_ERR_INVALID_VALUE;
+    }
+
   bgp = bgp_create (as, name);
   listnode_add (bm->bgp, bgp);
   bgp_router_id_set(bgp, &router_id_zebra);
@@ -1997,6 +2004,8 @@ bgp_delete (struct bgp *bgp)
    * routes to be processed still referencing the struct bgp.
    */
   listnode_delete (bm->bgp, bgp);
+  if (list_isempty(bm->bgp)) 
+    bgp_close ();
 
   bgp_unlock(bgp);  /* initial reference */
 
@@ -5038,9 +5047,6 @@ bgp_init (void)
 {
   /* BGP VTY commands installation.  */
   bgp_vty_init ();
-
-  /* Create BGP server socket.  */
-  bgp_socket (NULL, bm->port, bm->address);
 
   /* Init zebra. */
   bgp_zebra_init ();
