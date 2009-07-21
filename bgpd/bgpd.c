@@ -1995,6 +1995,8 @@ bgp_delete (struct bgp *bgp)
   for (ALL_LIST_ELEMENTS (bgp->group, node, next, group))
     peer_group_delete (group);
 
+  assert (listcount (bgp->rsclient) == 0);
+
   if (bgp->peer_self) {
     peer_delete(bgp->peer_self);
     bgp->peer_self = NULL;
@@ -2013,7 +2015,7 @@ bgp_delete (struct bgp *bgp)
 }
 
 void
-bgp_free(struct bgp *bgp)
+bgp_free (struct bgp *bgp)
 {
   afi_t afi;
   safi_t safi;

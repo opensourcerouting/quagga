@@ -832,7 +832,7 @@ peer_lock (struct peer *peer)
 {
   assert (peer && (peer->lock >= 0));
   assert (peer->status != Deleted);
-    
+   
   peer->lock++;
   return peer;
 }
@@ -841,7 +841,7 @@ static inline void
 peer_unlock (struct peer *peer)
 {
   assert (peer && (peer->lock > 0));
-  
+ 
   if (--peer->lock == 0)
       peer_free (peer);
 }
@@ -901,20 +901,17 @@ bgp_config_check (const struct bgp *bgp, int config)
 }
 
 static inline void
-bgp_lock(struct bgp *bgp)
+bgp_lock (struct bgp *bgp)
 {
   ++bgp->lock;
 }
 
 static inline void
-bgp_unlock(struct bgp *bgp)
+bgp_unlock (struct bgp *bgp)
 {
   if (--bgp->lock == 0)
     bgp_free (bgp);
 }
-
-extern void bgp_lock (struct bgp *);
-extern void bgp_unlock (struct bgp *);
 
 extern int bgp_router_id_set (struct bgp *, struct in_addr *);
 
