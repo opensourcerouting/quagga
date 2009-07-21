@@ -832,7 +832,7 @@ peer_lock (struct peer *peer)
 {
   assert (peer && (peer->lock >= 0));
   assert (peer->status != Deleted);
-   
+
   peer->lock++;
   return peer;
 }
@@ -841,7 +841,7 @@ static inline void
 peer_unlock (struct peer *peer)
 {
   assert (peer && (peer->lock > 0));
- 
+
   if (--peer->lock == 0)
       peer_free (peer);
 }
@@ -899,7 +899,7 @@ bgp_config_check (const struct bgp *bgp, int config)
 {
   return CHECK_FLAG (bgp->config, config);
 }
-
+
 static inline void
 bgp_lock (struct bgp *bgp)
 {

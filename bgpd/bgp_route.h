@@ -191,12 +191,12 @@ bgp_info_lock (struct bgp_info *binfo)
   return binfo;
 }
 
-static inline void 
+static inline void
 bgp_info_unlock (struct bgp_info *binfo)
 {
   assert (binfo && binfo->lock > 0);
   binfo->lock--;
-  
+
   if (binfo->lock == 0)
       bgp_info_free (binfo);
 }

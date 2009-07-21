@@ -381,7 +381,7 @@ bgp_listener (int sock, struct sockaddr *sa, socklen_t salen)
 
   sockopt_reuseaddr (sock);
   sockopt_reuseport (sock);
-      
+
 #ifdef IPTOS_PREC_INTERNETCONTROL
   if (sa->sa_family == AF_INET)
     setsockopt_ipv4_tos (sock, IPTOS_PREC_INTERNETCONTROL);
@@ -391,7 +391,7 @@ bgp_listener (int sock, struct sockaddr *sa, socklen_t salen)
   /* Want only IPV6 on ipv6 socket (not mapped addresses) */
   if (sa->sa_family == AF_INET6) {
     int on = 1;
-    setsockopt (sock, IPPROTO_IPV6, IPV6_V6ONLY, 
+    setsockopt (sock, IPPROTO_IPV6, IPV6_V6ONLY,
 		(void *) &on, sizeof (on));
   }
 #endif
@@ -409,14 +409,14 @@ bgp_listener (int sock, struct sockaddr *sa, socklen_t salen)
       zlog_err ("bind: %s", safe_strerror (en));
       return ret;
     }
-      
+
   ret = listen (sock, 3);
-  if (ret < 0) 
+  if (ret < 0)
     {
       zlog_err ("listen: %s", safe_strerror (errno));
       return ret;
     }
-      
+
   listener = XMALLOC (MTYPE_BGP_LISTENER, sizeof(*listener));
   listener->fd = sock;
   memcpy(&listener->su, sa, salen);

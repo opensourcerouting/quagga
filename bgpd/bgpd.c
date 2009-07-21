@@ -1955,7 +1955,7 @@ bgp_get (struct bgp **bgp_val, as_t *as, const char *name)
     }
 
   /* Create BGP server socket, if first instance.  */
-  if (list_isempty(bm->bgp)) 
+  if (list_isempty(bm->bgp))
     {
       if (bgp_socket (bm->port, bm->address) < 0)
 	return BGP_ERR_INVALID_VALUE;
@@ -2001,16 +2001,16 @@ bgp_delete (struct bgp *bgp)
     peer_delete(bgp->peer_self);
     bgp->peer_self = NULL;
   }
-
+  
   /* Remove visibility via the master list - there may however still be
    * routes to be processed still referencing the struct bgp.
    */
   listnode_delete (bm->bgp, bgp);
-  if (list_isempty(bm->bgp)) 
+  if (list_isempty(bm->bgp))
     bgp_close ();
 
   bgp_unlock(bgp);  /* initial reference */
-
+  
   return 0;
 }
 
@@ -2173,7 +2173,7 @@ struct peer_flag_action
   u_char peer_down;
 };
 
-static const struct peer_flag_action peer_flag_action_list[] = 
+static const struct peer_flag_action peer_flag_action_list[] =
   {
     { PEER_FLAG_PASSIVE,                  0, peer_change_reset },
     { PEER_FLAG_SHUTDOWN,                 0, peer_change_reset },
@@ -2185,7 +2185,7 @@ static const struct peer_flag_action peer_flag_action_list[] =
     { 0, 0, 0 }
   };
 
-static const struct peer_flag_action peer_af_flag_action_list[] = 
+static const struct peer_flag_action peer_af_flag_action_list[] =
   {
     { PEER_FLAG_NEXTHOP_SELF,             1, peer_change_reset_out },
     { PEER_FLAG_SEND_COMMUNITY,           1, peer_change_reset_out },

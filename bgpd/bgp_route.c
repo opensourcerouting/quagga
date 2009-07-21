@@ -146,7 +146,6 @@ bgp_info_free (struct bgp_info *binfo)
   XFREE (MTYPE_BGP_ROUTE, binfo);
 }
 
-
 void
 bgp_info_add (struct bgp_node *rn, struct bgp_info *ri)
 {
@@ -2689,7 +2688,7 @@ bgp_clear_node_complete (struct work_queue *wq)
   /* Tickle FSM to start moving again */
   BGP_EVENT_ADD (peer, Clearing_Completed);
 
-  peer_unlock (peer); /* bgp_clear_node_complete */
+  peer_unlock (peer); /* bgp_clear_route */
 }
 
 static void

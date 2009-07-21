@@ -670,7 +670,7 @@ bgp_ifindex_by_nexthop (struct in6_addr *addr)
     }
   return 0;
 }
-#endif
+#endif /* HAVE_IPV6 */
 
 void
 bgp_zebra_announce (struct prefix *p, struct bgp_info *info, struct bgp *bgp)
