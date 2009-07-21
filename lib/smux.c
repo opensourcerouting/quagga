@@ -941,14 +941,14 @@ smux_read (struct thread *t)
   return 0;
 }
 
-int
+static int
 smux_open (int sock)
 {
   u_char buf[BUFSIZ];
   u_char *ptr;
   size_t len;
-  u_long version;
-  char progname[] = QUAGGA_PROGNAME "-" QUAGGA_VERSION;
+  long version;
+  const char progname[] = QUAGGA_PROGNAME "-" QUAGGA_VERSION;
 
   if (debug_smux)
     {

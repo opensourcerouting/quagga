@@ -782,12 +782,13 @@ ospf_network_unset (struct ospf *ospf, struct prefix_ipv4 *p,
     return 0;
 
   network = rn->info;
+  route_unlock_node (rn);
   if (!IPV4_ADDR_SAME (&area_id, &network->area_id))
     return 0;
 
   ospf_network_free (ospf, rn->info);
   rn->info = NULL;
-  route_unlock_node (rn);
+  route_unlock_node (rn);	/* initial reference */
 
   /* Find interfaces that not configured already.  */
   for (ALL_LIST_ELEMENTS (ospf->oiflist, node, nnode, oi))
@@ -1253,8 +1254,7 @@ ospf_area_nssa_translator_role_set (struct ospf *ospf, struct in_addr area_id,
   return 1;
 }
 
-#if 0
-/* unsed? Leave for symmetry? */
+/* XXX: unused? Leave for symmetry? */
 static int
 ospf_area_nssa_translator_role_unset (struct ospf *ospf,
 				      struct in_addr area_id)
@@ -1271,7 +1271,6 @@ ospf_area_nssa_translator_role_unset (struct ospf *ospf,
 
   return 1;
 }
-#endif
 
 int
 ospf_area_export_list_set (struct ospf *ospf,
@@ -1394,6 +1393,7 @@ ospf_nbr_nbma_new (void)
 
   nbr_nbma = XCALLOC (MTYPE_OSPF_NEIGHBOR_STATIC,
 		      sizeof (struct ospf_nbr_nbma));
+
   nbr_nbma->priority = OSPF_NEIGHBOR_PRIORITY_DEFAULT;
   nbr_nbma->v_poll = OSPF_POLL_INTERVAL_DEFAULT;
 

@@ -1026,7 +1026,7 @@ peer_deactivate (struct peer *peer, afi_t afi, safi_t safi)
 		  bgp_capability_send (peer, afi, safi,
 				       CAPABILITY_CODE_MP,
 				       CAPABILITY_ACTION_UNSET);
-		  bgp_clear_route (peer, afi, safi);
+		  bgp_clear_route (peer, afi, safi, BGP_CLEAR_ROUTE_NORMAL);
 		  peer->pcount[afi][safi] = 0;
 		}
 	      else
@@ -1094,6 +1094,7 @@ peer_delete (struct peer *peer)
   safi_t safi;
   struct bgp *bgp;
   struct bgp_filter *filter;
+  struct listnode *pn;
 
   assert (peer->status != Deleted);
   
@@ -1102,12 +1103,10 @@ peer_delete (struct peer *peer)
   if (CHECK_FLAG (peer->sflags, PEER_STATUS_NSF_WAIT))
     peer_nsf_stop (peer);
 
-  /* If this peer belongs to peer group.  Clearn up the
+  /* If this peer belongs to peer group, clear up the
      relationship.  */
   if (peer->group)
     {
-      struct listnode *pn;
-
       if ((pn = listnode_lookup (peer->group->peer, peer)))
         {
           peer_unlock (peer); /* group->peer list reference */
@@ -1137,22 +1136,25 @@ peer_delete (struct peer *peer)
   bgp_timer_set (peer); /* stops all timers for Deleted */
   
   /* Delete from all peer list. */
-  if (! CHECK_FLAG (peer->sflags, PEER_STATUS_GROUP))
+  if (! CHECK_FLAG (peer->sflags, PEER_STATUS_GROUP)
+      && (pn = listnode_lookup (bgp->peer, peer)))
     {
-      struct listnode *pn;
+      peer_unlock (peer); /* bgp peer list reference */
+      list_delete_node (bgp->peer, pn);
+    }
       
-      if ((pn = listnode_lookup (bgp->peer, peer)))
-        {
-          peer_unlock (peer); /* bgp peer list reference */
-          list_delete_node (bgp->peer, pn);
-        }
-      
-      if (peer_rsclient_active (peer)
-          && (pn = listnode_lookup (bgp->rsclient, peer)))
-        {
-          peer_unlock (peer); /* rsclient list reference */
-          list_delete_node (bgp->rsclient, pn);
-        }
+  if (peer_rsclient_active (peer)
+      && (pn = listnode_lookup (bgp->rsclient, peer)))
+    {
+      peer_unlock (peer); /* rsclient list reference */
+      list_delete_node (bgp->rsclient, pn);
+
+      /* Clear our own rsclient ribs. */
+      for (afi = AFI_IP; afi < AFI_MAX; afi++)
+        for (safi = SAFI_UNICAST; safi < SAFI_MAX; safi++)
+          if (CHECK_FLAG(peer->af_flags[afi][safi],
+                         PEER_FLAG_RSERVER_CLIENT))
+            bgp_clear_route (peer, afi, safi, BGP_CLEAR_ROUTE_MY_RSCLIENT);
     }
 
   /* Free RIB for any family in which peer is RSERVER_CLIENT, and is not
@@ -1283,7 +1285,7 @@ peer_group_get (struct bgp *bgp, const char *name)
   group->conf = peer_new (bgp);
   if (! bgp_flag_check (bgp, BGP_FLAG_NO_DEFAULT_IPV4))
     group->conf->afc[AFI_IP][SAFI_UNICAST] = 1;
-  group->conf->host = strdup (name);
+  group->conf->host = XSTRDUP (MTYPE_BGP_PEER_HOST, name);
   group->conf->group = group;
   group->conf->as = 0; 
   group->conf->ttl = 1;
@@ -1739,6 +1741,9 @@ peer_group_bind (struct bgp *bgp, union sockunion *su,
         {
           peer_unlock (peer); /* peer rsclient reference */
           list_delete_node (bgp->rsclient, pn);
+
+          /* Clear our own rsclient rib for this afi/safi. */
+          bgp_clear_route (peer, afi, safi, BGP_CLEAR_ROUTE_MY_RSCLIENT);
         }
 
       bgp_table_finish (&peer->rib[afi][safi]);
@@ -1831,7 +1836,7 @@ bgp_create (as_t *as, const char *name)
   
   bgp_lock (bgp);
   bgp->peer_self = peer_new (bgp);
-  bgp->peer_self->host = strdup ("Static announcement");
+  bgp->peer_self->host = XSTRDUP (MTYPE_BGP_PEER_HOST, "Static announcement");
 
   bgp->peer = list_new ();
   bgp->peer->cmp = (int (*)(void *, void *)) peer_cmp;
@@ -1977,19 +1982,21 @@ bgp_delete (struct bgp *bgp)
       if (i != ZEBRA_ROUTE_BGP)
 	bgp_redistribute_unset (bgp, afi, i);
 
-  for (ALL_LIST_ELEMENTS (bgp->group, node, next, group))
-    peer_group_delete (group);
-
   for (ALL_LIST_ELEMENTS (bgp->peer, node, next, peer))
     peer_delete (peer);
 
-  for (ALL_LIST_ELEMENTS (bgp->rsclient, node, next, peer))
-    peer_delete (peer);
+  for (ALL_LIST_ELEMENTS (bgp->group, node, next, group))
+    peer_group_delete (group);
 
   if (bgp->peer_self) {
     peer_delete(bgp->peer_self);
     bgp->peer_self = NULL;
   }
+
+  /* Remove visibility via the master list - there may however still be
+   * routes to be processed still referencing the struct bgp.
+   */
+  listnode_delete (bm->bgp, bgp);
 
   bgp_unlock(bgp);  /* initial reference */
 
@@ -2006,8 +2013,6 @@ bgp_free(struct bgp *bgp)
   list_delete (bgp->peer);
   list_delete (bgp->rsclient);
 
-  listnode_delete (bm->bgp, bgp);
-  
   if (bgp->name)
     free (bgp->name);
   
@@ -2015,11 +2020,11 @@ bgp_free(struct bgp *bgp)
     for (safi = SAFI_UNICAST; safi < SAFI_MAX; safi++)
       {
 	if (bgp->route[afi][safi])
-	  XFREE (MTYPE_ROUTE_TABLE, bgp->route[afi][safi]);
+          bgp_table_finish (&bgp->route[afi][safi]);
 	if (bgp->aggregate[afi][safi])
-	  XFREE (MTYPE_ROUTE_TABLE,bgp->aggregate[afi][safi]) ;
+          bgp_table_finish (&bgp->aggregate[afi][safi]) ;
 	if (bgp->rib[afi][safi])
-	  XFREE (MTYPE_ROUTE_TABLE,bgp->rib[afi][safi]);
+          bgp_table_finish (&bgp->rib[afi][safi]);
       }
   XFREE (MTYPE_BGP, bgp);
 }
@@ -5087,13 +5092,15 @@ bgp_terminate (void)
                            BGP_NOTIFY_CEASE_PEER_UNCONFIG);
   
   bgp_cleanup_routes ();
-  if (bm->process_main_queue) {
-    work_queue_free (bm->process_main_queue);
-    bm->process_main_queue = NULL;
-  }
-  if (bm->process_rsclient_queue) {
-    work_queue_free (bm->process_rsclient_queue);
-    bm->process_rsclient_queue = NULL;
-  }
+  
+  if (bm->process_main_queue)
+    {
+      work_queue_free (bm->process_main_queue);
+      bm->process_main_queue = NULL;
+    }
+  if (bm->process_rsclient_queue)
+    {
+      work_queue_free (bm->process_rsclient_queue);
+      bm->process_rsclient_queue = NULL;
+    }
 }
-

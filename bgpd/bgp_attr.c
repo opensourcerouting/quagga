@@ -200,6 +200,13 @@ cluster_init (void)
 {
   cluster_hash = hash_create (cluster_hash_key_make, cluster_hash_cmp);
 }
+
+static void
+cluster_finish (void)
+{
+  hash_free (cluster_hash);
+  cluster_hash = NULL;
+}
 
 /* Unknown transit attribute. */
 static struct hash *transit_hash;
@@ -279,6 +286,13 @@ static void
 transit_init (void)
 {
   transit_hash = hash_create (transit_hash_key_make, transit_hash_cmp);
+}
+
+static void
+transit_finish (void)
+{
+  hash_free (transit_hash);
+  transit_hash = NULL;
 }
 
 /* Attribute hash routines. */
@@ -435,6 +449,13 @@ static void
 attrhash_init (void)
 {
   attrhash = hash_create (attrhash_key_make, attrhash_cmp);
+}
+
+static void
+attrhash_finish (void)
+{
+  hash_free (attrhash);
+  attrhash = NULL;
 }
 
 static void
@@ -2302,6 +2323,17 @@ bgp_attr_init (void)
   ecommunity_init ();
   cluster_init ();
   transit_init ();
+}
+
+void
+bgp_attr_finish (void)
+{
+  aspath_finish ();
+  attrhash_finish ();
+  community_finish ();
+  ecommunity_finish ();
+  cluster_finish ();
+  transit_finish ();
 }
 
 /* Make attribute packet. */

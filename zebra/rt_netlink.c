@@ -885,9 +885,9 @@ netlink_route_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
       p.prefixlen = rtm->rtm_dst_len;
 
       if (h->nlmsg_type == RTM_NEWROUTE)
-        rib_add_ipv6 (ZEBRA_ROUTE_KERNEL, 0, &p, gate, index, 0, metric, 0);
+        rib_add_ipv6 (ZEBRA_ROUTE_KERNEL, 0, &p, gate, index, table, metric, 0);
       else
-        rib_delete_ipv6 (ZEBRA_ROUTE_KERNEL, 0, &p, gate, index, 0);
+        rib_delete_ipv6 (ZEBRA_ROUTE_KERNEL, 0, &p, gate, index, table);
     }
 #endif /* HAVE_IPV6 */
 

@@ -47,6 +47,7 @@
 #include "ospf6_message.h"
 #include "ospf6_neighbor.h"
 #include "ospf6d.h"
+#include "ospf6_snmp.h"
 
 /* OSPFv3-MIB */
 #define OSPFv3MIB 1,3,6,1,3,102

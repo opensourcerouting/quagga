@@ -344,7 +344,7 @@ get_fwtable_route_node(struct variable *v, oid objid[], size_t *objid_len,
    * ipForwardDest, ipForwardProto, ipForwardPolicy, ipForwardNextHop
    */
 
-  if (*objid_len > v->namelen)
+  if (*objid_len > (unsigned) v->namelen)
     oid2in_addr (objid + v->namelen, MIN(4, *objid_len - v->namelen), &dest);
 
   if (*objid_len > (unsigned) v->namelen + 4)

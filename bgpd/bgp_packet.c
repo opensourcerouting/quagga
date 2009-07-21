@@ -2195,7 +2195,7 @@ bgp_capability_msg_parse (struct peer *peer, u_char *pnt, bgp_size_t length)
               peer->afc_nego[afi][safi] = 0;
 
               if (peer_active_nego (peer))
-                bgp_clear_route (peer, afi, safi);
+                bgp_clear_route (peer, afi, safi, BGP_CLEAR_ROUTE_NORMAL);
               else
                 BGP_EVENT_ADD (peer, BGP_Stop);
             }
@@ -2210,8 +2210,11 @@ bgp_capability_msg_parse (struct peer *peer, u_char *pnt, bgp_size_t length)
   return 0;
 }
 
-/* Dynamic Capability is received. */
-static int
+/* Dynamic Capability is received. 
+ *
+ * This is exported for unit-test purposes
+ */
+int
 bgp_capability_receive (struct peer *peer, bgp_size_t size)
 {
   u_char *pnt;

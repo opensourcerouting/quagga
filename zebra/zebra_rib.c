@@ -1027,7 +1027,7 @@ static int
 nexthop_active_update (struct route_node *rn, struct rib *rib, int set)
 {
   struct nexthop *nexthop;
-  int prev_active, new_active;
+  int prev_active, prev_index, new_active;
 
   rib->nexthop_active_num = 0;
   UNSET_FLAG (rib->flags, ZEBRA_FLAG_CHANGED);
@@ -1035,9 +1035,11 @@ nexthop_active_update (struct route_node *rn, struct rib *rib, int set)
   for (nexthop = rib->nexthop; nexthop; nexthop = nexthop->next)
   {
     prev_active = CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_ACTIVE);
+    prev_index = nexthop->ifindex;
     if ((new_active = nexthop_active_check (rn, rib, nexthop, set)))
       rib->nexthop_active_num++;
-    if (prev_active != new_active)
+    if (prev_active != new_active ||
+	prev_index != nexthop->ifindex)
       SET_FLAG (rib->flags, ZEBRA_FLAG_CHANGED);
   }
   return rib->nexthop_active_num;
@@ -1310,7 +1312,6 @@ end:
     zlog_debug ("%s: %s/%d: rn %p dequeued", __func__, buf, rn->p.prefixlen, rn);
 }
 
-
 /* Take a list of route_node structs and return 1, if there was a record
  * picked from it and processed by rib_process(). Don't process more, 
  * than one RN record; operate only in the specified sub-queue.
@@ -1329,7 +1330,14 @@ process_subq (struct list * subq, u_char qindex)
 
   if (rnode->info) /* The first RIB record is holding the flags bitmask. */
     UNSET_FLAG (((struct rib *)rnode->info)->rn_status, RIB_ROUTE_QUEUED(qindex));
-
+#if 0
+  else
+    {
+      zlog_debug ("%s: called for route_node (%p, %d) with no ribs",
+                  __func__, rnode, rnode->lock);
+      zlog_backtrace(LOG_DEBUG);
+    }
+#endif
   route_unlock_node (rnode);
   list_delete_node (subq, lnode);
   return 1;

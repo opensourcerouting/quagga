@@ -8,8 +8,9 @@
 ## $Id$
 AC_PREREQ(2.53)
 
-AC_INIT(Quagga, 0.99.12, [http://bugzilla.quagga.net])
+AC_INIT(Quagga, 0.99.14, [http://bugzilla.quagga.net])
 AC_CONFIG_SRCDIR(lib/zebra.h)
+AC_CONFIG_MACRO_DIR([m4])
 
 dnl -----------------------------------
 dnl Get hostname and other information.
@@ -21,9 +22,11 @@ AC_CANONICAL_TARGET()
 AM_INIT_AUTOMAKE(1.6)
 AM_CONFIG_HEADER(config.h)
 
-dnl GNU awk is required for lib/memtype.h made by memtypes.awk.
-dnl BSD awk complains: awk: gensub doesn't support backreferences (subst "\1")
-AC_CHECK_PROG([GAWK],[gawk],[gawk],[/bin/false])
+AC_CHECK_PROG([GAWK],[gawk],[gawk],[not-in-PATH])
+if test "x$GAWK" = "xnot-in-PATH" ; then
+	AC_MSG_ERROR([GNU awk is required for lib/memtype.h made by memtypes.awk.
+BSD awk complains: awk: gensub doesn't support backreferences (subst "\1") ])
+fi
 AC_ARG_VAR([GAWK],[GNU AWK])
 
 dnl default is to match previous behavior
@@ -172,7 +175,6 @@ AC_CACHE_CHECK([if ${MAKE-make} is GNU make], [quagga_cv_gnu_make],
 dnl -----------------
 dnl System extensions
 dnl -----------------
-AC_AIX
 AC_GNU_SOURCE
 
 dnl -------
@@ -187,6 +189,8 @@ AC_ARG_ENABLE(vtysh,
 [  --enable-vtysh          include integrated vty shell for Quagga])
 AC_ARG_ENABLE(ipv6,
 [  --disable-ipv6          turn off IPv6 related features and daemons])
+AC_ARG_ENABLE(doc,
+[  --disable-doc           do not build docs])
 AC_ARG_ENABLE(zebra,
 [  --disable-zebra         do not build zebra daemon])
 AC_ARG_ENABLE(bgpd,
@@ -252,10 +256,14 @@ AC_ARG_ENABLE(capabilities,
 [  --disable-capabilities        disable using POSIX capabilities])
 AC_ARG_ENABLE(gcc_ultra_verbose,
 [  --enable-gcc-ultra-verbose    enable ultra verbose GCC warnings])
+AC_ARG_ENABLE(linux24_tcp_md5,
+[  --enable-linux24-tcp-md5  enable support for old, Linux-2.4 RFC2385 patch])
 AC_ARG_ENABLE(gcc-rdynamic,
 [  --enable-gcc-rdynamic   enable gcc linking with -rdynamic for better backtraces])
 AC_ARG_ENABLE(time-check,
 [  --disable-time-check          disable slow thread warning messages])
+AC_ARG_ENABLE(pcreposix,
+[  --enable-pcreposix          enable using PCRE Posix libs for regex functions])
 
 if test x"${enable_gcc_ultra_verbose}" = x"yes" ; then
   CFLAGS="${CFLAGS} -W -Wcast-qual -Wstrict-prototypes"
@@ -296,6 +304,10 @@ fi
 if test "${enable_ospf_te}" = "yes"; then
   AC_DEFINE(HAVE_OPAQUE_LSA,,OSPF Opaque LSA)
   AC_DEFINE(HAVE_OSPF_TE,,OSPF TE)
+fi
+
+if test "${enable_linux24_tcp_md5}" = "yes"; then
+  AC_DEFINE(HAVE_TCP_MD5_LINUX24,,Old Linux 2.4 TCP MD5 Signature Patch)
 fi
 
 AC_MSG_CHECKING(if zebra should be configurable to send Route Advertisements)
@@ -390,7 +402,7 @@ dnl -------------------------
 AC_CHECK_HEADERS([stropts.h sys/ksym.h sys/times.h sys/select.h \
 	sys/types.h linux/version.h netdb.h asm/types.h \
 	sys/param.h limits.h signal.h libutil.h \
-	sys/socket.h netinet/in.h])
+	sys/socket.h netinet/in.h time.h sys/time.h])
 
 dnl Utility macro to avoid retyping includes all the time
 m4_define([QUAGGA_INCLUDES],
@@ -424,6 +436,16 @@ m4_define([QUAGGA_INCLUDES],
 #if HAVE_NETINET_IN_H
 # include <netinet/in.h>
 #endif
+#ifdef TIME_WITH_SYS_TIME
+# include <sys/time.h>
+# include <time.h>
+#else
+# ifdef HAVE_SYS_TIME_H
+#  include <sys/time.h>
+# else
+#  include <time.h>
+# endif
+#endif /* TIME_WITH_SYS_TIME */
 ])dnl
 
 AC_CHECK_HEADERS([sys/un.h net/if.h netinet/in_systm.h netinet/in_var.h \
@@ -535,6 +557,8 @@ case "$host" in
       AC_DEFINE(IRIX_65,,IRIX 6.5)
   ;;
 esac
+
+AC_SYS_LARGEFILE
 
 dnl ---------------------
 dnl Integrated VTY option
@@ -825,29 +849,26 @@ main()
 dnl ------------------------------
 dnl check kernel route read method
 dnl ------------------------------
-AC_CACHE_CHECK(route read method check, zebra_rtread,
-[if test "$netlink" = yes; then
-  RTREAD_METHOD="rtread_netlink.o"
-  zebra_rtread="netlink"
+AC_CACHE_CHECK([route read method], [quagga_cv_rtread_method],
+[if test "x$netlink" = xyes; then
+  quagga_cv_rtread_method="netlink"
 else
-for zebra_rtread in /proc/net/route /dev/ip /dev/null;
+for quagga_cv_rtread_method in /proc/net/route /dev/ip /dev/null;
 do
-  test x`ls $zebra_rtread 2>/dev/null` = x"$zebra_rtread" && break
+  test x`ls $quagga_cv_rtread_method 2>/dev/null` = x"$quagga_cv_rtread_method" && break
 done
-case $zebra_rtread in
-  "/proc/net/route") RTREAD_METHOD="rtread_proc.o"
-                     zebra_rtread="proc";;
+case $quagga_cv_rtread_method in
+  "/proc/net/route") quagga_cv_rtread_method="proc";;
   "/dev/ip")
                      case "$host" in
-                       *-freebsd*)    RTREAD_METHOD=rtread_sysctl.o
-                                      zebra_rtread="sysctl";;
-                       *)             RTREAD_METHOD="rtread_getmsg.o"
-                                      zebra_rtread="getmsg";;
+                       *-freebsd*)    quagga_cv_rtread_method="sysctl";;
+                       *)             quagga_cv_rtread_method="getmsg";;
                      esac;;
-  *)                 RTREAD_METHOD="rtread_sysctl.o"
-                     zebra_rtread="sysctl";;
+	*)
+                     quagga_cv_rtread_method="sysctl";;
 esac
 fi])
+RTREAD_METHOD=rtread_${quagga_cv_rtread_method}.o
 AC_SUBST(RTREAD_METHOD)
 
 dnl -----------------------------
@@ -890,7 +911,7 @@ AC_CHECK_MEMBERS([struct ip_mreqn.imr_ifindex], [], [], QUAGGA_INCLUDES)
 AC_MSG_CHECKING([for BSD struct ip_mreq hack])
 AC_TRY_COMPILE([#ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
-#endif],[#if (defined(__FreeBSD__) && (__FreeBSD_version >= 500022 || (__FreeBSD_version < 500000 && __FreeBSD_version >= 440000))) || (defined(__NetBSD__) && defined(__NetBSD_Version__) && __NetBSD_Version__ >= 106010000)
+#endif],[#if (defined(__FreeBSD__) && ((__FreeBSD_version >= 500022 && __FreeBSD_version < 700000) || (__FreeBSD_version < 500000 && __FreeBSD_version >= 440000))) || (defined(__NetBSD__) && defined(__NetBSD_Version__) && __NetBSD_Version__ >= 106010000)
   return (0);
 #else
   #error No support for BSD struct ip_mreq hack detected
@@ -953,26 +974,22 @@ AC_SUBST(IF_PROC)
 dnl -----------------------------
 dnl check ipforward detect method
 dnl -----------------------------
-AC_CACHE_CHECK(ipforward method check, zebra_ipforward_path,
-[for zebra_ipforward_path in /proc/net/snmp /dev/ip /dev/null;
+AC_CACHE_CHECK([ipforward method], [quagga_cv_ipforward_method],
+[for quagga_cv_ipforward_method in /proc/net/snmp /dev/ip /dev/null;
 do
-  test x`ls $zebra_ipforward_path 2>/dev/null` = x"$zebra_ipforward_path" && break
+  test x`ls $quagga_cv_ipforward_method 2>/dev/null` = x"$quagga_cv_ipforward_method" && break
 done
-case $zebra_ipforward_path in
-  "/proc/net/snmp")  IPFORWARD=ipforward_proc.o
-                     zebra_ipforward_path="proc";;
+case $quagga_cv_ipforward_method in
+  "/proc/net/snmp")  quagga_cv_ipforward_method="proc";;
   "/dev/ip")         
                      case "$host" in
-                       *-nec-sysv4*)  IPFORWARD=ipforward_ews.o
-                                      zebra_ipforward_path="ews";;
-                       *-freebsd*)    IPFORWARD=ipforward_sysctl.o
-                                      zebra_ipforward_path="sysctl";;
-                       *)             IPFORWARD=ipforward_solaris.o
-                                      zebra_ipforward_path="solaris";;
+                       *-nec-sysv4*)  quagga_cv_ipforward_method="ews";;
+                       *-freebsd*)    quagga_cv_ipforward_method="sysctl";;
+                       *)             quagga_cv_ipforward_method="solaris";;
                      esac;;
-  *)                 IPFORWARD=ipforward_sysctl.o
-                     zebra_ipforward_path="sysctl";;
+  *)                 quagga_cv_ipforward_method="sysctl";;
 esac])
+IPFORWARD=ipforward_${quagga_cv_ipforward_method}.o
 AC_SUBST(IPFORWARD)
 
 AC_CHECK_FUNCS(getaddrinfo, [have_getaddrinfo=yes], [have_getaddrinfo=no])
@@ -1145,6 +1162,13 @@ QUAGGA_INCLUDES
 #endif
 ])dnl
 
+dnl disable doc check
+if test "${enable_doc}" = "no";then
+  DOC=""
+else
+  DOC="doc"
+fi
+
 dnl --------------------
 dnl Daemon disable check
 dnl --------------------
@@ -1221,6 +1245,7 @@ else
   AC_DEFINE(DISABLE_BGP_ANNOUNCE,0,Disable BGP installation to zebra)
 fi
 
+AC_SUBST(DOC)
 AC_SUBST(ZEBRA)
 AC_SUBST(BGPD)
 AC_SUBST(RIPD)
@@ -1248,13 +1273,24 @@ AC_CHECK_FUNC(__inet_pton, AC_DEFINE(HAVE_INET_PTON,,__inet_pton))
 AC_CHECK_FUNC(__inet_aton, AC_DEFINE(HAVE_INET_ATON,,__inet_aton))
 
 dnl ---------------------------
+dnl check system has PCRE regexp
+dnl ---------------------------
+if test "x$enable_pcreposix" = "xyes"; then
+  AC_CHECK_LIB(pcreposix, pcreposix_regexec, ,[enable_pcreposix=no
+  AC_MSG_WARN([*** falling back to other regex library ***]) ])
+fi
+
+if test "x$enable_pcreposix" != "xyes"; then
+dnl ---------------------------
 dnl check system has GNU regexp
 dnl ---------------------------
-dnl AC_MSG_CHECKING(whether system has GNU regex)
+AC_MSG_CHECKING(whether system has GNU regex)
 AC_CHECK_LIB(c, regexec,
 [AC_DEFINE(HAVE_GNU_REGEX,,GNU regexp library)
  LIB_REGEX=""],
 [LIB_REGEX="regex.o"])
+fi
+AC_SUBST(HAVE_LIBPCREPOSIX)
 AC_SUBST(LIB_REGEX)
 
 dnl ------------------
@@ -1323,12 +1359,10 @@ AC_TRY_COMPILE([#include <sys/resource.h>
 dnl --------------------------------------
 dnl checking for clock_time monotonic struct and call
 dnl --------------------------------------
-AC_CHECK_LIB(rt, clock_gettime,
-[AC_DEFINE(HAVE_MONOTONIC_CLOCK,, Have monotonic clock)
- LIBS="$LIBS -lrt"]
-)
-
-
+AC_CHECK_DECL(CLOCK_MONOTONIC,
+	[AC_CHECK_LIB(rt, clock_gettime, [LIBS="$LIBS -lrt"])
+	 AC_DEFINE(HAVE_MONOTONIC_CLOCK,, Have monotonic clock)
+], [AC_MSG_RESULT(no)], [QUAGGA_INCLUDES])
 
 dnl -------------------
 dnl capabilities checks
@@ -1430,14 +1464,14 @@ AC_SUBST(PILDFLAGS)
 dnl ------------------------------
 dnl set paths for state directory
 dnl ------------------------------
+AC_MSG_CHECKING(directory to use for state file)
 if test "${prefix}" = "NONE"; then
   quagga_statedir_prefix="";
 else
   quagga_statedir_prefix=${prefix}
 fi
 if test "${localstatedir}" = '${prefix}/var'; then
-  AC_CACHE_CHECK(state directory,ac_statedir,
-  [for QUAGGA_STATE_DIR in ${quagga_statedir_prefix}/var/run dnl
+  for QUAGGA_STATE_DIR in ${quagga_statedir_prefix}/var/run dnl
 			${quagga_statedir_prefix}/var/adm dnl
 			${quagga_statedir_prefix}/etc dnl
 			/var/run	dnl
@@ -1447,16 +1481,15 @@ if test "${localstatedir}" = '${prefix}/var'; then
   do
     test -d $QUAGGA_STATE_DIR && break
   done
-  quagga_statedir=$QUAGGA_STATE_DIR])
+  quagga_statedir=$QUAGGA_STATE_DIR
 else
   quagga_statedir=${localstatedir}
-  AC_MSG_CHECKING(directory to use for state file)
-  AC_MSG_RESULT(${quagga_statedir})
-  AC_SUBST(quagga_statedir)
 fi
 if test $quagga_statedir = "/dev/null"; then
     AC_MSG_ERROR('STATE DIRECTORY NOT FOUND! FIX OR SPECIFY --localstatedir!')
 fi
+AC_MSG_RESULT(${quagga_statedir})
+AC_SUBST(quagga_statedir)
 
 AC_DEFINE_UNQUOTED(PATH_ZEBRA_PID, "$quagga_statedir/zebra.pid",zebra PID)
 AC_DEFINE_UNQUOTED(PATH_RIPD_PID, "$quagga_statedir/ripd.pid",ripd PID)

@@ -389,6 +389,25 @@ aspath_delimiter_char (u_char type, u_char which)
   return ' ';
 }
 
+/* countup asns from this segment and index onward */
+static int
+assegment_count_asns (const struct assegment *seg, int from)
+{
+  int count = 0;
+  while (seg)
+    {
+      if (!from)
+        count += seg->length;
+      else
+        {
+          count += (seg->length - from);
+          from = 0;
+        }
+      seg = seg->next;
+    }
+  return count;
+}
+
 unsigned int
 aspath_count_confeds (struct aspath *aspath)
 {
@@ -533,7 +552,18 @@ aspath_make_str_count (struct aspath *as)
   
   seg = as->segments;
   
-  str_size = ASPATH_STR_DEFAULT_LEN;
+  /* ASN takes 5 to 10 chars plus seperator, see below.
+   * If there is one differing segment type, we need an additional
+   * 2 chars for segment delimiters, and the final '\0'.
+   * Hopefully this is large enough to avoid hitting the realloc
+   * code below for most common sequences.
+   *
+   * This was changed to 10 after the well-known BGP assertion, which
+   * had hit some parts of the Internet in May of 2009.
+   */
+#define ASN_STR_LEN (10 + 1)
+  str_size = MAX (assegment_count_asns (seg, 0) * ASN_STR_LEN + 2 + 1,
+                  ASPATH_STR_DEFAULT_LEN);
   str_buf = XMALLOC (MTYPE_AS_STR, str_size);
 
   while (seg)
@@ -556,6 +586,24 @@ aspath_make_str_count (struct aspath *as)
             XFREE (MTYPE_AS_STR, str_buf);
             return NULL;
         }
+      
+      /* We might need to increase str_buf, particularly if path has
+       * differing segments types, our initial guesstimate above will
+       * have been wrong. Need 10 chars for ASN, a seperator each and
+       * potentially two segment delimiters, plus a space between each
+       * segment and trailing zero.
+       *
+       * This definitely didn't work with the value of 5 bytes and
+       * 32-bit ASNs.
+       */
+#define SEGMENT_STR_LEN(X) (((X)->length * ASN_STR_LEN) + 2 + 1 + 1)
+      if ( (len + SEGMENT_STR_LEN(seg)) > str_size)
+        {
+          str_size = len + SEGMENT_STR_LEN(seg);
+          str_buf = XREALLOC (MTYPE_AS_STR, str_buf, str_size);
+        }
+#undef ASN_STR_LEN
+#undef SEGMENT_STR_LEN
       
       if (seg->type != AS_SEQUENCE)
 	{
@@ -1743,8 +1791,8 @@ aspath_key_make (void *p)
 static int
 aspath_cmp (const void *arg1, const void *arg2)
 {
-  const struct assegment *seg1 = ((struct aspath *)arg1)->segments;
-  const struct assegment *seg2 = ((struct aspath *)arg2)->segments;
+  const struct assegment *seg1 = ((const struct aspath *)arg1)->segments;
+  const struct assegment *seg2 = ((const struct aspath *)arg2)->segments;
   
   while (seg1 || seg2)
     {
@@ -1771,16 +1819,15 @@ aspath_init (void)
   ashash = hash_create_size (32767, aspath_key_make, aspath_cmp);
 }
 
-#ifdef unused
 void
 aspath_finish (void)
 {
   hash_free (ashash);
+  ashash = NULL;
   
   if (snmp_stream)
     stream_free (snmp_stream);
 }
-#endif
 
 /* return and as path value */
 const char *

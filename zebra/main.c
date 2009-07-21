@@ -72,8 +72,6 @@ struct option longopts[] =
   { "batch",       no_argument,       NULL, 'b'},
   { "daemon",      no_argument,       NULL, 'd'},
   { "keep_kernel", no_argument,       NULL, 'k'},
-  { "set_interface",  no_argument,       NULL, 'S'},
-  { "log_mode",    no_argument,       NULL, 'l'},
   { "config_file", required_argument, NULL, 'f'},
   { "pid_file",    required_argument, NULL, 'i'},
   { "help",        no_argument,       NULL, 'h'},
@@ -87,6 +85,7 @@ struct option longopts[] =
   { "user",        required_argument, NULL, 'u'},
   { "group",       required_argument, NULL, 'g'},
   { "version",     no_argument,       NULL, 'v'},
+  { "set_interface",  no_argument,       NULL, 'S'},
   { 0 }
 };
 
@@ -135,11 +134,10 @@ usage (char *progname, int status)
 	      "-i, --pid_file     Set process identifier file name\n"\
 	      "-k, --keep_kernel  Don't delete old routes which installed by "\
 				  "zebra.\n"\
-	      "-S, --system       Manage all routes on link transistions\n"
-	      "-l, --log_mode     Set verbose log mode flag\n"\
 	      "-C, --dryrun       Check configuration for validity and exit\n"\
 	      "-A, --vty_addr     Set vty's bind address\n"\
 	      "-P, --vty_port     Set vty's port number\n"\
+	      "-S, --system       Manage all routes on link transistions\n" \
 	      "-r, --retain       When program terminates, retain added route "\
 				  "by zebra.\n"\
 	      "-u, --user         User to run as\n"\
@@ -261,9 +259,6 @@ main (int argc, char **argv)
 	  break;
 	case 'C':
 	  dryrun = 1;
-	  break;
-	case 'l':
-	  /* log_mode = 1; */
 	  break;
 	case 'f':
 	  config_file = optarg;
