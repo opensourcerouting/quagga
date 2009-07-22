@@ -1,3 +1,12 @@
+vyatta-quagga (0.99.14-1) unstable; urgency=low
+
+  * Merge Quagga 0.99.14 (upstream) into kenwood
+  * BGP: create listener when first instance created
+  * Use upstream version of BGP files
+  * Fix whitespace
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Tue, 21 Jul 2009 16:09:02 -0700
+
 vyatta-quagga (0.99.12-8) unstable; urgency=low
 
   * Allow iBGP to be used for recusive routes
