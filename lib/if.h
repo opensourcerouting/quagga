@@ -257,7 +257,7 @@ extern void if_delete_retain (struct interface *);
    deletes it from the interface list and frees the structure. */
 extern void if_delete (struct interface *);
 
-/* Does interface up ? */
+/* Is interface up ? */
 static inline int
 if_is_up (const struct interface *ifp)
 {
@@ -311,7 +311,6 @@ if_is_multicast (const struct interface *ifp)
 {
   return ifp->flags & IFF_MULTICAST;
 }
-
 
 extern void if_add_hook (int, int (*)(struct interface *));
 extern void if_init (void);

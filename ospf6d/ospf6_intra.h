@@ -210,8 +210,5 @@ extern void ospf6_intra_init (void);
 extern int config_write_ospf6_debug_brouter (struct vty *vty);
 extern void install_element_ospf6_debug_brouter (void);
 
-int config_write_ospf6_debug_brouter (struct vty *vty);
-void install_element_ospf6_debug_brouter ();
-
 #endif /* OSPF6_LSA_H */
 

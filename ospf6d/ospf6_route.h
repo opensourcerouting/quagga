@@ -284,6 +284,7 @@ extern struct ospf6_route_table *ospf6_route_table_create (int s, int t);
 extern void ospf6_route_table_delete (struct ospf6_route_table *);
 extern void ospf6_route_dump (struct ospf6_route_table *table);
 
+
 extern void ospf6_route_show (struct vty *vty, struct ospf6_route *route);
 extern void ospf6_route_show_detail (struct vty *vty, struct ospf6_route *route);
 

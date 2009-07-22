@@ -570,7 +570,7 @@ ALIAS (show_ipv6_ospf6_route_match,
        ROUTE_STR
        "Specify IPv6 prefix\n"
        "Display routes longer than the specified route\n"
-       );
+       )
 
 DEFUN (show_ipv6_ospf6_route_match_detail,
        show_ipv6_ospf6_route_longer_detail_cmd,
