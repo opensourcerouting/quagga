@@ -1,3 +1,9 @@
+vyatta-quagga (0.99.14-2) unstable; urgency=low
+
+  * Align files with upstream quagga
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Wed, 22 Jul 2009 13:04:24 -0700
+
 vyatta-quagga (0.99.14-1) unstable; urgency=low
 
   * Merge Quagga 0.99.14 (upstream) into kenwood
