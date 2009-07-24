@@ -1,3 +1,9 @@
+vyatta-quagga (0.99.12-5+jenner17) unstable; urgency=low
+
+  * Revert scanning of RIB on update from dynamic protocols
+
+ -- Stephen Hemminger <stephen.hemminger@vyatta.com>  Fri, 24 Jul 2009 11:06:03 -0700
+
 vyatta-quagga (0.99.12-5+jenner16) unstable; urgency=low
 
   * BGP: update MD5 key on correct listener socket
