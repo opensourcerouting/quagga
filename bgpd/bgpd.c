@@ -681,7 +681,7 @@ peer_free (struct peer *peer)
   
   XFREE (MTYPE_BGP_PEER, peer);
 }
-  
+
 /* Allocate new peer object, implicitely locked.  */
 static struct peer *
 peer_new (struct bgp *bgp)
