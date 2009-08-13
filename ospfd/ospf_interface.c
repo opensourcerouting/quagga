@@ -211,7 +211,9 @@ ospf_if_new (struct ospf *ospf, struct interface *ifp, struct prefix *p)
     }
   else
     return oi;
-    
+
+  ospf_lsa_pos_set(-1,-1, oi); /* delete position in router LSA */
+
   /* Set zebra interface pointer. */
   oi->ifp = ifp;
   oi->address = p;
@@ -395,6 +397,29 @@ ospf_if_exists (struct ospf_interface *oic)
       return oi;
 
   return NULL;
+}
+
+/* Lookup OSPF interface by router LSA posistion */
+struct ospf_interface *
+ospf_if_lookup_by_lsa_pos (struct ospf_area *area, int lsa_pos)
+{
+  struct listnode *node;
+  struct ospf_interface *oi;
+
+  for (ALL_LIST_ELEMENTS_RO (area->oiflist, node, oi))
+    {
+      if (lsa_pos >= oi->lsa_pos_beg && lsa_pos < oi->lsa_pos_end)
+	return oi;
+    }
+  return NULL;
+}
+
+/* Set OSPF interface position in router LSA */
+void
+ospf_lsa_pos_set(int pos_beg, int pos_end, struct ospf_interface *oi)
+{
+  oi->lsa_pos_beg = pos_beg;
+  oi->lsa_pos_end = pos_end;
 }
 
 struct ospf_interface *
@@ -817,6 +842,7 @@ ospf_if_down (struct ospf_interface *oi)
     return 0;
 
   OSPF_ISM_EVENT_EXECUTE (oi, ISM_InterfaceDown);
+  ospf_lsa_pos_set(-1, -1, oi); /* delete position in router LSA */
   /* Shutdown packet reception and sending */
   ospf_if_stream_unset (oi);
 

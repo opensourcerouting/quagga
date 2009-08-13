@@ -666,7 +666,7 @@ router_lsa_link_set (struct stream *s, struct ospf_area *area)
 {
   struct listnode *node;
   struct ospf_interface *oi;
-  int links = 0;
+  int links = 0, old_links;
 
   for (ALL_LIST_ELEMENTS_RO (area->oiflist, node, oi))
     {
@@ -677,6 +677,7 @@ router_lsa_link_set (struct stream *s, struct ospf_area *area)
 	{
 	  if (oi->state != ISM_Down)
 	    {
+	      old_links = links;
 	      /* Describe each link. */
 	      switch (oi->type)
 		{
@@ -698,6 +699,7 @@ router_lsa_link_set (struct stream *s, struct ospf_area *area)
 		case OSPF_IFTYPE_LOOPBACK:
 		  links += lsa_link_loopback_set (s, oi); 
 		}
+	      ospf_lsa_pos_set(old_links, links, oi);
 	    }
 	}
     }
