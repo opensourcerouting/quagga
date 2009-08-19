@@ -1332,7 +1332,6 @@ rib_queue_init (struct zebra_t *zebra)
   zebra->ribq->spec.errorfunc = NULL;
   /* XXX: TODO: These should be runtime configurable via vty */
   zebra->ribq->spec.max_retries = 3;
-  zebra->ribq->spec.hold = rib_process_hold_time;
   
   if (!(zebra->mq = meta_queue_new ()))
     zlog_err ("%s: could not initialise meta queue!", __func__);
@@ -2791,23 +2790,45 @@ static_delete_ipv6 (struct prefix *p, u_char type, struct in6_addr *gate,
 #endif /* HAVE_IPV6 */
 
 /* RIB update function. */
+static void
+rib_update_table (struct table *table)
+{
+  struct route_node *rn;
+  if (table)
+    for (rn = route_top (table); rn; rn = route_next (rn))
+      if (rn->info)
+        rib_queue_add (&zebrad, rn);
+}
+
 void
 rib_update (void)
 {
-  struct route_node *rn;
-  struct route_table *table;
-  
-  table = vrf_table (AFI_IP, SAFI_UNICAST, 0);
-  if (table)
-    for (rn = route_top (table); rn; rn = route_next (rn))
-      if (rn->info)
-        rib_queue_add (&zebrad, rn);
+  if (zebrad.update)
+    {
+      thread_cancel (zebrad.update);
+      zebrad.update = NULL;
+    }
 
-  table = vrf_table (AFI_IP6, SAFI_UNICAST, 0);
-  if (table)
-    for (rn = route_top (table); rn; rn = route_next (rn))
-      if (rn->info)
-        rib_queue_add (&zebrad, rn);
+  rib_update_table (vrf_table (AFI_IP, SAFI_UNICAST, 0));
+
+#ifdef HAVE_IPV6
+  rib_update_table (vrf_table (AFI_IP6, SAFI_UNICAST, 0));
+#endif
+}
+
+static int
+rib_update_thread (struct thread *self)
+{
+  rib_update ();
+  return 0;
+}
+
+void
+rib_update_background (void)
+{
+  if (!zebrad.update)
+    zebrad.update = thread_add_background (zebrad.master, rib_update_thread,
+					   NULL, rib_process_hold_time);
 }
 
 

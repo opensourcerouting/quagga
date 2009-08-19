@@ -262,6 +262,7 @@ extern struct rib *rib_match_ipv4 (struct in_addr);
 extern struct rib *rib_lookup_ipv4 (struct prefix_ipv4 *);
 
 extern void rib_update (void);
+extern void rib_update_background (void);
 extern void rib_weed_tables (void);
 extern void rib_sweep_route (void);
 extern void rib_close (void);
