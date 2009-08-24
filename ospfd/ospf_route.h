@@ -121,6 +121,12 @@ struct ospf_route
   } u;
 };
 
+struct ospf_host_route {
+  struct in_addr host_addr;
+  u_int32_t cost;		/* i.e. metric. */
+  struct ospf_area *area;	/* NULL == all areas */
+};
+
 extern struct ospf_path *ospf_path_new (void);
 extern void ospf_path_free (struct ospf_path *);
 extern struct ospf_path *ospf_path_lookup (struct list *, struct ospf_path *);

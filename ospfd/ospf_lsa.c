@@ -657,6 +657,8 @@ lsa_link_ptomp_set (struct stream *s, struct ospf_interface *oi)
 static int
 router_lsa_link_set (struct stream *s, struct ospf_area *area)
 {
+  struct ospf_host_route *host;
+  struct in_addr host_mask = {~0}; /* All ones */
   struct listnode *node;
   struct ospf_interface *oi;
   int links = 0;
@@ -694,7 +696,10 @@ router_lsa_link_set (struct stream *s, struct ospf_area *area)
 	    }
 	}
     }
-
+  for (ALL_LIST_ELEMENTS_RO (area->ospf->hostlist, node, host))
+    if (host->area == NULL || host->area == area)
+      links += link_info_set (s, host->host_addr, host_mask,
+			      LSA_LINK_TYPE_STUB, 0, host->cost);
   return links;
 }
 

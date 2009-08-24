@@ -327,6 +327,9 @@ struct ospf
   u_int32_t rx_lsa_count;
  
   struct route_table *distance_table;
+  
+  /* Host route list */
+  struct list *hostlist;
 };
 
 /* OSPF area structure. */

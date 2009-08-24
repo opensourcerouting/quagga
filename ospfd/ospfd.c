@@ -231,7 +231,7 @@ ospf_new (void)
     }
   new->t_read = thread_add_read (master, ospf_read, new, new->fd);
   new->oi_write_q = list_new ();
-  
+  new->hostlist = list_new(); /* host route list */
   return new;
 }
 
@@ -401,6 +401,7 @@ ospf_finish_final (struct ospf *ospf)
   struct ospf_lsa *lsa;
   struct ospf_interface *oi;
   struct ospf_area *area;
+  struct ospf_host_route *host;
   struct ospf_vl_data *vl_data;
   struct listnode *node, *nnode;
   int i;
@@ -469,6 +470,12 @@ ospf_finish_final (struct ospf *ospf)
     {
       listnode_delete (ospf->areas, area);
       ospf_area_free (area);
+    }
+
+  for (ALL_LIST_ELEMENTS (ospf->hostlist, node, nnode, host))
+    {
+      listnode_delete (ospf->hostlist, host);
+      XFREE (MTYPE_OSPF_TOP, host);
     }
 
   /* Cancel all timers. */
@@ -646,6 +653,8 @@ ospf_area_free (struct ospf_area *area)
 void
 ospf_area_check_free (struct ospf *ospf, struct in_addr area_id)
 {
+  struct ospf_host_route *host;
+  struct listnode *node;
   struct ospf_area *area;
 
   area = ospf_area_lookup_by_area_id (ospf, area_id);
@@ -660,6 +669,9 @@ ospf_area_check_free (struct ospf *ospf, struct in_addr area_id)
       IMPORT_NAME (area) == NULL &&
       area->auth_type == OSPF_AUTH_NULL)
     {
+      for (ALL_LIST_ELEMENTS_RO (area->ospf->hostlist, node, host))
+	if (!host->area || host->area == area)
+	  return;
       listnode_delete (ospf->areas, area);
       ospf_area_free (area);
     }

@@ -7389,6 +7389,123 @@ DEFUN (show_ip_ospf_route,
   return CMD_SUCCESS;
 }
 
+DEFUN (ip_ospf_host,
+       ip_ospf_host_cmd,
+       "ip ospf host A.B.C.D area (A.B.C.D|<0-4294967295>|all) cost <0-65535>",
+       "OSPF specific commands\n"
+       "Add a host route to OPSF\n"
+       "Host route in IP address format\n")
+{
+  struct ospf *ospf;
+  u_int32_t cost;
+  struct ospf_area *area = NULL;
+  struct in_addr host_addr, area_id;
+  struct ospf_host_route *host = NULL;
+  struct listnode *node;
+  int ret, format;
+
+  ospf = ospf_lookup ();
+  if (ospf == NULL)
+    {
+      vty_out (vty, " OSPF Routing Process not enabled%s", VTY_NEWLINE);
+      return CMD_SUCCESS;
+    }
+  ret = inet_aton (argv[0], &host_addr);
+  if (!ret)
+    {
+      vty_out (vty, "Please specify host route by A.B.C.D%s", VTY_NEWLINE);
+      return CMD_WARNING;
+    }
+
+  cost = strtol (argv[2], NULL, 10);
+  /* cost range is <0-65535>. */
+  if (cost < 0 || cost > 65535)
+    {
+      vty_out (vty, "cost is invalid%s", VTY_NEWLINE);
+      return CMD_WARNING;
+    }
+
+  if (strcmp(argv[1], "all") != 0)
+    {
+      VTY_GET_OSPF_AREA_ID (area_id, format, argv[1]); /* returns if error */
+      area = ospf_area_get (ospf, area_id, format);
+    }
+
+
+  for (ALL_LIST_ELEMENTS_RO (ospf->hostlist, node, host))
+    if (IPV4_ADDR_SAME (&host_addr, &host->host_addr) &&
+	area == host->area)
+      break;
+
+  if (!node)
+    {
+      host = XCALLOC (MTYPE_OSPF_TOP, sizeof (struct ospf_host_route));
+      listnode_add (ospf->hostlist, host);
+    }
+  host->host_addr = host_addr;
+  host->cost = cost;
+  host->area = area;
+
+  if (!area)
+    for (ALL_LIST_ELEMENTS_RO (ospf->areas, node, area))
+      ospf_router_lsa_timer_add(area);
+  else
+    ospf_router_lsa_timer_add(area);
+
+  return CMD_SUCCESS;
+}
+
+DEFUN (no_ip_ospf_host,
+       no_ip_ospf_host_cmd,
+       "no ip ospf host A.B.C.D area (A.B.C.D|<0-4294967295>|all)",
+       NO_STR
+       "OSPF specific commands\n"
+       "Host route in IP address format\n")
+{
+  struct ospf *ospf;
+  struct ospf_area *area = NULL;
+  struct in_addr host_addr, area_id;
+  struct ospf_host_route *host = NULL;
+  struct listnode *node;
+  int ret, format;
+
+  ospf = ospf_lookup ();
+  if (ospf == NULL)
+    {
+      vty_out (vty, " OSPF Routing Process not enabled%s", VTY_NEWLINE);
+      return CMD_SUCCESS;
+    }
+  ret = inet_aton (argv[0], &host_addr);
+  if (!ret)
+    {
+      vty_out (vty, "Please specify host route by A.B.C.D%s", VTY_NEWLINE);
+      return CMD_WARNING;
+    }
+
+  if (strcmp(argv[1], "all") != 0)
+    {
+      VTY_GET_OSPF_AREA_ID (area_id, format, argv[1]);
+      area = ospf_area_get (ospf, area_id, format);
+    }
+
+  for (ALL_LIST_ELEMENTS_RO (ospf->hostlist, node, host))
+    if (IPV4_ADDR_SAME (&host_addr, &host->host_addr) &&
+	area == host->area)
+      break;
+
+  if (node)
+    {
+      listnode_delete (ospf->hostlist, host);
+      XFREE (MTYPE_OSPF_TOP, host);
+      if (!area)
+	for (ALL_LIST_ELEMENTS_RO (ospf->areas, node, area))
+	  ospf_router_lsa_timer_add(area);
+      else
+	ospf_router_lsa_timer_add(area);
+    }
+  return CMD_SUCCESS;
+}
+
 
 const char *ospf_abr_type_str[] = 
 {
@@ -7970,6 +8087,7 @@ ospf_config_write (struct vty *vty)
   struct interface *ifp;
   struct ospf_interface *oi;
   struct listnode *node;
+  struct ospf_host_route *host;
   int write = 0;
 
   ospf = ospf_lookup ();
@@ -8037,7 +8155,20 @@ ospf_config_write (struct vty *vty)
       /* passive-interface print. */
       if (ospf->passive_interface_default == OSPF_IF_PASSIVE)
         vty_out (vty, " passive-interface default%s", VTY_NEWLINE);
-      
+
+      for (ALL_LIST_ELEMENTS_RO (ospf->hostlist, node, host))
+	{
+	  char buf[28];
+
+	  if (host->area)
+	    area_id2str(buf, sizeof(buf), host->area);
+	  else
+	    strcpy(buf, "all");
+	  vty_out (vty, " ip ospf host %s area %s cost %d%s",
+		   inet_ntoa (host->host_addr),
+		   buf, host->cost, VTY_NEWLINE);
+	}
+
       for (ALL_LIST_ELEMENTS_RO (om->iflist, node, ifp))
         if (OSPF_IF_PARAM_CONFIGURED (IF_DEF_PARAMS (ifp), passive_interface)
             && IF_DEF_PARAMS (ifp)->passive_interface != 
@@ -8522,6 +8653,10 @@ ospf_vty_init (void)
   install_element (OSPF_NODE, &no_ospf_neighbor_cmd);
   install_element (OSPF_NODE, &no_ospf_neighbor_priority_cmd);
   install_element (OSPF_NODE, &no_ospf_neighbor_poll_interval_cmd);
+
+  /* "ip ospf host" commands. */
+  install_element (OSPF_NODE, &ip_ospf_host_cmd);
+  install_element (OSPF_NODE, &no_ip_ospf_host_cmd);
 
   /* Init interface related vty commands. */
   ospf_vty_if_init ();
