@@ -47,6 +47,7 @@ struct ospf_if_params
   DECLARE_IF_PARAM (u_int32_t, retransmit_interval); /* Retransmission Interval */
   DECLARE_IF_PARAM (u_char, passive_interface);      /* OSPF Interface is passive: no sending or receiving (no need to join multicast groups) */
   DECLARE_IF_PARAM (u_char, priority);               /* OSPF Interface priority */
+  DECLARE_IF_PARAM (struct in_addr, if_area);        /* Enable OSPF on this interface with area if_area */
   DECLARE_IF_PARAM (u_char, type);                   /* type of interface */
 #define OSPF_IF_ACTIVE                  0
 #define OSPF_IF_PASSIVE		        1
@@ -248,9 +249,12 @@ extern struct ospf_interface *ospf_if_lookup_by_local_addr (struct ospf *,
 							    struct in_addr);
 extern struct ospf_interface *ospf_if_lookup_by_prefix (struct ospf *,
 							struct prefix_ipv4 *);
+extern struct ospf_interface *ospf_if_table_lookup (struct interface *,
+						    struct prefix *);
 extern struct ospf_interface *ospf_if_addr_local (struct in_addr);
 extern struct ospf_interface *ospf_if_lookup_recv_if (struct ospf *,
-						      struct in_addr);
+						      struct in_addr,
+						      struct interface *);
 extern struct ospf_interface *ospf_if_is_configured (struct ospf *,
 						     struct in_addr *);
 

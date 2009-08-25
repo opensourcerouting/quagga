@@ -194,6 +194,17 @@ ospf_interface_state_up (int command, struct zclient *zclient,
           ospf_if_recalculate_output_cost (ifp);
         }
 
+      if ((if_tmp.status ^ ifp->status) & ZEBRA_INTERFACE_UNNUMBERED)
+	{
+	  if (IS_DEBUG_OSPF (zebra, ZEBRA_INTERFACE))
+	    zlog_debug ("Zebra: Interface[%s] Unnumbered state change %d -> %d.",
+			ifp->name,
+			if_tmp.status & ZEBRA_INTERFACE_UNNUMBERED,
+			ifp->status & ZEBRA_INTERFACE_UNNUMBERED);
+
+	  ospf_if_reset (ifp);
+	}
+
       if (if_tmp.mtu != ifp->mtu)
         {
           if (IS_DEBUG_OSPF (zebra, ZEBRA_INTERFACE))
@@ -681,16 +692,13 @@ ospf_external_lsa_originate_check (struct ospf *ospf,
 int
 ospf_distribute_check_connected (struct ospf *ospf, struct external_info *ei)
 {
-  struct route_node *rn;
+  struct listnode *node;
+  struct ospf_interface *oi;
 
-  for (rn = route_top (ospf->networks); rn; rn = route_next (rn))
-    if (rn->info != NULL)
-      if (prefix_match (&rn->p, (struct prefix *) &ei->p))
-        {
-          route_unlock_node (rn);
+/* Should this include a if_is_running() test too? */
+  for (ALL_LIST_ELEMENTS_RO (ospf->oiflist, node, oi))
+      if (prefix_match (oi->address, (struct prefix *) &ei->p))
           return 0;
-        }
-
   return 1;
 }
 
