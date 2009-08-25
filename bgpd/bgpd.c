@@ -685,7 +685,7 @@ peer_free (struct peer *peer)
   
   XFREE (MTYPE_BGP_PEER, peer);
 }
-  
+
 /* Allocate new peer object, implicitely locked.  */
 static struct peer *
 peer_new (struct bgp *bgp)
@@ -1034,7 +1034,7 @@ peer_deactivate (struct peer *peer, afi_t afi, safi_t safi)
 		  bgp_capability_send (peer, afi, safi,
 				       CAPABILITY_CODE_MP,
 				       CAPABILITY_ACTION_UNSET);
-		  bgp_clear_route (peer, afi, safi);
+		  bgp_clear_route (peer, afi, safi, BGP_CLEAR_ROUTE_NORMAL);
 		  peer->pcount[afi][safi] = 0;
 		}
 	      else
@@ -1102,6 +1102,7 @@ peer_delete (struct peer *peer)
   safi_t safi;
   struct bgp *bgp;
   struct bgp_filter *filter;
+  struct listnode *pn;
 
   assert (peer->status != Deleted);
   
@@ -1110,12 +1111,10 @@ peer_delete (struct peer *peer)
   if (CHECK_FLAG (peer->sflags, PEER_STATUS_NSF_WAIT))
     peer_nsf_stop (peer);
 
-  /* If this peer belongs to peer group.  Clearn up the
+  /* If this peer belongs to peer group, clear up the
      relationship.  */
   if (peer->group)
     {
-      struct listnode *pn;
-
       if ((pn = listnode_lookup (peer->group->peer, peer)))
         {
           peer_unlock (peer); /* group->peer list reference */
@@ -1145,22 +1144,25 @@ peer_delete (struct peer *peer)
   bgp_timer_set (peer); /* stops all timers for Deleted */
   
   /* Delete from all peer list. */
-  if (! CHECK_FLAG (peer->sflags, PEER_STATUS_GROUP))
+  if (! CHECK_FLAG (peer->sflags, PEER_STATUS_GROUP)
+      && (pn = listnode_lookup (bgp->peer, peer)))
     {
-      struct listnode *pn;
+      peer_unlock (peer); /* bgp peer list reference */
+      list_delete_node (bgp->peer, pn);
+    }
       
-      if ((pn = listnode_lookup (bgp->peer, peer)))
-        {
-          peer_unlock (peer); /* bgp peer list reference */
-          list_delete_node (bgp->peer, pn);
-        }
-      
-      if (peer_rsclient_active (peer)
-          && (pn = listnode_lookup (bgp->rsclient, peer)))
-        {
-          peer_unlock (peer); /* rsclient list reference */
-          list_delete_node (bgp->rsclient, pn);
-        }
+  if (peer_rsclient_active (peer)
+      && (pn = listnode_lookup (bgp->rsclient, peer)))
+    {
+      peer_unlock (peer); /* rsclient list reference */
+      list_delete_node (bgp->rsclient, pn);
+
+      /* Clear our own rsclient ribs. */
+      for (afi = AFI_IP; afi < AFI_MAX; afi++)
+        for (safi = SAFI_UNICAST; safi < SAFI_MAX; safi++)
+          if (CHECK_FLAG(peer->af_flags[afi][safi],
+                         PEER_FLAG_RSERVER_CLIENT))
+            bgp_clear_route (peer, afi, safi, BGP_CLEAR_ROUTE_MY_RSCLIENT);
     }
 
   /* Free RIB for any family in which peer is RSERVER_CLIENT, and is not
@@ -1291,7 +1293,7 @@ peer_group_get (struct bgp *bgp, const char *name)
   group->conf = peer_new (bgp);
   if (! bgp_flag_check (bgp, BGP_FLAG_NO_DEFAULT_IPV4))
     group->conf->afc[AFI_IP][SAFI_UNICAST] = 1;
-  group->conf->host = strdup (name);
+  group->conf->host = XSTRDUP (MTYPE_BGP_PEER_HOST, name);
   group->conf->group = group;
   group->conf->as = 0; 
   group->conf->ttl = 1;
@@ -1754,6 +1756,9 @@ peer_group_bind (struct bgp *bgp, union sockunion *su,
         {
           peer_unlock (peer); /* peer rsclient reference */
           list_delete_node (bgp->rsclient, pn);
+
+          /* Clear our own rsclient rib for this afi/safi. */
+          bgp_clear_route (peer, afi, safi, BGP_CLEAR_ROUTE_MY_RSCLIENT);
         }
 
       bgp_table_finish (&peer->rib[afi][safi]);
@@ -1846,7 +1851,7 @@ bgp_create (as_t *as, const char *name)
   
   bgp_lock (bgp);
   bgp->peer_self = peer_new (bgp);
-  bgp->peer_self->host = strdup ("Static announcement");
+  bgp->peer_self->host = XSTRDUP (MTYPE_BGP_PEER_HOST, "Static announcement");
 
   bgp->peer = list_new ();
   bgp->peer->cmp = (int (*)(void *, void *)) peer_cmp;
@@ -1964,6 +1969,13 @@ bgp_get (struct bgp **bgp_val, as_t *as, const char *name)
 	}
     }
 
+  /* Create BGP server socket, if first instance.  */
+  if (list_isempty(bm->bgp))
+    {
+      if (bgp_socket (bm->port, bm->address) < 0)
+	return BGP_ERR_INVALID_VALUE;
+    }
+
   bgp = bgp_create (as, name);
   listnode_add (bm->bgp, bgp);
   bgp_router_id_set(bgp, &router_id_zebra);
@@ -1992,22 +2004,28 @@ bgp_delete (struct bgp *bgp)
       if (i != ZEBRA_ROUTE_BGP)
 	bgp_redistribute_unset (bgp, afi, i);
 
-  for (ALL_LIST_ELEMENTS (bgp->group, node, next, group))
-    peer_group_delete (group);
-
   for (ALL_LIST_ELEMENTS (bgp->peer, node, next, peer))
     peer_delete (peer);
 
-  for (ALL_LIST_ELEMENTS (bgp->rsclient, node, next, peer))
-    peer_delete (peer);
+  for (ALL_LIST_ELEMENTS (bgp->group, node, next, group))
+    peer_group_delete (group);
+
+  assert (listcount (bgp->rsclient) == 0);
 
   if (bgp->peer_self) {
     peer_delete(bgp->peer_self);
     bgp->peer_self = NULL;
   }
+  
+  /* Remove visibility via the master list - there may however still be
+   * routes to be processed still referencing the struct bgp.
+   */
+  listnode_delete (bm->bgp, bgp);
+  if (list_isempty(bm->bgp))
+    bgp_close ();
 
   bgp_unlock(bgp);  /* initial reference */
-
+  
   return 0;
 }
 
@@ -2022,6 +2040,7 @@ bgp_lock (struct bgp *bgp)
 void
 bgp_unlock(struct bgp *bgp)
 {
+  assert(bgp->lock > 0);
   if (--bgp->lock == 0)
     bgp_free (bgp);
 }
@@ -2036,8 +2055,6 @@ bgp_free (struct bgp *bgp)
   list_delete (bgp->peer);
   list_delete (bgp->rsclient);
 
-  listnode_delete (bm->bgp, bgp);
-  
   if (bgp->name)
     free (bgp->name);
   
@@ -2045,11 +2062,11 @@ bgp_free (struct bgp *bgp)
     for (safi = SAFI_UNICAST; safi < SAFI_MAX; safi++)
       {
 	if (bgp->route[afi][safi])
-	  XFREE (MTYPE_ROUTE_TABLE, bgp->route[afi][safi]);
+          bgp_table_finish (&bgp->route[afi][safi]);
 	if (bgp->aggregate[afi][safi])
-	  XFREE (MTYPE_ROUTE_TABLE,bgp->aggregate[afi][safi]) ;
+          bgp_table_finish (&bgp->aggregate[afi][safi]) ;
 	if (bgp->rib[afi][safi])
-	  XFREE (MTYPE_ROUTE_TABLE,bgp->rib[afi][safi]);
+          bgp_table_finish (&bgp->rib[afi][safi]);
       }
   XFREE (MTYPE_BGP, bgp);
 }
@@ -2060,17 +2077,22 @@ peer_lookup (struct bgp *bgp, union sockunion *su)
   struct peer *peer;
   struct listnode *node, *nnode;
 
-  if (! bgp)
-    bgp = bgp_get_default ();
-
-  if (! bgp)
-    return NULL;
-  
-  for (ALL_LIST_ELEMENTS (bgp->peer, node, nnode, peer))
+  if (bgp != NULL)
     {
-      if (sockunion_same (&peer->su, su)
-	  && ! CHECK_FLAG (peer->sflags, PEER_STATUS_ACCEPT_PEER))
-	return peer;
+      for (ALL_LIST_ELEMENTS (bgp->peer, node, nnode, peer))
+        if (sockunion_same (&peer->su, su)
+            && ! CHECK_FLAG (peer->sflags, PEER_STATUS_ACCEPT_PEER))
+          return peer;
+    }
+  else if (bm->bgp != NULL)
+    {
+      struct listnode *bgpnode, *nbgpnode;
+  
+      for (ALL_LIST_ELEMENTS (bm->bgp, bgpnode, nbgpnode, bgp))
+        for (ALL_LIST_ELEMENTS (bgp->peer, node, nnode, peer))
+          if (sockunion_same (&peer->su, su)
+              && ! CHECK_FLAG (peer->sflags, PEER_STATUS_ACCEPT_PEER))
+            return peer;
     }
   return NULL;
 }
@@ -2080,36 +2102,40 @@ peer_lookup_with_open (union sockunion *su, as_t remote_as,
 		       struct in_addr *remote_id, int *as)
 {
   struct peer *peer;
-  struct listnode *node, *nnode;
+  struct listnode *node;
+  struct listnode *bgpnode;
   struct bgp *bgp;
 
-  bgp = bgp_get_default ();
-  if (! bgp)
+  if (! bm->bgp)
     return NULL;
 
-  for (ALL_LIST_ELEMENTS (bgp->peer, node, nnode, peer))
+  for (ALL_LIST_ELEMENTS_RO (bm->bgp, bgpnode, bgp))
     {
-      if (sockunion_same (&peer->su, su)
-	  && ! CHECK_FLAG (peer->sflags, PEER_STATUS_ACCEPT_PEER))
-	{
-	  if (peer->as == remote_as
-	      && peer->remote_id.s_addr == remote_id->s_addr)
-	    return peer;
-	  if (peer->as == remote_as)
-	    *as = 1;
-	}
-    }
-  for (ALL_LIST_ELEMENTS (bgp->peer, node, nnode, peer))
-    {
-      if (sockunion_same (&peer->su, su)
-	  &&  ! CHECK_FLAG (peer->sflags, PEER_STATUS_ACCEPT_PEER))
-	{
-	  if (peer->as == remote_as
-	      && peer->remote_id.s_addr == 0)
-	    return peer;
-	  if (peer->as == remote_as)
-	    *as = 1;
-	}
+      for (ALL_LIST_ELEMENTS_RO (bgp->peer, node, peer))
+        {
+          if (sockunion_same (&peer->su, su)
+              && ! CHECK_FLAG (peer->sflags, PEER_STATUS_ACCEPT_PEER))
+            {
+              if (peer->as == remote_as
+                  && peer->remote_id.s_addr == remote_id->s_addr)
+                return peer;
+              if (peer->as == remote_as)
+                *as = 1;
+            }
+        }
+
+      for (ALL_LIST_ELEMENTS_RO (bgp->peer, node, peer))
+        {
+          if (sockunion_same (&peer->su, su)
+              &&  ! CHECK_FLAG (peer->sflags, PEER_STATUS_ACCEPT_PEER))
+            {
+              if (peer->as == remote_as
+                  && peer->remote_id.s_addr == 0)
+                return peer;
+              if (peer->as == remote_as)
+                *as = 1;
+            }
+        }
     }
   return NULL;
 }
@@ -2187,7 +2213,7 @@ struct peer_flag_action
   u_char peer_down;
 };
 
-struct peer_flag_action peer_flag_action_list[] = 
+static const struct peer_flag_action peer_flag_action_list[] =
   {
     { PEER_FLAG_PASSIVE,                  0, peer_change_reset },
     { PEER_FLAG_SHUTDOWN,                 0, peer_change_reset },
@@ -2199,7 +2225,7 @@ struct peer_flag_action peer_flag_action_list[] =
     { 0, 0, 0 }
   };
 
-struct peer_flag_action peer_af_flag_action_list[] = 
+static const struct peer_flag_action peer_af_flag_action_list[] =
   {
     { PEER_FLAG_NEXTHOP_SELF,             1, peer_change_reset_out },
     { PEER_FLAG_SEND_COMMUNITY,           1, peer_change_reset_out },
@@ -2220,14 +2246,14 @@ struct peer_flag_action peer_af_flag_action_list[] =
 
 /* Proper action set. */
 static int
-peer_flag_action_set (struct peer_flag_action *action_list, int size,
+peer_flag_action_set (const struct peer_flag_action *action_list, int size,
 		      struct peer_flag_action *action, u_int32_t flag)
 {
   int i;
   int found = 0;
   int reset_in = 0;
   int reset_out = 0;
-  struct peer_flag_action *match = NULL;
+  const struct peer_flag_action *match = NULL;
 
   /* Check peer's frag action.  */
   for (i = 0; i < size; i++)
@@ -5143,9 +5169,6 @@ bgp_init (void)
 {
   /* BGP VTY commands installation.  */
   bgp_vty_init ();
-
-  /* Create BGP server socket.  */
-  bgp_socket (NULL, bm->port, bm->address);
 
   /* Init zebra. */
   bgp_zebra_init ();
