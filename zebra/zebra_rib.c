@@ -389,7 +389,8 @@ nexthop_active_ipv4 (struct rib *rib, struct nexthop *nexthop, int set,
 	}
       else
 	{
-	  if (match->type == ZEBRA_ROUTE_CONNECT)
+	  if (match->type == ZEBRA_ROUTE_CONNECT
+		|| (match->nexthop && match->nexthop->type == NEXTHOP_TYPE_IFINDEX))
 	    {
 	      /* Directly point connected route. */
 	      newhop = match->nexthop;
