@@ -925,12 +925,18 @@ proto_redistnum(int afi, const char *s)
 	return ZEBRA_ROUTE_STATIC;
       else if (strncmp (s, "r", 1) == 0)
 	return ZEBRA_ROUTE_RIP;
-      else if (strncmp (s, "o", 1) == 0)
+      else if (strncmp (s, "os", 2) == 0)
 	return ZEBRA_ROUTE_OSPF;
       else if (strncmp (s, "i", 1) == 0)
 	return ZEBRA_ROUTE_ISIS;
-      else if (strncmp (s, "b", 1) == 0)
+      else if (strncmp (s, "bg", 2) == 0)
 	return ZEBRA_ROUTE_BGP;
+      else if (strncmp (s, "ol", 2) == 0)
+	return ZEBRA_ROUTE_OLSR;
+      else if (strncmp (s, "ba", 2) == 0)
+	return ZEBRA_ROUTE_BATMAN;
+      else if (strncmp (s, "d", 1) == 0)
+	return ZEBRA_ROUTE_DHCP;
     }
   if (afi == AFI_IP6)
     {
@@ -942,12 +948,16 @@ proto_redistnum(int afi, const char *s)
 	return ZEBRA_ROUTE_STATIC;
       else if (strncmp (s, "r", 1) == 0)
 	return ZEBRA_ROUTE_RIPNG;
-      else if (strncmp (s, "o", 1) == 0)
+      else if (strncmp (s, "os", 2) == 0)
 	return ZEBRA_ROUTE_OSPF6;
       else if (strncmp (s, "i", 1) == 0)
 	return ZEBRA_ROUTE_ISIS;
-      else if (strncmp (s, "b", 1) == 0)
+      else if (strncmp (s, "bg", 2) == 0)
 	return ZEBRA_ROUTE_BGP;
+      else if (strncmp (s, "ol", 2) == 0)
+	return ZEBRA_ROUTE_OLSR;
+      else if (strncmp (s, "ba", 2) == 0)
+	return ZEBRA_ROUTE_BATMAN;
     }
   return -1;
 }
