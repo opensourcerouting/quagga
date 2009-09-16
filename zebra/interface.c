@@ -542,7 +542,14 @@ if_down (struct interface *ifp)
 	  p = ifc->address;
 
 	  if (p->family == AF_INET)
-	    connected_down_ipv4 (ifp, ifc);
+	    {
+	      connected_down_ipv4 (ifp, ifc);
+
+	      /* Taking interface to admin down causes kernel
+		 to do an implicit flush */
+	      if (!if_is_up (ifp))
+		rib_flush_interface (AFI_IP, ifc->ifp);
+	    }
 #ifdef HAVE_IPV6
 	  else if (p->family == AF_INET6)
 	    connected_down_ipv6 (ifp, ifc);
