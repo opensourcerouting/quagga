@@ -60,6 +60,7 @@ ZEBRA_ROUTE_HSLS,       hsls,      hslsd,  'h', 1, 1, "HSLS"
 ZEBRA_ROUTE_OLSR,       olsr,      olsrd,  'o', 1, 1, "OLSR"
 ZEBRA_ROUTE_BATMAN,     batman,    batman, 'b', 1, 1, "BATMAN"
 ZEBRA_ROUTE_DHCP,       dhcp,      dhcpc,  'D', 1, 0, "DHCP"
+ZEBRA_ROUTE_PIM,        pim,       pimd,   'P', 0, 0, "PIM-SSM"
 
 ## help strings
 ZEBRA_ROUTE_SYSTEM, "Reserved route type, for internal use only"
@@ -76,4 +77,5 @@ ZEBRA_ROUTE_HSLS,   "Hazy-Sighted Link State Protocol (HSLS)"
 ZEBRA_ROUTE_OLSR,   "Optimised Link State Routing (OLSR)"
 ZEBRA_ROUTE_BATMAN, "Better Approach To Mobile Ad-hoc Networking (BATMAN)"
 ZEBRA_ROUTE_DHCP,   "Dynamic Host Configuration Protocol (DHCP)"
+ZEBRA_ROUTE_PIM,    "Protocol Independent Multicast, Source Specific Mode (PIM-SSM)"
 
