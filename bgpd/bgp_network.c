@@ -383,14 +383,7 @@ bgp_listener (int sock, struct sockaddr *sa, socklen_t salen)
     setsockopt_ipv4_tos (sock, IPTOS_PREC_INTERNETCONTROL);
 #endif
 
-#ifdef IPV6_V6ONLY
-  /* Want only IPV6 on ipv6 socket (not mapped addresses) */
-  if (sa->sa_family == AF_INET6) {
-    int on = 1;
-    setsockopt (sock, IPPROTO_IPV6, IPV6_V6ONLY,
-		(void *) &on, sizeof (on));
-  }
-#endif
+  sockopt_v6only (sa->sa_family, sock);
 
   if (bgpd_privs.change (ZPRIVS_RAISE) )
     zlog_err ("bgp_socket: could not raise privs");
