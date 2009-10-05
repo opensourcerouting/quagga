@@ -383,7 +383,7 @@ bgp_listener (int sock, struct sockaddr *sa, socklen_t salen)
     setsockopt_ipv4_tos (sock, IPTOS_PREC_INTERNETCONTROL);
 #endif
 
-  sockopt_v6only (ainfo->ai_family, sock);
+  sockopt_v6only (sa->sa_family, sock);
 
   if (bgpd_privs.change (ZPRIVS_RAISE) )
     zlog_err ("bgp_socket: could not raise privs");
