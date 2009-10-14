@@ -32,6 +32,7 @@
 #include "zclient.h"
 #include "memory.h"
 #include "table.h"
+#include "paths.h"
 
 /* Zebra client events. */
 enum event {ZCLIENT_SCHEDULE, ZCLIENT_READ, ZCLIENT_CONNECT};
@@ -317,7 +318,7 @@ zclient_start (struct zclient *zclient)
 #ifdef HAVE_TCP_ZEBRA
   zclient->sock = zclient_socket ();
 #else
-  zclient->sock = zclient_socket_un (ZEBRA_SERV_PATH);
+  zclient->sock = zclient_socket_un (path_state (ZEBRA_SERV_NAME));
 #endif /* HAVE_TCP_ZEBRA */
   if (zclient->sock < 0)
     {

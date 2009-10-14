@@ -1494,7 +1494,6 @@ AC_SUBST(quagga_statedir)
 
 AC_DEFINE_UNQUOTED(PATH_STATE, "$quagga_statedir",zebra state path)
 AC_DEFINE_UNQUOTED(PATH_WATCHQUAGGA_PID, "$quagga_statedir/watchquagga.pid",watchquagga PID)
-AC_DEFINE_UNQUOTED(ZEBRA_SERV_PATH, "$quagga_statedir/zserv.api",zebra api socket)
 AC_DEFINE_UNQUOTED(DAEMON_VTY_DIR, "$quagga_statedir",daemon vty directory)
 
 dnl -------------------------------

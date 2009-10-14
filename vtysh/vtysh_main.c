@@ -33,6 +33,7 @@
 #include "getopt.h"
 #include "command.h"
 #include "memory.h"
+#include "paths.h"
 
 #include "vtysh/vtysh.h"
 #include "vtysh/vtysh_user.h"
@@ -41,7 +42,6 @@
 char *progname;
 
 /* Configuration file name and directory. */
-char config_default[] = SYSCONFDIR VTYSH_DEFAULT_CONFIG;
 char history_file[MAXPATHLEN];
 
 /* Flag for indicate executing child command. */
@@ -302,7 +302,7 @@ main (int argc, char **argv, char **env)
   sort_node ();
 
   /* Read vtysh configuration file before connecting to daemons. */
-  vtysh_read_config (config_default);
+  vtysh_read_config (path_config (VTYSH_DEFAULT_CONFIG));
 
   /* Start execution only if not in dry-run mode */
   if(dryrun)

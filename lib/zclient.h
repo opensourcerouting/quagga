@@ -28,6 +28,9 @@
 /* For input/output buffer to zebra. */
 #define ZEBRA_MAX_PACKET_SIZ          4096
 
+/* Name of the zebra API socket */
+#define ZEBRA_SERV_NAME               "zserv.api"
+
 /* Zebra header size. */
 #define ZEBRA_HEADER_SIZE             6
 

@@ -36,6 +36,7 @@
 #include "privs.h"
 #include "network.h"
 #include "buffer.h"
+#include "paths.h"
 
 #include "zebra/zserv.h"
 #include "zebra/router-id.h"
@@ -1738,6 +1739,6 @@ zebra_zserv_socket_init (void)
 #ifdef HAVE_TCP_ZEBRA
   zebra_serv ();
 #else
-  zebra_serv_un (ZEBRA_SERV_PATH);
+  zebra_serv_un (path_state (ZEBRA_SERV_NAME));
 #endif /* HAVE_TCP_ZEBRA */
 }

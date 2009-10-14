@@ -28,6 +28,7 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #include "network.h"
 #include "log.h"
 #include "memory.h"
+#include "paths.h"
 
 #include "bgpd/bgpd.h"
 #include "bgpd/bgp_table.h"
@@ -1097,7 +1098,7 @@ zlookup_connect (struct thread *t)
 #ifdef HAVE_TCP_ZEBRA
   zlookup->sock = zclient_socket ();
 #else
-  zlookup->sock = zclient_socket_un (ZEBRA_SERV_PATH);
+  zlookup->sock = zclient_socket_un (path_state (ZEBRA_SERV_NAME));
 #endif /* HAVE_TCP_ZEBRA */
   if (zlookup->sock < 0)
     return -1;
