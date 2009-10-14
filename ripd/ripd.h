@@ -69,7 +69,9 @@
 #define RIP_VTY_PORT                  2602
 
 /* Default configuration file name. */
-#define RIPD_DEFAULT_CONFIG    "ripd.conf"
+#define RIPD_CONFIG_NAME       "ripd.conf"
+#define RIPD_PID_NAME           "ripd.pid"
+#define RIPD_VTY_NAME           "ripd.vty"
 
 /* RIP route types. */
 #define RIP_ROUTE_RTE                    0

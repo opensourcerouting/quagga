@@ -32,6 +32,7 @@
 #include "plist.h"
 #include "privs.h"
 #include "sigevent.h"
+#include "paths.h"
 
 #include "zebra/rib.h"
 #include "zebra/zserv.h"
@@ -108,10 +109,13 @@ struct zebra_privs_t zserv_privs =
 };
 
 /* Default configuration file path. */
-char config_default[] = SYSCONFDIR DEFAULT_CONFIG_FILE;
+char config_default[MAXPATHLEN];
+
+/* pid_file default value */
+static char pid_file_default[MAXPATHLEN];
 
 /* Process ID saved for use by init system */
-const char *pid_file = PATH_ZEBRA_PID;
+const char *pid_file = pid_file_default;
 
 /* Help information display. */
 static void
@@ -300,6 +304,9 @@ main (int argc, char **argv)
 	}
     }
 
+  strcpy (config_default, path_config (ZEBRA_CONFIG_NAME));
+  strcpy (pid_file_default, path_state (ZEBRA_PID_NAME));
+
   /* Make master thread emulator. */
   zebrad.master = thread_master_create ();
 
@@ -389,7 +396,7 @@ main (int argc, char **argv)
   zebra_zserv_socket_init ();
 
   /* Make vty server socket. */
-  vty_serv_sock (vty_addr, vty_port, ZEBRA_VTYSH_PATH);
+  vty_serv_sock (vty_addr, vty_port, path_state (ZEBRA_VTY_NAME));
 
   /* Print banner. */
   zlog_notice ("Zebra %s starting: vty@%d", QUAGGA_VERSION, vty_port);

@@ -51,7 +51,9 @@
 #define RIPNG_PEER_TIMER_DEFAULT       180
 
 /* Default config file name. */
-#define RIPNG_DEFAULT_CONFIG "ripngd.conf"
+#define RIPNG_CONFIG_NAME    "ripngd.conf"
+#define RIPNG_PID_NAME        "ripngd.pid"
+#define RIPNG_VTY_NAME        "ripngd.vty"
 
 /* RIPng route types. */
 #define RIPNG_ROUTE_RTE                  0

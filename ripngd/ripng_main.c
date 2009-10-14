@@ -38,7 +38,7 @@
 #include "ripngd/ripngd.h"
 
 /* Configuration filename and directory. */
-char config_default[] = SYSCONFDIR RIPNG_DEFAULT_CONFIG;
+char config_default[MAXPATHLEN];
 char *config_file = NULL;
 
 /* RIPngd options. */
@@ -96,8 +96,11 @@ int vty_port = RIPNG_VTY_PORT;
 /* Master of threads. */
 struct thread_master *master;
 
+/* pid_file default value */
+static char pid_file_default[MAXPATHLEN];
+
 /* Process ID saved for use by init system */
-const char *pid_file = PATH_RIPNGD_PID;
+const char *pid_file = pid_file_default;
 
 /* Help information display. */
 static void
@@ -137,7 +140,7 @@ sighup (void)
   /* Reload config file. */
   vty_read_config (config_file, config_default);
   /* Create VTY's socket */
-  vty_serv_sock (vty_addr, vty_port, RIPNG_VTYSH_PATH);
+  vty_serv_sock (vty_addr, vty_port, path_state (RIPNG_VTY_NAME));
 
   /* Try to return to normal operation. */
 }
@@ -263,6 +266,9 @@ main (int argc, char **argv)
 	}
     }
 
+  strcpy (config_default, path_config (RIPNG_CONFIG_NAME));
+  strcpy (pid_file_default, path_state (RIPNG_PID_NAME));
+
   master = thread_master_create ();
 
   /* Library inits. */
@@ -295,7 +301,7 @@ main (int argc, char **argv)
     }
 
   /* Create VTY socket */
-  vty_serv_sock (vty_addr, vty_port, RIPNG_VTYSH_PATH);
+  vty_serv_sock (vty_addr, vty_port, path_state (RIPNG_VTY_NAME));
 
   /* Process id file create. */
   pid_output (pid_file);

@@ -34,11 +34,14 @@
 #include "plist.h"
 #include "privs.h"
 #include "sigevent.h"
+#include "paths.h"
 
 #include "ospf6d.h"
 
 /* Default configuration file name for ospf6d. */
-#define OSPF6_DEFAULT_CONFIG       "ospf6d.conf"
+#define OSPF6_CONFIG_NAME          "ospf6d.conf"
+#define OSPF6_PID_NAME             "ospf6d.pid"
+#define OSPF6_VTY_NAME             "ospf6d.vty"
 
 /* Default port values. */
 #define OSPF6_VTY_PORT             2606
@@ -83,7 +86,7 @@ struct option longopts[] =
 };
 
 /* Configuration file and directory. */
-char config_default[] = SYSCONFDIR OSPF6_DEFAULT_CONFIG;
+char config_default[MAXPATHLEN];
 
 /* ospf6d program name. */
 char *progname;
@@ -94,8 +97,11 @@ int daemon_mode = 0;
 /* Master of threads. */
 struct thread_master *master;
 
+/* pid_file default value */
+static char pid_file_default[MAXPATHLEN];
+
 /* Process ID saved for use by init system */
-const char *pid_file = PATH_OSPF6D_PID;
+const char *pid_file = pid_file_default;
 
 /* Help information display. */
 static void
@@ -252,6 +258,9 @@ main (int argc, char *argv[], char *envp[])
         }
     }
 
+  strcpy (config_default, path_config (OSPF6_CONFIG_NAME));
+  strcpy (pid_file_default, path_state (OSPF6_PID_NAME));
+
   /* thread master */
   master = thread_master_create ();
 
@@ -294,7 +303,7 @@ main (int argc, char *argv[], char *envp[])
   /* Make ospf6 vty socket. */
   if (!vty_port)
     vty_port = OSPF6_VTY_PORT;
-  vty_serv_sock (vty_addr, vty_port, OSPF6_VTYSH_PATH);
+  vty_serv_sock (vty_addr, vty_port, path_state (OSPF6_VTY_NAME));
 
   /* Print start message */
   zlog_notice ("OSPF6d (Quagga-%s ospf6d-%s) starts: vty@%d",

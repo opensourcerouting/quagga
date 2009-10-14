@@ -30,7 +30,9 @@
 #define ZEBRA_VTY_PORT                2601
 
 /* Default configuration filename. */
-#define DEFAULT_CONFIG_FILE "zebra.conf"
+#define ZEBRA_CONFIG_NAME             "zebra.conf"
+#define ZEBRA_PID_NAME                "zebra.pid"
+#define ZEBRA_VTY_NAME                "zebra.vty"
 
 /* Client structure. */
 struct zserv

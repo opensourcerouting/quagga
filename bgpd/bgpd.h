@@ -739,7 +739,9 @@ struct bgp_nlri
 
 /* Default configuration settings for bgpd.  */
 #define BGP_VTY_PORT                          2605
-#define BGP_DEFAULT_CONFIG             "bgpd.conf"
+#define BGP_CONFIG_NAME                "bgpd.conf"
+#define BGP_PID_NAME                    "bgpd.pid"
+#define BGP_VTY_NAME                    "bgpd.vty"
 
 /* Check AS path loop when we send NLRI.  */
 /* #define BGP_SEND_ASPATH_CHECK */

@@ -48,7 +48,9 @@
 #define OSPF_VL_IP_TTL          100
 
 /* Default configuration file name for ospfd. */
-#define OSPF_DEFAULT_CONFIG   "ospfd.conf"
+#define OSPF_CONFIG_NAME        "ospfd.conf"
+#define OSPF_PID_NAME           "ospfd.pid"
+#define OSPF_VTY_NAME           "ospfd.vty"
 
 /* Architectual Constants */
 #ifdef DEBUG

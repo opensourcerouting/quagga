@@ -72,7 +72,7 @@ struct zebra_privs_t ospfd_privs =
 };
 
 /* Configuration filename and directory. */
-char config_default[] = SYSCONFDIR OSPF_DEFAULT_CONFIG;
+char config_default[MAXPATHLEN];
 
 /* OSPFd options. */
 struct option longopts[] = 
@@ -96,8 +96,11 @@ struct option longopts[] =
 /* Master of threads. */
 struct thread_master *master;
 
+/* pid_file default value */
+static char pid_file_default[MAXPATHLEN];
+
 /* Process ID saved for use by init system */
-const char *pid_file = PATH_OSPFD_PID;
+const char *pid_file = pid_file_default;
 
 #ifdef SUPPORT_OSPF_API
 extern int ospf_apiserver_enable;
@@ -274,6 +277,9 @@ main (int argc, char **argv)
 	}
     }
 
+  strcpy (config_default, path_config (OSPF_CONFIG_NAME));
+  strcpy (pid_file_default, path_state (OSPF_PID_NAME));
+
   /* Initializations. */
   master = om->master;
 
@@ -324,7 +330,7 @@ main (int argc, char **argv)
   pid_output (pid_file);
 
   /* Create VTY socket */
-  vty_serv_sock (vty_addr, vty_port, OSPF_VTYSH_PATH);
+  vty_serv_sock (vty_addr, vty_port, path_state (OSPF_VTY_NAME));
 
   /* Print banner. */
   zlog_notice ("OSPFd %s starting: vty@%d", QUAGGA_VERSION, vty_port);

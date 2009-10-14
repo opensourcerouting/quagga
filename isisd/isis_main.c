@@ -34,6 +34,7 @@
 #include "privs.h"
 #include "sigevent.h"
 #include "filter.h"
+#include "paths.h"
 
 #include "isisd/dict.h"
 #include "include-netbsd/iso.h"
@@ -45,7 +46,10 @@
 #include "isisd/isis_dynhn.h"
 
 /* Default configuration file name */
-#define ISISD_DEFAULT_CONFIG "isisd.conf"
+#define ISISD_CONFIG_NAME    "isisd.conf"
+#define ISISD_PID_NAME       "isisd.pid"
+#define ISISD_VTY_NAME       "isisd.vty"
+
 /* Default vty port */
 #define ISISD_VTY_PORT       2608
 
@@ -86,7 +90,7 @@ struct option longopts[] = {
 };
 
 /* Configuration file and directory. */
-char config_default[] = SYSCONFDIR ISISD_DEFAULT_CONFIG;
+char config_default[MAXPATHLEN];
 char *config_file = NULL;
 
 /* isisd program name. */
@@ -97,8 +101,11 @@ int daemon_mode = 0;
 /* Master of threads. */
 struct thread_master *master;
 
+/* pid_file default value */
+static char pid_file_default[MAXPATHLEN];
+
 /* Process ID saved for use by init system */
-const char *pid_file = PATH_ISISD_PID;
+const char *pid_file = pid_file_default;
 
 /* for reload */
 char _cwd[MAXPATHLEN];
@@ -303,6 +310,9 @@ main (int argc, char **argv, char **envp)
 	}
     }
 
+  strcpy (config_default, path_config (ISISD_CONFIG_NAME));
+  strcpy (pid_file_default, path_state (ISISD_PID_NAME));
+
   /* thread master */
   master = thread_master_create ();
 
@@ -343,7 +353,7 @@ main (int argc, char **argv, char **envp)
   pid_output (pid_file);
 
   /* Make isis vty socket. */
-  vty_serv_sock (vty_addr, vty_port, ISIS_VTYSH_PATH);
+  vty_serv_sock (vty_addr, vty_port, path_state (ISISD_VTY_NAME));
 
   /* Print banner. */
   zlog_notice ("Quagga-ISISd %s starting: vty@%d", QUAGGA_VERSION, vty_port);

@@ -32,6 +32,7 @@
 #include "log.h"
 #include "privs.h"
 #include "sigevent.h"
+#include "paths.h"
 
 #include "ripd/ripd.h"
 
@@ -76,7 +77,7 @@ struct zebra_privs_t ripd_privs =
 };
 
 /* Configuration file and directory. */
-char config_default[] = SYSCONFDIR RIPD_DEFAULT_CONFIG;
+char config_default[MAXPATHLEN];
 char *config_file = NULL;
 
 /* ripd program name */
@@ -93,8 +94,11 @@ int vty_port = RIP_VTY_PORT;
 /* Master of threads. */
 struct thread_master *master;
 
+/* pid_file default value */
+static char pid_file_default[MAXPATHLEN];
+
 /* Process ID saved for use by init system */
-const char *pid_file = PATH_RIPD_PID;
+const char *pid_file = pid_file_default;
 
 /* Help information display. */
 static void
@@ -137,7 +141,7 @@ sighup (void)
   vty_read_config (config_file, config_default);
 
   /* Create VTY's socket */
-  vty_serv_sock (vty_addr, vty_port, RIP_VTYSH_PATH);
+  vty_serv_sock (vty_addr, vty_port, path_state (RIPD_VTY_NAME));
 
   /* Try to return to normal operation. */
 }
@@ -264,6 +268,9 @@ main (int argc, char **argv)
 	}
     }
 
+  strcpy (config_default, path_config (RIPD_CONFIG_NAME));
+  strcpy (pid_file_default, path_state (RIPD_PID_NAME));
+
   /* Prepare master thread. */
   master = thread_master_create ();
 
@@ -302,7 +309,7 @@ main (int argc, char **argv)
   pid_output (pid_file);
 
   /* Create VTY's socket */
-  vty_serv_sock (vty_addr, vty_port, RIP_VTYSH_PATH);
+  vty_serv_sock (vty_addr, vty_port, path_state (RIPD_VTY_NAME));
 
   /* Print banner. */
   zlog_notice ("RIPd %s starting: vty@%d", QUAGGA_VERSION, vty_port);

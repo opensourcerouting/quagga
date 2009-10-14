@@ -1,7 +1,7 @@
 ## Process this file with automake to produce Makefile.in.
 
 INCLUDES = @INCLUDES@ -I.. -I$(top_srcdir) -I$(top_srcdir)/lib @SNMP_INCLUDES@
-DEFS = @DEFS@ $(LOCAL_OPTS) -DSYSCONFDIR=\"$(sysconfdir)/\"
+DEFS = @DEFS@ $(LOCAL_OPTS)
 INSTALL_SDATA=@INSTALL@ -m 600
 
 lib_LTLIBRARIES = libospf.la

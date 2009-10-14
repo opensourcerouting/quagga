@@ -34,6 +34,7 @@
 #include "memory.h"
 #include "vtysh/vtysh.h"
 #include "log.h"
+#include "paths.h"
 #include "bgpd/bgp_vty.h"
 
 /* Struct VTY. */
@@ -48,16 +49,15 @@ struct vtysh_client
   int fd;
   const char *name;
   int flag;
-  const char *path;
 } vtysh_client[] =
 {
-  { .fd = -1, .name = "zebra", .flag = VTYSH_ZEBRA, .path = ZEBRA_VTYSH_PATH},
-  { .fd = -1, .name = "ripd", .flag = VTYSH_RIPD, .path = RIP_VTYSH_PATH},
-  { .fd = -1, .name = "ripngd", .flag = VTYSH_RIPNGD, .path = RIPNG_VTYSH_PATH},
-  { .fd = -1, .name = "ospfd", .flag = VTYSH_OSPFD, .path = OSPF_VTYSH_PATH},
-  { .fd = -1, .name = "ospf6d", .flag = VTYSH_OSPF6D, .path = OSPF6_VTYSH_PATH},
-  { .fd = -1, .name = "bgpd", .flag = VTYSH_BGPD, .path = BGP_VTYSH_PATH},
-  { .fd = -1, .name = "isisd", .flag = VTYSH_ISISD, .path = ISIS_VTYSH_PATH},
+  { .fd = -1, .name = "zebra", .flag = VTYSH_ZEBRA},
+  { .fd = -1, .name = "ripd", .flag = VTYSH_RIPD},
+  { .fd = -1, .name = "ripngd", .flag = VTYSH_RIPNGD},
+  { .fd = -1, .name = "ospfd", .flag = VTYSH_OSPFD},
+  { .fd = -1, .name = "ospf6d", .flag = VTYSH_OSPF6D},
+  { .fd = -1, .name = "bgpd", .flag = VTYSH_BGPD},
+  { .fd = -1, .name = "isisd", .flag = VTYSH_ISISD},
 };
 
 #define VTYSH_INDEX_MAX (sizeof(vtysh_client)/sizeof(vtysh_client[0]))
@@ -2103,13 +2103,17 @@ vtysh_connect (struct vtysh_client *vclient)
   int sock, len;
   struct sockaddr_un addr;
   struct stat s_stat;
+  char path[MAXPATHLEN];
+
+  /* figure out path to daemon VTY socket */
+  snprintf (path, sizeof(path), "%s.vty", path_state (vclient->name));
 
   /* Stat socket to see if we have permission to access it. */
-  ret = stat (vclient->path, &s_stat);
+  ret = stat (path, &s_stat);
   if (ret < 0 && errno != ENOENT)
     {
       fprintf  (stderr, "vtysh_connect(%s): stat = %s\n", 
-		vclient->path, safe_strerror(errno)); 
+		path, safe_strerror(errno));
       exit(1);
     }
   
@@ -2117,8 +2121,7 @@ vtysh_connect (struct vtysh_client *vclient)
     {
       if (! S_ISSOCK(s_stat.st_mode))
 	{
-	  fprintf (stderr, "vtysh_connect(%s): Not a socket\n",
-		   vclient->path);
+	  fprintf (stderr, "vtysh_connect(%s): Not a socket\n", path);
 	  exit (1);
 	}
       
@@ -2128,7 +2131,7 @@ vtysh_connect (struct vtysh_client *vclient)
   if (sock < 0)
     {
 #ifdef DEBUG
-      fprintf(stderr, "vtysh_connect(%s): socket = %s\n", vclient->path,
+      fprintf(stderr, "vtysh_connect(%s): socket = %s\n", path,
 	      safe_strerror(errno));
 #endif /* DEBUG */
       return -1;
@@ -2136,7 +2139,7 @@ vtysh_connect (struct vtysh_client *vclient)
 
   memset (&addr, 0, sizeof (struct sockaddr_un));
   addr.sun_family = AF_UNIX;
-  strncpy (addr.sun_path, vclient->path, strlen (vclient->path));
+  strncpy (addr.sun_path, path, sizeof (addr.sun_path));
 #ifdef HAVE_STRUCT_SOCKADDR_UN_SUN_LEN
   len = addr.sun_len = SUN_LEN(&addr);
 #else
@@ -2147,7 +2150,7 @@ vtysh_connect (struct vtysh_client *vclient)
   if (ret < 0)
     {
 #ifdef DEBUG
-      fprintf(stderr, "vtysh_connect(%s): connect = %s\n", vclient->path,
+      fprintf(stderr, "vtysh_connect(%s): connect = %s\n", path,
 	      safe_strerror(errno));
 #endif /* DEBUG */
       close (sock);

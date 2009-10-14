@@ -35,6 +35,7 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #include "routemap.h"
 #include "filter.h"
 #include "plist.h"
+#include "paths.h"
 
 #include "bgpd/bgpd.h"
 #include "bgpd/bgp_attr.h"
@@ -96,7 +97,7 @@ static struct quagga_signal_t bgp_signals[] =
 };
 
 /* Configuration file and directory. */
-char config_default[] = SYSCONFDIR BGP_DEFAULT_CONFIG;
+static char config_default[MAXPATHLEN];
 
 /* Route retain mode flag. */
 static int retain_mode = 0;
@@ -107,8 +108,11 @@ struct thread_master *master;
 /* Manually specified configuration file name.  */
 char *config_file = NULL;
 
+/* pid_file default value */
+static char pid_file_default[MAXPATHLEN];
+
 /* Process ID saved for use by init system */
-static const char *pid_file = PATH_BGPD_PID;
+static const char *pid_file = pid_file_default;
 
 /* VTY port number and address.  */
 int vty_port = BGP_VTY_PORT;
@@ -182,7 +186,7 @@ sighup (void)
   vty_read_config (config_file, config_default);
 
   /* Create VTY's socket */
-  vty_serv_sock (vty_addr, vty_port, BGP_VTYSH_PATH);
+  vty_serv_sock (vty_addr, vty_port, path_state (BGP_VTY_NAME));
 
   /* Try to return to normal operation. */
 }
@@ -398,6 +402,9 @@ main (int argc, char **argv)
 	}
     }
 
+  strcpy (config_default, path_config (BGP_CONFIG_NAME));
+  strcpy (pid_file_default, path_state (BGP_PID_NAME));
+
   /* Make thread master. */
   master = bm->master;
 
@@ -434,7 +441,7 @@ main (int argc, char **argv)
   pid_output (pid_file);
 
   /* Make bgp vty socket. */
-  vty_serv_sock (vty_addr, vty_port, BGP_VTYSH_PATH);
+  vty_serv_sock (vty_addr, vty_port, path_state (BGP_VTY_NAME));
 
   /* Print banner. */
   zlog_notice ("BGPd %s starting: vty@%d, bgp@%s:%d", QUAGGA_VERSION,
