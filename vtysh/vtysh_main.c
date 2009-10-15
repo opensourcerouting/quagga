@@ -143,6 +143,7 @@ usage (int status)
 	    "-d, --daemon             Connect only to the specified daemon\n" \
 	    "-E, --echo               Echo prompt and command in -c mode\n" \
 	    "-C, --dryrun             Check configuration for validity and exit\n" \
+	    "-N, --namespace          Use prefixed daemon socket names\n" \
 	    "-h, --help               Display this help and exit\n\n" \
 	    "Note that multiple commands may be executed from the command\n" \
 	    "line by passing multiple -c args, or by embedding linefeed\n" \
@@ -162,6 +163,7 @@ struct option longopts[] =
   { "daemon",               required_argument,       NULL, 'd'},
   { "echo",                 no_argument,             NULL, 'E'},
   { "dryrun",		    no_argument,	     NULL, 'C'},
+  { "namespace",	    required_argument,       NULL, 'N'},
   { "help",                 no_argument,             NULL, 'h'},
   { "noerror",		    no_argument,	     NULL, 'n'},
   { 0 }
@@ -237,7 +239,7 @@ main (int argc, char **argv, char **env)
   /* Option handling. */
   while (1) 
     {
-      opt = getopt_long (argc, argv, "be:c:d:nEhC", longopts, 0);
+      opt = getopt_long (argc, argv, "be:c:d:nEhCN:", longopts, 0);
     
       if (opt == EOF)
 	break;
@@ -277,6 +279,20 @@ main (int argc, char **argv, char **env)
 	  break;
 	case 'h':
 	  usage (0);
+	  break;
+	case 'N':
+	  /* we're using this as a path component, so...
+	   * for the daemons we can assume no malicious tampering
+	   * with the cmdline, but for vtysh we have to check
+	   */
+	  if (strchr (optarg, '/') || optarg[0] == '.')
+	    {
+	      fprintf (stderr, "The namespace argument may not include "
+			       "slashes or start with a dot.\n");
+	      break;
+	    }
+
+	  path_set_namespace (optarg);
 	  break;
 	default:
 	  usage (1);
