@@ -69,6 +69,7 @@ struct option longopts[] =
 {
   { "batch",       no_argument,       NULL, 'b'},
   { "daemon",      no_argument,       NULL, 'd'},
+  { "namespace",   required_argument, NULL, 'N'},
   { "keep_kernel", no_argument,       NULL, 'k'},
   { "config_file", required_argument, NULL, 'f'},
   { "pid_file",    required_argument, NULL, 'i'},
@@ -130,6 +131,7 @@ usage (char *progname, int status)
 	      "redistribution between different routing protocols.\n\n"\
 	      "-b, --batch        Runs in batch mode\n"\
 	      "-d, --daemon       Runs in daemon mode\n"\
+	      "-N, --namespace    Insert argument into all paths\n"\
 	      "-f, --config_file  Set configuration file name\n"\
 	      "-i, --pid_file     Set process identifier file name\n"\
 	      "-k, --keep_kernel  Don't delete old routes which installed by "\
@@ -233,9 +235,9 @@ main (int argc, char **argv)
       int opt;
   
 #ifdef HAVE_NETLINK  
-      opt = getopt_long (argc, argv, "bdkf:i:hA:P:ru:g:vs:C", longopts, 0);
+      opt = getopt_long (argc, argv, "bdN:kf:i:hA:P:ru:g:vs:C", longopts, 0);
 #else
-      opt = getopt_long (argc, argv, "bdkf:i:hA:P:ru:g:vC", longopts, 0);
+      opt = getopt_long (argc, argv, "bdN:kf:i:hA:P:ru:g:vC", longopts, 0);
 #endif /* HAVE_NETLINK */
 
       if (opt == EOF)
@@ -249,6 +251,9 @@ main (int argc, char **argv)
 	  batch_mode = 1;
 	case 'd':
 	  daemon_mode = 1;
+	  break;
+	case 'N':
+	  path_set_namespace (optarg);
 	  break;
 	case 'k':
 	  keep_kernel_mode = 1;

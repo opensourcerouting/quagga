@@ -40,6 +40,7 @@
 static struct option longopts[] = 
 {
   { "daemon",      no_argument,       NULL, 'd'},
+  { "namespace",   required_argument, NULL, 'N'},
   { "config_file", required_argument, NULL, 'f'},
   { "pid_file",    required_argument, NULL, 'i'},
   { "help",        no_argument,       NULL, 'h'},
@@ -111,6 +112,7 @@ usage (char *progname, int status)
       printf ("Usage : %s [OPTION...]\n\
 Daemon which manages RIP version 1 and 2.\n\n\
 -d, --daemon       Runs in daemon mode\n\
+-N, --namespace    Insert argument into all paths\n\
 -f, --config_file  Set configuration file name\n\
 -i, --pid_file     Set process identifier file name\n\
 -A, --vty_addr     Set vty's bind address\n\
@@ -210,7 +212,7 @@ main (int argc, char **argv)
     {
       int opt;
 
-      opt = getopt_long (argc, argv, "df:i:hA:P:u:g:rvC", longopts, 0);
+      opt = getopt_long (argc, argv, "dN:f:i:hA:P:u:g:rvC", longopts, 0);
     
       if (opt == EOF)
 	break;
@@ -221,6 +223,9 @@ main (int argc, char **argv)
 	  break;
 	case 'd':
 	  daemon_mode = 1;
+	  break;
+	case 'N':
+	  path_set_namespace (optarg);
 	  break;
 	case 'f':
 	  config_file = optarg;
