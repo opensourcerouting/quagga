@@ -1492,6 +1492,7 @@ fi
 AC_MSG_RESULT(${quagga_statedir})
 AC_SUBST(quagga_statedir)
 
+AC_DEFINE_UNQUOTED(PATH_STATE, "$quagga_statedir",zebra state path)
 AC_DEFINE_UNQUOTED(PATH_ZEBRA_PID, "$quagga_statedir/zebra.pid",zebra PID)
 AC_DEFINE_UNQUOTED(PATH_RIPD_PID, "$quagga_statedir/ripd.pid",ripd PID)
 AC_DEFINE_UNQUOTED(PATH_RIPNGD_PID, "$quagga_statedir/ripngd.pid",ripngd PID)
