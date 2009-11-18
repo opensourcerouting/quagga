@@ -3839,7 +3839,7 @@ ospf_ls_upd_send (struct ospf_neighbor *nbr, struct list *update, const int flag
     {
       if (flag == OSPF_SEND_PACKET_INDIRECT)
 	zlog_warn ("* LS-Update is directly sent on NBMA network.");
-      if (IPV4_ADDR_SAME(&oi->address->u.prefix4, &p.prefix.s_addr))
+      if (IPV4_ADDR_SAME(&oi->address->u.prefix4, &p.prefix))
 	zlog_warn ("* LS-Update is sent to myself.");
     }
 

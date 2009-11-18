@@ -279,7 +279,7 @@ rtadv_send_packet (int sock, struct interface *ifp)
   int len = 0;
   struct zebra_if *zif;
   struct rtadv_prefix *rprefix;
-  u_char all_nodes_addr[] = {0xff,0x02,0,0,0,0,0,0,0,0,0,0,0,0,0,1};
+  struct in6_addr all_nodes_addr = {{{0xff,0x02,0,0,0,0,0,0,0,0,0,0,0,0,0,1}}};
   struct listnode *node;
   u_int16_t pkt_RouterLifetime;
   struct rtadv_rdnss_entry *rdnss_entry;
@@ -311,7 +311,7 @@ rtadv_send_packet (int sock, struct interface *ifp)
   addr.sin6_len = sizeof (struct sockaddr_in6);
 #endif /* SIN6_LEN */
   addr.sin6_port = htons (IPPROTO_ICMPV6);
-  IPV6_ADDR_COPY (&addr.sin6_addr, all_nodes_addr);
+  IPV6_ADDR_COPY (&addr.sin6_addr, &all_nodes_addr);
 
   /* Fetch interface information. */
   zif = ifp->info;
@@ -401,7 +401,7 @@ rtadv_send_packet (int sock, struct interface *ifp)
         MAX (1, (unsigned)zif->rtadv.MaxRtrAdvInterval / 500) /* 2*MaxRAI in seconds */
       );
       len += sizeof (struct nd_opt_rdnss);
-      IPV6_ADDR_COPY (buf + len, rdnss_entry->address.s6_addr);
+      IPV6_ADDR_COPY ((struct in6_addr *)(buf + len), &rdnss_entry->address);
       len += sizeof (struct in6_addr);
     }
 
@@ -1801,7 +1801,7 @@ rtadv_rdnss_lookup (struct list *list, struct in6_addr *v6addr)
   struct rtadv_rdnss_entry *entry;
 
   for (ALL_LIST_ELEMENTS_RO (list, node, entry))
-    if (IPV6_ADDR_SAME (entry->address.s6_addr, v6addr->s6_addr))
+    if (IPV6_ADDR_SAME (&entry->address, v6addr))
       return entry;
   return NULL;
 }

@@ -105,9 +105,9 @@ struct prefix_rd
 #define IPV4_MAX_BYTELEN    4
 #define IPV4_MAX_BITLEN    32
 #define IPV4_MAX_PREFIXLEN 32
-#define IPV4_ADDR_CMP(D,S)   memcmp ((D), (S), IPV4_MAX_BYTELEN)
-#define IPV4_ADDR_SAME(D,S)  (memcmp ((D), (S), IPV4_MAX_BYTELEN) == 0)
-#define IPV4_ADDR_COPY(D,S)  memcpy ((D), (S), IPV4_MAX_BYTELEN)
+#define IPV4_ADDR_CMP(D,S)   (ntohl((D)->s_addr) - ntohl((S)->s_addr))
+#define IPV4_ADDR_SAME(D,S)  ((D)->s_addr == (S)->s_addr)
+#define IPV4_ADDR_COPY(D,S)  ((D)->s_addr = (S)->s_addr)
 
 #define IPV4_NET0(a)    ((((u_int32_t) (a)) & 0xff000000) == 0x00000000)
 #define IPV4_NET127(a)  ((((u_int32_t) (a)) & 0xff000000) == 0x7f000000)
@@ -118,9 +118,12 @@ struct prefix_rd
 #define IPV6_MAX_BYTELEN    16
 #define IPV6_MAX_BITLEN    128
 #define IPV6_MAX_PREFIXLEN 128
-#define IPV6_ADDR_CMP(D,S)   memcmp ((D), (S), IPV6_MAX_BYTELEN)
-#define IPV6_ADDR_SAME(D,S)  (memcmp ((D), (S), IPV6_MAX_BYTELEN) == 0)
-#define IPV6_ADDR_COPY(D,S)  memcpy ((D), (S), IPV6_MAX_BYTELEN)
+#define IPV6_ADDR_CMP(D,S)   memcmp ((D)->s6_addr,\
+				     (S)->s6_addr, IPV6_MAX_BYTELEN)
+#define IPV6_ADDR_SAME(D,S)  (memcmp ((D)->s6_addr,\
+				      (S)->s6_addr, IPV6_MAX_BYTELEN) == 0)
+#define IPV6_ADDR_COPY(D,S)  memcpy ((D)->s6_addr,\
+				     (S)->s6_addr, IPV6_MAX_BYTELEN)
 
 /* Count prefix size from mask length */
 #define PSIZE(a) (((a) + 7) / (8))

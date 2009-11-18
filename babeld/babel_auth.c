@@ -106,7 +106,7 @@ babel_anm_lookup (const struct in6_addr *address, const struct interface *ifp)
   struct babel_anm_item *anm;
 
   for (ALL_LIST_ELEMENTS_RO (anmlist, node, anm))
-    if (IPV6_ADDR_SAME (anm->address.s6_addr, &address->s6_addr) && anm->ifp == ifp)
+    if (IPV6_ADDR_SAME (&anm->address, address) && anm->ifp == ifp)
       return anm;
   return NULL;
 }
@@ -531,7 +531,7 @@ babel_auth_got_source_address (const struct interface *ifp, unsigned char * addr
     {
       debugf (BABEL_DEBUG_AUTH, "%s: using link-local address %s", __func__,
               inet_ntop (AF_INET6, &connected->address->u.prefix6, buffer, INET6_ADDRSTRLEN));
-      IPV6_ADDR_COPY (addr, connected->address->u.prefix6.s6_addr);
+      IPV6_ADDR_COPY ((struct in6_addr *)addr, &connected->address->u.prefix6);
       return 1;
     }
   /* Reaching here means either a logic error or a race condition, because

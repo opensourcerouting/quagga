@@ -784,11 +784,6 @@ bgp_announce_check (struct bgp_info *ri, struct peer *peer, struct prefix *p,
   if (p->family == AF_INET
       && IPV4_ADDR_SAME(&peer->remote_id, &ri->attr->nexthop))
     return 0;
-#ifdef HAVE_IPV6
-  if (p->family == AF_INET6
-     && IPV6_ADDR_SAME(&peer->remote_id, &ri->attr->nexthop))
-    return 0;
-#endif
 
   /* Aggregate-address suppress check. */
   if (ri->extra && ri->extra->suppress)
