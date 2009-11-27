@@ -363,6 +363,7 @@ ospf_nbr_get (struct ospf_interface *oi, struct ospf_header *ospfh,
   else
     {
       nbr = ospf_nbr_add (oi, ospfh, iph);
+      listnode_add (oi->nbrs, nbr);
     }
 
   nbr->router_id = ospfh->router_id;
