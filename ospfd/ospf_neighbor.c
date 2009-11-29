@@ -125,7 +125,7 @@ ospf_nbr_free (struct ospf_neighbor *nbr)
 }
 /* lookup nbr by address - use this only if you know you must
  * otherwise use the ospf_nbr_lookup() wrapper, which deals
- * with virtual link neighbours
+ * with virtual link and PointToPoint neighbours
  */
 struct ospf_neighbor *
 ospf_nbr_lookup_by_addr (struct list *nbrs,
@@ -208,7 +208,8 @@ ospf_nbr_add_self (struct ospf_interface *oi)
     }
 
   /* Sanity check, should not be needed */
-  if (oi->type == OSPF_IFTYPE_VIRTUALLINK)
+  if (oi->type == OSPF_IFTYPE_VIRTUALLINK ||
+      oi->type == OSPF_IFTYPE_POINTOPOINT)
     nbr = ospf_nbr_lookup_by_routerid (oi->nbrs, &oi->nbr_self->router_id);
   else
     nbr = ospf_nbr_lookup_by_addr (oi->nbrs, &oi->nbr_self->src);
@@ -295,7 +296,8 @@ struct ospf_neighbor *
 ospf_nbr_lookup (struct ospf_interface *oi, struct ip *iph,
                  struct ospf_header *ospfh)
 {
-  if (oi->type == OSPF_IFTYPE_VIRTUALLINK)
+  if (oi->type == OSPF_IFTYPE_VIRTUALLINK ||
+      oi->type == OSPF_IFTYPE_POINTOPOINT)
     return ospf_nbr_lookup_by_routerid (oi->nbrs, &ospfh->router_id);
   else
     return ospf_nbr_lookup_by_addr (oi->nbrs, &iph->ip_src);
