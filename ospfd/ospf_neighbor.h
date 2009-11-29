@@ -110,10 +110,9 @@ extern struct ospf_neighbor *ospf_nbr_get (struct ospf_interface *,
 extern struct ospf_neighbor *ospf_nbr_lookup (struct ospf_interface *,
 					      struct ip *,
 					      struct ospf_header *);
-extern struct ospf_neighbor *ospf_nbr_lookup_by_addr (struct route_table *,
+extern struct ospf_neighbor *ospf_nbr_lookup_by_addr (struct list *,
 						      struct in_addr *);
-extern struct ospf_neighbor *ospf_nbr_lookup_by_routerid (struct route_table
-							  *,
+extern struct ospf_neighbor *ospf_nbr_lookup_by_routerid (struct list *,
 							  struct in_addr *);
 extern void ospf_renegotiate_optional_capabilities (struct ospf *top);
 

@@ -436,17 +436,13 @@ struct ospf_neighbor *
 ospf_nbr_lookup_ptop (struct ospf_interface *oi)
 {
   struct ospf_neighbor *nbr = NULL;
-  struct route_node *rn;
+  struct listnode *node;
 
   /* Search neighbor, there must be one of two nbrs. */
-  for (rn = route_top (oi->nbrs); rn; rn = route_next (rn))
-    if ((nbr = rn->info))
-      if (!IPV4_ADDR_SAME (&nbr->router_id, &oi->ospf->router_id))
-	if (nbr->state == NSM_Full)
-	  {
-	    route_unlock_node (rn);
-	    break;
-	  }
+  for (ALL_LIST_ELEMENTS_RO (oi->nbrs, node, nbr))
+    if (!IPV4_ADDR_SAME (&nbr->router_id, &oi->ospf->router_id))
+      if (nbr->state == NSM_Full)
+	  break;
 
   /* PtoP link must have only 1 neighbor. */
   if (ospf_nbr_count (oi, 0) > 1)
@@ -623,7 +619,7 @@ static int
 lsa_link_ptomp_set (struct stream *s, struct ospf_interface *oi)
 {
   int links = 0;
-  struct route_node *rn;
+  struct listnode *node;
   struct ospf_neighbor *nbr = NULL;
   struct in_addr id, mask;
   u_int16_t cost = ospf_link_cost (oi);
@@ -636,20 +632,18 @@ lsa_link_ptomp_set (struct stream *s, struct ospf_interface *oi)
     zlog_debug ("PointToMultipoint: running ptomultip_set");
 
   /* Search neighbor, */
-  for (rn = route_top (oi->nbrs); rn; rn = route_next (rn))
-    if ((nbr = rn->info) != NULL)
-      /* Ignore myself. */
-      if (!IPV4_ADDR_SAME (&nbr->router_id, &oi->ospf->router_id))
-	if (nbr->state == NSM_Full)
+  for (ALL_LIST_ELEMENTS_RO (oi->nbrs, node, nbr))
+    /* Ignore myself. */
+    if (!IPV4_ADDR_SAME (&nbr->router_id, &oi->ospf->router_id))
+      if (nbr->state == NSM_Full)
+	{
+	  links += link_info_set (s, nbr->router_id, oi->address->u.prefix4,
+				  LSA_LINK_TYPE_POINTOPOINT, 0, cost);
+	  if (IS_DEBUG_OSPF (lsa, LSA_GENERATE))
+	    zlog_debug ("PointToMultipoint: set link to %s",
+			inet_ntoa(oi->address->u.prefix4));
+	}
 
-	  {
-	    links += link_info_set (s, nbr->router_id, oi->address->u.prefix4,
-			            LSA_LINK_TYPE_POINTOPOINT, 0, cost);
-            if (IS_DEBUG_OSPF (lsa, LSA_GENERATE))
- 	      zlog_debug ("PointToMultipoint: set link to %s",
-		         inet_ntoa(oi->address->u.prefix4));
-	  }
-  
   return links;
 }
 
@@ -1025,7 +1019,7 @@ static void
 ospf_network_lsa_body_set (struct stream *s, struct ospf_interface *oi)
 {
   struct in_addr mask;
-  struct route_node *rn;
+  struct listnode *node;
   struct ospf_neighbor *nbr;
 
   masklen2ip (oi->address->prefixlen, &mask);
@@ -1036,10 +1030,9 @@ ospf_network_lsa_body_set (struct stream *s, struct ospf_interface *oi)
     its OSPF Router ID.  The Designated Router includes itself in this
     list. RFC2328, Section 12.4.2 */
 
-  for (rn = route_top (oi->nbrs); rn; rn = route_next (rn))
-    if ((nbr = rn->info) != NULL)
-      if (nbr->state == NSM_Full || nbr == oi->nbr_self)
-	stream_put_ipv4 (s, nbr->router_id.s_addr);
+  for (ALL_LIST_ELEMENTS_RO (oi->nbrs, node, nbr))
+    if (nbr->state == NSM_Full || nbr == oi->nbr_self)
+      stream_put_ipv4 (s, nbr->router_id.s_addr);
 }
 
 static struct ospf_lsa *
@@ -2839,19 +2832,14 @@ ospf_check_nbr_status (struct ospf *ospf)
   struct listnode *node, *nnode;
   struct ospf_interface *oi;
   
-  for (ALL_LIST_ELEMENTS (ospf->oiflist, node, nnode, oi))
+  for (ALL_LIST_ELEMENTS_RO (ospf->oiflist, node, oi))
     {
-      struct route_node *rn;
       struct ospf_neighbor *nbr;
 
       if (ospf_if_is_enable (oi))
-	for (rn = route_top (oi->nbrs); rn; rn = route_next (rn))
-          if ((nbr = rn->info) != NULL)
-	    if (nbr->state == NSM_Exchange || nbr->state == NSM_Loading)
-	      {
-		route_unlock_node (rn);
-		return 0;
-	      }
+	for (ALL_LIST_ELEMENTS_RO (oi->nbrs, nnode, nbr))
+	  if (nbr->state == NSM_Exchange || nbr->state == NSM_Loading)
+	    return 0;
     }
 
   return 1;

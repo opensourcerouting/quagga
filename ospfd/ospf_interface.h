@@ -171,7 +171,7 @@ struct ospf_interface
   u_int32_t output_cost;	        /* Acutual Interface Output Cost */
 
   /* Neighbor information. */
-  struct route_table *nbrs;             /* OSPF Neighbor List */
+  struct list *nbrs;			/* OSPF Neighbor List */
   struct ospf_neighbor *nbr_self;	/* Neighbor Self */
 #define DR(I)			((I)->nbr_self->d_router)
 #define BDR(I)			((I)->nbr_self->bd_router)

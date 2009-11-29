@@ -2625,7 +2625,7 @@ static int
 ospf_make_hello (struct ospf_interface *oi, struct stream *s)
 {
   struct ospf_neighbor *nbr;
-  struct route_node *rn;
+  struct listnode *node;
   u_int16_t length = OSPF_HELLO_MIN_SIZE;
   struct in_addr mask;
   unsigned long p;
@@ -2667,10 +2667,9 @@ ospf_make_hello (struct ospf_interface *oi, struct stream *s)
   stream_put_ipv4 (s, BDR (oi).s_addr);
 
   /* Add neighbor seen. */
-  for (rn = route_top (oi->nbrs); rn; rn = route_next (rn))
-    if ((nbr = rn->info))
-      if (nbr->router_id.s_addr != 0)	/* Ignore 0.0.0.0 node. */
-	if (nbr->state != NSM_Attempt)  /* Ignore Down neighbor. */
+  for (ALL_LIST_ELEMENTS_RO (oi->nbrs, node, nbr))
+    if (nbr->router_id.s_addr != 0)	/* Ignore 0.0.0.0 node. */
+      if (nbr->state != NSM_Attempt)	/* Ignore Down neighbor. */
 	if (nbr->state != NSM_Down)     /* This is myself for DR election. */
 	  if (!IPV4_ADDR_SAME (&nbr->router_id, &oi->ospf->router_id))
 	    {
@@ -3086,45 +3085,43 @@ ospf_hello_send (struct ospf_interface *oi)
   if (oi->type == OSPF_IFTYPE_NBMA)
     {
       struct ospf_neighbor *nbr;
-      struct route_node *rn;
+      struct listnode *node;
 
-      for (rn = route_top (oi->nbrs); rn; rn = route_next (rn))
-	if ((nbr = rn->info))
-	  if (nbr != oi->nbr_self)
-	    if (nbr->state != NSM_Down)
+      for (ALL_LIST_ELEMENTS_RO (oi->nbrs, node, nbr))
+	if (nbr != oi->nbr_self)
+	  if (nbr->state != NSM_Down)
+	    {
+	      /*  RFC 2328  Section 9.5.1
+		  If the router is not eligible to become Designated Router,
+		  it must periodically send Hello Packets to both the
+		  Designated Router and the Backup Designated Router (if they
+		  exist).  */
+	      if (PRIORITY(oi) == 0 &&
+		  IPV4_ADDR_CMP(&DR(oi),  &nbr->address.u.prefix4) &&
+		  IPV4_ADDR_CMP(&BDR(oi), &nbr->address.u.prefix4))
+		continue;
+
+	      /*  If the router is eligible to become Designated Router, it
+		  must periodically send Hello Packets to all neighbors that
+		  are also eligible. In addition, if the router is itself the
+		  Designated Router or Backup Designated Router, it must also
+		  send periodic Hello Packets to all other neighbors. */
+
+	      if (nbr->priority == 0 && oi->state == ISM_DROther)
+		continue;
+	      /* if oi->state == Waiting, send hello to all neighbors */
 	      {
-		/*  RFC 2328  Section 9.5.1
-		    If the router is not eligible to become Designated Router,
-		    it must periodically send Hello Packets to both the
-		    Designated Router and the Backup Designated Router (if they
-		    exist).  */
-		if (PRIORITY(oi) == 0 &&
-		    IPV4_ADDR_CMP(&DR(oi),  &nbr->address.u.prefix4) &&
-		    IPV4_ADDR_CMP(&BDR(oi), &nbr->address.u.prefix4))
-		  continue;
+		struct ospf_packet *op_dup;
 
-		/*  If the router is eligible to become Designated Router, it
-		    must periodically send Hello Packets to all neighbors that
-		    are also eligible. In addition, if the router is itself the
-		    Designated Router or Backup Designated Router, it must also
-		    send periodic Hello Packets to all other neighbors. */
+		op_dup = ospf_packet_dup(op);
+		op_dup->dst = nbr->address.u.prefix4;
 
-		if (nbr->priority == 0 && oi->state == ISM_DROther)
-		  continue;
-		/* if oi->state == Waiting, send hello to all neighbors */
-		{
-		  struct ospf_packet *op_dup;
+		/* Add packet to the interface output queue. */
+		ospf_packet_add (oi, op_dup);
 
-		  op_dup = ospf_packet_dup(op);
-		  op_dup->dst = nbr->address.u.prefix4;
-
-		  /* Add packet to the interface output queue. */
-		  ospf_packet_add (oi, op_dup);
-
-		  OSPF_ISM_WRITE_ON (oi->ospf);
-		}
-
+		OSPF_ISM_WRITE_ON (oi->ospf);
 	      }
+	    }
       ospf_packet_free (op);
     }
   else
@@ -3542,10 +3539,9 @@ ospf_ls_ack_send_delayed (struct ospf_interface *oi)
   if (oi->type == OSPF_IFTYPE_NBMA)
     {
       struct ospf_neighbor *nbr;
-      struct route_node *rn;
+      struct listnode *node;
 
-      for (rn = route_top (oi->nbrs); rn; rn = route_next (rn))
-	if ((nbr = rn->info) != NULL)
+      for (ALL_LIST_ELEMENTS_RO (oi->nbrs, node, nbr))
 	  if (nbr != oi->nbr_self && nbr->state >= NSM_Exchange)
 	    while (listcount (oi->ls_ack))
 	      ospf_ls_ack_send_list (oi, oi->ls_ack, nbr->address.u.prefix4);
