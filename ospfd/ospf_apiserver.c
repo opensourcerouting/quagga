@@ -2470,7 +2470,7 @@ ospf_apiserver_clients_notify_nsm_change (struct ospf_neighbor *nbr)
       ifaddr = nbr->oi->address->u.prefix4;
     }
 
-  nbraddr = nbr->address.u.prefix4;
+  nbraddr = nbr->src;
 
   msg = new_msg_nsm_change (0, ifaddr, nbraddr, nbr->router_id, nbr->state);
   if (!msg)

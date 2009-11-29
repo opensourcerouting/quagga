@@ -188,7 +188,6 @@ ospf_nbr_add_self (struct ospf_interface *oi)
   struct ospf_neighbor *nbr;
 
   /* Initial state */
-  oi->nbr_self->address = *oi->address;
   oi->nbr_self->priority = OSPF_IF_PARAM (oi, priority);
   oi->nbr_self->router_id = oi->ospf->router_id;
   oi->nbr_self->src = oi->address->u.prefix4;
@@ -304,14 +303,13 @@ ospf_nbr_lookup (struct ospf_interface *oi, struct ip *iph,
 
 static struct ospf_neighbor *
 ospf_nbr_add (struct ospf_interface *oi, struct ospf_header *ospfh,
-              struct prefix *p)
+              struct ip *iph)
 {
   struct ospf_neighbor *nbr;
   
   nbr = ospf_nbr_new (oi);
   nbr->state = NSM_Down;
-  nbr->src = p->u.prefix4;
-  memcpy (&nbr->address, p, sizeof (struct prefix));
+  nbr->src = iph->ip_src;
 
   nbr->nbr_nbma = NULL;
   if (oi->type == OSPF_IFTYPE_NBMA)
@@ -348,7 +346,7 @@ ospf_nbr_add (struct ospf_interface *oi, struct ospf_header *ospfh,
 
 struct ospf_neighbor *
 ospf_nbr_get (struct ospf_interface *oi, struct ospf_header *ospfh,
-              struct ip *iph, struct prefix *p)
+              struct ip *iph)
 {
   struct ospf_neighbor *nbr;
 
@@ -358,14 +356,13 @@ ospf_nbr_get (struct ospf_interface *oi, struct ospf_header *ospfh,
       if (oi->type == OSPF_IFTYPE_NBMA && nbr->state == NSM_Attempt)
         {
           nbr->src = iph->ip_src;
-          memcpy (&nbr->address, p, sizeof (struct prefix));
         }
     }
   else
     {
-      nbr = ospf_nbr_add (oi, ospfh, p);
+      nbr = ospf_nbr_add (oi, ospfh, iph);
     }
-  
+
   nbr->router_id = ospfh->router_id;
 
   return nbr;

@@ -2911,7 +2911,7 @@ show_ip_ospf_interface_sub (struct vty *vty, struct ospf *ospf,
 	      vty_out (vty, "  Designated Router (ID) %s,",
 		       inet_ntoa (nbr->router_id));
 	      vty_out (vty, " Interface Address %s%s",
-		       inet_ntoa (nbr->address.u.prefix4), VTY_NEWLINE);
+		       inet_ntoa (nbr->src), VTY_NEWLINE);
 	    }
 	}
 
@@ -2930,7 +2930,7 @@ show_ip_ospf_interface_sub (struct vty *vty, struct ospf *ospf,
 	      vty_out (vty, "  Backup Designated Router (ID) %s,",
 		       inet_ntoa (nbr->router_id));
 	      vty_out (vty, " Interface Address %s%s",
-		       inet_ntoa (nbr->address.u.prefix4), VTY_NEWLINE);
+		       inet_ntoa (nbr->src), VTY_NEWLINE);
 	    }
 	}
 
@@ -3220,7 +3220,7 @@ show_ip_ospf_neighbor_detail_sub (struct vty *vty, struct ospf_interface *oi,
 
   /* Show interface address. */
   vty_out (vty, " interface address %s%s",
-	   inet_ntoa (nbr->address.u.prefix4), VTY_NEWLINE);
+	   inet_ntoa (nbr->src), VTY_NEWLINE);
   /* Show Area ID. */
   vty_out (vty, "    In the area %s via interface %s%s",
 	   ospf_area_desc_string (oi->area), oi->ifp->name, VTY_NEWLINE);

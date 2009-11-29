@@ -88,7 +88,7 @@ ospf_elect_dr (struct ospf_interface *oi, struct list *el_list)
 	listnode_add (dr_list, nbr);
 
       /* Preserve neighbor BDR. */
-      if (IPV4_ADDR_SAME (&BDR (oi), &nbr->address.u.prefix4))
+      if (IPV4_ADDR_SAME (&BDR (oi), &nbr->src))
 	bdr = nbr;
     }
 
@@ -100,7 +100,7 @@ ospf_elect_dr (struct ospf_interface *oi, struct list *el_list)
 
   /* Set DR to interface. */
   if (dr)
-    DR (oi) = dr->address.u.prefix4;
+    DR (oi) = dr->src;
   else
     DR (oi).s_addr = 0;
 
@@ -141,7 +141,7 @@ ospf_elect_bdr (struct ospf_interface *oi, struct list *el_list)
 
   /* Set BDR to interface. */
   if (bdr)
-    BDR (oi) = bdr->address.u.prefix4;
+    BDR (oi) = bdr->src;
   else
     BDR (oi).s_addr = 0;
 

@@ -1404,7 +1404,7 @@ ospf_nbr_nbma_add (struct ospf_nbr_nbma *nbr_nbma,
   if (nbr_nbma->nbr != NULL)
     return;
 
-  if (IPV4_ADDR_SAME (&oi->nbr_self->address.u.prefix4, &nbr_nbma->addr))
+  if (IPV4_ADDR_SAME (&oi->nbr_self->src, &nbr_nbma->addr))
     return;
       
   nbr_nbma->oi = oi;
@@ -1424,7 +1424,6 @@ ospf_nbr_nbma_add (struct ospf_nbr_nbma *nbr_nbma,
       nbr->src = nbr_nbma->addr;
       nbr->nbr_nbma = nbr_nbma;
       nbr->priority = nbr_nbma->priority;
-      nbr->address.u.prefix4 = nbr_nbma->addr;
       nbr_nbma->nbr = nbr;
       OSPF_NSM_EVENT_EXECUTE (nbr, NSM_Start);
     }
