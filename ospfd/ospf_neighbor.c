@@ -289,31 +289,18 @@ struct ospf_neighbor *
 ospf_nbr_lookup_by_addr (struct route_table *nbrs,
 			 struct in_addr *addr)
 {
-  struct prefix p;
   struct route_node *rn;
   struct ospf_neighbor *nbr;
 
-  p.family = AF_INET;
-  p.prefixlen = IPV4_MAX_BITLEN;
-  p.u.prefix4 = *addr;
+  for (rn = route_top (nbrs); rn; rn = route_next (rn))
+    if ((nbr = rn->info) != NULL)
+      if (IPV4_ADDR_SAME (&nbr->src, addr))
+	{
+	  route_unlock_node(rn);
+	  return nbr;
+	}
 
-  rn = route_node_lookup (nbrs, &p);
-  if (! rn)
-    return NULL;
-  
-  /* See comment in ospf_nbr_delete */
-  assert (rn->info);
-
-  if (rn->info == NULL)
-    {
-      route_unlock_node (rn);
-      return NULL;
-    }
-
-  nbr = (struct ospf_neighbor *) rn->info;
-  route_unlock_node (rn);
-
-  return nbr;
+  return NULL;
 }
 
 struct ospf_neighbor *
