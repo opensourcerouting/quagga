@@ -902,10 +902,7 @@ ospf_hello (struct ip *iph, struct ospf_header *ospfh,
       (old_state == NSM_Down || old_state == NSM_Attempt))
     {
       OSPF_NSM_EVENT_EXECUTE (nbr, NSM_OneWayReceived);
-      nbr->priority = hello->priority;
-      nbr->d_router = hello->d_router;
-      nbr->bd_router = hello->bd_router;
-      return;
+      goto done;
     }
 
   if (ospf_nbr_bidirectional (&oi->ospf->router_id, hello->neighbors,
@@ -917,42 +914,50 @@ ospf_hello (struct ip *iph, struct ospf_header *ospfh,
   else
     {
       OSPF_NSM_EVENT_EXECUTE (nbr, NSM_OneWayReceived);
-      /* Set neighbor information. */
-      nbr->priority = hello->priority;
-      nbr->d_router = hello->d_router;
-      nbr->bd_router = hello->bd_router;
-      return;
+      goto done;
     }
-
-  /* If neighbor itself declares DR and no BDR exists,
-     cause event BackupSeen */
-  if (IPV4_ADDR_SAME (&nbr->address.u.prefix4, &hello->d_router))
-    if (hello->bd_router.s_addr == 0 && oi->state == ISM_Waiting)
-      OSPF_ISM_EVENT_SCHEDULE (oi, ISM_BackupSeen);
-
-  /* neighbor itself declares BDR. */
-  if (oi->state == ISM_Waiting &&
-      IPV4_ADDR_SAME (&nbr->address.u.prefix4, &hello->bd_router))
-    OSPF_ISM_EVENT_SCHEDULE (oi, ISM_BackupSeen);
-
-  /* had not previously. */
-  if ((IPV4_ADDR_SAME (&nbr->address.u.prefix4, &hello->d_router) &&
-       IPV4_ADDR_CMP (&nbr->address.u.prefix4, &nbr->d_router)) ||
-      (IPV4_ADDR_CMP (&nbr->address.u.prefix4, &hello->d_router) &&
-       IPV4_ADDR_SAME (&nbr->address.u.prefix4, &nbr->d_router)))
-    OSPF_ISM_EVENT_SCHEDULE (oi, ISM_NeighborChange);
-
-  /* had not previously. */
-  if ((IPV4_ADDR_SAME (&nbr->address.u.prefix4, &hello->bd_router) &&
-       IPV4_ADDR_CMP (&nbr->address.u.prefix4, &nbr->bd_router)) ||
-      (IPV4_ADDR_CMP (&nbr->address.u.prefix4, &hello->bd_router) &&
-       IPV4_ADDR_SAME (&nbr->address.u.prefix4, &nbr->bd_router)))
-    OSPF_ISM_EVENT_SCHEDULE (oi, ISM_NeighborChange);
 
   /* Neighbor priority check. */
   if (nbr->priority >= 0 && nbr->priority != hello->priority)
     OSPF_ISM_EVENT_SCHEDULE (oi, ISM_NeighborChange);
 
+  /* If neighbor itself declares DR and no BDR exists,
+     cause event BackupSeen */
+  if (oi->state == ISM_Waiting &&
+      IPV4_ADDR_SAME (&nbr->address.u.prefix4, &hello->d_router) &&
+      hello->bd_router.s_addr == 0)
+    {
+      OSPF_ISM_EVENT_SCHEDULE (oi, ISM_BackupSeen);
+      goto done;
+    }
+  /* had not previously. */
+  if ((IPV4_ADDR_SAME (&nbr->address.u.prefix4, &hello->d_router) &&
+       IPV4_ADDR_CMP (&nbr->address.u.prefix4, &nbr->d_router)) ||
+      (IPV4_ADDR_CMP (&nbr->address.u.prefix4, &hello->d_router) &&
+       IPV4_ADDR_SAME (&nbr->address.u.prefix4, &nbr->d_router)))
+    {
+      OSPF_ISM_EVENT_SCHEDULE (oi, ISM_NeighborChange);
+      goto done;
+    }
+
+  /* neighbor itself declares BDR. */
+  if (oi->state == ISM_Waiting &&
+      IPV4_ADDR_SAME (&nbr->address.u.prefix4, &hello->bd_router))
+    {
+      OSPF_ISM_EVENT_SCHEDULE (oi, ISM_BackupSeen);
+      goto done;
+    }
+  /* had not previously. */
+  if ((IPV4_ADDR_SAME (&nbr->address.u.prefix4, &hello->bd_router) &&
+       IPV4_ADDR_CMP (&nbr->address.u.prefix4, &nbr->bd_router)) ||
+      (IPV4_ADDR_CMP (&nbr->address.u.prefix4, &hello->bd_router) &&
+       IPV4_ADDR_SAME (&nbr->address.u.prefix4, &nbr->bd_router)))
+    {
+      OSPF_ISM_EVENT_SCHEDULE (oi, ISM_NeighborChange);
+      goto done;
+    }
+
+ done:
   /* Set neighbor information. */
   nbr->priority = hello->priority;
   nbr->d_router = hello->d_router;
