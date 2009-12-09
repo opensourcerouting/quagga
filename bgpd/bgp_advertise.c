@@ -263,7 +263,7 @@ bgp_adj_out_set (struct bgp_node *rn, struct peer *peer, struct prefix *p,
   /* Add new advertisement to advertisement attribute list. */
   bgp_advertise_add (adv->baa, adv);
 
-  FIFO_ADD (&peer->sync[afi][safi]->update, &adv->fifo);
+  FIFO_ADD (&peer->sync[afi][safi]->update, adv);
 }
 
 void
@@ -297,7 +297,7 @@ bgp_adj_out_unset (struct bgp_node *rn, struct peer *peer, struct prefix *p,
       adv->adj = adj;
 
       /* Add to synchronization entry for withdraw announcement.  */
-      FIFO_ADD (&peer->sync[afi][safi]->withdraw, &adv->fifo);
+      FIFO_ADD (&peer->sync[afi][safi]->withdraw, adv);
 
       /* Schedule packet write. */
       BGP_WRITE_ON (peer->t_write, bgp_write, peer->fd);
