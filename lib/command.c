@@ -3021,7 +3021,8 @@ DEFUN (config_logmsg,
   if ((level = level_match(argv[0])) == ZLOG_DISABLED)
     return CMD_ERR_NO_MATCH;
 
-  zlog(NULL, level, ((message = argv_concat(argv, argc, 1)) ? message : ""));
+  message = argv_concat(argv, argc, 1);
+  zlog(NULL, level, "%s", message ? message : "");
   if (message)
     XFREE(MTYPE_TMP, message);
   return CMD_SUCCESS;
