@@ -133,8 +133,9 @@ ospf_interface_delete (int command, struct zclient *zclient,
 
   if (IS_DEBUG_OSPF (zebra, ZEBRA_INTERFACE))
     zlog_debug
-      ("Zebra: interface delete %s index %d flags %lld metric %d mtu %d",
-       ifp->name, ifp->ifindex, ifp->flags, ifp->metric, ifp->mtu);
+      ("Zebra: interface delete %s index %d flags %#llx metric %d mtu %d",
+       ifp->name, ifp->ifindex, (unsigned long long) ifp->flags,
+       ifp->metric, ifp->mtu);
 
 #ifdef HAVE_SNMP
   ospf_snmp_if_delete (ifp);
@@ -964,7 +965,7 @@ ospf_distribute_list_update_timer (struct thread *thread)
 
 /* Update distribute-list and set timer to apply access-list. */
 void
-ospf_distribute_list_update (struct ospf *ospf, int type)
+ospf_distribute_list_update (struct ospf *ospf, unsigned long type)
 {
   struct route_table *rt;
 
