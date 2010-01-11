@@ -875,7 +875,7 @@ ospf_hello (struct ip *iph, struct ospf_header *ospfh,
   old_state = nbr->state;
 
   /* Add event to thread. */
-  OSPF_NSM_EVENT_EXECUTE (nbr, NSM_HelloReceived);
+  OSPF_NSM_EVENT_SCHEDULE (nbr, NSM_PacketReceived);
 
   /*  RFC2328  Section 9.5.1
       If the router is not eligible to become Designated Router,
@@ -895,19 +895,19 @@ ospf_hello (struct ip *iph, struct ospf_header *ospfh,
   if (oi->type == OSPF_IFTYPE_NBMA &&
       (old_state == NSM_Down || old_state == NSM_Attempt))
     {
-      OSPF_NSM_EVENT_EXECUTE (nbr, NSM_OneWayReceived);
+      OSPF_NSM_EVENT_SCHEDULE (nbr, NSM_OneWayReceived);
       goto done;
     }
 
   if (ospf_nbr_bidirectional (&oi->ospf->router_id, hello->neighbors,
 			      size - OSPF_HELLO_MIN_SIZE))
     {
-      OSPF_NSM_EVENT_EXECUTE (nbr, NSM_TwoWayReceived);
+      OSPF_NSM_EVENT_SCHEDULE (nbr, NSM_TwoWayReceived);
       nbr->options |= hello->options;
     }
   else
     {
-      OSPF_NSM_EVENT_EXECUTE (nbr, NSM_OneWayReceived);
+      OSPF_NSM_EVENT_SCHEDULE (nbr, NSM_OneWayReceived);
       goto done;
     }
 
@@ -1190,6 +1190,9 @@ ospf_db_desc (struct ip *iph, struct ospf_header *ospfh,
     }
 #endif /* HAVE_OPAQUE_LSA */
 
+  /* Add event to thread. */
+  OSPF_NSM_EVENT_SCHEDULE (nbr, NSM_PacketReceived);
+
   /* Process DD packet by neighbor status. */
   switch (nbr->state)
     {
@@ -1410,6 +1413,9 @@ ospf_ls_req (struct ip *iph, struct ospf_header *ospfh,
 		 inet_ntoa (ospfh->router_id));
       return;
     }
+
+  /* Add event to thread. */
+  OSPF_NSM_EVENT_SCHEDULE (nbr, NSM_PacketReceived);
 
   /* Neighbor State should be Exchange or later. */
   if (nbr->state != NSM_Exchange &&
@@ -1642,6 +1648,9 @@ ospf_ls_upd (struct ip *iph, struct ospf_header *ospfh,
 		 inet_ntoa (ospfh->router_id), IF_NAME (oi));
       return;
     }
+
+  /* Add event to thread. */
+  OSPF_NSM_EVENT_SCHEDULE (nbr, NSM_PacketReceived);
 
   /* Check neighbor state. */
   if (nbr->state < NSM_Exchange)
@@ -1975,6 +1984,9 @@ ospf_ls_ack (struct ip *iph, struct ospf_header *ospfh,
 		 inet_ntoa (ospfh->router_id));
       return;
     }
+
+  /* Add event to thread. */
+  OSPF_NSM_EVENT_SCHEDULE (nbr, NSM_PacketReceived);
 
   if (nbr->state < NSM_Exchange)
     {
