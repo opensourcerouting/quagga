@@ -34,8 +34,6 @@ extern struct ospf_route *ospf_find_asbr_route_through_area (struct
 							     struct ospf_area
 							     *);
 
-extern int ospf_ase_calculate_route (struct ospf *, struct ospf_lsa *);
-extern void ospf_ase_calculate_schedule (struct ospf *);
 extern void ospf_ase_calculate_timer_add (struct ospf *);
 
 extern void ospf_ase_external_lsas_finish (struct route_table *);

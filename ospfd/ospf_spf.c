@@ -1259,9 +1259,6 @@ ospf_spf_calculate_timer (struct thread *thread)
 
   /* If new Router Route is installed,
      then schedule re-calculate External routes. */
-  if (1)
-    ospf_ase_calculate_schedule (ospf);
-
   ospf_ase_calculate_timer_add (ospf);
 
   /* Update routing table. */

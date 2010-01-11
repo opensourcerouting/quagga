@@ -31,6 +31,7 @@
 #include "table.h"
 #include "vty.h"
 #include "log.h"
+#include "workqueue.h"
 
 #include "ospfd/ospfd.h"
 #include "ospfd/ospf_interface.h"
@@ -272,8 +273,8 @@ ospf_ase_calculate_new_route (struct ospf_lsa *lsa,
 
 #define OSPF_ASE_CALC_INTERVAL 1
 
-int
-ospf_ase_calculate_route (struct ospf *ospf, struct ospf_lsa * lsa)
+static int
+ospf_ase_calculate_route (struct ospf *ospf, struct ospf_lsa *lsa)
 {
   u_int32_t metric;
   struct as_external_lsa *al;
@@ -612,6 +613,50 @@ ospf_ase_compare_tables (struct route_table *new_external_route,
   return 0;
 }
 
+static int ospf_ase_calculate_timer (struct thread *);
+
+static void ospf_ase_calc_completion (struct work_queue *wq)
+{
+  struct ospf *ospf = wq->spec.data;
+
+  /* Compare old and new external routing table and install the
+     difference info zebra/kernel */
+  ospf_ase_compare_tables (ospf->new_external_route,
+                           ospf->old_external_route);
+
+  /* Delete old external routing table */
+  ospf_route_table_free (ospf->old_external_route);
+  ospf->old_external_route = ospf->new_external_route;
+  ospf->new_external_route = route_table_init ();
+
+  /* another timer fired since, so another run might be needed */
+  if (ospf->ase_calc && !ospf->t_ase_calc)
+    ospf->t_ase_calc = thread_add_timer (master, ospf_ase_calculate_timer,
+					 ospf, 0);
+}
+
+static wq_item_status
+ospf_ase_calc_process (struct work_queue *wq, void *data)
+{
+  struct ospf_lsa *lsa = data;
+  ospf_ase_calculate_route (wq->spec.data, lsa);
+  ospf_lsa_unlock (&lsa);
+  return WQ_SUCCESS;
+}
+
+static void
+ospf_ase_calc_queue_init (struct ospf *ospf)
+{
+  ospf->ase_calc_queue = work_queue_new (master, "ase_calc_queue");
+
+  ospf->ase_calc_queue->spec.workfunc = &ospf_ase_calc_process;
+  ospf->ase_calc_queue->spec.completion_func = &ospf_ase_calc_completion;
+
+  ospf->ase_calc_queue->spec.data = ospf;
+  ospf->ase_calc_queue->spec.max_retries = 0;
+  ospf->ase_calc_queue->spec.hold = 0;
+}
+
 static int
 ospf_ase_calculate_timer (struct thread *t)
 {
@@ -628,9 +673,12 @@ ospf_ase_calculate_timer (struct thread *t)
     {
       ospf->ase_calc = 0;
 
+      if (!ospf->ase_calc_queue)
+        ospf_ase_calc_queue_init (ospf);
+
       /* Calculate external route for each AS-external-LSA */
       LSDB_LOOP (EXTERNAL_LSDB (ospf), rn, lsa)
-	ospf_ase_calculate_route (ospf, lsa);
+        work_queue_add (ospf->ase_calc_queue, ospf_lsa_lock (lsa));
 
       /*  This version simple adds to the table all NSSA areas  */
       if (ospf->anyNSSA)
@@ -642,32 +690,13 @@ ospf_ase_calculate_timer (struct thread *t)
 
 	    if (area->external_routing == OSPF_AREA_NSSA)
 	      LSDB_LOOP (NSSA_LSDB (area), rn, lsa)
-		ospf_ase_calculate_route (ospf, lsa);
+	        work_queue_add (ospf->ase_calc_queue, ospf_lsa_lock (lsa));
 	  }
       /* kevinm: And add the NSSA routes in ospf_top */
       LSDB_LOOP (NSSA_LSDB (ospf),rn,lsa)
-      		ospf_ase_calculate_route(ospf,lsa);
-
-      /* Compare old and new external routing table and install the
-	 difference info zebra/kernel */
-      ospf_ase_compare_tables (ospf->new_external_route,
-			       ospf->old_external_route);
-
-      /* Delete old external routing table */
-      ospf_route_table_free (ospf->old_external_route);
-      ospf->old_external_route = ospf->new_external_route;
-      ospf->new_external_route = route_table_init ();
+        work_queue_add (ospf->ase_calc_queue, ospf_lsa_lock (lsa));
     }
   return 0;
-}
-
-void
-ospf_ase_calculate_schedule (struct ospf *ospf)
-{
-  if (ospf == NULL)
-    return;
-
-  ospf->ase_calc = 1;
 }
 
 void
@@ -675,6 +704,8 @@ ospf_ase_calculate_timer_add (struct ospf *ospf)
 {
   if (ospf == NULL)
     return;
+
+  ospf->ase_calc = 1;
 
   if (! ospf->t_ase_calc)
     ospf->t_ase_calc = thread_add_timer (master, ospf_ase_calculate_timer,
