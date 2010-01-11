@@ -2914,6 +2914,10 @@ ospf_maxage_lsa_remover (struct thread *thread)
             continue;
           }
 
+        /* TODO: maybe convert this function to a work-queue */
+        if (thread_should_yield (thread))
+          OSPF_TIMER_ON (ospf->t_maxage, ospf_maxage_lsa_remover, 0);
+
         /* Remove LSA from the LSDB */
         if (CHECK_FLAG (lsa->flags, OSPF_LSA_SELF))
           if (IS_DEBUG_OSPF (lsa, LSA_FLOODING))
