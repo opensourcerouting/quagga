@@ -910,7 +910,6 @@ thread_fetch (struct thread_master *m, struct thread *fetch)
   struct thread *thread;
   fd_set readfd;
   fd_set writefd;
-  fd_set exceptfd;
   struct timeval timer_val;
   struct timeval timer_val_bg;
   struct timeval *timer_wait;
@@ -936,7 +935,6 @@ thread_fetch (struct thread_master *m, struct thread *fetch)
       /* Structure copy.  */
       readfd = m->readfd;
       writefd = m->writefd;
-      exceptfd = m->exceptfd;
       
       /* Calculate select wait timer if nothing else to do */
       quagga_get_relative (NULL);
@@ -947,7 +945,7 @@ thread_fetch (struct thread_master *m, struct thread *fetch)
 	  (!timer_wait || (timeval_cmp (*timer_wait, *timer_wait_bg) > 0)))
 	timer_wait = timer_wait_bg;
       
-      num = select (FD_SETSIZE, &readfd, &writefd, &exceptfd, timer_wait);
+      num = select (FD_SETSIZE, &readfd, &writefd, NULL, timer_wait);
       
       /* Signals should get quick treatment */
       if (num < 0)

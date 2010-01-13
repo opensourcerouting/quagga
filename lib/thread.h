@@ -53,7 +53,6 @@ struct thread_master
   struct thread_list background;
   fd_set readfd;
   fd_set writefd;
-  fd_set exceptfd;
   unsigned long alloc;
 };
 
