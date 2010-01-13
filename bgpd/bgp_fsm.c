@@ -704,7 +704,7 @@ bgp_start (struct peer *peer)
 		    peer->fd);
 	  return -1;
 	}
-      BGP_READ_ON (peer->t_read, bgp_read, peer->fd);
+
       BGP_WRITE_ON (peer->t_write, bgp_write, peer->fd);
       break;
     }

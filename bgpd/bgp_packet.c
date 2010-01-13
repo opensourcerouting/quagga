@@ -107,8 +107,7 @@ bgp_connect_check (struct peer *peer)
   socklen_t slen;
   int ret;
 
-  /* Anyway I have to reset read and write thread. */
-  BGP_READ_OFF (peer->t_read);
+  /* Anyway I have to reset write thread. */
   BGP_WRITE_OFF (peer->t_write);
 
   /* Check file descriptor. */
@@ -2312,21 +2311,13 @@ bgp_read (struct thread *thread)
   peer = THREAD_ARG (thread);
   peer->t_read = NULL;
 
-  /* For non-blocking IO check. */
-  if (peer->status == Connect)
+  if (peer->fd < 0)
     {
-      bgp_connect_check (peer);
-      goto done;
+      zlog_err ("bgp_read peer's fd is negative value %d", peer->fd);
+      return -1;
     }
-  else
-    {
-      if (peer->fd < 0)
-	{
-	  zlog_err ("bgp_read peer's fd is negative value %d", peer->fd);
-	  return -1;
-	}
-      BGP_READ_ON (peer->t_read, bgp_read, peer->fd);
-    }
+
+  BGP_READ_ON (peer->t_read, bgp_read, peer->fd);
 
   /* Read packet header to determine type of the packet */
   if (peer->packet_size == 0)
