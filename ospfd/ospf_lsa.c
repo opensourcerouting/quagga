@@ -742,7 +742,7 @@ ospf_stub_router_timer (struct thread *t)
   
   UNSET_FLAG (area->stub_router_state, OSPF_AREA_IS_STUB_ROUTED);
   
-  ospf_router_lsa_timer_add (area);
+  ospf_router_lsa_update_area (area);
   
   return 0;
 }
@@ -886,6 +886,9 @@ ospf_router_lsa_refresh (struct ospf_lsa *lsa)
   /* Delete LSA from neighbor retransmit-list. */
   ospf_ls_retransmit_delete_nbr_area (area, lsa);
 
+  /* Unregister LSA from refresh-list */
+  ospf_refresher_unregister_lsa (area->ospf, lsa);
+  
   /* Create new router-LSA instance. */
   if ( (new = ospf_router_lsa_new (area)) == NULL)
     {
@@ -911,20 +914,15 @@ ospf_router_lsa_refresh (struct ospf_lsa *lsa)
   return NULL;
 }
 
-static int
-ospf_router_lsa_timer (struct thread *t)
+int
+ospf_router_lsa_update_area (struct ospf_area *area)
 {
-  struct ospf_area *area;
-
   if (IS_DEBUG_OSPF_EVENT)
-    zlog_debug ("Timer[router-LSA]: (router-LSA Refresh expire)");
-
-  area = THREAD_ARG (t);
-  area->t_router_lsa_self = NULL;
+    zlog_debug ("[router-LSA]: (router-LSA area update)");
 
   /* Now refresh router-LSA. */
   if (area->router_lsa_self)
-    ospf_router_lsa_refresh (area->router_lsa_self);
+    ospf_lsa_refresh (area->ospf, area->router_lsa_self);
   /* Newly originate router-LSA. */
   else
     ospf_router_lsa_originate (area);
@@ -932,49 +930,14 @@ ospf_router_lsa_timer (struct thread *t)
   return 0;
 }
 
-void
-ospf_router_lsa_timer_add (struct ospf_area *area)
-{
-  /* Keep area's self-originated router-LSA. */
-  struct ospf_lsa *lsa = area->router_lsa_self;
-
-  /* Cancel previously scheduled router-LSA timer. */
-  if (area->t_router_lsa_self)
-    if (IS_DEBUG_OSPF (lsa, LSA_GENERATE))
-      zlog_debug ("LSA[Type1]: Cancel previous router-LSA timer");
-
-  OSPF_TIMER_OFF (area->t_router_lsa_self);
-
-  /* If router-LSA is originated previously, check the interval time. */
-  if (lsa)
-    {
-      int delay;
-      if ((delay = ospf_lsa_refresh_delay (lsa)) > 0)
-        {
-	  OSPF_AREA_TIMER_ON (area->t_router_lsa_self,
-			      ospf_router_lsa_timer, delay);
-	  return;
-        }
-    }
-
-  if (IS_DEBUG_OSPF (lsa, LSA_GENERATE))
-    zlog_debug ("LSA[Type1]: Scheduling router-LSA origination right away");
-
-  /* Immediately refresh router-LSA. */
-  OSPF_AREA_TIMER_ON (area->t_router_lsa_self, ospf_router_lsa_timer, 0);
-}
-
 int
-ospf_router_lsa_update_timer (struct thread *thread)
+ospf_router_lsa_update (struct ospf *ospf)
 {
-  struct ospf *ospf = THREAD_ARG (thread);
   struct listnode *node, *nnode;
   struct ospf_area *area;
 
   if (IS_DEBUG_OSPF (lsa, LSA_GENERATE))
     zlog_debug ("Timer[router-LSA Update]: (timer expire)");
-
-  ospf->t_router_lsa_update = NULL;
 
   for (ALL_LIST_ELEMENTS (ospf->areas, node, nnode, area))
     {
@@ -1005,14 +968,14 @@ ospf_router_lsa_update_timer (struct thread *thread)
 	  area->router_lsa_self = NULL;
 
 	  /* Refresh router-LSA, (not install) and flood through area. */
-	  ospf_router_lsa_timer_add (area);
+	  ospf_router_lsa_update_area (area);
 	}
       else
 	{
 	  rl = (struct router_lsa *) lsa->data;
 	  /* Refresh router-LSA, (not install) and flood through area. */
 	  if (rl->flags != ospf->flags)
-	    ospf_router_lsa_timer_add (area);
+	    ospf_router_lsa_update_area (area);
 	}
     }
 
@@ -1082,6 +1045,7 @@ ospf_network_lsa_new (struct ospf_interface *oi)
     }
   
   new->area = oi->area;
+  new->oi = oi;
   SET_FLAG (new->flags, OSPF_LSA_SELF | OSPF_LSA_SELF_CHECKED);
 
   /* Copy LSA to store. */
@@ -1109,15 +1073,21 @@ ospf_network_lsa_new (struct ospf_interface *oi)
 }
 
 /* Originate network-LSA. */
-static struct ospf_lsa *
-ospf_network_lsa_originate (struct ospf_interface *oi)
+void
+ospf_network_lsa_update (struct ospf_interface *oi)
 {
   struct ospf_lsa *new;
-
+  
+  if (oi->network_lsa_self != NULL)
+    {
+      ospf_lsa_refresh (oi->ospf, oi->network_lsa_self);
+      return;
+    }
+  
   /* Create new network-LSA instance. */
   new = ospf_network_lsa_new (oi);
   if (new == NULL)
-    return NULL;
+    return;
 
   /* Install LSA to LSDB. */
   new = ospf_lsa_install (oi->ospf, oi, new);
@@ -1135,32 +1105,38 @@ ospf_network_lsa_originate (struct ospf_interface *oi)
       ospf_lsa_header_dump (new->data);
     }
 
-  return new;
+  return;
 }
 
-int
-ospf_network_lsa_refresh (struct ospf_lsa *lsa, struct ospf_interface *oi)
+static struct ospf_lsa *
+ospf_network_lsa_refresh (struct ospf_lsa *lsa)
 {
   struct ospf_area *area = lsa->area;
-  struct ospf_lsa *new;
+  struct ospf_lsa *new, *new2;
   struct ospf_if_params *oip;
-
+  struct ospf_interface *oi = lsa->oi;
+  
   assert (lsa->data);
 
   /* Delete LSA from neighbor retransmit-list. */
   ospf_ls_retransmit_delete_nbr_area (area, lsa);
 
+  /* Unregister LSA from refresh-list */
+  ospf_refresher_unregister_lsa (area->ospf, lsa);
+  
   /* Create new network-LSA instance. */
   new = ospf_network_lsa_new (oi);
   if (new == NULL)
-    return -1;
+    return NULL;
   
   oip = ospf_lookup_if_params (oi->ifp, oi->address->u.prefix4);
   assert (oip != NULL);
   oip->network_lsa_seqnum = new->data->ls_seqnum = lsa_seqnum_increment (lsa);
 
-  ospf_lsa_install (area->ospf, oi, new);
-
+  new2 = ospf_lsa_install (area->ospf, oi, new);
+  
+  assert (new2 == new);
+  
   /* Flood LSA through aera. */
   ospf_flood_through_area (area, NULL, new);
 
@@ -1171,60 +1147,8 @@ ospf_network_lsa_refresh (struct ospf_lsa *lsa, struct ospf_interface *oi)
       ospf_lsa_header_dump (new->data);
     }
 
-  return 0;
+  return new;
 }
-
-static int
-ospf_network_lsa_refresh_timer (struct thread *t)
-{
-  struct ospf_interface *oi;
-
-  oi = THREAD_ARG (t);
-  oi->t_network_lsa_self = NULL;
-
-  if (oi->network_lsa_self)
-    /* Now refresh network-LSA. */
-    ospf_network_lsa_refresh (oi->network_lsa_self, oi);
-  else
-    /* Newly create network-LSA. */
-    ospf_network_lsa_originate (oi);
-
-  return 0;
-}
-
-void
-ospf_network_lsa_timer_add (struct ospf_interface *oi)
-{
-  /* Keep interface's self-originated network-LSA. */
-  struct ospf_lsa *lsa = oi->network_lsa_self;
-
-  /* Cancel previously schedules network-LSA timer. */
-  if (oi->t_network_lsa_self)
-    if (IS_DEBUG_OSPF (lsa, LSA_GENERATE))
-      zlog_debug ("LSA[Type2]: Cancel previous network-LSA timer");
-  OSPF_TIMER_OFF (oi->t_network_lsa_self);
-
-  /* If network-LSA is originated previously, check the interval time. */
-  if (lsa)
-    {
-      int delay;
-      if ((delay = ospf_lsa_refresh_delay (lsa)) > 0)
-        {
-          oi->t_network_lsa_self =
-            thread_add_timer (master, ospf_network_lsa_refresh_timer,
-			      oi, delay);
-          return;
-        }
-    }
-
-  if (IS_DEBUG_OSPF (lsa, LSA_GENERATE))
-    zlog_debug ("Scheduling network-LSA origination right away");
-
-  /* Immediately refresh network-LSA. */
-  oi->t_network_lsa_self =
-    thread_add_event (master, ospf_network_lsa_refresh_timer, oi, 0);
-}
-
 
 static void
 stream_put_ospf_metric (struct stream *s, u_int32_t metric_value)
@@ -1348,7 +1272,7 @@ ospf_summary_lsa_originate (struct prefix_ipv4 *p, u_int32_t metric,
   return new;
 }
 
-struct ospf_lsa*
+static struct ospf_lsa*
 ospf_summary_lsa_refresh (struct ospf *ospf, struct ospf_lsa *lsa)
 {
   struct ospf_lsa *new;
@@ -1495,7 +1419,7 @@ ospf_summary_asbr_lsa_originate (struct prefix_ipv4 *p, u_int32_t metric,
   return new;
 }
 
-struct ospf_lsa*
+static struct ospf_lsa*
 ospf_summary_asbr_lsa_refresh (struct ospf *ospf, struct ospf_lsa *lsa)
 {
   struct ospf_lsa *new;
@@ -2349,7 +2273,7 @@ ospf_external_lsa_refresh_type (struct ospf *ospf, u_char type, int force)
 }
 
 /* Refresh AS-external-LSA. */
-void
+struct ospf_lsa *
 ospf_external_lsa_refresh (struct ospf *ospf, struct ospf_lsa *lsa,
 			   struct external_info *ei, int force)
 {
@@ -2365,7 +2289,7 @@ ospf_external_lsa_refresh (struct ospf *ospf, struct ospf_lsa *lsa,
                    lsa->data->type, inet_ntoa (lsa->data->id));
       ospf_external_lsa_flush (ospf, ei->type, &ei->p,
 			       ei->ifindex /*, ei->nexthop */);
-      return;
+      return NULL;
     }
 
   if (!changed && !force)
@@ -2373,7 +2297,7 @@ ospf_external_lsa_refresh (struct ospf *ospf, struct ospf_lsa *lsa,
       if (IS_DEBUG_OSPF (lsa, LSA_GENERATE))
         zlog_debug ("LSA[Type%d:%s]: Not refreshed, not changed/forced",
                    lsa->data->type, inet_ntoa (lsa->data->id));
-      return;
+      return NULL;
     }
 
   /* Delete LSA from neighbor retransmit-list. */
@@ -2389,7 +2313,7 @@ ospf_external_lsa_refresh (struct ospf *ospf, struct ospf_lsa *lsa,
       if (IS_DEBUG_OSPF (lsa, LSA_GENERATE))
 	zlog_debug ("LSA[Type%d:%s]: Could not be refreshed", lsa->data->type,
 		   inet_ntoa (lsa->data->id));
-      return;
+      return NULL;
     }
   
   new->data->ls_seqnum = lsa_seqnum_increment (lsa);
@@ -2418,7 +2342,7 @@ ospf_external_lsa_refresh (struct ospf *ospf, struct ospf_lsa *lsa,
       ospf_lsa_header_dump (new->data);
     }
 
-  return;
+  return new;
 }
 
 
@@ -2426,8 +2350,8 @@ ospf_external_lsa_refresh (struct ospf *ospf, struct ospf_lsa *lsa,
 
 /* Install router-LSA to an area. */
 static struct ospf_lsa *
-ospf_router_lsa_install (struct ospf *ospf,
-			 struct ospf_lsa *new, int rt_recalc)
+ospf_router_lsa_install (struct ospf *ospf, struct ospf_lsa *new,
+                         int rt_recalc)
 {
   struct ospf_area *area = new->area;
 
@@ -2446,15 +2370,11 @@ ospf_router_lsa_install (struct ospf *ospf,
       if (CHECK_FLAG (new->flags, OSPF_LSA_RECEIVED))
 	return new; /* ignore stale LSA */
 
-      /* Set router-LSA refresh timer. */
-      OSPF_TIMER_OFF (area->t_router_lsa_self);
-      OSPF_AREA_TIMER_ON (area->t_router_lsa_self,
-                          ospf_router_lsa_timer, OSPF_LS_REFRESH_TIME);
-
       /* Set self-originated router-LSA. */
       ospf_lsa_unlock (&area->router_lsa_self);
       area->router_lsa_self = ospf_lsa_lock (new);
 
+      ospf_refresher_register_lsa (ospf, new);
     }
   if (rt_recalc)
     ospf_spf_calculate_schedule (ospf);
@@ -2487,15 +2407,9 @@ ospf_network_lsa_install (struct ospf *ospf,
       if (CHECK_FLAG (new->flags, OSPF_LSA_RECEIVED))
 	return new; /* ignore stale LSA */
 
-      /* Set LSRefresh timer. */
-      OSPF_TIMER_OFF (oi->t_network_lsa_self);
-
-      OSPF_INTERFACE_TIMER_ON (oi->t_network_lsa_self,
-			       ospf_network_lsa_refresh_timer,
-			       OSPF_LS_REFRESH_TIME);
-
       ospf_lsa_unlock (&oi->network_lsa_self);
       oi->network_lsa_self = ospf_lsa_lock (new);
+      ospf_refresher_register_lsa (ospf, new);
     }
   if (rt_recalc)
     ospf_spf_calculate_schedule (ospf);
@@ -2744,7 +2658,8 @@ ospf_lsa_install (struct ospf *ospf, struct ospf_interface *oi,
           if (IS_DEBUG_OSPF (lsa, LSA_REFRESH))
             {
       	      zlog_debug ("ospf_lsa_install() Premature Aging "
-		         "lsa 0x%lx", (u_long)lsa);
+		         "lsa 0x%p, seqnum 0x%x",
+		         lsa, ntohl(lsa->data->ls_seqnum));
       	      ospf_lsa_header_dump (lsa->data);
             }
         }
@@ -2956,12 +2871,11 @@ ospf_maxage_lsa_remover (struct thread *thread)
         ospf_flood_through (ospf, NULL, lsa);
 #endif /* ORIGINAL_CODING */
 
-	if (lsa->flags & OSPF_LSA_PREMATURE_AGE)  
+	if (CHECK_FLAG (lsa->flags, OSPF_LSA_PREMATURE_AGE))
           {
             if (IS_DEBUG_OSPF (lsa, LSA_FLOODING))
-              zlog_debug ("originating new router lsa for lsa 0x%lx \n", 
-                         (u_long)lsa);
-            ospf_router_lsa_originate(lsa->area);
+              zlog_debug ("originating new lsa for lsa 0x%p\n", lsa);
+            ospf_lsa_refresh (ospf, lsa);
           }
 
 	/* Remove from lsdb. */
@@ -3061,6 +2975,10 @@ ospf_lsa_maxage_walker_remover (struct ospf *ospf, struct ospf_lsa *lsa)
           }
 	ospf_lsa_maxage (ospf, lsa);
       }
+
+  if (IS_LSA_MAXAGE (lsa) && !ospf_lsa_is_self_originated (ospf, lsa))
+    if (LS_AGE (lsa) > OSPF_LSA_MAXAGE + 30)
+      printf ("Eek! Shouldn't happen!\n");
 
   return 0;
 }
@@ -3415,7 +3333,6 @@ ospf_flush_self_originated_lsas_now (struct ospf *ospf)
           ospf_lsa_flush_area (lsa, area);
           ospf_lsa_unlock (&area->router_lsa_self);
           area->router_lsa_self = NULL;
-          OSPF_TIMER_OFF (area->t_router_lsa_self);
         }
 
       for (ALL_LIST_ELEMENTS (area->oiflist, node2, nnode2, oi))
@@ -3430,7 +3347,6 @@ ospf_flush_self_originated_lsas_now (struct ospf *ospf)
               ospf_lsa_flush_area (oi->network_lsa_self, area);
               ospf_lsa_unlock (&oi->network_lsa_self);
               oi->network_lsa_self = NULL;
-              OSPF_TIMER_OFF (oi->t_network_lsa_self);
             }
 
           if (oi->type != OSPF_IFTYPE_VIRTUALLINK
@@ -3630,10 +3546,11 @@ ospf_schedule_lsa_flush_area (struct ospf_area *area, struct ospf_lsa *lsa)
 
 
 /* LSA Refreshment functions. */
-static void
+struct ospf_lsa *
 ospf_lsa_refresh (struct ospf *ospf, struct ospf_lsa *lsa)
 {
   struct external_info *ei;
+  struct ospf_lsa *new = NULL;
   assert (IS_LSA_SELF (lsa));
   assert (lsa->lock > 0);
 
@@ -3641,13 +3558,16 @@ ospf_lsa_refresh (struct ospf *ospf, struct ospf_lsa *lsa)
     {
       /* Router and Network LSAs are processed differently. */
     case OSPF_ROUTER_LSA:
+      new = ospf_router_lsa_refresh (lsa);
+      break;
     case OSPF_NETWORK_LSA: 
+      new = ospf_network_lsa_refresh (lsa);
       break;
     case OSPF_SUMMARY_LSA:
-      ospf_summary_lsa_refresh (ospf, lsa);
+      new = ospf_summary_lsa_refresh (ospf, lsa);
       break;
     case OSPF_ASBR_SUMMARY_LSA:
-      ospf_summary_asbr_lsa_refresh (ospf, lsa);
+      new = ospf_summary_asbr_lsa_refresh (ospf, lsa);
       break;
     case OSPF_AS_EXTERNAL_LSA:
       /* Translated from NSSA Type-5s are refreshed when 
@@ -3657,7 +3577,7 @@ ospf_lsa_refresh (struct ospf *ospf, struct ospf_lsa *lsa)
         break;
       ei = ospf_external_info_check (lsa);
       if (ei)
-        ospf_external_lsa_refresh (ospf, lsa, ei, LSA_REFRESH_FORCE);
+        new = ospf_external_lsa_refresh (ospf, lsa, ei, LSA_REFRESH_FORCE);
       else
         ospf_lsa_flush_as (ospf, lsa);
       break;
@@ -3665,12 +3585,13 @@ ospf_lsa_refresh (struct ospf *ospf, struct ospf_lsa *lsa)
     case OSPF_OPAQUE_LINK_LSA:
     case OSPF_OPAQUE_AREA_LSA:
     case OSPF_OPAQUE_AS_LSA:
-      ospf_opaque_lsa_refresh (lsa);
+      new = ospf_opaque_lsa_refresh (lsa);
       break;
 #endif /* HAVE_OPAQUE_LSA */
     default:
       break;
     }
+  return new;
 }
 
 void
@@ -3697,11 +3618,11 @@ ospf_refresher_register_lsa (struct ospf *ospf, struct ospf_lsa *lsa)
       if (delay < 0)
 	delay = 0;
 
-      current_index = ospf->lsa_refresh_queue.index +
-	(quagga_time (NULL) - ospf->lsa_refresher_started)/OSPF_LSA_REFRESHER_GRANULARITY;
+      current_index = ospf->lsa_refresh_queue.index + (quagga_time (NULL)
+                - ospf->lsa_refresher_started)/OSPF_LSA_REFRESHER_GRANULARITY;
       
       index = (current_index + delay/OSPF_LSA_REFRESHER_GRANULARITY)
-	% (OSPF_LSA_REFRESHER_SLOTS);
+	      % (OSPF_LSA_REFRESHER_SLOTS);
 
       if (IS_DEBUG_OSPF (lsa, LSA_REFRESH))
 	zlog_debug ("LSA[Refresh]: lsa %s with age %d added to index %d",
@@ -3758,8 +3679,9 @@ ospf_lsa_refresh_walker (struct thread *t)
      modulus. */
   ospf->lsa_refresh_queue.index =
    ((unsigned long)(ospf->lsa_refresh_queue.index +
-		    (quagga_time (NULL) - ospf->lsa_refresher_started) /
-		    OSPF_LSA_REFRESHER_GRANULARITY)) % OSPF_LSA_REFRESHER_SLOTS;
+		    (quagga_time (NULL) - ospf->lsa_refresher_started)
+		    / OSPF_LSA_REFRESHER_GRANULARITY))
+		    % OSPF_LSA_REFRESHER_SLOTS;
 
   if (IS_DEBUG_OSPF (lsa, LSA_REFRESH))
     zlog_debug ("LSA[Refresh]: ospf_lsa_refresh_walker(): next index %d",
