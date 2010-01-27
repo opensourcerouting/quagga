@@ -1895,12 +1895,15 @@ rib_delete_ipv4 (int type, int flags, struct prefix_ipv4 *p,
 
       if (gate)
 	{
-	  if ((nexthop = rib->nexthop) &&
-	      (IPV4_ADDR_SAME (&nexthop->gate.ipv4, gate) ||
-	       IPV4_ADDR_SAME (&nexthop->rgate.ipv4, gate)))
+	  for (nexthop = rib->nexthop; nexthop; nexthop = nexthop->next)
+	    if (IPV4_ADDR_SAME (&nexthop->gate.ipv4, gate) ||
+		IPV4_ADDR_SAME (&nexthop->rgate.ipv4, gate))
+	      /* make sure ifindex matches if specified */
+	      if (!ifindex || ifindex == nexthop->ifindex)
+		break;
+
+	  if (nexthop)
 	    {
-	      if (ifindex && ifindex != nexthop->ifindex)
-		continue; /* ifindex doesn't match */
 	      same = rib;
 	      break;
 	    }
@@ -2455,12 +2458,15 @@ rib_delete_ipv6 (int type, int flags, struct prefix_ipv6 *p,
 
       if (gate)
 	{
-	  if ((nexthop = rib->nexthop) &&
-	      (IPV6_ADDR_SAME (&nexthop->gate.ipv6, gate) ||
-	       IPV6_ADDR_SAME (&nexthop->rgate.ipv6, gate)))
+	  for (nexthop = rib->nexthop; nexthop; nexthop = nexthop->next)
+	    if (IPV6_ADDR_SAME (&nexthop->gate.ipv6, gate) ||
+		IPV6_ADDR_SAME (&nexthop->rgate.ipv6, gate))
+	      /* make sure ifindex matches if specified */
+	      if (!ifindex || ifindex == nexthop->ifindex)
+		break;
+
+	  if (nexthop)
 	    {
-	      if (ifindex && ifindex != nexthop->ifindex)
-		continue; /* ifindex doesn't match */
 	      same = rib;
 	      break;
 	    }
