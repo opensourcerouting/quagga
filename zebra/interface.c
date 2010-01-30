@@ -127,7 +127,7 @@ if_subnet_add (struct interface *ifp, struct connected *ifc)
 
   /* Get address derived subnet node and associated address list, while marking
      address secondary attribute appropriately. */
-  cp = *ifc->address;
+  cp = *CONNECTED_PREFIX(ifc);
   apply_mask (&cp);
   rn = route_node_get (zebra_if->ipv4_subnets, &cp);
 
@@ -154,12 +154,16 @@ if_subnet_delete (struct interface *ifp, struct connected *ifc)
   struct route_node *rn;
   struct zebra_if *zebra_if;
   struct list *addr_list;
+  struct prefix cp;
 
   assert (ifp && ifp->info && ifc);
   zebra_if = ifp->info;
 
+  cp = *CONNECTED_PREFIX(ifc);
+  apply_mask (&cp);
+
   /* Get address derived subnet node. */
-  rn = route_node_lookup (zebra_if->ipv4_subnets, ifc->address);
+  rn = route_node_lookup (zebra_if->ipv4_subnets, &cp);
   if (! (rn && rn->info))
     return -1;
   route_unlock_node (rn);
@@ -588,6 +592,7 @@ connected_dump_vty (struct vty *vty, struct connected *connected)
     {
       vty_out (vty, (CONNECTED_PEER(connected) ? " peer " : " broadcast "));
       prefix_vty_out (vty, connected->destination);
+      vty_out (vty, "/%d", connected->destination->prefixlen);
     }
 
   if (CHECK_FLAG (connected->flags, ZEBRA_IFA_SECONDARY))

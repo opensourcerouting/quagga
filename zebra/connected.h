@@ -25,6 +25,8 @@
 
 extern struct connected *
 connected_check (struct interface *ifp, struct prefix *p);
+extern struct connected *
+connected_check_ptp (struct interface *ifp, struct prefix *p, struct prefix *d);
 
 extern void
 connected_add_ipv4 (struct interface *ifp, int flags, struct in_addr *addr, 
