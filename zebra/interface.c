@@ -1279,18 +1279,23 @@ ip_address_uninstall (struct vty *vty, struct interface *ifp,
 	       safe_strerror(errno), VTY_NEWLINE);
       return CMD_WARNING;
     }
-
-#if 0
-  /* Redistribute this information. */
-  zebra_interface_address_delete_update (ifp, ifc);
+  /* success! now update all internal state... */
 
   /* Remove connected route. */
   connected_down_ipv4 (ifp, ifc);
 
+  /* Redistribute this information. */
+  zebra_interface_address_delete_update (ifp, ifc);
+
+  /* IP address propery set. */
+  UNSET_FLAG (ifc->conf, ZEBRA_IFC_REAL);
+
+  /* remove from interface, remark secondaries */
+  if_subnet_delete (ifp, ifc);
+
   /* Free address information. */
   listnode_delete (ifp->connected, ifc);
   connected_free (ifc);
-#endif
 
   return CMD_SUCCESS;
 }
