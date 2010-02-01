@@ -1348,12 +1348,21 @@ ip_address_uninstall (struct vty *vty, struct interface *ifp,
   return CMD_SUCCESS;
 }
 
+#define IP_ADDR_STR \
+	"Interface Internet Protocol config commands\n" \
+	"Set the IP address of an interface\n" \
+	"IP address (e.g. 10.0.0.1/8)\n"
+#define IP_ADDR_PEER_STR \
+       "Interface Internet Protocol config commands\n" \
+       "Set the IP address of an interface\n" \
+       "Local IP (e.g. 10.0.0.1) for P-t-P address\n" \
+       "Specify P-t-P address\n" \
+       "Peer IP address (e.g. 10.0.0.1/8)\n"
+
 DEFUN (ip_address,
        ip_address_cmd,
        "ip address A.B.C.D/M",
-       "Interface Internet Protocol config commands\n"
-       "Set the IP address of an interface\n"
-       "IP address (e.g. 10.0.0.1/8)\n")
+       IP_ADDR_STR)
 {
   return ip_address_install (vty, vty->index, argv[0], NULL, NULL);
 }
@@ -1361,10 +1370,7 @@ DEFUN (ip_address,
 DEFUN (no_ip_address,
        no_ip_address_cmd,
        "no ip address A.B.C.D/M",
-       NO_STR
-       "Interface Internet Protocol config commands\n"
-       "Set the IP address of an interface\n"
-       "IP Address (e.g. 10.0.0.1/8)")
+       NO_STR IP_ADDR_STR)
 {
   return ip_address_uninstall (vty, vty->index, argv[0], NULL, NULL);
 }
@@ -1372,11 +1378,7 @@ DEFUN (no_ip_address,
 DEFUN (ip_address_peer,
        ip_address_peer_cmd,
        "ip address A.B.C.D peer A.B.C.D/M",
-       "Interface Internet Protocol config commands\n"
-       "Set the IP address of an interface\n"
-       "Local IP (e.g. 10.0.0.1) for P-t-P address\n"
-       "Specify P-t-P address\n"
-       "Peer IP address (e.g. 10.0.0.1/8)\n")
+       IP_ADDR_PEER_STR)
 {
   return ip_address_install (vty, vty->index, argv[0], argv[1], NULL);
 }
@@ -1384,12 +1386,7 @@ DEFUN (ip_address_peer,
 DEFUN (no_ip_address_peer,
        no_ip_address_peer_cmd,
        "no ip address A.B.C.D peer A.B.C.D/M",
-       NO_STR
-       "Interface Internet Protocol config commands\n"
-       "Set the IP address of an interface\n"
-       "Local IP (e.g. 10.0.0.1) for P-t-P address\n"
-       "Specify P-t-P address\n"
-       "Peer IP address (e.g. 10.0.0.1/8)\n")
+       NO_STR IP_ADDR_PEER_STR)
 {
   return ip_address_uninstall (vty, vty->index, argv[0], argv[1], NULL);
 }
@@ -1398,9 +1395,7 @@ DEFUN (no_ip_address_peer,
 DEFUN (ip_address_label,
        ip_address_label_cmd,
        "ip address A.B.C.D/M label LINE",
-       "Interface Internet Protocol config commands\n"
-       "Set the IP address of an interface\n"
-       "IP address (e.g. 10.0.0.1/8)\n"
+       IP_ADDR_STR
        "Label of this address\n"
        "Label\n")
 {
@@ -1410,10 +1405,7 @@ DEFUN (ip_address_label,
 DEFUN (no_ip_address_label,
        no_ip_address_label_cmd,
        "no ip address A.B.C.D/M label LINE",
-       NO_STR
-       "Interface Internet Protocol config commands\n"
-       "Set the IP address of an interface\n"
-       "IP address (e.g. 10.0.0.1/8)\n"
+       NO_STR IP_ADDR_STR
        "Label of this address\n"
        "Label\n")
 {
