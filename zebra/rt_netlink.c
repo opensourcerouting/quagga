@@ -549,6 +549,7 @@ netlink_interface_addr (struct sockaddr_nl *snl, struct nlmsghdr *h)
       char buf[BUFSIZ];
       zlog_debug ("netlink_interface_addr %s %s:",
                  lookup (nlmsg_str, h->nlmsg_type), ifp->name);
+      zlog_debug ("  ifa_scope     %s", connected_scope_name (ifa->ifa_scope));
       if (tb[IFA_LOCAL])
         zlog_debug ("  IFA_LOCAL     %s/%d",
 		    inet_ntop (ifa->ifa_family, RTA_DATA (tb[IFA_LOCAL]),

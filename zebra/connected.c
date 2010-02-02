@@ -36,6 +36,53 @@
 #include "zebra/interface.h"
 #include "zebra/connected.h"
 extern struct zebra_t zebrad;
+
+#ifdef HAVE_NETLINK
+static const struct message rtscope_str[] = {
+  {RT_SCOPE_UNIVERSE,	"global"},
+  {RT_SCOPE_SITE,	"site"},
+  {RT_SCOPE_LINK,	"link"},
+  {RT_SCOPE_HOST,	"host"},
+  {RT_SCOPE_NOWHERE,	"nowhere"},
+  {0, NULL}
+};
+
+/* for use in show interface */
+const char *
+connected_scope_name(unsigned value)
+{
+  const char *str;
+  static char buf[16];
+
+  str = lookup (rtscope_str, value);
+  if (!str || !*str) {
+    snprintf (buf, sizeof(buf), "%d", value);
+    str = buf;
+  }
+  return str;
+}
+
+int
+connected_scope_number(const char *name)
+{
+  const struct message *m;
+  char *errptr;
+  unsigned value;
+
+  if (!name || !*name)
+    return -1;
+
+  for (m = rtscope_str; m->str; m++)
+    if (!strcmp (m->str, name))
+      return m->key;
+
+  value = strtoul (name, &errptr, 0);
+  if (*errptr || value > 255)
+    return -1;
+
+  return value;
+}
+#endif /* HAVE_NETLINK */
 
 /* withdraw a connected address */
 static void

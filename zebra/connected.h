@@ -54,4 +54,9 @@ extern void connected_down_ipv6 (struct interface *ifp, struct connected *);
 
 #endif /* HAVE_IPV6 */
 
+#ifdef HAVE_NETLINK
+extern const char *connected_scope_name (unsigned value);
+extern int connected_scope_number (const char *name);
+#endif /* HAVE_NETLINK */
+
 #endif /*_ZEBRA_CONNECTED_H */
