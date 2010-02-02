@@ -761,7 +761,7 @@ lookup (const struct message *mes, int key)
 {
   const struct message *pnt;
 
-  for (pnt = mes; pnt->key != 0; pnt++) 
+  for (pnt = mes; pnt->str; pnt++)
     if (pnt->key == key) 
       return pnt->str;
 
