@@ -1779,6 +1779,7 @@ netlink_address (int cmd, int family, struct interface *ifp,
   req.ifa.ifa_family = family;
 
   req.ifa.ifa_index = ifp->ifindex;
+  req.ifa.ifa_scope = ifc->scope;
 
   addattr_l (&req.n, sizeof req, IFA_LOCAL, &p->u.prefix, bytelen);
 

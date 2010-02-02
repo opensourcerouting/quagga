@@ -1159,12 +1159,13 @@ ALIAS (no_bandwidth_if,
 static int
 ip_address_install (struct vty *vty, struct interface *ifp,
 		    const char *addr_str, const char *peer_str,
-		    const char *label)
+		    const char *label, const char *scope)
 {
   struct prefix_ipv4 lp, pp;
   struct connected *ifc;
   struct prefix_ipv4 *p;
   int ret;
+  int scopev = 0;
 
   ret = str2prefix_ipv4 (addr_str, &lp);
   if (ret <= 0)
@@ -1190,6 +1191,18 @@ ip_address_install (struct vty *vty, struct interface *ifp,
 	}
     }
 
+#ifdef HAVE_NETLINK
+  if (scope)
+    {
+      scopev = connected_scope_number (scope);
+      if (scopev < 0)
+	{
+	  vty_out (vty, "%% Malformed scope %s", VTY_NEWLINE);
+	  return CMD_WARNING;
+	}
+    }
+#endif
+
   ifc = connected_check_ptp (ifp, (struct prefix *) &lp,
 			     (struct prefix *)(peer_str ? &pp : NULL));
   if (! ifc)
@@ -1201,6 +1214,7 @@ ip_address_install (struct vty *vty, struct interface *ifp,
       p = prefix_ipv4_new ();
       *p = lp;
       ifc->address = (struct prefix *) p;
+      ifc->scope = scopev;
 
       if (peer_str)
 	{
@@ -1268,8 +1282,7 @@ ip_address_install (struct vty *vty, struct interface *ifp,
 
 static int
 ip_address_uninstall (struct vty *vty, struct interface *ifp,
-		      const char *addr_str, const char *peer_str,
-		      const char *label)
+		      const char *addr_str, const char *peer_str)
 {
   struct prefix_ipv4 lp, pp;
   struct connected *ifc;
@@ -1369,7 +1382,7 @@ DEFUN (ip_address,
        "ip address A.B.C.D/M",
        IP_ADDR_STR)
 {
-  return ip_address_install (vty, vty->index, argv[0], NULL, NULL);
+  return ip_address_install (vty, vty->index, argv[0], NULL, NULL, NULL);
 }
 
 DEFUN (no_ip_address,
@@ -1377,7 +1390,7 @@ DEFUN (no_ip_address,
        "no ip address A.B.C.D/M",
        NO_STR IP_ADDR_STR)
 {
-  return ip_address_uninstall (vty, vty->index, argv[0], NULL, NULL);
+  return ip_address_uninstall (vty, vty->index, argv[0], NULL);
 }
 
 DEFUN (ip_address_peer,
@@ -1385,7 +1398,7 @@ DEFUN (ip_address_peer,
        "ip address A.B.C.D peer A.B.C.D/M",
        IP_ADDR_PEER_STR)
 {
-  return ip_address_install (vty, vty->index, argv[0], argv[1], NULL);
+  return ip_address_install (vty, vty->index, argv[0], argv[1], NULL, NULL);
 }
 
 DEFUN (no_ip_address_peer,
@@ -1393,7 +1406,7 @@ DEFUN (no_ip_address_peer,
        "no ip address A.B.C.D peer A.B.C.D/M",
        NO_STR IP_ADDR_PEER_STR)
 {
-  return ip_address_uninstall (vty, vty->index, argv[0], argv[1], NULL);
+  return ip_address_uninstall (vty, vty->index, argv[0], argv[1]);
 }
 
 #ifdef HAVE_NETLINK
@@ -1404,18 +1417,63 @@ DEFUN (ip_address_label,
        "Label of this address\n"
        "Label\n")
 {
-  return ip_address_install (vty, vty->index, argv[0], NULL, argv[1]);
+  return ip_address_install (vty, vty->index, argv[0], NULL, argv[1], NULL);
 }
 
-DEFUN (no_ip_address_label,
-       no_ip_address_label_cmd,
-       "no ip address A.B.C.D/M label LINE",
-       NO_STR IP_ADDR_STR
+DEFUN (ip_address_peer_label,
+       ip_address_peer_label_cmd,
+       "ip address A.B.C.D peer A.B.C.D/M label LINE",
+       IP_ADDR_PEER_STR
        "Label of this address\n"
        "Label\n")
 {
-  return ip_address_uninstall (vty, vty->index, argv[0], NULL, argv[1]);
+  return ip_address_install (vty, vty->index, argv[0], argv[1], argv[2], NULL);
 }
+
+DEFUN (ip_address_scope,
+       ip_address_scope_cmd,
+       "ip address A.B.C.D/M scope WORD",
+       IP_ADDR_STR
+       "Scope of this address\n"
+       "Scope (e.g. 0-255 or global,site,link,host,nowhere)\n")
+{
+  return ip_address_install (vty, vty->index, argv[0], NULL, NULL, argv[1]);
+}
+
+DEFUN (ip_address_peer_scope,
+       ip_address_peer_scope_cmd,
+       "ip address A.B.C.D peer A.B.C.D/M scope WORD",
+       IP_ADDR_PEER_STR
+       "Scope of this address\n"
+       "Scope (e.g. 0-255 or global,site,link,host,nowhere)\n")
+{
+  return ip_address_install (vty, vty->index, argv[0], argv[1], NULL, argv[2]);
+}
+
+DEFUN (ip_address_scope_label,
+       ip_address_scope_label_cmd,
+       "ip address A.B.C.D/M scope WORD label LINE",
+       IP_ADDR_STR
+       "Scope of this address\n"
+       "Scope (e.g. 0-255 or global,site,link,host,nowhere)\n"
+       "Label of this address\n"
+       "Label\n")
+{
+  return ip_address_install (vty, vty->index, argv[0], NULL, argv[2], argv[1]);
+}
+
+DEFUN (ip_address_peer_scope_label,
+       ip_address_peer_scope_label_cmd,
+       "ip address A.B.C.D peer A.B.C.D/M scope WORD label LINE",
+       IP_ADDR_PEER_STR
+       "Scope of this address\n"
+       "Scope (e.g. 0-255 or global,site,link,host,nowhere)\n"
+       "Label of this address\n"
+       "Label\n")
+{
+  return ip_address_install (vty, vty->index, argv[0], argv[1], argv[3], argv[2]);
+}
+
 #endif /* HAVE_NETLINK */
 
 #ifdef HAVE_IPV6
@@ -1626,8 +1684,12 @@ if_config_write (struct vty *vty)
 		  }
 		vty_out (vty, "/%d", p->prefixlen);
 
+#ifdef HAVE_NETLINK
+		if (ifc->scope)
+		  vty_out (vty, " scope %s", connected_scope_name (ifc->scope));
 		if (ifc->label)
 		  vty_out (vty, " label %s", ifc->label);
+#endif
 
 		vty_out (vty, "%s", VTY_NEWLINE);
 	      }
@@ -1696,6 +1758,10 @@ zebra_if_init (void)
 #endif /* HAVE_IPV6 */
 #ifdef HAVE_NETLINK
   install_element (INTERFACE_NODE, &ip_address_label_cmd);
-  install_element (INTERFACE_NODE, &no_ip_address_label_cmd);
+  install_element (INTERFACE_NODE, &ip_address_scope_cmd);
+  install_element (INTERFACE_NODE, &ip_address_scope_label_cmd);
+  install_element (INTERFACE_NODE, &ip_address_peer_label_cmd);
+  install_element (INTERFACE_NODE, &ip_address_peer_scope_cmd);
+  install_element (INTERFACE_NODE, &ip_address_peer_scope_label_cmd);
 #endif /* HAVE_NETLINK */
 }
