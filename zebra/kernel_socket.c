@@ -658,7 +658,7 @@ ifam_read (struct ifa_msghdr *ifam)
 	connected_add_ipv4 (ifp, flags, &addr.sin.sin_addr, 
 			    ip_masklen (mask.sin.sin_addr),
 			    &brd.sin.sin_addr,
-			    (isalias ? ifname : NULL));
+			    (isalias ? ifname : NULL), 0);
       else
 	connected_delete_ipv4 (ifp, flags, &addr.sin.sin_addr, 
 			       ip_masklen (mask.sin.sin_addr),
@@ -675,7 +675,7 @@ ifam_read (struct ifa_msghdr *ifam)
 	connected_add_ipv6 (ifp, flags, &addr.sin6.sin6_addr, 
 			    ip6_masklen (mask.sin6.sin6_addr),
 			    &brd.sin6.sin6_addr,
-			    (isalias ? ifname : NULL));
+			    (isalias ? ifname : NULL), 0);
       else
 	connected_delete_ipv6 (ifp,
 			       &addr.sin6.sin6_addr, 

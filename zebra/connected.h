@@ -31,7 +31,7 @@ connected_check_ptp (struct interface *ifp, struct prefix *p, struct prefix *d);
 extern void
 connected_add_ipv4 (struct interface *ifp, int flags, struct in_addr *addr, 
 		    u_char prefixlen, struct in_addr *broad, 
-		    const char *label);
+		    const char *label, unsigned scope);
 
 extern void
 connected_delete_ipv4 (struct interface *ifp, int flags, struct in_addr *addr,
@@ -44,7 +44,7 @@ extern void connected_down_ipv4 (struct interface *, struct connected *);
 extern void
 connected_add_ipv6 (struct interface *ifp, int flags, struct in6_addr *address,
 		    u_char prefixlen, struct in6_addr *broad,
-		    const char *label);
+		    const char *label, unsigned scope);
 extern void
 connected_delete_ipv6 (struct interface *ifp, struct in6_addr *address,
 		       u_char prefixlen, struct in6_addr *broad);

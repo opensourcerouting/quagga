@@ -595,6 +595,11 @@ connected_dump_vty (struct vty *vty, struct connected *connected)
       vty_out (vty, "/%d", connected->destination->prefixlen);
     }
 
+#ifdef HAVE_NETLINK
+  if (connected->scope != 0)
+    vty_out (vty, " scope %s", connected_scope_name (connected->scope));
+#endif
+
   if (CHECK_FLAG (connected->flags, ZEBRA_IFA_SECONDARY))
     vty_out (vty, " secondary");
 

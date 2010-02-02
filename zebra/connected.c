@@ -269,7 +269,7 @@ connected_up_ipv4 (struct interface *ifp, struct connected *ifc)
 void
 connected_add_ipv4 (struct interface *ifp, int flags, struct in_addr *addr, 
 		    u_char prefixlen, struct in_addr *broad, 
-		    const char *label)
+		    const char *label, unsigned scope)
 {
   struct prefix_ipv4 *p;
   struct connected *ifc;
@@ -340,6 +340,8 @@ connected_add_ipv4 (struct interface *ifp, int flags, struct in_addr *addr,
   /* Label of this address. */
   if (label)
     ifc->label = XSTRDUP (MTYPE_CONNECTED_LABEL, label);
+
+  ifc->scope = scope;
 
   /* nothing to do? */
   if ((ifc = connected_implicit_withdraw (ifp, ifc)) == NULL)
@@ -436,7 +438,7 @@ connected_up_ipv6 (struct interface *ifp, struct connected *ifc)
 void
 connected_add_ipv6 (struct interface *ifp, int flags, struct in6_addr *addr,
 		    u_char prefixlen, struct in6_addr *broad,
-		    const char *label)
+		    const char *label, unsigned scope)
 {
   struct prefix_ipv6 *p;
   struct connected *ifc;
@@ -479,7 +481,9 @@ connected_add_ipv6 (struct interface *ifp, int flags, struct in6_addr *addr,
   /* Label of this address. */
   if (label)
     ifc->label = XSTRDUP (MTYPE_CONNECTED_LABEL, label);
-  
+
+  ifc->scope = scope;
+
   if ((ifc = connected_implicit_withdraw (ifp, ifc)) == NULL)
     return;
   

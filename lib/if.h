@@ -172,6 +172,9 @@ struct connected
 
   /* Label for Linux 2.2.X and upper. */
   char *label;
+
+  /* scope value, Linux only */
+  unsigned scope;
 };
 
 /* Does the destination field contain a peer address? */
