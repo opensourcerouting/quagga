@@ -1163,13 +1163,14 @@ ALIAS (no_bandwidth_if,
 static int
 ip_address_install (struct vty *vty, struct interface *ifp,
 		    const char *addr_str, const char *peer_str,
-		    const char *label, const char *scope)
+		    const char *label, const char *scope,
+		    const char *preference)
 {
   struct prefix_ipv4 lp, pp;
   struct connected *ifc;
   struct prefix_ipv4 *p;
   int ret;
-  int scopev = 0;
+  int scopev = 0, preferencev = 0;
 
   ret = str2prefix_ipv4 (addr_str, &lp);
   if (ret <= 0)
@@ -1206,6 +1207,15 @@ ip_address_install (struct vty *vty, struct interface *ifp,
 	}
     }
 #endif
+  if (preference)
+    {
+      preferencev = atoi (preference);
+      if (preferencev < -32768 || preferencev > 32767)
+	{
+	  vty_out (vty, "%% Invalid preference %s", VTY_NEWLINE);
+	  return CMD_WARNING;
+	}
+    }
 
   ifc = connected_check_ptp (ifp, (struct prefix *) &lp,
 			     (struct prefix *)(peer_str ? &pp : NULL));
@@ -1219,6 +1229,7 @@ ip_address_install (struct vty *vty, struct interface *ifp,
       *p = lp;
       ifc->address = (struct prefix *) p;
       ifc->scope = scopev;
+      ifc->preference = preferencev;
 
       if (peer_str)
 	{
@@ -1386,7 +1397,8 @@ DEFUN (ip_address,
        "ip address A.B.C.D/M",
        IP_ADDR_STR)
 {
-  return ip_address_install (vty, vty->index, argv[0], NULL, NULL, NULL);
+  return ip_address_install (vty, vty->index, argv[0], NULL,
+  			     NULL, NULL, NULL);
 }
 
 DEFUN (no_ip_address,
@@ -1402,7 +1414,8 @@ DEFUN (ip_address_peer,
        "ip address A.B.C.D peer A.B.C.D/M",
        IP_ADDR_PEER_STR)
 {
-  return ip_address_install (vty, vty->index, argv[0], argv[1], NULL, NULL);
+  return ip_address_install (vty, vty->index, argv[0], argv[1],
+  			     NULL, NULL, NULL);
 }
 
 DEFUN (no_ip_address_peer,
@@ -1421,7 +1434,8 @@ DEFUN (ip_address_label,
        "Label of this address\n"
        "Label\n")
 {
-  return ip_address_install (vty, vty->index, argv[0], NULL, argv[1], NULL);
+  return ip_address_install (vty, vty->index, argv[0], NULL,
+  			     argv[1], NULL, NULL);
 }
 
 DEFUN (ip_address_peer_label,
@@ -1431,7 +1445,8 @@ DEFUN (ip_address_peer_label,
        "Label of this address\n"
        "Label\n")
 {
-  return ip_address_install (vty, vty->index, argv[0], argv[1], argv[2], NULL);
+  return ip_address_install (vty, vty->index, argv[0], argv[1],
+  			     argv[2], NULL, NULL);
 }
 
 DEFUN (ip_address_scope,
@@ -1441,7 +1456,8 @@ DEFUN (ip_address_scope,
        "Scope of this address\n"
        "Scope (e.g. 0-255 or global,site,link,host,nowhere)\n")
 {
-  return ip_address_install (vty, vty->index, argv[0], NULL, NULL, argv[1]);
+  return ip_address_install (vty, vty->index, argv[0], NULL,
+  			     NULL, argv[1], NULL);
 }
 
 DEFUN (ip_address_peer_scope,
@@ -1451,7 +1467,8 @@ DEFUN (ip_address_peer_scope,
        "Scope of this address\n"
        "Scope (e.g. 0-255 or global,site,link,host,nowhere)\n")
 {
-  return ip_address_install (vty, vty->index, argv[0], argv[1], NULL, argv[2]);
+  return ip_address_install (vty, vty->index, argv[0], argv[1],
+  			     NULL, argv[2], NULL);
 }
 
 DEFUN (ip_address_scope_label,
@@ -1463,7 +1480,8 @@ DEFUN (ip_address_scope_label,
        "Label of this address\n"
        "Label\n")
 {
-  return ip_address_install (vty, vty->index, argv[0], NULL, argv[2], argv[1]);
+  return ip_address_install (vty, vty->index, argv[0], NULL,
+  			     argv[2], argv[1], NULL);
 }
 
 DEFUN (ip_address_peer_scope_label,
@@ -1475,10 +1493,35 @@ DEFUN (ip_address_peer_scope_label,
        "Label of this address\n"
        "Label\n")
 {
-  return ip_address_install (vty, vty->index, argv[0], argv[1], argv[3], argv[2]);
+  return ip_address_install (vty, vty->index, argv[0], argv[1],
+  			     argv[3], argv[2], NULL);
 }
 
 #endif /* HAVE_NETLINK */
+
+#ifdef SIOCSIFADDRPREF
+DEFUN (ip_address_pref,
+       ip_address_pref_cmd,
+       "ip address A.B.C.D/M preference WORD",
+       IP_ADDR_STR
+       "specify IPSRCSEL preference\n"
+       "preference value, higher is preferred\n")
+{
+  return ip_address_install (vty, vty->index, argv[0], NULL,
+			     NULL, NULL, argv[1]);
+}
+
+DEFUN (ip_address_peer_pref,
+       ip_address_peer_pref_cmd,
+       "ip address A.B.C.D peer A.B.C.D/M preference WORD",
+       IP_ADDR_PEER_STR
+       "specify IPSRCSEL preference\n"
+       "preference value, higher is preferred\n")
+{
+  return ip_address_install (vty, vty->index, argv[0], argv[1],
+  			     NULL, NULL, argv[2]);
+}
+#endif
 
 #ifdef HAVE_IPV6
 static int
@@ -1694,7 +1737,10 @@ if_config_write (struct vty *vty)
 		if (ifc->label)
 		  vty_out (vty, " label %s", ifc->label);
 #endif
-
+#ifdef SIOCSIFADDRPREF
+		if (ifc->preference)
+		  vty_out (vty, " preference %d", ifc->preference);
+#endif
 		vty_out (vty, "%s", VTY_NEWLINE);
 	      }
 	  }
@@ -1768,4 +1814,8 @@ zebra_if_init (void)
   install_element (INTERFACE_NODE, &ip_address_peer_scope_cmd);
   install_element (INTERFACE_NODE, &ip_address_peer_scope_label_cmd);
 #endif /* HAVE_NETLINK */
+#ifdef SIOCSIFADDRPREF
+  install_element (INTERFACE_NODE, &ip_address_pref_cmd);
+  install_element (INTERFACE_NODE, &ip_address_peer_pref_cmd);
+#endif
 }

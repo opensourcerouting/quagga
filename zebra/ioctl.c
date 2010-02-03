@@ -238,6 +238,23 @@ if_set_prefix (struct interface *ifp, struct connected *ifc)
   ret = if_ioctl (SIOCAIFADDR, (caddr_t) &addreq);
   if (ret < 0)
     return ret;
+
+#ifdef SIOCSIFADDRPREF
+  if (ifc->preference != 0)
+    {
+      struct if_addrprefreq ifapr;
+
+      memset (&ifapr, 0, sizeof ifapr);
+      strncpy ((char *)&ifapr.ifap_name, ifp->name, sizeof ifapr.ifap_name);
+      ifapr.ifap_preference = ifc->preference;
+      memcpy (&ifapr.ifap_addr, &addr, sizeof (struct sockaddr_in));
+
+      ret = if_ioctl (SIOCSIFADDRPREF, (caddr_t) &ifapr);
+      if (ret < 0)
+        zlog_err("if_ioctl(SIOCSIFADDRPREF) failed: %s",
+		 safe_strerror(errno));
+    }
+#endif
   return 0;
 }
 
