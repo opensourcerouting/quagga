@@ -599,6 +599,10 @@ connected_dump_vty (struct vty *vty, struct connected *connected)
   if (connected->scope != 0)
     vty_out (vty, " scope %s", connected_scope_name (connected->scope));
 #endif
+#ifdef SIOCSIFADDRPREF
+  if (connected->preference != 0)
+    vty_out (vty, " preference %d", connected->preference);
+#endif
 
   if (CHECK_FLAG (connected->flags, ZEBRA_IFA_SECONDARY))
     vty_out (vty, " secondary");

@@ -25,7 +25,7 @@ int kernel_address_add_ipv4 (struct interface *a, struct connected *b)
   SET_FLAG (b->conf, ZEBRA_IFC_REAL);
   connected_add_ipv4 (a, 0, &b->address->u.prefix4, b->address->prefixlen, 
                       (b->destination ? &b->destination->u.prefix4 : NULL), 
-                      NULL, 0);
+                      NULL, 0, 0);
   return 0;
 }
 

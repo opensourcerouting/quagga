@@ -276,7 +276,7 @@ if_getaddrs (void)
 	    }
 
 	  connected_add_ipv4 (ifp, flags, &addr->sin_addr,
-			      prefixlen, dest_pnt, NULL, 0);
+			      prefixlen, dest_pnt, NULL, 0, 0);
 	}
 #ifdef HAVE_IPV6
       if (ifap->ifa_addr->sa_family == AF_INET6)
@@ -412,7 +412,7 @@ if_get_addr (struct interface *ifp)
 
 
   /* Set address to the interface. */
-  connected_add_ipv4 (ifp, flags, &addr.sin_addr, prefixlen, dest_pnt, NULL, 0);
+  connected_add_ipv4 (ifp, flags, &addr.sin_addr, prefixlen, dest_pnt, NULL, 0, 0);
 
   return 0;
 }

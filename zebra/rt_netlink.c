@@ -617,7 +617,7 @@ netlink_interface_addr (struct sockaddr_nl *snl, struct nlmsghdr *h)
       if (h->nlmsg_type == RTM_NEWADDR)
         connected_add_ipv4 (ifp, flags,
                             (struct in_addr *) addr, ifa->ifa_prefixlen,
-                            (struct in_addr *) broad, label, ifa->ifa_scope);
+                            (struct in_addr *) broad, label, ifa->ifa_scope, 0);
       else
         connected_delete_ipv4 (ifp, flags,
                                (struct in_addr *) addr, ifa->ifa_prefixlen,

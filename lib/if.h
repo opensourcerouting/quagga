@@ -175,6 +175,9 @@ struct connected
 
   /* scope value, Linux only */
   unsigned scope;
+
+  /* address preference, NetBSD >=4.0 with option IPSRCSEL, in_getifa(9) */
+  int preference;
 };
 
 /* Does the destination field contain a peer address? */

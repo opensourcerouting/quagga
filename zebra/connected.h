@@ -31,7 +31,7 @@ connected_check_ptp (struct interface *ifp, struct prefix *p, struct prefix *d);
 extern void
 connected_add_ipv4 (struct interface *ifp, int flags, struct in_addr *addr, 
 		    u_char prefixlen, struct in_addr *broad, 
-		    const char *label, unsigned scope);
+		    const char *label, unsigned scope, int preference);
 
 extern void
 connected_delete_ipv4 (struct interface *ifp, int flags, struct in_addr *addr,

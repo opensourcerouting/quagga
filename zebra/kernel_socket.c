@@ -253,6 +253,25 @@ rtm_flag_dump (int flag)
   zlog_debug ("Kernel: %s", buf);
 }
 
+/* NetBSD IPSRCSEL preference readback */
+static int
+if_get_addrpref (const char *ifname, struct sockaddr_in *addr)
+{
+#ifdef SIOCSIFADDRPREF
+  int ret;
+  struct if_addrprefreq ifapr;
+
+  memset (&ifapr, 0, sizeof ifapr);
+  strncpy ((char *)&ifapr.ifap_name, ifname, sizeof ifapr.ifap_name);
+  memcpy (&ifapr.ifap_addr, addr, sizeof (struct sockaddr_in));
+
+  ret = if_ioctl (SIOCGIFADDRPREF, (caddr_t) &ifapr);
+  if (ret == 0)
+    return ifapr.ifap_preference;
+#endif
+  return 0;
+}
+
 #ifdef RTM_IFANNOUNCE
 /* Interface adding function */
 static int
@@ -619,6 +638,7 @@ ifam_read (struct ifa_msghdr *ifam)
   short ifnlen = 0;
   char isalias = 0;
   int flags = 0;
+  int preference = 0;
   
   ifname[0] = ifname[INTERFACE_NAMSIZ - 1] = '\0';
   
@@ -649,6 +669,9 @@ ifam_read (struct ifa_msghdr *ifam)
    */
   ifp->metric = ifam->ifam_metric;
 #endif
+  if (sockunion_family (&addr) == AF_INET
+      && ifam->ifam_type == RTM_NEWADDR)
+    preference = if_get_addrpref (ifp->name, &addr.sin);
 
   /* Add connected address. */
   switch (sockunion_family (&addr))
@@ -658,7 +681,7 @@ ifam_read (struct ifa_msghdr *ifam)
 	connected_add_ipv4 (ifp, flags, &addr.sin.sin_addr, 
 			    ip_masklen (mask.sin.sin_addr),
 			    &brd.sin.sin_addr,
-			    (isalias ? ifname : NULL), 0);
+			    (isalias ? ifname : NULL), 0, preference);
       else
 	connected_delete_ipv4 (ifp, flags, &addr.sin.sin_addr, 
 			       ip_masklen (mask.sin.sin_addr),
