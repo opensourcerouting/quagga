@@ -84,9 +84,9 @@ static struct cmd_node config_node =
 /* Default motd string. */
 static const char *default_motd =
 "\r\n\
-Hello, this is " QUAGGA_PROGNAME " (version " QUAGGA_VERSION ").\r\n\
-" QUAGGA_COPYRIGHT "\r\n\
-\r\n";
+This is " QUAGGA_PROGNAME " " QUAGGA_VERSION "\r\n\r\n\
+You're using the dn42 branch. Send bug reports to equinox@diac24.net\r\n\
+The 1.1.0 version number is for package management purposes only.\r\n";
 
 
 static const struct facility_map {
