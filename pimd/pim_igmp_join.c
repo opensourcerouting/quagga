@@ -21,6 +21,10 @@
 */
 
 #include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include "pim_igmp_join.h"
 
@@ -54,7 +58,7 @@ int pim_igmp_join_source(int fd, int ifindex,
 
   req.gsr_interface = ifindex;
 
-  return setsockopt(fd, SOL_IP, MCAST_JOIN_SOURCE_GROUP,
+  return setsockopt(fd, IPPROTO_IP, MCAST_JOIN_SOURCE_GROUP,
 		    &req, sizeof(req));
 
   return 0;
