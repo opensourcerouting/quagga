@@ -191,9 +191,15 @@ if_set_prefix (struct interface *ifp, struct connected *ifc)
 {
   int ret;
   struct ifaliasreq addreq;
-  struct sockaddr_in addr;
-  struct sockaddr_in mask;
+  struct sockaddr_in addr, mask, peer;
   struct prefix_ipv4 *p;
+
+  /* don't configure PtP addresses on broadcast ifs or reverse */
+  if (!(ifp->flags & IFF_POINTOPOINT) != !CONNECTED_PEER (ifc))
+    {
+      errno = EINVAL;
+      return -1;
+    }
 
   p = (struct prefix_ipv4 *) ifc->address;
   rib_lookup_and_pushup (p);
@@ -209,6 +215,18 @@ if_set_prefix (struct interface *ifp, struct connected *ifc)
 #endif
   memcpy (&addreq.ifra_addr, &addr, sizeof (struct sockaddr_in));
 
+  if (CONNECTED_PEER (ifc))
+    {
+      p = (struct prefix_ipv4 *) ifc->destination;
+      memset (&mask, 0, sizeof (struct sockaddr_in));
+      peer.sin_addr = p->prefix;
+      peer.sin_family = p->family;
+#ifdef HAVE_STRUCT_SOCKADDR_IN_SIN_LEN
+      peer.sin_len = sizeof (struct sockaddr_in);
+#endif
+      memcpy (&addreq.ifra_broadaddr, &peer, sizeof (struct sockaddr_in));
+    }
+
   memset (&mask, 0, sizeof (struct sockaddr_in));
   masklen2ip (p->prefixlen, &mask.sin_addr);
   mask.sin_family = p->family;
@@ -216,7 +234,7 @@ if_set_prefix (struct interface *ifp, struct connected *ifc)
   mask.sin_len = sizeof (struct sockaddr_in);
 #endif
   memcpy (&addreq.ifra_mask, &mask, sizeof (struct sockaddr_in));
-  
+
   ret = if_ioctl (SIOCAIFADDR, (caddr_t) &addreq);
   if (ret < 0)
     return ret;
@@ -230,9 +248,15 @@ if_unset_prefix (struct interface *ifp, struct connected *ifc)
 {
   int ret;
   struct ifaliasreq addreq;
-  struct sockaddr_in addr;
-  struct sockaddr_in mask;
+  struct sockaddr_in addr, mask, peer;
   struct prefix_ipv4 *p;
+
+  /* this would probably wreak havoc */
+  if (!(ifp->flags & IFF_POINTOPOINT) != !CONNECTED_PEER (ifc))
+    {
+      errno = EINVAL;
+      return -1;
+    }
 
   p = (struct prefix_ipv4 *)ifc->address;
 
@@ -246,6 +270,18 @@ if_unset_prefix (struct interface *ifp, struct connected *ifc)
   addr.sin_len = sizeof (struct sockaddr_in);
 #endif
   memcpy (&addreq.ifra_addr, &addr, sizeof (struct sockaddr_in));
+
+  if (CONNECTED_PEER (ifc))
+    {
+      p = (struct prefix_ipv4 *) ifc->destination;
+      memset (&mask, 0, sizeof (struct sockaddr_in));
+      peer.sin_addr = p->prefix;
+      peer.sin_family = p->family;
+#ifdef HAVE_STRUCT_SOCKADDR_IN_SIN_LEN
+      peer.sin_len = sizeof (struct sockaddr_in);
+#endif
+      memcpy (&addreq.ifra_broadaddr, &peer, sizeof (struct sockaddr_in));
+    }
 
   memset (&mask, 0, sizeof (struct sockaddr_in));
   masklen2ip (p->prefixlen, &mask.sin_addr);
