@@ -327,7 +327,7 @@ int pim_mroute_socket_disable()
  */
 int pim_mroute_add_vif(int vif_index, struct in_addr ifaddr)
 {
-  struct vifctl vc;
+  struct vifctl_ext vc;
   int err;
 
   if (PIM_MROUTE_IS_DISABLED) {
@@ -337,11 +337,12 @@ int pim_mroute_add_vif(int vif_index, struct in_addr ifaddr)
   }
 
   memset(&vc, 0, sizeof(vc));
-  vc.vifc_vifi = vif_index;
-  vc.vifc_flags = 0;
-  vc.vifc_threshold = PIM_MROUTE_MIN_TTL;
-  vc.vifc_rate_limit = 0;
-  memcpy(&vc.vifc_lcl_addr, &ifaddr, sizeof(vc.vifc_lcl_addr));
+  vc.vc.vifc_vifi = vif_index;
+  vc.vc.vifc_flags = 0;
+  vc.vc.vifc_threshold = PIM_MROUTE_MIN_TTL;
+  vc.vc.vifc_rate_limit = 0;
+  vc.ifindex = vif_index;
+  memcpy(&vc.vc.vifc_lcl_addr, &ifaddr, sizeof(vc.vc.vifc_lcl_addr));
 
 #ifdef PIM_DVMRP_TUNNEL  
   if (vc.vifc_flags & VIFF_TUNNEL) {
@@ -350,6 +351,8 @@ int pim_mroute_add_vif(int vif_index, struct in_addr ifaddr)
 #endif
 
   err = setsockopt(qpim_mroute_socket_fd, IPPROTO_IP, MRT_ADD_VIF, (void*) &vc, sizeof(vc)); 
+  if (err)
+    err = setsockopt(qpim_mroute_socket_fd, IPPROTO_IP, MRT_ADD_VIF, (void*) &vc, sizeof(vc.vc)); 
   if (err) {
     char ifaddr_str[100];
     int e = errno;

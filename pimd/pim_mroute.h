@@ -82,6 +82,11 @@ struct vifctl {
 };
 #endif
 
+struct vifctl_ext {
+	struct vifctl vc;		/* vifctl */
+	int ifindex;			/* interface index */
+};
+
 #ifndef HAVE_STRUCT_MFCCTL
 struct mfcctl {
   struct in_addr mfcc_origin;             /* Origin of mcast      */
