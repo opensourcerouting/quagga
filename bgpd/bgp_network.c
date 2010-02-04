@@ -233,46 +233,36 @@ bgp_bind (struct peer *peer)
 }
 
 static int
-bgp_bind_address (int sock, struct in_addr *addr)
+bgp_update_address (struct interface *ifp, const union sockunion *dst,
+		    union sockunion *addr)
 {
-  int ret;
-  struct sockaddr_in local;
-
-  memset (&local, 0, sizeof (struct sockaddr_in));
-  local.sin_family = AF_INET;
-#ifdef HAVE_STRUCT_SOCKADDR_IN_SIN_LEN
-  local.sin_len = sizeof(struct sockaddr_in);
-#endif /* HAVE_STRUCT_SOCKADDR_IN_SIN_LEN */
-  memcpy (&local.sin_addr, addr, sizeof (struct in_addr));
-
-  if ( bgpd_privs.change (ZPRIVS_RAISE) )
-    zlog_err ("bgp_bind_address: could not raise privs");
-    
-  ret = bind (sock, (struct sockaddr *)&local, sizeof (struct sockaddr_in));
-  if (ret < 0)
-    ;
-    
-  if (bgpd_privs.change (ZPRIVS_LOWER) )
-    zlog_err ("bgp_bind_address: could not lower privs");
-    
-  return 0;
-}
-
-static struct in_addr *
-bgp_update_address (struct interface *ifp)
-{
-  struct prefix_ipv4 *p;
+  struct prefix *p, *sel, *d;
   struct connected *connected;
   struct listnode *node;
+  int common;
+
+  d = sockunion2hostprefix (dst);
+  sel = NULL;
+  common = -1;
 
   for (ALL_LIST_ELEMENTS_RO (ifp->connected, node, connected))
     {
-      p = (struct prefix_ipv4 *) connected->address;
-
-      if (p->family == AF_INET)
-	return &p->prefix;
+      p = connected->address;
+      if (p->family != d->family)
+	continue;
+      if (prefix_common_bits (p, d) > common)
+	{
+	  sel = p;
+	  common = prefix_common_bits (sel, d);
+	}
     }
-  return NULL;
+
+  prefix_free (d);
+  if (!sel)
+    return 1;
+
+  prefix2sockunion (sel, addr);
+  return 0;
 }
 
 /* Update source selection.  */
@@ -280,7 +270,7 @@ static void
 bgp_update_source (struct peer *peer)
 {
   struct interface *ifp;
-  struct in_addr *addr;
+  union sockunion addr;
 
   /* Source is specified with interface name.  */
   if (peer->update_if)
@@ -289,11 +279,10 @@ bgp_update_source (struct peer *peer)
       if (! ifp)
 	return;
 
-      addr = bgp_update_address (ifp);
-      if (! addr)
+      if (bgp_update_address (ifp, &peer->su, &addr))
 	return;
 
-      bgp_bind_address (peer->fd, addr);
+      sockunion_bind (peer->fd, &addr, 0, &addr);
     }
 
   /* Source is specified with IP address.  */
