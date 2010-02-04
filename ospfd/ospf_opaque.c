@@ -2118,11 +2118,12 @@ out:
  * Followings are control functions to block origination after restart.
  *------------------------------------------------------------------------*/
 
-static void ospf_opaque_exclude_lsa_from_lsreq (struct route_table *nbrs, struct ospf_neighbor *inbr, struct ospf_lsa *lsa);
+static void ospf_opaque_exclude_lsa_from_lsreq (struct list *nbrs,
+		struct ospf_neighbor *inbr, struct ospf_lsa *lsa);
 static void ospf_opaque_type9_lsa_rxmt_nbr_check (struct ospf_interface *oi);
 static void ospf_opaque_type10_lsa_rxmt_nbr_check (struct ospf_area *area);
 static void ospf_opaque_type11_lsa_rxmt_nbr_check (struct ospf *top);
-static unsigned long ospf_opaque_nrxmt_self (struct route_table *nbrs, int lsa_type);
+static unsigned long ospf_opaque_nrxmt_self (struct list *nbrs, int lsa_type);
 
 void
 ospf_opaque_adjust_lsreq (struct ospf_neighbor *nbr, struct list *lsas)
@@ -2199,18 +2200,16 @@ out:
 }
 
 static void
-ospf_opaque_exclude_lsa_from_lsreq (struct route_table *nbrs,
+ospf_opaque_exclude_lsa_from_lsreq (struct list *nbrs,
                                     struct ospf_neighbor *inbr,
                                     struct ospf_lsa *lsa)
 {
-  struct route_node *rn;
+  struct listnode *node;
   struct ospf_neighbor *onbr;
   struct ospf_lsa *ls_req;
 
-  for (rn = route_top (nbrs); rn; rn = route_next (rn))
+  for (ALL_LIST_ELEMENTS_RO (nbrs, node, onbr))
     {
-      if ((onbr = rn->info) == NULL)
-        continue;
       if (onbr == inbr)
         continue;
       if ((ls_req = ospf_ls_request_lookup (onbr, lsa)) == NULL)
@@ -2412,17 +2411,15 @@ out:
 }
 
 static unsigned long
-ospf_opaque_nrxmt_self (struct route_table *nbrs, int lsa_type)
+ospf_opaque_nrxmt_self (struct list *nbrs, int lsa_type)
 {
-  struct route_node *rn;
+  struct listnode *node;
   struct ospf_neighbor *nbr;
   struct ospf *top;
   unsigned long n = 0;
 
-  for (rn = route_top (nbrs); rn; rn = route_next (rn))
+  for (ALL_LIST_ELEMENTS_RO (nbrs, node, nbr))
     {
-      if ((nbr = rn->info) == NULL)
-        continue;
       if ((top = oi_to_top (nbr->oi)) == NULL)
         continue;
       if (IPV4_ADDR_SAME (&nbr->router_id, &top->router_id))
