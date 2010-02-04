@@ -527,9 +527,16 @@ lsa_link_ptop_set (struct stream *s, struct ospf_interface *oi)
       {
 	/* For unnumbered point-to-point networks, the Link Data field
 	   should specify the interface's MIB-II ifIndex value. */
-	links += link_info_set (s, nbr->router_id, oi->address->u.prefix4,
+	if (CHECK_FLAG(oi->ifp->status, ZEBRA_INTERFACE_UNNUMBERED))
+	  id.s_addr = htonl(oi->ifp->ifindex);
+	else
+	  id = oi->address->u.prefix4;
+
+	links += link_info_set (s, nbr->router_id, id,
 		                LSA_LINK_TYPE_POINTOPOINT, 0, cost);
       }
+  if (CHECK_FLAG(oi->ifp->status, ZEBRA_INTERFACE_UNNUMBERED))
+    return links;
 
   /* Regardless of the state of the neighboring router, we must
      add a Type 3 link (stub network).
@@ -655,7 +662,7 @@ router_lsa_link_set (struct stream *s, struct ospf_area *area)
   struct in_addr host_mask = {~0}; /* All ones */
   struct listnode *node;
   struct ospf_interface *oi;
-  int links = 0;
+  int links = 0, old_links;
 
   for (ALL_LIST_ELEMENTS_RO (area->oiflist, node, oi))
     {
@@ -666,6 +673,7 @@ router_lsa_link_set (struct stream *s, struct ospf_area *area)
 	{
 	  if (oi->state != ISM_Down)
 	    {
+	      old_links = links;
 	      /* Describe each link. */
 	      switch (oi->type)
 		{
@@ -687,6 +695,7 @@ router_lsa_link_set (struct stream *s, struct ospf_area *area)
 		case OSPF_IFTYPE_LOOPBACK:
 		  links += lsa_link_loopback_set (s, oi); 
 		}
+	      ospf_lsa_pos_set(old_links, links, oi);
 	    }
 	}
     }
