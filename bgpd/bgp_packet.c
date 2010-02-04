@@ -107,8 +107,7 @@ bgp_connect_check (struct peer *peer)
   socklen_t slen;
   int ret;
 
-  /* Anyway I have to reset read and write thread. */
-  BGP_READ_OFF (peer->t_read);
+  /* Anyway I have to reset write thread. */
   BGP_WRITE_OFF (peer->t_write);
 
   /* Check file descriptor. */
@@ -597,7 +596,6 @@ bgp_write (struct thread *thread)
   struct stream *s; 
   int num;
   unsigned int count = 0;
-  int write_errno;
 
   /* Yes first of all get peer pointer. */
   peer = THREAD_ARG (thread);
@@ -610,46 +608,37 @@ bgp_write (struct thread *thread)
       return 0;
     }
 
-    /* Nonblocking write until TCP output buffer is full.  */
-  while (1)
+  s = bgp_write_packet (peer);
+  if (!s)
+    return 0;	/* nothing to send */
+
+  sockopt_cork (peer->fd, 1);
+
+  /* Nonblocking write until TCP output buffer is full.  */
+  do
     {
       int writenum;
-      int val;
-
-      s = bgp_write_packet (peer);
-      if (! s)
-	return 0;
-      
-      /* XXX: FIXME, the socket should be NONBLOCK from the start
-       * status shouldnt need to be toggled on each write
-       */
-      val = fcntl (peer->fd, F_GETFL, 0);
-      fcntl (peer->fd, F_SETFL, val|O_NONBLOCK);
 
       /* Number of bytes to be sent.  */
       writenum = stream_get_endp (s) - stream_get_getp (s);
 
       /* Call write() system call.  */
       num = write (peer->fd, STREAM_PNT (s), writenum);
-      write_errno = errno;
-      fcntl (peer->fd, F_SETFL, val);
-      if (num <= 0)
+      if (num < 0)
 	{
-	  /* Partial write. */
-	  if (write_errno == EWOULDBLOCK || write_errno == EAGAIN)
-	      break;
+	  /* write failed either retry needed or error */
+	  if (ERRNO_IO_RETRY(errno))
+	    break;
 
 	  BGP_EVENT_ADD (peer, TCP_fatal_error);
 	  return 0;
 	}
+
       if (num != writenum)
 	{
+	  /* Partial write */
 	  stream_forward_getp (s, num);
-
-	  if (write_errno == EAGAIN)
-	    break;
-
-	  continue;
+	  break;
 	}
 
       /* Retrieve BGP packet type. */
@@ -690,13 +679,14 @@ bgp_write (struct thread *thread)
 
       /* OK we send packet so delete it. */
       bgp_packet_delete (peer);
-
-      if (++count >= BGP_WRITE_PACKET_MAX)
-	break;
     }
+  while (++count < BGP_WRITE_PACKET_MAX &&
+	 (s = bgp_write_packet (peer)) != NULL);
   
   if (bgp_write_proceed (peer))
     BGP_WRITE_ON (peer->t_write, bgp_write, peer->fd);
+  else
+    sockopt_cork (peer->fd, 0);
   
   return 0;
 }
@@ -705,7 +695,7 @@ bgp_write (struct thread *thread)
 static int
 bgp_write_notify (struct peer *peer)
 {
-  int ret;
+  int ret, val;
   u_char type;
   struct stream *s; 
 
@@ -715,7 +705,10 @@ bgp_write_notify (struct peer *peer)
     return 0;
   assert (stream_get_endp (s) >= BGP_HEADER_SIZE);
 
-  /* I'm not sure fd is writable. */
+  /* Put socket in blocking mode. */
+  val = fcntl (peer->fd, F_GETFL, 0);
+  fcntl (peer->fd, F_SETFL, val & ~O_NONBLOCK);
+
   ret = writen (peer->fd, STREAM_DATA (s), stream_get_endp (s));
   if (ret <= 0)
     {
@@ -2237,12 +2230,13 @@ bgp_read_packet (struct peer *peer)
     return 0;
 
   /* Read packet from fd. */
-  nbytes = stream_read_unblock (peer->ibuf, peer->fd, readsize);
+  nbytes = stream_read_try (peer->ibuf, peer->fd, readsize);
 
   /* If read byte is smaller than zero then error occured. */
   if (nbytes < 0) 
     {
-      if (errno == EAGAIN)
+      /* Transient error should retry */
+      if (nbytes == -2)
 	return -1;
 
       plog_err (peer->log, "%s [Error] bgp_read_packet error: %s",
@@ -2319,21 +2313,13 @@ bgp_read (struct thread *thread)
   peer = THREAD_ARG (thread);
   peer->t_read = NULL;
 
-  /* For non-blocking IO check. */
-  if (peer->status == Connect)
+  if (peer->fd < 0)
     {
-      bgp_connect_check (peer);
-      goto done;
+      zlog_err ("bgp_read peer's fd is negative value %d", peer->fd);
+      return -1;
     }
-  else
-    {
-      if (peer->fd < 0)
-	{
-	  zlog_err ("bgp_read peer's fd is negative value %d", peer->fd);
-	  return -1;
-	}
-      BGP_READ_ON (peer->t_read, bgp_read, peer->fd);
-    }
+
+  BGP_READ_ON (peer->t_read, bgp_read, peer->fd);
 
   /* Read packet header to determine type of the packet */
   if (peer->packet_size == 0)
