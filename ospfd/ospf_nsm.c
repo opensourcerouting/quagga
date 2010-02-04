@@ -153,8 +153,8 @@ nsm_should_adj (struct ospf_neighbor *nbr)
       || IPV4_ADDR_SAME (&oi->address->u.prefix4, &DR (oi))
       || IPV4_ADDR_SAME (&oi->address->u.prefix4, &BDR (oi))
       /* Neighboring Router is the DRouter or the BDRouter. */
-      || IPV4_ADDR_SAME (&nbr->address.u.prefix4, &DR (oi))
-      || IPV4_ADDR_SAME (&nbr->address.u.prefix4, &BDR (oi)))
+      || IPV4_ADDR_SAME (&nbr->src, &DR (oi))
+      || IPV4_ADDR_SAME (&nbr->src, &BDR (oi)))
     return 1;
 
   return 0;
@@ -393,7 +393,7 @@ nsm_kill_nbr (struct ospf_neighbor *nbr)
 
       if (IS_DEBUG_OSPF (nsm, NSM_EVENTS))
 	zlog_debug ("NSM[%s:%s]: Down (PollIntervalTimer scheduled)",
-		   IF_NAME (nbr->oi), inet_ntoa (nbr->address.u.prefix4));  
+		   IF_NAME (nbr->oi), inet_ntoa (nbr->src));
     }
 
   return 0;

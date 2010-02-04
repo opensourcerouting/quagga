@@ -223,7 +223,7 @@ ospf_if_new (struct ospf *ospf, struct interface *ifp, struct prefix *p)
   oi->network_lsa_self = NULL;
 
   /* Initialize neighbor list. */
-  oi->nbrs = route_table_init ();
+  oi->nbrs = list_new ();
 
   /* Initialize static neighbor list. */
   oi->nbr_nbma = list_new ();
@@ -258,7 +258,6 @@ ospf_if_new (struct ospf *ospf, struct interface *ifp, struct prefix *p)
 void
 ospf_if_cleanup (struct ospf_interface *oi)
 {
-  struct route_node *rn;
   struct listnode *node, *nnode;
   struct ospf_neighbor *nbr;
   struct ospf_nbr_nbma *nbr_nbma;
@@ -282,10 +281,9 @@ ospf_if_cleanup (struct ospf_interface *oi)
     }
 
   /* send Neighbor event KillNbr to all associated neighbors. */
-  for (rn = route_top (oi->nbrs); rn; rn = route_next (rn))
-    if ((nbr = rn->info) != NULL)
-      if (nbr != oi->nbr_self)
-	OSPF_NSM_EVENT_EXECUTE (nbr, NSM_KillNbr);
+  for (ALL_LIST_ELEMENTS (oi->nbrs, node, nnode, nbr))
+    if (nbr != oi->nbr_self)
+      OSPF_NSM_EVENT_EXECUTE (nbr, NSM_KillNbr);
 
   /* Cleanup Link State Acknowlegdment list. */
   for (ALL_LIST_ELEMENTS (oi->ls_ack, node, nnode, lsa))
@@ -321,7 +319,7 @@ ospf_if_free (struct ospf_interface *oi)
   /* Free Pseudo Neighbour */
   ospf_nbr_delete (oi->nbr_self);
   
-  route_table_finish (oi->nbrs);
+  list_free (oi->nbrs);
   route_table_finish (oi->ls_upd_queue);
   
   /* Free any lists that should be freed */

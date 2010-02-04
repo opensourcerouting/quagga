@@ -215,9 +215,9 @@ ospf_nbr_state_message (struct ospf_neighbor *nbr, char *buf, size_t size)
   int state;
   struct ospf_interface *oi = nbr->oi;
 
-  if (IPV4_ADDR_SAME (&DR (oi), &nbr->address.u.prefix4))
+  if (IPV4_ADDR_SAME (&DR (oi), &nbr->src))
     state = ISM_DR;
-  else if (IPV4_ADDR_SAME (&BDR (oi), &nbr->address.u.prefix4))
+  else if (IPV4_ADDR_SAME (&BDR (oi), &nbr->src))
     state = ISM_Backup;
   else
     state = ISM_DROther;

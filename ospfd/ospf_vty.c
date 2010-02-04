@@ -2911,7 +2911,7 @@ show_ip_ospf_interface_sub (struct vty *vty, struct ospf *ospf,
 	      vty_out (vty, "  Designated Router (ID) %s,",
 		       inet_ntoa (nbr->router_id));
 	      vty_out (vty, " Interface Address %s%s",
-		       inet_ntoa (nbr->address.u.prefix4), VTY_NEWLINE);
+		       inet_ntoa (nbr->src), VTY_NEWLINE);
 	    }
 	}
 
@@ -2930,7 +2930,7 @@ show_ip_ospf_interface_sub (struct vty *vty, struct ospf *ospf,
 	      vty_out (vty, "  Backup Designated Router (ID) %s,",
 		       inet_ntoa (nbr->router_id));
 	      vty_out (vty, " Interface Address %s%s",
-		       inet_ntoa (nbr->address.u.prefix4), VTY_NEWLINE);
+		       inet_ntoa (nbr->src), VTY_NEWLINE);
 	    }
 	}
 
@@ -3024,39 +3024,37 @@ show_ip_ospf_neighbour_header (struct vty *vty)
 static void
 show_ip_ospf_neighbor_sub (struct vty *vty, struct ospf_interface *oi)
 {
-  struct route_node *rn;
+  struct listnode *node;
   struct ospf_neighbor *nbr;
   char msgbuf[16];
   char timebuf[OSPF_TIME_DUMP_SIZE];
 
-  for (rn = route_top (oi->nbrs); rn; rn = route_next (rn))
-    if ((nbr = rn->info))
-      /* Do not show myself. */
-      if (nbr != oi->nbr_self)
-	/* Down state is not shown. */
-	if (nbr->state != NSM_Down)
-	  {
-	    ospf_nbr_state_message (nbr, msgbuf, 16);
+  for (ALL_LIST_ELEMENTS_RO (oi->nbrs, node, nbr))
+    /* Do not show myself. */
+    if (nbr != oi->nbr_self)
+      /* Down state is not shown. */
+      if (nbr->state != NSM_Down)
+	{
+	  ospf_nbr_state_message (nbr, msgbuf, 16);
+	  if (nbr->state == NSM_Attempt && nbr->router_id.s_addr == 0)
+	    vty_out (vty, "%-15s %3d %-15s ",
+		     "-", nbr->priority,
+		     msgbuf);
+	  else
+	    vty_out (vty, "%-15s %3d %-15s ",
+		     inet_ntoa (nbr->router_id), nbr->priority,
+		     msgbuf);
 
-	    if (nbr->state == NSM_Attempt && nbr->router_id.s_addr == 0)
-	      vty_out (vty, "%-15s %3d %-15s ",
-		       "-", nbr->priority,
-		       msgbuf);
-            else
-	      vty_out (vty, "%-15s %3d %-15s ",
-		       inet_ntoa (nbr->router_id), nbr->priority,
-		       msgbuf);
-            
-            vty_out (vty, "%9s ",
-                     ospf_timer_dump (nbr->t_inactivity, timebuf, 
+	  vty_out (vty, "%9s ",
+		   ospf_timer_dump (nbr->t_inactivity, timebuf,
                                       sizeof(timebuf)));
-            
-	    vty_out (vty, "%-15s ", inet_ntoa (nbr->src));
-	    vty_out (vty, "%-20s %5ld %5ld %5d%s",
-		     IF_NAME (oi), ospf_ls_retransmit_count (nbr),
-		     ospf_ls_request_count (nbr), ospf_db_summary_count (nbr),
-		     VTY_NEWLINE);
-	  }
+
+	  vty_out (vty, "%-15s ", inet_ntoa (nbr->src));
+	  vty_out (vty, "%-20s %5ld %5ld %5d%s",
+		   IF_NAME (oi), ospf_ls_retransmit_count (nbr),
+		   ospf_ls_request_count (nbr), ospf_db_summary_count (nbr),
+		   VTY_NEWLINE);
+	}
 }
 
 DEFUN (show_ip_ospf_neighbor,
@@ -3222,7 +3220,7 @@ show_ip_ospf_neighbor_detail_sub (struct vty *vty, struct ospf_interface *oi,
 
   /* Show interface address. */
   vty_out (vty, " interface address %s%s",
-	   inet_ntoa (nbr->address.u.prefix4), VTY_NEWLINE);
+	   inet_ntoa (nbr->src), VTY_NEWLINE);
   /* Show Area ID. */
   vty_out (vty, "    In the area %s via interface %s%s",
 	   ospf_area_desc_string (oi->area), oi->ifp->name, VTY_NEWLINE);
@@ -3343,14 +3341,13 @@ DEFUN (show_ip_ospf_neighbor_detail,
 
   for (ALL_LIST_ELEMENTS_RO (ospf->oiflist, node, oi))
     {
-      struct route_node *rn;
+      struct listnode *nnode;
       struct ospf_neighbor *nbr;
 
-      for (rn = route_top (oi->nbrs); rn; rn = route_next (rn))
-	if ((nbr = rn->info))
-	  if (nbr != oi->nbr_self)
-	    if (nbr->state != NSM_Down)
-	      show_ip_ospf_neighbor_detail_sub (vty, oi, nbr);
+      for (ALL_LIST_ELEMENTS_RO (oi->nbrs, nnode, nbr))
+	if (nbr != oi->nbr_self)
+	  if (nbr->state != NSM_Down)
+	    show_ip_ospf_neighbor_detail_sub (vty, oi, nbr);
     }
 
   return CMD_SUCCESS;
@@ -3379,15 +3376,14 @@ DEFUN (show_ip_ospf_neighbor_detail_all,
 
   for (ALL_LIST_ELEMENTS_RO (ospf->oiflist, node, oi))
     {
-      struct route_node *rn;
+      struct listnode *nnode;
       struct ospf_neighbor *nbr;
       struct ospf_nbr_nbma *nbr_nbma;
 
-      for (rn = route_top (oi->nbrs); rn; rn = route_next (rn))
-	if ((nbr = rn->info))
-	  if (nbr != oi->nbr_self)
-	    if (oi->type == OSPF_IFTYPE_NBMA && nbr->state != NSM_Down)
-	      show_ip_ospf_neighbor_detail_sub (vty, oi, rn->info);
+      for (ALL_LIST_ELEMENTS_RO (oi->nbrs, nnode, nbr))
+	if (nbr != oi->nbr_self)
+	  if (oi->type == OSPF_IFTYPE_NBMA && nbr->state != NSM_Down)
+	    show_ip_ospf_neighbor_detail_sub (vty, oi, nbr);
 
       if (oi->type == OSPF_IFTYPE_NBMA)
 	{
@@ -3416,8 +3412,9 @@ DEFUN (show_ip_ospf_neighbor_int_detail,
   struct ospf *ospf;
   struct ospf_interface *oi;
   struct interface *ifp;
-  struct route_node *rn, *nrn;
+  struct route_node *rn;
   struct ospf_neighbor *nbr;
+  struct listnode *node;
 
   ifp = if_lookup_by_name (argv[0]);
   if (!ifp)
@@ -3436,11 +3433,10 @@ DEFUN (show_ip_ospf_neighbor_int_detail,
 
   for (rn = route_top (IF_OIFS (ifp)); rn; rn = route_next (rn))
     if ((oi = rn->info))
-      for (nrn = route_top (oi->nbrs); nrn; nrn = route_next (nrn))
-	if ((nbr = nrn->info))
-	  if (nbr != oi->nbr_self)
-	    if (nbr->state != NSM_Down)
-	      show_ip_ospf_neighbor_detail_sub (vty, oi, nbr);
+      for (ALL_LIST_ELEMENTS_RO (oi->nbrs, node, nbr))
+	if (nbr != oi->nbr_self)
+	  if (nbr->state != NSM_Down)
+	    show_ip_ospf_neighbor_detail_sub (vty, oi, nbr);
 
   return CMD_SUCCESS;
 }
@@ -4952,17 +4948,16 @@ ALIAS (no_ip_ospf_cost2,
 static void
 ospf_nbr_timer_update (struct ospf_interface *oi)
 {
-  struct route_node *rn;
+  struct listnode *node;
   struct ospf_neighbor *nbr;
 
-  for (rn = route_top (oi->nbrs); rn; rn = route_next (rn))
-    if ((nbr = rn->info))
-      {
-	nbr->v_inactivity = OSPF_IF_PARAM (oi, v_wait);
-	nbr->v_db_desc = OSPF_IF_PARAM (oi, retransmit_interval);
-	nbr->v_ls_req = OSPF_IF_PARAM (oi, retransmit_interval);
-	nbr->v_ls_upd = OSPF_IF_PARAM (oi, retransmit_interval);
-      }
+  for (ALL_LIST_ELEMENTS_RO (oi->nbrs, node, nbr))
+    {
+      nbr->v_inactivity = OSPF_IF_PARAM (oi, v_wait);
+      nbr->v_db_desc = OSPF_IF_PARAM (oi, retransmit_interval);
+      nbr->v_ls_req = OSPF_IF_PARAM (oi, retransmit_interval);
+      nbr->v_ls_upd = OSPF_IF_PARAM (oi, retransmit_interval);
+    }
 }
 
 static int

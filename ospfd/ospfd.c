@@ -1409,8 +1409,6 @@ ospf_nbr_nbma_add (struct ospf_nbr_nbma *nbr_nbma,
 		   struct ospf_interface *oi)
 {
   struct ospf_neighbor *nbr;
-  struct route_node *rn;
-  struct prefix p;
 
   if (oi->type != OSPF_IFTYPE_NBMA)
     return;
@@ -1418,37 +1416,27 @@ ospf_nbr_nbma_add (struct ospf_nbr_nbma *nbr_nbma,
   if (nbr_nbma->nbr != NULL)
     return;
 
-  if (IPV4_ADDR_SAME (&oi->nbr_self->address.u.prefix4, &nbr_nbma->addr))
+  if (IPV4_ADDR_SAME (&oi->nbr_self->src, &nbr_nbma->addr))
     return;
       
   nbr_nbma->oi = oi;
   listnode_add (oi->nbr_nbma, nbr_nbma);
 
   /* Get neighbor information from table. */
-  p.family = AF_INET;
-  p.prefixlen = IPV4_MAX_BITLEN;
-  p.u.prefix4 = nbr_nbma->addr;
-
-  rn = route_node_get (oi->nbrs, (struct prefix *)&p);
-  if (rn->info)
+  nbr = ospf_nbr_lookup_by_addr (oi->nbrs, &nbr_nbma->addr);
+  if (nbr)
     {
-      nbr = rn->info;
       nbr->nbr_nbma = nbr_nbma;
       nbr_nbma->nbr = nbr;
-
-      route_unlock_node (rn);
     }
   else
     {
-      nbr = rn->info = ospf_nbr_new (oi);
+      nbr = ospf_nbr_new (oi);
       nbr->state = NSM_Down;
       nbr->src = nbr_nbma->addr;
       nbr->nbr_nbma = nbr_nbma;
       nbr->priority = nbr_nbma->priority;
-      nbr->address = p;
-
       nbr_nbma->nbr = nbr;
-
       OSPF_NSM_EVENT_EXECUTE (nbr, NSM_Start);
     }
 }

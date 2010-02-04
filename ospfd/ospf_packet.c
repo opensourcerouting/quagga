@@ -745,7 +745,6 @@ ospf_hello (struct ip *iph, struct ospf_header *ospfh,
   struct ospf_hello *hello;
   struct ospf_neighbor *nbr;
   int old_state;
-  struct prefix p;
 
   /* increment statistics. */
   oi->hello_in++;
@@ -765,20 +764,15 @@ ospf_hello (struct ip *iph, struct ospf_header *ospfh,
       return;
     }
 
-  /* get neighbor prefix. */
-  p.family = AF_INET;
-  p.prefixlen = ip_masklen (hello->network_mask);
-  p.u.prefix4 = iph->ip_src;
-
   /* Compare network mask. */
   /* Checking is ignored for Point-to-Point and Virtual link. */
   if (oi->type != OSPF_IFTYPE_POINTOPOINT 
       && oi->type != OSPF_IFTYPE_VIRTUALLINK)
-    if (oi->address->prefixlen != p.prefixlen)
+    if (oi->address->prefixlen != ip_masklen (hello->network_mask))
       {
 	zlog_warn ("Packet %s [Hello:RECV]: NetworkMask mismatch on %s (configured prefix length is %d, but hello packet indicates %d).",
 		   inet_ntoa(ospfh->router_id), IF_NAME(oi),
-		   (int)oi->address->prefixlen, (int)p.prefixlen);
+		   (int)oi->address->prefixlen, (int)ip_masklen (hello->network_mask));
 	return;
       }
 
@@ -873,7 +867,7 @@ ospf_hello (struct ip *iph, struct ospf_header *ospfh,
       }
   
   /* get neighbour struct */
-  nbr = ospf_nbr_get (oi, ospfh, iph, &p);
+  nbr = ospf_nbr_get (oi, ospfh, iph);
 
   /* neighbour must be valid, ospf_nbr_get creates if none existed */
   assert (nbr);
@@ -902,10 +896,7 @@ ospf_hello (struct ip *iph, struct ospf_header *ospfh,
       (old_state == NSM_Down || old_state == NSM_Attempt))
     {
       OSPF_NSM_EVENT_EXECUTE (nbr, NSM_OneWayReceived);
-      nbr->priority = hello->priority;
-      nbr->d_router = hello->d_router;
-      nbr->bd_router = hello->bd_router;
-      return;
+      goto done;
     }
 
   if (ospf_nbr_bidirectional (&oi->ospf->router_id, hello->neighbors,
@@ -917,42 +908,50 @@ ospf_hello (struct ip *iph, struct ospf_header *ospfh,
   else
     {
       OSPF_NSM_EVENT_EXECUTE (nbr, NSM_OneWayReceived);
-      /* Set neighbor information. */
-      nbr->priority = hello->priority;
-      nbr->d_router = hello->d_router;
-      nbr->bd_router = hello->bd_router;
-      return;
+      goto done;
     }
-
-  /* If neighbor itself declares DR and no BDR exists,
-     cause event BackupSeen */
-  if (IPV4_ADDR_SAME (&nbr->address.u.prefix4, &hello->d_router))
-    if (hello->bd_router.s_addr == 0 && oi->state == ISM_Waiting)
-      OSPF_ISM_EVENT_SCHEDULE (oi, ISM_BackupSeen);
-
-  /* neighbor itself declares BDR. */
-  if (oi->state == ISM_Waiting &&
-      IPV4_ADDR_SAME (&nbr->address.u.prefix4, &hello->bd_router))
-    OSPF_ISM_EVENT_SCHEDULE (oi, ISM_BackupSeen);
-
-  /* had not previously. */
-  if ((IPV4_ADDR_SAME (&nbr->address.u.prefix4, &hello->d_router) &&
-       IPV4_ADDR_CMP (&nbr->address.u.prefix4, &nbr->d_router)) ||
-      (IPV4_ADDR_CMP (&nbr->address.u.prefix4, &hello->d_router) &&
-       IPV4_ADDR_SAME (&nbr->address.u.prefix4, &nbr->d_router)))
-    OSPF_ISM_EVENT_SCHEDULE (oi, ISM_NeighborChange);
-
-  /* had not previously. */
-  if ((IPV4_ADDR_SAME (&nbr->address.u.prefix4, &hello->bd_router) &&
-       IPV4_ADDR_CMP (&nbr->address.u.prefix4, &nbr->bd_router)) ||
-      (IPV4_ADDR_CMP (&nbr->address.u.prefix4, &hello->bd_router) &&
-       IPV4_ADDR_SAME (&nbr->address.u.prefix4, &nbr->bd_router)))
-    OSPF_ISM_EVENT_SCHEDULE (oi, ISM_NeighborChange);
 
   /* Neighbor priority check. */
   if (nbr->priority >= 0 && nbr->priority != hello->priority)
     OSPF_ISM_EVENT_SCHEDULE (oi, ISM_NeighborChange);
 
+  /* If neighbor itself declares DR and no BDR exists,
+     cause event BackupSeen */
+  if (oi->state == ISM_Waiting &&
+      IPV4_ADDR_SAME (&nbr->src, &hello->d_router) &&
+      hello->bd_router.s_addr == 0)
+    {
+      OSPF_ISM_EVENT_SCHEDULE (oi, ISM_BackupSeen);
+      goto done;
+    }
+  /* had not previously. */
+  if ((IPV4_ADDR_SAME (&nbr->src, &hello->d_router) &&
+       IPV4_ADDR_CMP (&nbr->src, &nbr->d_router)) ||
+      (IPV4_ADDR_CMP (&nbr->src, &hello->d_router) &&
+       IPV4_ADDR_SAME (&nbr->src, &nbr->d_router)))
+    {
+      OSPF_ISM_EVENT_SCHEDULE (oi, ISM_NeighborChange);
+      goto done;
+    }
+
+  /* neighbor itself declares BDR. */
+  if (oi->state == ISM_Waiting &&
+      IPV4_ADDR_SAME (&nbr->src, &hello->bd_router))
+    {
+      OSPF_ISM_EVENT_SCHEDULE (oi, ISM_BackupSeen);
+      goto done;
+    }
+  /* had not previously. */
+  if ((IPV4_ADDR_SAME (&nbr->src, &hello->bd_router) &&
+       IPV4_ADDR_CMP (&nbr->src, &nbr->bd_router)) ||
+      (IPV4_ADDR_CMP (&nbr->src, &hello->bd_router) &&
+       IPV4_ADDR_SAME (&nbr->src, &nbr->bd_router)))
+    {
+      OSPF_ISM_EVENT_SCHEDULE (oi, ISM_NeighborChange);
+      goto done;
+    }
+
+ done:
   /* Set neighbor information. */
   nbr->priority = hello->priority;
   nbr->d_router = hello->d_router;
@@ -1260,7 +1259,7 @@ ospf_db_desc (struct ip *iph, struct ospf_header *ospfh,
 		       CHECK_FLAG (nbr->options, OSPF_OPTION_O) ? "" : "NOT ");
 
           if (! CHECK_FLAG (nbr->options, OSPF_OPTION_O)
-          &&  IPV4_ADDR_SAME (&DR (oi), &nbr->address.u.prefix4))
+          &&  IPV4_ADDR_SAME (&DR (oi), &nbr->src))
             {
               zlog_warn ("DR-neighbor[%s] is NOT opaque-capable; "
                          "Opaque-LSAs cannot be reliably advertised "
@@ -2620,7 +2619,7 @@ static int
 ospf_make_hello (struct ospf_interface *oi, struct stream *s)
 {
   struct ospf_neighbor *nbr;
-  struct route_node *rn;
+  struct listnode *node;
   u_int16_t length = OSPF_HELLO_MIN_SIZE;
   struct in_addr mask;
   unsigned long p;
@@ -2662,10 +2661,9 @@ ospf_make_hello (struct ospf_interface *oi, struct stream *s)
   stream_put_ipv4 (s, BDR (oi).s_addr);
 
   /* Add neighbor seen. */
-  for (rn = route_top (oi->nbrs); rn; rn = route_next (rn))
-    if ((nbr = rn->info))
-      if (nbr->router_id.s_addr != 0)	/* Ignore 0.0.0.0 node. */
-	if (nbr->state != NSM_Attempt)  /* Ignore Down neighbor. */
+  for (ALL_LIST_ELEMENTS_RO (oi->nbrs, node, nbr))
+    if (nbr->router_id.s_addr != 0)	/* Ignore 0.0.0.0 node. */
+      if (nbr->state != NSM_Attempt)	/* Ignore Down neighbor. */
 	if (nbr->state != NSM_Down)     /* This is myself for DR election. */
 	  if (!IPV4_ADDR_SAME (&nbr->router_id, &oi->ospf->router_id))
 	    {
@@ -3048,7 +3046,7 @@ ospf_hello_reply_timer (struct thread *thread)
     zlog (NULL, LOG_DEBUG, "NSM[%s:%s]: Timer (hello-reply timer expire)",
 	  IF_NAME (nbr->oi), inet_ntoa (nbr->router_id));
 
-  ospf_hello_send_sub (nbr->oi, &nbr->address.u.prefix4);
+  ospf_hello_send_sub (nbr->oi, &nbr->src);
 
   return 0;
 }
@@ -3081,45 +3079,43 @@ ospf_hello_send (struct ospf_interface *oi)
   if (oi->type == OSPF_IFTYPE_NBMA)
     {
       struct ospf_neighbor *nbr;
-      struct route_node *rn;
+      struct listnode *node;
 
-      for (rn = route_top (oi->nbrs); rn; rn = route_next (rn))
-	if ((nbr = rn->info))
-	  if (nbr != oi->nbr_self)
-	    if (nbr->state != NSM_Down)
+      for (ALL_LIST_ELEMENTS_RO (oi->nbrs, node, nbr))
+	if (nbr != oi->nbr_self)
+	  if (nbr->state != NSM_Down)
+	    {
+	      /*  RFC 2328  Section 9.5.1
+		  If the router is not eligible to become Designated Router,
+		  it must periodically send Hello Packets to both the
+		  Designated Router and the Backup Designated Router (if they
+		  exist).  */
+	      if (PRIORITY(oi) == 0 &&
+		  IPV4_ADDR_CMP(&DR(oi),  &nbr->src) &&
+		  IPV4_ADDR_CMP(&BDR(oi), &nbr->src))
+		continue;
+
+	      /*  If the router is eligible to become Designated Router, it
+		  must periodically send Hello Packets to all neighbors that
+		  are also eligible. In addition, if the router is itself the
+		  Designated Router or Backup Designated Router, it must also
+		  send periodic Hello Packets to all other neighbors. */
+
+	      if (nbr->priority == 0 && oi->state == ISM_DROther)
+		continue;
+	      /* if oi->state == Waiting, send hello to all neighbors */
 	      {
-		/*  RFC 2328  Section 9.5.1
-		    If the router is not eligible to become Designated Router,
-		    it must periodically send Hello Packets to both the
-		    Designated Router and the Backup Designated Router (if they
-		    exist).  */
-		if (PRIORITY(oi) == 0 &&
-		    IPV4_ADDR_CMP(&DR(oi),  &nbr->address.u.prefix4) &&
-		    IPV4_ADDR_CMP(&BDR(oi), &nbr->address.u.prefix4))
-		  continue;
+		struct ospf_packet *op_dup;
 
-		/*  If the router is eligible to become Designated Router, it
-		    must periodically send Hello Packets to all neighbors that
-		    are also eligible. In addition, if the router is itself the
-		    Designated Router or Backup Designated Router, it must also
-		    send periodic Hello Packets to all other neighbors. */
+		op_dup = ospf_packet_dup(op);
+		op_dup->dst = nbr->src;
 
-		if (nbr->priority == 0 && oi->state == ISM_DROther)
-		  continue;
-		/* if oi->state == Waiting, send hello to all neighbors */
-		{
-		  struct ospf_packet *op_dup;
+		/* Add packet to the interface output queue. */
+		ospf_packet_add (oi, op_dup);
 
-		  op_dup = ospf_packet_dup(op);
-		  op_dup->dst = nbr->address.u.prefix4;
-
-		  /* Add packet to the interface output queue. */
-		  ospf_packet_add (oi, op_dup);
-
-		  OSPF_ISM_WRITE_ON (oi->ospf);
-		}
-
+		OSPF_ISM_WRITE_ON (oi->ospf);
 	      }
+	    }
       ospf_packet_free (op);
     }
   else
@@ -3165,7 +3161,7 @@ ospf_db_desc_send (struct ospf_neighbor *nbr)
   if (oi->type == OSPF_IFTYPE_POINTOPOINT) 
     op->dst.s_addr = htonl (OSPF_ALLSPFROUTERS);
   else
-    op->dst = nbr->address.u.prefix4;
+    op->dst = nbr->src;
 
   /* Add packet to the interface output queue. */
   ospf_packet_add (oi, op);
@@ -3227,7 +3223,7 @@ ospf_ls_req_send (struct ospf_neighbor *nbr)
   if (oi->type == OSPF_IFTYPE_POINTOPOINT) 
     op->dst.s_addr = htonl (OSPF_ALLSPFROUTERS);
   else
-    op->dst = nbr->address.u.prefix4;
+    op->dst = nbr->src;
 
   /* Add packet to the interface output queue. */
   ospf_packet_add (oi, op);
@@ -3434,7 +3430,7 @@ ospf_ls_upd_send (struct ospf_neighbor *nbr, struct list *update, int flag)
   else if (oi->type == OSPF_IFTYPE_POINTOPOINT) 
      p.prefix.s_addr = htonl (OSPF_ALLSPFROUTERS);
   else if (flag == OSPF_SEND_PACKET_DIRECT)
-     p.prefix = nbr->address.u.prefix4;
+     p.prefix = nbr->src;
   else if (oi->state == ISM_DR || oi->state == ISM_Backup)
      p.prefix.s_addr = htonl (OSPF_ALLSPFROUTERS);
   else if (oi->type == OSPF_IFTYPE_POINTOMULTIPOINT)
@@ -3514,7 +3510,7 @@ ospf_ls_ack_send (struct ospf_neighbor *nbr, struct ospf_lsa *lsa)
   struct ospf_interface *oi = nbr->oi;
 
   if (listcount (oi->ls_ack_direct.ls_ack) == 0)
-    oi->ls_ack_direct.dst = nbr->address.u.prefix4;
+    oi->ls_ack_direct.dst = nbr->src;
   
   listnode_add (oi->ls_ack_direct.ls_ack, ospf_lsa_lock (lsa));
   
@@ -3537,13 +3533,12 @@ ospf_ls_ack_send_delayed (struct ospf_interface *oi)
   if (oi->type == OSPF_IFTYPE_NBMA)
     {
       struct ospf_neighbor *nbr;
-      struct route_node *rn;
+      struct listnode *node;
 
-      for (rn = route_top (oi->nbrs); rn; rn = route_next (rn))
-	if ((nbr = rn->info) != NULL)
+      for (ALL_LIST_ELEMENTS_RO (oi->nbrs, node, nbr))
 	  if (nbr != oi->nbr_self && nbr->state >= NSM_Exchange)
 	    while (listcount (oi->ls_ack))
-	      ospf_ls_ack_send_list (oi, oi->ls_ack, nbr->address.u.prefix4);
+	      ospf_ls_ack_send_list (oi, oi->ls_ack, nbr->src);
       return;
     }
   if (oi->type == OSPF_IFTYPE_VIRTUALLINK)
