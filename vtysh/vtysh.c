@@ -58,6 +58,7 @@ struct vtysh_client
   { .fd = -1, .name = "ospf6d", .flag = VTYSH_OSPF6D},
   { .fd = -1, .name = "bgpd", .flag = VTYSH_BGPD},
   { .fd = -1, .name = "isisd", .flag = VTYSH_ISISD},
+  { .fd = -1, .name = "pimd", .flag = VTYSH_PIMD},
 };
 
 #define VTYSH_INDEX_MAX (sizeof(vtysh_client)/sizeof(vtysh_client[0]))
