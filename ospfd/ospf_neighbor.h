@@ -37,8 +37,6 @@ struct ospf_neighbor
   u_int32_t dd_seqnum;			/* DD Sequence Number. */
 
   /* Neighbor Information from Hello. */
-  struct prefix address;		/* Neighbor Interface Address. */
-
   struct in_addr src;			/* Src address. */
   struct in_addr router_id;		/* Router ID. */
   u_char options;			/* Options. */
@@ -91,8 +89,8 @@ struct ospf_neighbor
 };
 
 /* Macros. */
-#define NBR_IS_DR(n)	IPV4_ADDR_SAME (&n->address.u.prefix4, &n->d_router)
-#define NBR_IS_BDR(n)   IPV4_ADDR_SAME (&n->address.u.prefix4, &n->bd_router)
+#define NBR_IS_DR(n)	IPV4_ADDR_SAME (&n->src, &n->d_router)
+#define NBR_IS_BDR(n)   IPV4_ADDR_SAME (&n->src, &n->bd_router)
 
 /* Prototypes. */
 extern struct ospf_neighbor *ospf_nbr_new (struct ospf_interface *);
@@ -106,14 +104,13 @@ extern int ospf_nbr_count_opaque_capable (struct ospf_interface *);
 #endif /* HAVE_OPAQUE_LSA */
 extern struct ospf_neighbor *ospf_nbr_get (struct ospf_interface *,
 					   struct ospf_header *,
-					   struct ip *, struct prefix *);
+					   struct ip *);
 extern struct ospf_neighbor *ospf_nbr_lookup (struct ospf_interface *,
 					      struct ip *,
 					      struct ospf_header *);
-extern struct ospf_neighbor *ospf_nbr_lookup_by_addr (struct route_table *,
+extern struct ospf_neighbor *ospf_nbr_lookup_by_addr (struct list *,
 						      struct in_addr *);
-extern struct ospf_neighbor *ospf_nbr_lookup_by_routerid (struct route_table
-							  *,
+extern struct ospf_neighbor *ospf_nbr_lookup_by_routerid (struct list *,
 							  struct in_addr *);
 extern void ospf_renegotiate_optional_capabilities (struct ospf *top);
 

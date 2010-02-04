@@ -346,7 +346,7 @@ ospf_flood_through_interface (struct ospf_interface *oi,
 			      struct ospf_lsa *lsa)
 {
   struct ospf_neighbor *onbr;
-  struct route_node *rn;
+  struct listnode *node;
   int retx_flag;
 
   if (IS_DEBUG_OSPF_EVENT)
@@ -364,14 +364,10 @@ ospf_flood_through_interface (struct ospf_interface *oi,
   /* Each of the neighbors attached to this interface are examined,
      to determine whether they must receive the new LSA.  The following
      steps are executed for each neighbor: */
-  for (rn = route_top (oi->nbrs); rn; rn = route_next (rn))
+  for (ALL_LIST_ELEMENTS_RO (oi->nbrs, node, onbr))
     {
       struct ospf_lsa *ls_req;
- 
-      if (rn->info == NULL)
-	continue;
 
-      onbr = rn->info;
       if (IS_DEBUG_OSPF_EVENT)
 	zlog_debug ("ospf_flood_through_interface(): considering nbr %s (%s)",
 		   inet_ntoa (onbr->router_id),
@@ -543,13 +539,12 @@ ospf_flood_through_interface (struct ospf_interface *oi,
       addresses.   */
   if (oi->type == OSPF_IFTYPE_NBMA)
     {
-      struct route_node *rn;
+      struct listnode *node;
       struct ospf_neighbor *nbr;
 
-      for (rn = route_top (oi->nbrs); rn; rn = route_next (rn))
-        if ((nbr = rn->info) != NULL)
-	  if (nbr != oi->nbr_self && nbr->state >= NSM_Exchange)
-	    ospf_ls_upd_send_lsa (nbr, lsa, OSPF_SEND_PACKET_DIRECT);
+      for (ALL_LIST_ELEMENTS_RO (oi->nbrs, node, nbr))
+	if (nbr != oi->nbr_self && nbr->state >= NSM_Exchange)
+	  ospf_ls_upd_send_lsa (nbr, lsa, OSPF_SEND_PACKET_DIRECT);
     }
   else
     ospf_ls_upd_send_lsa (oi->nbr_self, lsa, OSPF_SEND_PACKET_INDIRECT);
@@ -934,21 +929,20 @@ static void
 ospf_ls_retransmit_delete_nbr_if (struct ospf_interface *oi,
 				  struct ospf_lsa *lsa)
 {
-  struct route_node *rn;
+  struct listnode *node;
   struct ospf_neighbor *nbr;
   struct ospf_lsa *lsr;
 
   if (ospf_if_is_enable (oi))
-    for (rn = route_top (oi->nbrs); rn; rn = route_next (rn))
+    for (ALL_LIST_ELEMENTS_RO (oi->nbrs, node, nbr))
       /* If LSA find in LS-retransmit list, then remove it. */
-      if ((nbr = rn->info) != NULL)
-	{
-	  lsr = ospf_ls_retransmit_lookup (nbr, lsa);
-	     
-	  /* If LSA find in ls-retransmit list, remove it. */
-	  if (lsr != NULL && lsr->data->ls_seqnum == lsa->data->ls_seqnum)
-	    ospf_ls_retransmit_delete (nbr, lsr);
-	}
+      {
+	lsr = ospf_ls_retransmit_lookup (nbr, lsa);
+
+	/* If LSA find in ls-retransmit list, remove it. */
+	if (lsr != NULL && lsr->data->ls_seqnum == lsa->data->ls_seqnum)
+	  ospf_ls_retransmit_delete (nbr, lsr);
+      }
 }
 
 void

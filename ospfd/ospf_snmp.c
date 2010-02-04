@@ -2105,16 +2105,15 @@ static struct ospf_neighbor *
 ospf_snmp_nbr_lookup (struct ospf *ospf, struct in_addr *nbr_addr,
 		      unsigned int *ifindex)
 {
-  struct listnode *node, *nnode;
+  struct listnode *node, *nnode, *nbrnode;
   struct ospf_interface *oi;
   struct ospf_neighbor *nbr;
   struct route_node *rn;
 
   for (ALL_LIST_ELEMENTS (ospf->oiflist, node, nnode, oi))
     {
-      for (rn = route_top (oi->nbrs); rn; rn = route_next (rn))
-	if ((nbr = rn->info) != NULL
-	    && nbr != oi->nbr_self
+      for (ALL_LIST_ELEMENTS_RO (oi->nbrs, nbrnode, nbr))
+	if (nbr != oi->nbr_self
 /* If EXACT match is needed, provide ALL entry found
 	    && nbr->state != NSM_Down
  */
@@ -2134,10 +2133,9 @@ static struct ospf_neighbor *
 ospf_snmp_nbr_lookup_next (struct in_addr *nbr_addr, unsigned int *ifindex,
 			   int first)
 {
-  struct listnode *nn;
+  struct listnode *nn, *nbrnode;
   struct ospf_interface *oi;
   struct ospf_neighbor *nbr;
-  struct route_node *rn;
   struct ospf_neighbor *min = NULL;
   struct ospf *ospf = ospf;
 
@@ -2145,9 +2143,8 @@ ospf_snmp_nbr_lookup_next (struct in_addr *nbr_addr, unsigned int *ifindex,
 
   for (ALL_LIST_ELEMENTS_RO (ospf->oiflist, nn, oi))
     {
-      for (rn = route_top (oi->nbrs); rn; rn = route_next (rn))
-	if ((nbr = rn->info) != NULL
-	    && nbr != oi->nbr_self
+      for (ALL_LIST_ELEMENTS_RO (oi->nbrs, nbrnode, nbr))
+	if (nbr != oi->nbr_self
 	    && nbr->state != NSM_Down
 	    && nbr->src.s_addr != 0)
 	  {
@@ -2613,9 +2610,9 @@ ospfTrapNbrStateChange (struct ospf_neighbor *on)
   
   ospf_nbr_state_message(on, msgbuf, sizeof(msgbuf));
   zlog (NULL, LOG_INFO, "ospfTrapNbrStateChange trap sent: %s now %s",
-	inet_ntoa(on->address.u.prefix4), msgbuf);
+	inet_ntoa(on->router_id), msgbuf);
 
-  oid_copy_addr (index, &(on->address.u.prefix4), IN_ADDR_SIZE);
+  oid_copy_addr (index, &(on->router_id), IN_ADDR_SIZE);
   index[IN_ADDR_SIZE] = 0;
 
   smux_trap (ospf_oid, sizeof ospf_oid / sizeof (oid),
@@ -2632,7 +2629,7 @@ ospfTrapVirtNbrStateChange (struct ospf_neighbor *on)
   
   zlog (NULL, LOG_INFO, "ospfTrapVirtNbrStateChange trap sent");
 
-  oid_copy_addr (index, &(on->address.u.prefix4), IN_ADDR_SIZE);
+  oid_copy_addr (index, &(on->router_id), IN_ADDR_SIZE);
   index[IN_ADDR_SIZE] = 0;
 
   smux_trap (ospf_oid, sizeof ospf_oid / sizeof (oid),

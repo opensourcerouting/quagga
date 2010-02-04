@@ -43,26 +43,6 @@
 #include "ospfd/ospf_flood.h"
 #include "ospfd/ospf_dump.h"
 
-/* Fill in the the 'key' as appropriate to retrieve the entry for nbr
- * from the ospf_interface's nbrs table. Indexed by interface address
- * for all cases except Virtual-link interfaces, where neighbours are
- * indexed by router-ID instead.
- */
-static void
-ospf_nbr_key (struct ospf_interface *oi, struct ospf_neighbor *nbr,
-              struct prefix *key)
-{
-  key->family = AF_INET;
-  key->prefixlen = IPV4_MAX_BITLEN;
-
-  /* vlinks are indexed by router-id */
-  if (oi->type == OSPF_IFTYPE_VIRTUALLINK)
-    key->u.prefix4 = nbr->router_id;
-  else
-    key->u.prefix4 = nbr->src;
-  return;
-}
-
 struct ospf_neighbor *
 ospf_nbr_new (struct ospf_interface *oi)
 {
@@ -143,44 +123,43 @@ ospf_nbr_free (struct ospf_neighbor *nbr)
 
   XFREE (MTYPE_OSPF_NEIGHBOR, nbr);
 }
+/* lookup nbr by address - use this only if you know you must
+ * otherwise use the ospf_nbr_lookup() wrapper, which deals
+ * with virtual link and PointToPoint neighbours
+ */
+struct ospf_neighbor *
+ospf_nbr_lookup_by_addr (struct list *nbrs,
+			 struct in_addr *addr)
+{
+  struct listnode *node;
+  struct ospf_neighbor *nbr;
+
+  for (ALL_LIST_ELEMENTS_RO (nbrs, node, nbr))
+    if (IPV4_ADDR_SAME (&nbr->src, addr))
+	return nbr;
+
+  return NULL;
+}
+
+struct ospf_neighbor *
+ospf_nbr_lookup_by_routerid (struct list *nbrs,
+			     struct in_addr *id)
+{
+  struct listnode *node;
+  struct ospf_neighbor *nbr;
+
+  for (ALL_LIST_ELEMENTS_RO (nbrs, node, nbr))
+    if (IPV4_ADDR_SAME (&nbr->router_id, id))
+	return nbr;
+
+  return NULL;
+}
 
 /* Delete specified OSPF neighbor from interface. */
 void
 ospf_nbr_delete (struct ospf_neighbor *nbr)
 {
-  struct ospf_interface *oi;
-  struct route_node *rn;
-  struct prefix p;
-
-  oi = nbr->oi;
-  
-  /* get appropriate prefix 'key' */
-  ospf_nbr_key (oi, nbr, &p);
-
-  rn = route_node_lookup (oi->nbrs, &p);
-  if (rn)
-    {
-      /* If lookup for a NBR succeeds, the leaf route_node could
-       * only exist because there is (or was) a nbr there.
-       * If the nbr was deleted, the leaf route_node should have
-       * lost its last refcount too, and be deleted.
-       * Therefore a looked-up leaf route_node in nbrs table
-       * should never have NULL info.
-       */
-      assert (rn->info);
-      
-      if (rn->info)
-	{
-	  rn->info = NULL;
-	  route_unlock_node (rn);
-	}
-      else
-	zlog_info ("Can't find neighbor %s in the interface %s",
-		   inet_ntoa (nbr->src), IF_NAME (oi));
-
-      route_unlock_node (rn);
-    }
-
+  listnode_delete(nbr->oi->nbrs, nbr);
   /* Free ospf_neighbor structure. */
   ospf_nbr_free (nbr);
 }
@@ -206,11 +185,9 @@ ospf_nbr_bidirectional (struct in_addr *router_id,
 void
 ospf_nbr_add_self (struct ospf_interface *oi)
 {
-  struct prefix p;
-  struct route_node *rn;
+  struct ospf_neighbor *nbr;
 
   /* Initial state */
-  oi->nbr_self->address = *oi->address;
   oi->nbr_self->priority = OSPF_IF_PARAM (oi, priority);
   oi->nbr_self->router_id = oi->ospf->router_id;
   oi->nbr_self->src = oi->address->u.prefix4;
@@ -229,19 +206,23 @@ ospf_nbr_add_self (struct ospf_interface *oi)
         SET_FLAG (oi->nbr_self->options, OSPF_OPTION_NP);
         break;
     }
-  
-  /* Add nbr_self to nbrs table */
-  ospf_nbr_key (oi, oi->nbr_self, &p);
-  
-  rn = route_node_get (oi->nbrs, &p);
-  if (rn->info)
-    {
-      /* There is already pseudo neighbor. */
-      assert (oi->nbr_self == rn->info);
-      route_unlock_node (rn);
-    }
+
+  /* Sanity check, should not be needed */
+  if (oi->type == OSPF_IFTYPE_VIRTUALLINK ||
+      oi->type == OSPF_IFTYPE_POINTOPOINT)
+    nbr = ospf_nbr_lookup_by_routerid (oi->nbrs, &oi->nbr_self->router_id);
   else
-    rn->info = oi->nbr_self;
+    nbr = ospf_nbr_lookup_by_addr (oi->nbrs, &oi->nbr_self->src);
+  if (nbr)
+    {
+      assert (oi->nbr_self == nbr);
+      zlog_info("Self neighbor already added for ospf I/F:%s",
+		oi->ifp->name);
+      return;
+    }
+
+  /* Add nbr_self to nbrs table */
+  listnode_add(oi->nbrs, oi->nbr_self);
 }
 
 /* Get neighbor count by status.
@@ -250,14 +231,13 @@ int
 ospf_nbr_count (struct ospf_interface *oi, int state)
 {
   struct ospf_neighbor *nbr;
-  struct route_node *rn;
+  struct listnode *node;
   int count = 0;
 
-  for (rn = route_top (oi->nbrs); rn; rn = route_next (rn))
-    if ((nbr = rn->info))
-      if (!IPV4_ADDR_SAME (&nbr->router_id, &oi->ospf->router_id))
-	if (state == 0 || nbr->state == state)
-	  count++;
+  for (ALL_LIST_ELEMENTS_RO (oi->nbrs, node, nbr))
+    if (!IPV4_ADDR_SAME (&nbr->router_id, &oi->ospf->router_id))
+      if (state == 0 || nbr->state == state)
+	count++;
 
   return count;
 }
@@ -267,80 +247,24 @@ int
 ospf_nbr_count_opaque_capable (struct ospf_interface *oi)
 {
   struct ospf_neighbor *nbr;
-  struct route_node *rn;
+  struct listnode *node;
   int count = 0;
 
-  for (rn = route_top (oi->nbrs); rn; rn = route_next (rn))
-    if ((nbr = rn->info))
-      if (!IPV4_ADDR_SAME (&nbr->router_id, &oi->ospf->router_id))
-	if (nbr->state == NSM_Full)
-	  if (CHECK_FLAG (nbr->options, OSPF_OPTION_O))
-	    count++;
+  for (ALL_LIST_ELEMENTS_RO (oi->nbrs, node, nbr))
+    if (!IPV4_ADDR_SAME (&nbr->router_id, &oi->ospf->router_id))
+      if (nbr->state == NSM_Full)
+	if (CHECK_FLAG (nbr->options, OSPF_OPTION_O))
+	  count++;
 
   return count;
 }
 #endif /* HAVE_OPAQUE_LSA */
 
-/* lookup nbr by address - use this only if you know you must
- * otherwise use the ospf_nbr_lookup() wrapper, which deals 
- * with virtual link neighbours
- */
-struct ospf_neighbor *
-ospf_nbr_lookup_by_addr (struct route_table *nbrs,
-			 struct in_addr *addr)
-{
-  struct prefix p;
-  struct route_node *rn;
-  struct ospf_neighbor *nbr;
-
-  p.family = AF_INET;
-  p.prefixlen = IPV4_MAX_BITLEN;
-  p.u.prefix4 = *addr;
-
-  rn = route_node_lookup (nbrs, &p);
-  if (! rn)
-    return NULL;
-  
-  /* See comment in ospf_nbr_delete */
-  assert (rn->info);
-
-  if (rn->info == NULL)
-    {
-      route_unlock_node (rn);
-      return NULL;
-    }
-
-  nbr = (struct ospf_neighbor *) rn->info;
-  route_unlock_node (rn);
-
-  return nbr;
-}
-
-struct ospf_neighbor *
-ospf_nbr_lookup_by_routerid (struct route_table *nbrs,
-			     struct in_addr *id)
-{
-  struct route_node *rn;
-  struct ospf_neighbor *nbr;
-
-  for (rn = route_top (nbrs); rn; rn = route_next (rn))
-    if ((nbr = rn->info) != NULL)
-      if (IPV4_ADDR_SAME (&nbr->router_id, id))
-	{
-	  route_unlock_node(rn);
-	  return nbr;
-	}
-
-  return NULL;
-}
-
 void
 ospf_renegotiate_optional_capabilities (struct ospf *top)
 {
-  struct listnode *node;
+  struct listnode *node, *nnode;
   struct ospf_interface *oi;
-  struct route_table *nbrs;
-  struct route_node *rn;
   struct ospf_neighbor *nbr;
 
   /* At first, flush self-originated LSAs from routing domain. */
@@ -349,12 +273,9 @@ ospf_renegotiate_optional_capabilities (struct ospf *top)
   /* Revert all neighbor status to ExStart. */
   for (ALL_LIST_ELEMENTS_RO (top->oiflist, node, oi))
     {
-      if ((nbrs = oi->nbrs) == NULL)
-        continue;
-
-      for (rn = route_top (nbrs); rn; rn = route_next (rn))
-        {
-          if ((nbr = rn->info) == NULL || nbr == oi->nbr_self)
+      for (ALL_LIST_ELEMENTS_RO (oi->nbrs, nnode, nbr))
+	{
+          if (nbr == oi->nbr_self)
             continue;
 
           if (nbr->state < NSM_ExStart)
@@ -375,22 +296,22 @@ struct ospf_neighbor *
 ospf_nbr_lookup (struct ospf_interface *oi, struct ip *iph,
                  struct ospf_header *ospfh)
 {
-  if (oi->type == OSPF_IFTYPE_VIRTUALLINK)
-    return (ospf_nbr_lookup_by_routerid (oi->nbrs, &ospfh->router_id));
+  if (oi->type == OSPF_IFTYPE_VIRTUALLINK ||
+      oi->type == OSPF_IFTYPE_POINTOPOINT)
+    return ospf_nbr_lookup_by_routerid (oi->nbrs, &ospfh->router_id);
   else
-    return (ospf_nbr_lookup_by_addr (oi->nbrs, &iph->ip_src));
+    return ospf_nbr_lookup_by_addr (oi->nbrs, &iph->ip_src);
 }
 
 static struct ospf_neighbor *
 ospf_nbr_add (struct ospf_interface *oi, struct ospf_header *ospfh,
-              struct prefix *p)
+              struct ip *iph)
 {
   struct ospf_neighbor *nbr;
   
   nbr = ospf_nbr_new (oi);
   nbr->state = NSM_Down;
-  nbr->src = p->u.prefix4;
-  memcpy (&nbr->address, p, sizeof (struct prefix));
+  nbr->src = iph->ip_src;
 
   nbr->nbr_nbma = NULL;
   if (oi->type == OSPF_IFTYPE_NBMA)
@@ -420,43 +341,31 @@ ospf_nbr_add (struct ospf_interface *oi, struct ospf_header *ospfh,
   if (IS_DEBUG_OSPF_EVENT)
     zlog_debug ("NSM[%s:%s]: start", IF_NAME (nbr->oi),
                inet_ntoa (nbr->router_id));
-  
+
+  listnode_add(oi->nbrs, nbr);
   return nbr;
 }
 
 struct ospf_neighbor *
 ospf_nbr_get (struct ospf_interface *oi, struct ospf_header *ospfh,
-              struct ip *iph, struct prefix *p)
+              struct ip *iph)
 {
-  struct route_node *rn;
-  struct prefix key;
   struct ospf_neighbor *nbr;
-  
-  key.family = AF_INET;
-  key.prefixlen = IPV4_MAX_BITLEN;
 
-  if (oi->type == OSPF_IFTYPE_VIRTUALLINK)
-    key.u.prefix4 = ospfh->router_id;   /* index vlink nbrs by router-id */
-  else
-    key.u.prefix4 = iph->ip_src;
-
-  rn = route_node_get (oi->nbrs, &key);
-  if (rn->info)
+  nbr = ospf_nbr_lookup (oi, iph, ospfh);
+  if (nbr)
     {
-      route_unlock_node (rn);
-      nbr = rn->info;
-      
       if (oi->type == OSPF_IFTYPE_NBMA && nbr->state == NSM_Attempt)
         {
           nbr->src = iph->ip_src;
-          memcpy (&nbr->address, p, sizeof (struct prefix));
         }
     }
   else
     {
-      rn->info = nbr = ospf_nbr_add (oi, ospfh, p);
+      nbr = ospf_nbr_add (oi, ospfh, iph);
+      listnode_add (oi->nbrs, nbr);
     }
-  
+
   nbr->router_id = ospfh->router_id;
 
   return nbr;

@@ -329,6 +329,9 @@ struct ospf
   u_int32_t rx_lsa_count;
  
   struct route_table *distance_table;
+  
+  /* Host route list */
+  struct list *hostlist;
 };
 
 /* OSPF area structure. */
@@ -608,6 +611,9 @@ extern struct ospf_area *ospf_area_lookup_by_area_id (struct ospf *,
 						      struct in_addr);
 extern void ospf_area_add_if (struct ospf_area *, struct ospf_interface *);
 extern void ospf_area_del_if (struct ospf_area *, struct ospf_interface *);
+
+extern int ospf_interface_set (struct interface *ifp);
+extern int ospf_interface_unset (struct interface *ifp);
 
 extern void ospf_route_map_init (void);
 extern void ospf_snmp_init (void);

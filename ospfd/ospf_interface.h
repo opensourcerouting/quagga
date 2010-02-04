@@ -47,6 +47,7 @@ struct ospf_if_params
   DECLARE_IF_PARAM (u_int32_t, retransmit_interval); /* Retransmission Interval */
   DECLARE_IF_PARAM (u_char, passive_interface);      /* OSPF Interface is passive: no sending or receiving (no need to join multicast groups) */
   DECLARE_IF_PARAM (u_char, priority);               /* OSPF Interface priority */
+  DECLARE_IF_PARAM (struct in_addr, if_area);        /* Enable OSPF on this interface with area if_area */
   DECLARE_IF_PARAM (u_char, type);                   /* type of interface */
 #define OSPF_IF_ACTIVE                  0
 #define OSPF_IF_PASSIVE		        1
@@ -124,6 +125,10 @@ struct ospf_interface
   /* OSPF Area. */
   struct ospf_area *area;
 
+/* Position range in Router LSA */
+  int lsa_pos_beg; /* inclusive, >= */
+  int lsa_pos_end; /* exclusive, <  */
+
   /* Interface data from zebra. */
   struct interface *ifp;
   struct ospf_vl_data *vl_data;		/* Data for Virtual Link */
@@ -171,7 +176,7 @@ struct ospf_interface
   u_int32_t output_cost;	        /* Acutual Interface Output Cost */
 
   /* Neighbor information. */
-  struct route_table *nbrs;             /* OSPF Neighbor List */
+  struct list *nbrs;			/* OSPF Neighbor List */
   struct ospf_neighbor *nbr_self;	/* Neighbor Self */
 #define DR(I)			((I)->nbr_self->d_router)
 #define BDR(I)			((I)->nbr_self->bd_router)
@@ -242,6 +247,9 @@ extern int ospf_if_down (struct ospf_interface *);
 
 extern int ospf_if_is_up (struct ospf_interface *);
 extern struct ospf_interface *ospf_if_exists (struct ospf_interface *);
+extern struct ospf_interface *ospf_if_lookup_by_lsa_pos (struct ospf_area *,
+							 int);
+extern void ospf_lsa_pos_set(int, int, struct ospf_interface *);
 extern struct ospf_interface *ospf_if_lookup_by_local_addr (struct ospf *,
 							    struct interface
 							    *,
@@ -256,7 +264,8 @@ extern struct ospf_interface *ospf_if_lookup_recv_if (struct ospf *,
 						      struct interface *);
 extern struct ospf_interface *ospf_if_is_configured (struct ospf *,
 						     struct in_addr *);
-
+extern struct ospf_interface *ospf_if_lookup_by_ifindex(struct ospf_area *,
+							unsigned int);
 extern struct ospf_if_params *ospf_lookup_if_params (struct interface *,
 						     struct in_addr);
 extern struct ospf_if_params *ospf_get_if_params (struct interface *,

@@ -88,7 +88,7 @@ ospf_elect_dr (struct ospf_interface *oi, struct list *el_list)
 	listnode_add (dr_list, nbr);
 
       /* Preserve neighbor BDR. */
-      if (IPV4_ADDR_SAME (&BDR (oi), &nbr->address.u.prefix4))
+      if (IPV4_ADDR_SAME (&BDR (oi), &nbr->src))
 	bdr = nbr;
     }
 
@@ -100,7 +100,7 @@ ospf_elect_dr (struct ospf_interface *oi, struct list *el_list)
 
   /* Set DR to interface. */
   if (dr)
-    DR (oi) = dr->address.u.prefix4;
+    DR (oi) = dr->src;
   else
     DR (oi).s_addr = 0;
 
@@ -141,7 +141,7 @@ ospf_elect_bdr (struct ospf_interface *oi, struct list *el_list)
 
   /* Set BDR to interface. */
   if (bdr)
-    BDR (oi) = bdr->address.u.prefix4;
+    BDR (oi) = bdr->src;
   else
     BDR (oi).s_addr = 0;
 
@@ -163,38 +163,36 @@ ospf_ism_state (struct ospf_interface *oi)
 }
 
 static void
-ospf_dr_eligible_routers (struct route_table *nbrs, struct list *el_list)
+ospf_dr_eligible_routers (struct list *nbrs, struct list *el_list)
 {
-  struct route_node *rn;
+  struct listnode *node;
   struct ospf_neighbor *nbr;
 
-  for (rn = route_top (nbrs); rn; rn = route_next (rn))
-    if ((nbr = rn->info) != NULL)
-      /* Ignore 0.0.0.0 node*/
-      if (nbr->router_id.s_addr != 0)
-	/* Is neighbor eligible? */
-	if (nbr->priority > 0)
-	  /* Is neighbor upper 2-Way? */
-	  if (nbr->state >= NSM_TwoWay)
-	    listnode_add (el_list, nbr);
+  for (ALL_LIST_ELEMENTS_RO (nbrs, node, nbr))
+    /* Ignore 0.0.0.0 node*/
+    if (nbr->router_id.s_addr != 0)
+      /* Is neighbor eligible? */
+      if (nbr->priority > 0)
+	/* Is neighbor upper 2-Way? */
+	if (nbr->state >= NSM_TwoWay)
+	  listnode_add (el_list, nbr);
 }
 
 /* Generate AdjOK? NSM event. */
 static void
-ospf_dr_change (struct ospf *ospf, struct route_table *nbrs)
+ospf_dr_change (struct ospf *ospf, struct list *nbrs)
 {
-  struct route_node *rn;
+  struct listnode *node;
   struct ospf_neighbor *nbr;
 
-  for (rn = route_top (nbrs); rn; rn = route_next (rn))
-    if ((nbr = rn->info) != NULL)
-      /* Ignore 0.0.0.0 node*/
-      if (nbr->router_id.s_addr != 0)
-	/* Is neighbor upper 2-Way? */
-	if (nbr->state >= NSM_TwoWay)
-	  /* Ignore myself. */
-	  if (!IPV4_ADDR_SAME (&nbr->router_id, &ospf->router_id))
-	    OSPF_NSM_EVENT_SCHEDULE (nbr, NSM_AdjOK);
+  for (ALL_LIST_ELEMENTS_RO (nbrs, node, nbr))
+    /* Ignore 0.0.0.0 node*/
+    if (nbr->router_id.s_addr != 0)
+      /* Is neighbor upper 2-Way? */
+      if (nbr->state >= NSM_TwoWay)
+	/* Ignore myself. */
+	if (!IPV4_ADDR_SAME (&nbr->router_id, &ospf->router_id))
+	  OSPF_NSM_EVENT_SCHEDULE (nbr, NSM_AdjOK);
 }
 
 static int

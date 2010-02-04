@@ -211,7 +211,9 @@ ospf_if_new (struct ospf *ospf, struct interface *ifp, struct prefix *p)
     }
   else
     return oi;
-    
+
+  ospf_lsa_pos_set(-1,-1, oi); /* delete position in router LSA */
+
   /* Set zebra interface pointer. */
   oi->ifp = ifp;
   oi->address = p;
@@ -223,7 +225,7 @@ ospf_if_new (struct ospf *ospf, struct interface *ifp, struct prefix *p)
   oi->network_lsa_self = NULL;
 
   /* Initialize neighbor list. */
-  oi->nbrs = route_table_init ();
+  oi->nbrs = list_new ();
 
   /* Initialize static neighbor list. */
   oi->nbr_nbma = list_new ();
@@ -258,7 +260,6 @@ ospf_if_new (struct ospf *ospf, struct interface *ifp, struct prefix *p)
 void
 ospf_if_cleanup (struct ospf_interface *oi)
 {
-  struct route_node *rn;
   struct listnode *node, *nnode;
   struct ospf_neighbor *nbr;
   struct ospf_nbr_nbma *nbr_nbma;
@@ -282,10 +283,9 @@ ospf_if_cleanup (struct ospf_interface *oi)
     }
 
   /* send Neighbor event KillNbr to all associated neighbors. */
-  for (rn = route_top (oi->nbrs); rn; rn = route_next (rn))
-    if ((nbr = rn->info) != NULL)
-      if (nbr != oi->nbr_self)
-	OSPF_NSM_EVENT_EXECUTE (nbr, NSM_KillNbr);
+  for (ALL_LIST_ELEMENTS (oi->nbrs, node, nnode, nbr))
+    if (nbr != oi->nbr_self)
+      OSPF_NSM_EVENT_EXECUTE (nbr, NSM_KillNbr);
 
   /* Cleanup Link State Acknowlegdment list. */
   for (ALL_LIST_ELEMENTS (oi->ls_ack, node, nnode, lsa))
@@ -321,7 +321,7 @@ ospf_if_free (struct ospf_interface *oi)
   /* Free Pseudo Neighbour */
   ospf_nbr_delete (oi->nbr_self);
   
-  route_table_finish (oi->nbrs);
+  list_free (oi->nbrs);
   route_table_finish (oi->ls_upd_queue);
   
   /* Free any lists that should be freed */
@@ -395,6 +395,29 @@ ospf_if_exists (struct ospf_interface *oic)
       return oi;
 
   return NULL;
+}
+
+/* Lookup OSPF interface by router LSA posistion */
+struct ospf_interface *
+ospf_if_lookup_by_lsa_pos (struct ospf_area *area, int lsa_pos)
+{
+  struct listnode *node;
+  struct ospf_interface *oi;
+
+  for (ALL_LIST_ELEMENTS_RO (area->oiflist, node, oi))
+    {
+      if (lsa_pos >= oi->lsa_pos_beg && lsa_pos < oi->lsa_pos_end)
+	return oi;
+    }
+  return NULL;
+}
+
+/* Set OSPF interface position in router LSA */
+void
+ospf_lsa_pos_set(int pos_beg, int pos_end, struct ospf_interface *oi)
+{
+  oi->lsa_pos_beg = pos_beg;
+  oi->lsa_pos_end = pos_end;
 }
 
 struct ospf_interface *
@@ -478,6 +501,20 @@ ospf_if_lookup_recv_if (struct ospf *ospf, struct in_addr src,
     }
 
   return match;
+}
+
+struct ospf_interface *
+ospf_if_lookup_by_ifindex(struct ospf_area *area, unsigned int ifindex)
+{
+  struct listnode *node;
+  struct ospf_interface *oi;
+
+  for (ALL_LIST_ELEMENTS_RO (area->oiflist, node, oi))
+    {
+      if (oi->ifp->ifindex == ifindex)
+	return oi;
+    }
+  return NULL;
 }
 
 void
@@ -803,6 +840,7 @@ ospf_if_down (struct ospf_interface *oi)
     return 0;
 
   OSPF_ISM_EVENT_EXECUTE (oi, ISM_InterfaceDown);
+  ospf_lsa_pos_set(-1, -1, oi); /* delete position in router LSA */
   /* Shutdown packet reception and sending */
   ospf_if_stream_unset (oi);
 
