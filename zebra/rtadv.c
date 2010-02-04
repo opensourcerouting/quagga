@@ -1557,7 +1557,7 @@ DEFUN (ipv6_nd_rdnss,
 }
 
 ALIAS (ipv6_nd_rdnss,
-       ipv6_nd_rdnss_cmd_nolife,
+       ipv6_nd_rdnss_nolife_cmd,
        "ipv6 nd rdnss X:X::X:X",
        "Interface IPv6 config commands\n"
        "Neighbor discovery\n"
@@ -1741,7 +1741,7 @@ rtadv_init (void)
   install_element (INTERFACE_NODE, &ipv6_nd_router_preference_cmd);
   install_element (INTERFACE_NODE, &no_ipv6_nd_router_preference_cmd);
   install_element (INTERFACE_NODE, &ipv6_nd_rdnss_cmd);
-  install_element (INTERFACE_NODE, &ipv6_nd_rdnss_cmd_nolife);
+  install_element (INTERFACE_NODE, &ipv6_nd_rdnss_nolife_cmd);
 }
 
 static int
