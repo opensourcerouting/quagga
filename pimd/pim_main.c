@@ -35,6 +35,7 @@
 #include "vty.h"
 #include "sigevent.h"
 #include "version.h"
+#include "paths.h"
 
 #include "pimd.h"
 #include "pim_version.h"
@@ -48,10 +49,11 @@ extern int zclient_debug;
 extern struct host host;
 extern const char *default_motd;
 
-char config_default[] = SYSCONFDIR PIMD_DEFAULT_CONFIG;
+char config_default[MAXPATHLEN];
 
 struct option longopts[] = {
   { "daemon",        no_argument,       NULL, 'd'},
+  { "namespace",     required_argument, NULL, 'N'},
   { "config_file",   required_argument, NULL, 'f'},
   { "pid_file",      required_argument, NULL, 'i'},
   { "vty_addr",      required_argument, NULL, 'A'},
@@ -86,7 +88,8 @@ struct zebra_privs_t pimd_privs =
 };
 
 char* progname;
-const char *pid_file = PATH_PIMD_PID;
+static char pid_file_default[MAXPATHLEN];
+const char *pid_file = pid_file_default;
 
 static void usage(int status)
 {
@@ -96,6 +99,7 @@ static void usage(int status)
     printf ("Usage : %s [OPTION...]\n\
 Daemon which manages PIM.\n\n\
 -d, --daemon         Run in daemon mode\n\
+-N, --namespace    Insert argument into all paths\n\
 -f, --config_file    Set configuration file name\n\
 -i, --pid_file       Set process identifier file name\n\
 -A, --vty_addr       Set vty's bind address\n\
@@ -138,7 +142,7 @@ int main(int argc, char** argv, char** envp) {
   while (1) {
     int opt;
             
-    opt = getopt_long (argc, argv, "df:i:A:P:vZh", longopts, 0);
+    opt = getopt_long (argc, argv, "dN:f:i:A:P:vZh", longopts, 0);
                       
     if (opt == EOF)
       break;
@@ -148,6 +152,9 @@ int main(int argc, char** argv, char** envp) {
       break;
     case 'd':
       daemon_mode = 1;
+      break;
+    case 'N':
+      path_set_namespace (optarg);
       break;
     case 'f':
       config_file = optarg;
@@ -179,6 +186,9 @@ int main(int argc, char** argv, char** envp) {
       break;
     }
   }
+
+  strcpy (config_default, path_config ("pimd.conf"));
+  strcpy (pid_file_default, path_state ("pimd.pid"));
 
   master = thread_master_create();
 
@@ -237,7 +247,7 @@ int main(int argc, char** argv, char** envp) {
   /* Create pimd VTY socket */
   if (vty_port < 0)
     vty_port = PIMD_VTY_PORT;
-  vty_serv_sock(vty_addr, vty_port, PIM_VTYSH_PATH);
+  vty_serv_sock(vty_addr, vty_port, path_state ("pimd.vty"));
 
   zlog_notice("Quagga %s " PIMD_PROGNAME " %s starting, VTY interface at port TCP %d",
 	      QUAGGA_VERSION, PIMD_VERSION, vty_port);

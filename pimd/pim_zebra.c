@@ -29,6 +29,7 @@
 #include "zclient.h"
 #include "stream.h"
 #include "network.h"
+#include "paths.h"
 
 #include "pimd.h"
 #include "pim_pim.h"
@@ -608,7 +609,7 @@ void pim_zebra_init()
 #ifdef HAVE_TCP_ZEBRA
   zlog_notice("zclient update contacting ZEBRA daemon at socket TCP %s,%d", "127.0.0.1", ZEBRA_PORT);
 #else
-  zlog_notice("zclient update contacting ZEBRA daemon at socket UNIX %s", ZEBRA_SERV_PATH);
+  zlog_notice("zclient update contacting ZEBRA daemon at socket UNIX %s", path_state (ZEBRA_SERV_NAME));
 #endif
 
   /* Socket for receiving updates from Zebra daemon */

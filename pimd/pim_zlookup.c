@@ -29,6 +29,7 @@
 #include "stream.h"
 #include "network.h"
 #include "thread.h"
+#include "paths.h"
 
 #include "pimd.h"
 #include "pim_pim.h"
@@ -66,14 +67,14 @@ static int zclient_lookup_connect(struct thread *t)
 #else
   zlog_debug("%s: FIXME blocking connect: zclient_socket_un()",
 	     __PRETTY_FUNCTION__);
-  zlookup->sock = zclient_socket_un(ZEBRA_SERV_PATH);
+  zlookup->sock = zclient_socket_un(path_state (ZEBRA_SERV_NAME));
   if (zlookup->sock < 0) {
     zlog_warn("%s: failure connecting UNIX socket %s",
-	      __PRETTY_FUNCTION__, ZEBRA_SERV_PATH);
+	      __PRETTY_FUNCTION__, path_state (ZEBRA_SERV_NAME));
   }
   else if (zclient_debug) { 
     zlog_notice("%s: connected UNIX socket %s",
-		__PRETTY_FUNCTION__, ZEBRA_SERV_PATH);
+		__PRETTY_FUNCTION__, path_state (ZEBRA_SERV_NAME));
   }
 #endif /* HAVE_TCP_ZEBRA */
 
