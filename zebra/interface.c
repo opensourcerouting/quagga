@@ -1699,7 +1699,7 @@ if_config_write (struct vty *vty)
 
       if_data = ifp->info;
       
-      vty_out (vty, "interface %s%s", ifp->name,
+      vty_prepend (vty, "interface %s%s", ifp->name,
 	       VTY_NEWLINE);
 
       if (ifp->desc)
@@ -1764,7 +1764,9 @@ if_config_write (struct vty *vty)
       irdp_config_write (vty, ifp);
 #endif /* IRDP */
 
-      vty_out (vty, "!%s", VTY_NEWLINE);
+      if (!vty_prepending (vty))
+	vty_out (vty, "!%s", VTY_NEWLINE);
+      vty_unprepend (vty);
     }
   return 0;
 }

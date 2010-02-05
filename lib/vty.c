@@ -90,6 +90,25 @@ static u_char restricted_mode = 0;
 char integrate_default[] = SYSCONFDIR INTEGRATE_DEFAULT_CONFIG;
 
 
+void
+vty_prepend (struct vty *vty, const char *format, ...)
+{
+  va_list args;
+
+  va_start (args, format);
+  vsnprintf (vty->prepend + vty->prepend_pos,
+	     sizeof(vty->prepend) - vty->prepend_pos,
+	     format, args);
+  vty->prepend_pos = strlen (vty->prepend);
+  va_end (args);
+}
+
+void
+vty_unprepend (struct vty *vty)
+{
+  vty->prepend_pos = 0;
+}
+
 /* VTY standard output function. */
 int
 vty_out (struct vty *vty, const char *format, ...)
@@ -99,6 +118,12 @@ vty_out (struct vty *vty, const char *format, ...)
   int size = 1024;
   char buf[1024];
   char *p = NULL;
+
+  if (vty->prepend_pos)
+    {
+      vty->prepend_pos = 0;
+      vty_out (vty, "%s", vty->prepend);
+    }
 
   if (vty_shell (vty))
     {

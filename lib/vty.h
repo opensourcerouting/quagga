@@ -118,6 +118,10 @@ struct vty
   /* Timeout seconds and thread. */
   unsigned long v_timeout;
   struct thread *t_timeout;
+
+  /* Auto-prepending; any vty_out will print this buffer, then clear it: */
+  int prepend_pos;
+  char prepend[1024];
 };
 
 /* Integrated configuration file. */
@@ -207,6 +211,9 @@ extern void vty_terminate (void);
 extern void vty_reset (void);
 extern struct vty *vty_new (void);
 extern int vty_out (struct vty *, const char *, ...) PRINTF_ATTRIBUTE(2, 3);
+extern void vty_prepend (struct vty *, const char *, ...) PRINTF_ATTRIBUTE(2, 3);
+extern void vty_unprepend (struct vty *);
+#define vty_prepending(v) ((v)->prepend_pos)
 extern void vty_read_config (char *, char *);
 extern void vty_time_print (struct vty *, int);
 extern void vty_serv_sock (const char *, unsigned short, const char *);

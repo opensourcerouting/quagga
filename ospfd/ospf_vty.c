@@ -7431,8 +7431,8 @@ config_write_interface (struct vty *vty)
       if (memcmp (ifp->name, "VLINK", 5) == 0)
 	continue;
 
-      vty_out (vty, "!%s", VTY_NEWLINE);
-      vty_out (vty, "interface %s%s", ifp->name,
+      vty_prepend (vty, "!%s", VTY_NEWLINE);
+      vty_prepend (vty, "interface %s%s", ifp->name,
                VTY_NEWLINE);
       if (ifp->desc)
         vty_out (vty, " description %s%s", ifp->desc,
@@ -7613,6 +7613,7 @@ config_write_interface (struct vty *vty)
 #ifdef HAVE_OPAQUE_LSA
       ospf_opaque_config_write_if (vty, ifp);
 #endif /* HAVE_OPAQUE_LSA */
+      vty_unprepend (vty);
     }
 
   return write;
