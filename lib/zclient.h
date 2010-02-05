@@ -85,10 +85,11 @@ struct zclient
 };
 
 /* Zebra API message flag. */
-#define ZAPI_MESSAGE_NEXTHOP  0x01
-#define ZAPI_MESSAGE_IFINDEX  0x02
-#define ZAPI_MESSAGE_DISTANCE 0x04
-#define ZAPI_MESSAGE_METRIC   0x08
+#define ZAPI_MESSAGE_NEXTHOP	0x01
+#define ZAPI_MESSAGE_IFINDEX	0x02
+#define ZAPI_MESSAGE_DISTANCE	0x04
+#define ZAPI_MESSAGE_METRIC	0x08
+#define ZAPI_MESSAGE_BLACKHOLE	0x10	/* only for zapi_ipv4_route */
 
 /* Zserv protocol message header */
 struct zserv_header
