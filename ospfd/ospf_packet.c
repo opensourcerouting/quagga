@@ -125,6 +125,20 @@ ospf_fifo_push (struct ospf_fifo *fifo, struct ospf_packet *op)
   fifo->count++;
 }
 
+/* Add new packet to head of fifo. */
+static void
+ospf_fifo_push_head (struct ospf_fifo *fifo, struct ospf_packet *op)
+{
+  op->next = fifo->head;
+
+  if (fifo->tail == NULL)
+    fifo->tail = op;
+
+  fifo->head = op;
+
+  fifo->count++;
+}
+
 /* Delete first packet from fifo. */
 struct ospf_packet *
 ospf_fifo_pop (struct ospf_fifo *fifo)
@@ -194,6 +208,27 @@ ospf_packet_add (struct ospf_interface *oi, struct ospf_packet *op)
 
   /* Add packet to end of queue. */
   ospf_fifo_push (oi->obuf, op);
+
+  /* Debug of packet fifo*/
+  /* ospf_fifo_debug (oi->obuf); */
+}
+
+static void
+ospf_packet_add_top (struct ospf_interface *oi, struct ospf_packet *op)
+{
+  if (!oi->obuf)
+    {
+      zlog_err("ospf_packet_add(interface %s in state %d [%s], packet type %s, "
+	       "destination %s) called with NULL obuf, ignoring "
+	       "(please report this bug)!\n",
+	       IF_NAME(oi), oi->state, LOOKUP (ospf_ism_state_msg, oi->state),
+	       ospf_packet_type_str[stream_getc_from(op->s, 1)],
+	       inet_ntoa (op->dst));
+      return;
+    }
+
+  /* Add packet to head of queue. */
+  ospf_fifo_push_head (oi->obuf, op);
 
   /* Debug of packet fifo*/
   /* ospf_fifo_debug (oi->obuf); */
@@ -875,7 +910,7 @@ ospf_hello (struct ip *iph, struct ospf_header *ospfh,
   old_state = nbr->state;
 
   /* Add event to thread. */
-  OSPF_NSM_EVENT_EXECUTE (nbr, NSM_HelloReceived);
+  OSPF_NSM_EVENT_SCHEDULE (nbr, NSM_PacketReceived);
 
   /*  RFC2328  Section 9.5.1
       If the router is not eligible to become Designated Router,
@@ -895,19 +930,19 @@ ospf_hello (struct ip *iph, struct ospf_header *ospfh,
   if (oi->type == OSPF_IFTYPE_NBMA &&
       (old_state == NSM_Down || old_state == NSM_Attempt))
     {
-      OSPF_NSM_EVENT_EXECUTE (nbr, NSM_OneWayReceived);
+      OSPF_NSM_EVENT_SCHEDULE (nbr, NSM_OneWayReceived);
       goto done;
     }
 
   if (ospf_nbr_bidirectional (&oi->ospf->router_id, hello->neighbors,
 			      size - OSPF_HELLO_MIN_SIZE))
     {
-      OSPF_NSM_EVENT_EXECUTE (nbr, NSM_TwoWayReceived);
+      OSPF_NSM_EVENT_SCHEDULE (nbr, NSM_TwoWayReceived);
       nbr->options |= hello->options;
     }
   else
     {
-      OSPF_NSM_EVENT_EXECUTE (nbr, NSM_OneWayReceived);
+      OSPF_NSM_EVENT_SCHEDULE (nbr, NSM_OneWayReceived);
       goto done;
     }
 
@@ -1190,6 +1225,9 @@ ospf_db_desc (struct ip *iph, struct ospf_header *ospfh,
     }
 #endif /* HAVE_OPAQUE_LSA */
 
+  /* Add event to thread. */
+  OSPF_NSM_EVENT_SCHEDULE (nbr, NSM_PacketReceived);
+
   /* Process DD packet by neighbor status. */
   switch (nbr->state)
     {
@@ -1410,6 +1448,9 @@ ospf_ls_req (struct ip *iph, struct ospf_header *ospfh,
 		 inet_ntoa (ospfh->router_id));
       return;
     }
+
+  /* Add event to thread. */
+  OSPF_NSM_EVENT_SCHEDULE (nbr, NSM_PacketReceived);
 
   /* Neighbor State should be Exchange or later. */
   if (nbr->state != NSM_Exchange &&
@@ -1642,6 +1683,9 @@ ospf_ls_upd (struct ip *iph, struct ospf_header *ospfh,
 		 inet_ntoa (ospfh->router_id), IF_NAME (oi));
       return;
     }
+
+  /* Add event to thread. */
+  OSPF_NSM_EVENT_SCHEDULE (nbr, NSM_PacketReceived);
 
   /* Check neighbor state. */
   if (nbr->state < NSM_Exchange)
@@ -1975,6 +2019,9 @@ ospf_ls_ack (struct ip *iph, struct ospf_header *ospfh,
 		 inet_ntoa (ospfh->router_id));
       return;
     }
+
+  /* Add event to thread. */
+  OSPF_NSM_EVENT_SCHEDULE (nbr, NSM_PacketReceived);
 
   if (nbr->state < NSM_Exchange)
     {
@@ -2953,8 +3000,8 @@ ospf_make_ls_ack (struct ospf_interface *oi, struct list *ack, struct stream *s)
   return length;
 }
 
-void
-ospf_hello_send_sub (struct ospf_interface *oi, struct in_addr *addr)
+static void
+ospf_hello_send_sub (struct ospf_interface *oi, in_addr_t addr)
 {
   struct ospf_packet *op;
   u_int16_t length = OSPF_HEADER_SIZE;
@@ -2973,10 +3020,12 @@ ospf_hello_send_sub (struct ospf_interface *oi, struct in_addr *addr)
   /* Set packet length. */
   op->length = length;
 
-  op->dst.s_addr = addr->s_addr;
+  op->dst.s_addr = addr;
 
-  /* Add packet to the interface output queue. */
-  ospf_packet_add (oi, op);
+  /* Add packet to the top of the interface output queue, so that they
+   * can't get delayed by things like long queues of LS Update packets
+   */
+  ospf_packet_add_top (oi, op);
 
   /* Hook thread to write packet. */
   OSPF_ISM_WRITE_ON (oi->ospf);
@@ -3007,7 +3056,7 @@ ospf_poll_send (struct ospf_nbr_nbma *nbr_nbma)
       && oi->state != ISM_DR && oi->state != ISM_Backup)
     return;
 
-  ospf_hello_send_sub (oi, &nbr_nbma->addr);
+  ospf_hello_send_sub (oi, nbr_nbma->addr.s_addr);
 }
 
 int
@@ -3046,7 +3095,7 @@ ospf_hello_reply_timer (struct thread *thread)
     zlog (NULL, LOG_DEBUG, "NSM[%s:%s]: Timer (hello-reply timer expire)",
 	  IF_NAME (nbr->oi), inet_ntoa (nbr->router_id));
 
-  ospf_hello_send_sub (nbr->oi, &nbr->src);
+  ospf_hello_send_sub (nbr->oi, nbr->src.s_addr);
 
   return 0;
 }
@@ -3055,26 +3104,9 @@ ospf_hello_reply_timer (struct thread *thread)
 void
 ospf_hello_send (struct ospf_interface *oi)
 {
-  struct ospf_packet *op;
-  u_int16_t length = OSPF_HEADER_SIZE;
-
   /* If this is passive interface, do not send OSPF Hello. */
   if (OSPF_IF_PASSIVE_STATUS (oi) == OSPF_IF_PASSIVE)
     return;
-
-  op = ospf_packet_new (oi->ifp->mtu);
-
-  /* Prepare OSPF common header. */
-  ospf_make_header (OSPF_MSG_HELLO, oi, op->s);
-
-  /* Prepare OSPF Hello body. */
-  length += ospf_make_hello (oi, op->s);
-
-  /* Fill OSPF header. */
-  ospf_fill_header (oi, op->s, length);
-
-  /* Set packet length. */
-  op->length = length;
 
   if (oi->type == OSPF_IFTYPE_NBMA)
     {
@@ -3104,33 +3136,16 @@ ospf_hello_send (struct ospf_interface *oi)
 	      if (nbr->priority == 0 && oi->state == ISM_DROther)
 		continue;
 	      /* if oi->state == Waiting, send hello to all neighbors */
-	      {
-		struct ospf_packet *op_dup;
-
-		op_dup = ospf_packet_dup(op);
-		op_dup->dst = nbr->src;
-
-		/* Add packet to the interface output queue. */
-		ospf_packet_add (oi, op_dup);
-
-		OSPF_ISM_WRITE_ON (oi->ospf);
-	      }
+	      ospf_hello_send_sub (oi, nbr->src.s_addr);
 	    }
-      ospf_packet_free (op);
     }
   else
     {
       /* Decide destination address. */
       if (oi->type == OSPF_IFTYPE_VIRTUALLINK)
-	op->dst.s_addr = oi->vl_data->peer_addr.s_addr;
-      else 
-	op->dst.s_addr = htonl (OSPF_ALLSPFROUTERS);
-
-      /* Add packet to the interface output queue. */
-      ospf_packet_add (oi, op);
-
-      /* Hook thread to write packet. */
-      OSPF_ISM_WRITE_ON (oi->ospf);
+        ospf_hello_send_sub (oi, oi->vl_data->peer_addr.s_addr);
+      else
+        ospf_hello_send_sub (oi, htonl (OSPF_ALLSPFROUTERS));
     }
 }
 

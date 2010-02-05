@@ -274,6 +274,9 @@ struct ospf
   struct stream *ibuf;
   struct list *oi_write_q;
   
+  /* queue for AS-External route calculation */
+  struct work_queue *ase_calc_queue;
+
   /* Distribute lists out of other route sources. */
   struct 
   {
