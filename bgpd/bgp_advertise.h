@@ -102,6 +102,38 @@ struct bgp_synchronize
   struct bgp_advertise_fifo withdraw_low;
 };
 
+static inline void FIFO_INIT(struct bgp_advertise_fifo *fifo)
+{
+  fifo->next = fifo->prev = (struct bgp_advertise *) fifo;
+}
+
+static inline void FIFO_ADD(struct bgp_advertise_fifo *fifo,
+			    struct bgp_advertise *node)
+{
+  node->fifo.next = (struct bgp_advertise *) fifo;
+  node->fifo.prev = fifo->prev;
+  fifo->prev = fifo->prev->next = node;
+}
+
+static inline void FIFO_DEL(struct bgp_advertise *node)
+{
+  struct bgp_advertise_fifo *fifo = &node->fifo;
+
+  fifo->prev->next = fifo->next;
+  fifo->next->prev = fifo->prev;
+}
+
+static inline int FIFO_EMPTY(const struct bgp_advertise_fifo *fifo)
+{
+  return (fifo->next == (const struct bgp_advertise *) fifo);
+}
+
+static inline struct bgp_advertise *FIFO_HEAD(struct bgp_advertise_fifo *fifo)
+{
+  return FIFO_EMPTY(fifo) ? NULL : fifo->next;
+}
+
+
 /* BGP adjacency linked list.  */
 #define BGP_INFO_ADD(N,A,TYPE)                        \
   do {                                                \

@@ -687,8 +687,8 @@ cmd_filter_by_symbol (char *command, char *symbol)
 /* Completion match types. */
 enum match_type 
 {
-no_match = 0,
-any_match,
+  no_match = 0,
+  any_match,
   extend_match,
   ipv4_prefix_match,
   ipv4_match,
@@ -697,7 +697,7 @@ any_match,
   range_match,
   vararg_match,
   partly_match,
-exact_match,
+  exact_match,
 };
 
 static enum match_type
@@ -1138,92 +1138,92 @@ cmd_range_match (const char *range, const char *str)
 static char *
 cmd_deopt (const char *str)
 {
-/* we've got "[blah]". We want to strip off the []s and redo the
-* match check for "blah"
-*/
-size_t len = strlen (str);
-char *tmp;
+  /* we've got "[blah]". We want to strip off the []s and redo the
+   * match check for "blah"
+   */
+  size_t len = strlen (str);
+  char *tmp;
 
-if (len < 3)
-return NULL;
+  if (len < 3)
+    return NULL;
 
-/* tmp will hold a string of len-2 chars, so 'len' size is fine */
-tmp = XMALLOC(MTYPE_TMP, len);
+  /* tmp will hold a string of len-2 chars, so 'len' size is fine */
+  tmp = XMALLOC(MTYPE_TMP, len);
 
-memcpy (tmp, (str + 1), len - 2);
-tmp[len - 2] = '\0';
+  memcpy (tmp, (str + 1), len - 2);
+  tmp[len - 2] = '\0';
 
-return tmp;
+  return tmp;
 }
 
 static enum match_type
 cmd_match (const char *str, const char *command,
-enum match_type min, bool recur)
+           enum match_type min, bool recur)
 {
 
-if (recur && CMD_OPTION(str))
-{
-enum match_type ret;
-char *tmp = cmd_deopt (str);
+  if (recur && CMD_OPTION(str))
+    {
+      enum match_type ret;
+      char *tmp = cmd_deopt (str);
 
-/* this would be a bug in a command, however handle it gracefully
-* as it we only discover it if a user tries to run it
-*/
-if (tmp == NULL)
-return no_match;
+      /* this would be a bug in a command, however handle it gracefully
+       * as it we only discover it if a user tries to run it
+       */
+      if (tmp == NULL)
+        return no_match;
 
-ret = cmd_match (tmp, command, min, false);
+      ret = cmd_match (tmp, command, min, false);
 
-XFREE (MTYPE_TMP, tmp);
+      XFREE (MTYPE_TMP, tmp);
 
-return ret;
-}
-else if (CMD_VARARG (str))
-return vararg_match;
-else if (CMD_RANGE (str))
-{
-if (cmd_range_match (str, command))
-return range_match;
-}
+      return ret;
+    }
+  else if (CMD_VARARG (str))
+    return vararg_match;
+  else if (CMD_RANGE (str))
+    {
+      if (cmd_range_match (str, command))
+        return range_match;
+    }
 #ifdef HAVE_IPV6
-else if (CMD_IPV6 (str))
-{
-if (cmd_ipv6_match (command) >= min)
-return ipv6_match;
-}
-else if (CMD_IPV6_PREFIX (str))
-{
-if (cmd_ipv6_prefix_match (command) >= min)
-return ipv6_prefix_match;
-}
+  else if (CMD_IPV6 (str))
+    {
+      if (cmd_ipv6_match (command) >= min)
+        return ipv6_match;
+    }
+  else if (CMD_IPV6_PREFIX (str))
+    {
+      if (cmd_ipv6_prefix_match (command) >= min)
+        return ipv6_prefix_match;
+    }
 #endif /* HAVE_IPV6  */
-else if (CMD_IPV4 (str))
-{
-if (cmd_ipv4_match (command) >= min)
-return ipv4_match;
-}
-else if (CMD_IPV4_PREFIX (str))
-{
-if (cmd_ipv4_prefix_match (command) >= min)
-return ipv4_prefix_match;
-}
-else if (CMD_VARIABLE (str))
-return extend_match;
-else if (strncmp (command, str, strlen (command)) == 0)
-{
-if (strcmp (command, str) == 0)
-return  exact_match;
-else if (partly_match >= min)
-return partly_match;
-}
+  else if (CMD_IPV4 (str))
+    {
+      if (cmd_ipv4_match (command) >= min)
+        return ipv4_match;
+    }
+  else if (CMD_IPV4_PREFIX (str))
+    {
+      if (cmd_ipv4_prefix_match (command) >= min)
+        return ipv4_prefix_match;
+    }
+  else if (CMD_VARIABLE (str))
+    return extend_match;
+  else if (strncmp (command, str, strlen (command)) == 0)
+    {
+      if (strcmp (command, str) == 0)
+        return  exact_match;
+      else if (partly_match >= min)
+        return partly_match;
+    }
 
-return no_match;
+  return no_match;
 }
 
 /* Filter vector at the specified index and by the given command string, to
-* the desired matching level (thus allowing part matches), and return match
-* type flag.
-*/
+ * the desired matching level (thus allowing part matches), and return match
+ * type flag.
+ */
 static enum match_type
 cmd_filter (char *command, vector v, unsigned int index, enum match_type level)
 {
@@ -1266,23 +1266,23 @@ cmd_filter (char *command, vector v, unsigned int index, enum match_type level)
 	  }
       }
 
-if (match_type == no_match)
-return no_match;
+  if (match_type == no_match)
+    return no_match;
 
-/* 2nd pass: We now know the 'strongest' match type for the index, so we
-* go again and filter out commands whose argument (at this index) is
-* 'weaker'. E.g., if we have 2 commands:
-*
-*	foo bar <1-255>
-*	foo bar BLAH
-*
-* and the command string is 'foo bar 10', then we will get here with with
-* 'range_match' being the strongest match.  However, if 'BLAH' came
-* earlier, it won't have been filtered out (as a CMD_VARIABLE allows "10").
-*
-* If we don't do a 2nd pass and filter it out, the higher-layers will
-* consider this to be ambiguous.
-*/
+  /* 2nd pass: We now know the 'strongest' match type for the index, so we
+   * go again and filter out commands whose argument (at this index) is
+   * 'weaker'. E.g., if we have 2 commands:
+   *
+   *	foo bar <1-255>
+   *	foo bar BLAH
+   *
+   * and the command string is 'foo bar 10', then we will get here with with
+   * 'range_match' being the strongest match.  However, if 'BLAH' came
+   * earlier, it won't have been filtered out (as a CMD_VARIABLE allows "10").
+   *
+   * If we don't do a 2nd pass and filter it out, the higher-layers will
+   * consider this to be ambiguous.
+   */
   for (i = 0; i < vector_active (v); i++)
     if ((cmd_element = vector_slot (v, i)) != NULL)
       {
@@ -1406,8 +1406,8 @@ is_cmd_ambiguous (char *command, vector v, int index, enum match_type type)
 		  break;
 		}
 
-if (CMD_OPTION(desc->cmd))
-XFREE (MTYPE_TMP, str);
+              if (CMD_OPTION(desc->cmd))
+                XFREE (MTYPE_TMP, str);
 	    }
 	if (!match)
 	  vector_slot (v, i) = NULL;
@@ -1626,7 +1626,7 @@ cmd_describe_command_real (vector vline, struct vty *vty, int *status)
   /* Make sure that cmd_vector is filtered based on current word */
   command = vector_slot (vline, index);
   if (command)
-match = cmd_filter (command, cmd_vector, index, any_match);
+    match = cmd_filter (command, cmd_vector, index, any_match);
 
   /* Make description vector. */
   for (i = 0; i < vector_active (cmd_vector); i++)
@@ -2264,13 +2264,15 @@ cmd_execute_command_strict (vector vline, struct vty *vty,
 
 /* Configration make from file. */
 int
-config_from_file (struct vty *vty, FILE *fp)
+config_from_file (struct vty *vty, FILE *fp, unsigned int *line_num)
 {
   int ret;
+  *line_num = 0;
   vector vline;
 
   while (fgets (vty->buf, VTY_BUFSIZ, fp))
     {
+      ++(*line_num);
       vline = cmd_make_strvec (vty->buf);
 
       /* In case of comment line */
@@ -3021,7 +3023,8 @@ DEFUN (config_logmsg,
   if ((level = level_match(argv[0])) == ZLOG_DISABLED)
     return CMD_ERR_NO_MATCH;
 
-  zlog(NULL, level, ((message = argv_concat(argv, argc, 1)) ? message : ""));
+  message = argv_concat(argv, argc, 1);
+  zlog(NULL, level, "%s", message ? message : "");
   if (message)
     XFREE(MTYPE_TMP, message);
   return CMD_SUCCESS;

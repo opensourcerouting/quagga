@@ -250,7 +250,7 @@ vty_hello (struct vty *vty)
 	vty_out (vty, "MOTD file not found%s", VTY_NEWLINE);
     }
   else if (host.motd)
-    vty_out (vty, host.motd);
+    vty_out (vty, "%s", host.motd);
 }
 
 /* Put out prompt and wait input from user. */
@@ -1842,7 +1842,7 @@ vty_serv_sock_addrinfo (const char *hostname, unsigned short port)
 
   freeaddrinfo (ainfo_save);
 }
-#endif /* HAVE_IPV6 && ! NRL */
+#else /* HAVE_IPV6 && ! NRL */
 
 /* Make vty server socket. */
 static void
@@ -1908,6 +1908,7 @@ vty_serv_sock_family (const char* addr, unsigned short port, int family)
   /* Add vty server event. */
   vty_event (VTY_SERV, accept_sock, NULL);
 }
+#endif /* HAVE_IPV6 && ! NRL */
 
 #ifdef VTYSH
 /* For sockaddr_un. */
@@ -2232,28 +2233,37 @@ vty_read_file (FILE *confp)
 {
   int ret;
   struct vty *vty;
+  unsigned int line_num = 15;
 
   vty = vty_new ();
-  vty->fd = 0;			/* stdout */
-  vty->type = VTY_TERM;
+  vty->fd = dup(STDERR_FILENO); /* vty_close() will close this */
+  if (vty->fd < 0)
+  {
+    /* Fine, we couldn't make a new fd. vty_close doesn't close stdout. */
+    vty->fd = STDOUT_FILENO;
+  }
+  vty->type = VTY_FILE;
   vty->node = CONFIG_NODE;
   
   /* Execute configuration file */
-  ret = config_from_file (vty, confp);
+  ret = config_from_file (vty, confp, &line_num);
+
+  /* Flush any previous errors before printing messages below */
+  buffer_flush_all (vty->obuf, vty->fd);
 
   if ( !((ret == CMD_SUCCESS) || (ret == CMD_ERR_NOTHING_TODO)) ) 
     {
       switch (ret)
        {
          case CMD_ERR_AMBIGUOUS:
-           fprintf (stderr, "Ambiguous command.\n");
+           fprintf (stderr, "*** Error reading config: Ambiguous command.\n");
            break;
          case CMD_ERR_NO_MATCH:
-           fprintf (stderr, "There is no such command.\n");
+           fprintf (stderr, "*** Error reading config: There is no such command.\n");
            break;
        }
-      fprintf (stderr, "Error occured during reading below line.\n%s\n", 
-	       vty->buf);
+      fprintf (stderr, "*** Error occured processing line %u, below:\n%s\n",
+		       line_num, vty->buf);
       vty_close (vty);
       exit (1);
     }
