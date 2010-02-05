@@ -1059,7 +1059,7 @@ thread_fetch (struct thread_master *m, struct thread *fetch)
   struct thread *thread;
   fd_set readfd;
   fd_set writefd;
-  struct timeval timer_val;
+  struct timeval timer_val = { .tv_sec = 0, .tv_usec = 0 };
   struct timeval timer_val_bg;
   struct timeval *timer_wait = &timer_val;
   struct timeval *timer_wait_bg;
