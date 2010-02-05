@@ -24,8 +24,8 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 /* BGP advertise FIFO.  */
 struct bgp_advertise_fifo
 {
-  struct bgp_advertise *next;
-  struct bgp_advertise *prev;
+  struct bgp_advertise_fifo *next;
+  struct bgp_advertise_fifo *prev;
 };
 
 /* BGP advertise attribute.  */
@@ -104,15 +104,15 @@ struct bgp_synchronize
 
 static inline void FIFO_INIT(struct bgp_advertise_fifo *fifo)
 {
-  fifo->next = fifo->prev = (struct bgp_advertise *) fifo;
+  fifo->next = fifo->prev = fifo;
 }
 
 static inline void FIFO_ADD(struct bgp_advertise_fifo *fifo,
 			    struct bgp_advertise *node)
 {
-  node->fifo.next = (struct bgp_advertise *) fifo;
+  node->fifo.next = fifo;
   node->fifo.prev = fifo->prev;
-  fifo->prev = fifo->prev->next = node;
+  fifo->prev = fifo->prev->next = &node->fifo;
 }
 
 static inline void FIFO_DEL(struct bgp_advertise *node)
@@ -125,12 +125,12 @@ static inline void FIFO_DEL(struct bgp_advertise *node)
 
 static inline int FIFO_EMPTY(const struct bgp_advertise_fifo *fifo)
 {
-  return (fifo->next == (const struct bgp_advertise *) fifo);
+  return (fifo->next == fifo);
 }
 
 static inline struct bgp_advertise *FIFO_HEAD(struct bgp_advertise_fifo *fifo)
 {
-  return FIFO_EMPTY(fifo) ? NULL : fifo->next;
+  return FIFO_EMPTY(fifo) ? NULL : (struct bgp_advertise *)fifo->next;
 }
 
 
