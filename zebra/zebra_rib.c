@@ -1562,7 +1562,9 @@ rib_add_ipv4 (int type, int flags, struct prefix_ipv4 *p,
   rib->uptime = time (NULL);
 
   /* Nexthop settings. */
-  if (gate)
+  if (RIB_ZF_BLACKHOLE_FLAGS (rib->zflags))
+    nexthop_blackhole_add (rib);
+  else if (gate)
     {
       if (ifindex)
 	nexthop_ipv4_ifindex_add (rib, gate, src, ifindex);

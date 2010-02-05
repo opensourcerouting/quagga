@@ -85,6 +85,28 @@ extern struct zebra_privs_t zserv_privs;
 
 extern u_int32_t nl_rcvbufsize;
 
+/* dispatch rtm_type field, return 1 if we want to process this */
+static int
+get_discard_or_unicast (unsigned char rtm_type, unsigned *zflags)
+{
+  switch (rtm_type)
+    {
+    case RTN_UNICAST:
+      *zflags = 0;
+      return 1;
+    case RTN_UNREACHABLE:
+      *zflags = RIB_ZF_REJECT;
+      return 1;
+    case RTN_PROHIBIT:
+      *zflags = RIB_ZF_PROHIBIT;
+      return 1;
+    case RTN_BLACKHOLE:
+      *zflags = RIB_ZF_BLACKHOLE;
+      return 1;
+    }
+  return 0;
+}
+
 /* Note: on netlink systems, there should be a 1-to-1 mapping between interface
    names and ifindex values. */
 static void
@@ -648,6 +670,7 @@ netlink_routing_table (struct sockaddr_nl *snl, struct nlmsghdr *h)
   struct rtmsg *rtm;
   struct rtattr *tb[RTA_MAX + 1];
   u_char flags = 0;
+  unsigned discard = 0;
 
   char anyaddr[16] = { 0 };
 
@@ -663,7 +686,8 @@ netlink_routing_table (struct sockaddr_nl *snl, struct nlmsghdr *h)
 
   if (h->nlmsg_type != RTM_NEWROUTE)
     return 0;
-  if (rtm->rtm_type != RTN_UNICAST)
+
+  if (!get_discard_or_unicast (rtm->rtm_type, &discard))
     return 0;
 
   table = rtm->rtm_table;
@@ -724,7 +748,8 @@ netlink_routing_table (struct sockaddr_nl *snl, struct nlmsghdr *h)
       memcpy (&p.prefix, dest, 4);
       p.prefixlen = rtm->rtm_dst_len;
 
-      rib_add_ipv4 (ZEBRA_ROUTE_KERNEL, flags, &p, gate, src, index, table, metric, 0);
+      rib_add_ipv4 (ZEBRA_ROUTE_KERNEL, flags | (discard << 8), &p,
+		    gate, src, index, table, metric, 0);
     }
 #ifdef HAVE_IPV6
   if (rtm->rtm_family == AF_INET6)
@@ -734,8 +759,8 @@ netlink_routing_table (struct sockaddr_nl *snl, struct nlmsghdr *h)
       memcpy (&p.prefix, dest, 16);
       p.prefixlen = rtm->rtm_dst_len;
 
-      rib_add_ipv6 (ZEBRA_ROUTE_KERNEL, flags, &p, gate, index, table,
-		    metric, 0);
+      rib_add_ipv6 (ZEBRA_ROUTE_KERNEL, flags | (discard << 8), &p,
+		    gate, index, table, metric, 0);
     }
 #endif /* HAVE_IPV6 */
 
@@ -772,6 +797,7 @@ netlink_route_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
   void *dest;
   void *gate;
   void *src;
+  unsigned discard = 0;
 
   rtm = NLMSG_DATA (h);
 
@@ -788,10 +814,10 @@ netlink_route_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
                h->nlmsg_type ==
                RTM_NEWROUTE ? "RTM_NEWROUTE" : "RTM_DELROUTE",
                rtm->rtm_family == AF_INET ? "ipv4" : "ipv6",
-               rtm->rtm_type == RTN_UNICAST ? "unicast" : "multicast",
+               rtm->rtm_type == RTN_UNICAST ? "unicast" : "!unicast",
                lookup (rtproto_str, rtm->rtm_protocol));
 
-  if (rtm->rtm_type != RTN_UNICAST)
+  if (!get_discard_or_unicast (rtm->rtm_type, &discard))
     {
       return 0;
     }
@@ -862,9 +888,11 @@ netlink_route_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
         }
 
       if (h->nlmsg_type == RTM_NEWROUTE)
-        rib_add_ipv4 (ZEBRA_ROUTE_KERNEL, 0, &p, gate, src, index, table, 0, 0);
+        rib_add_ipv4 (ZEBRA_ROUTE_KERNEL, discard << 8, &p,
+		      gate, src, index, table, 0, 0);
       else
-        rib_delete_ipv4 (ZEBRA_ROUTE_KERNEL, 0, &p, gate, index, table);
+        rib_delete_ipv4 (ZEBRA_ROUTE_KERNEL, discard << 8, &p,
+			 gate, index, table);
     }
 
 #ifdef HAVE_IPV6
@@ -890,9 +918,11 @@ netlink_route_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
         }
 
       if (h->nlmsg_type == RTM_NEWROUTE)
-        rib_add_ipv6 (ZEBRA_ROUTE_KERNEL, 0, &p, gate, index, table, 0, 0);
+        rib_add_ipv6 (ZEBRA_ROUTE_KERNEL, discard << 8, &p,
+		      gate, index, table, 0, 0);
       else
-        rib_delete_ipv6 (ZEBRA_ROUTE_KERNEL, 0, &p, gate, index, table);
+        rib_delete_ipv6 (ZEBRA_ROUTE_KERNEL, discard << 8, &p,
+			 gate, index, table);
     }
 #endif /* HAVE_IPV6 */
 
