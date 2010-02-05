@@ -405,10 +405,10 @@ zclient_connect (struct thread *t)
   * |       IPv4 Nexthop address or Interface Index number          |
   * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   *
-  * Alternatively, if the flags field has ZEBRA_FLAG_BLACKHOLE or
-  * ZEBRA_FLAG_REJECT is set then Nexthop count is set to 1, then _no_ 
+  * Alternatively, if the route is a blackhole route (indicated to zapi
+  * by ZAPI_MESSAGE_BLACKHOLE), then Nexthop count is set to 1 and _no_
   * nexthop information is provided, and the message describes a prefix
-  * to blackhole or reject route.
+  * to blackhole route.
   *
   * If ZAPI_MESSAGE_DISTANCE is set, the distance value is written as a 1
   * byte value.
@@ -424,7 +424,17 @@ zapi_ipv4_route (u_char cmd, struct zclient *zclient, struct prefix_ipv4 *p,
 {
   int i;
   int psize;
+  int blackhole = 0;
   struct stream *s;
+
+  /* blackhole routes are sent as containing a single nexthop
+   * of type blackhole. */
+  if (CHECK_FLAG (api->message, ZAPI_MESSAGE_BLACKHOLE))
+    {
+      blackhole = 1;
+      UNSET_FLAG (api->message, ZAPI_MESSAGE_BLACKHOLE);
+      SET_FLAG (api->message, ZAPI_MESSAGE_NEXTHOP);
+    }
 
   /* Reset stream. */
   s = zclient->obuf;
@@ -443,17 +453,14 @@ zapi_ipv4_route (u_char cmd, struct zclient *zclient, struct prefix_ipv4 *p,
   stream_write (s, (u_char *) & p->prefix, psize);
 
   /* Nexthop, ifindex, distance and metric information. */
-  if (CHECK_FLAG (api->message, ZAPI_MESSAGE_NEXTHOP))
+  if (blackhole)
     {
-      if (CHECK_FLAG (api->flags, ZEBRA_FLAG_BLACKHOLE))
-        {
-          stream_putc (s, 1);
-          stream_putc (s, ZEBRA_NEXTHOP_BLACKHOLE);
-          /* XXX assert(api->nexthop_num == 0); */
-          /* XXX assert(api->ifindex_num == 0); */
-        }
-      else
-        stream_putc (s, api->nexthop_num + api->ifindex_num);
+      stream_putc (s, 1);
+      stream_putc (s, ZEBRA_NEXTHOP_BLACKHOLE);
+    }
+  else if (CHECK_FLAG (api->message, ZAPI_MESSAGE_NEXTHOP))
+    {
+      stream_putc (s, api->nexthop_num + api->ifindex_num);
 
       for (i = 0; i < api->nexthop_num; i++)
         {

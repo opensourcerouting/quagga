@@ -163,7 +163,7 @@ kernel_rtm_ipv4 (int cmd, struct prefix *p, struct rib *rib, int family)
 			     (union sockunion *)mask, 
 			     gate ? (union sockunion *)&sin_gate : NULL,
 			     ifindex,
-			     rib->flags,
+			     rib->flags | (rib->zflags << 8),
 			     rib->metric);
 
            if (IS_ZEBRA_DEBUG_RIB)
@@ -286,7 +286,8 @@ sin6_masklen (struct in6_addr mask)
   return len;
 }
 
-/* Interface between zebra message and rtm message. */
+/* Interface between zebra message and rtm message.
+ * only called by kernel_delete_ipv6_old by rib_bogus_ipv6 */
 static int
 kernel_rtm_ipv6 (int message, struct prefix_ipv6 *dest,
 		 struct in6_addr *gate, int index, int flags)
@@ -453,7 +454,7 @@ kernel_rtm_ipv6_multipath (int cmd, struct prefix *p, struct rib *rib,
 			(union sockunion *) mask,
 			gate ? (union sockunion *)&sin_gate : NULL,
 			ifindex,
-			rib->flags,
+			rib->flags | (rib->zflags << 8),
 			rib->metric);
 
 #if 0

@@ -839,9 +839,9 @@ rtm_read (struct rt_msghdr *rtm)
 
   /* This is a reject or blackhole route */
   if (flags & RTF_REJECT)
-    SET_FLAG (zebra_flags, ZEBRA_FLAG_REJECT);
+    SET_FLAG (zebra_flags, RIB_ZF_REJECT << 8);
   if (flags & RTF_BLACKHOLE)
-    SET_FLAG (zebra_flags, ZEBRA_FLAG_BLACKHOLE);
+    SET_FLAG (zebra_flags, RIB_ZF_BLACKHOLE << 8);
 
   if (dest.sa.sa_family == AF_INET)
     {
@@ -1072,11 +1072,12 @@ rtm_write (int message,
   msg.rtm.rtm_flags |= (RTF_PROTO1);
 
   /* Additional flags. */
-  if (zebra_flags & ZEBRA_FLAG_BLACKHOLE)
-    msg.rtm.rtm_flags |= RTF_BLACKHOLE;
-  if (zebra_flags & ZEBRA_FLAG_REJECT)
-    msg.rtm.rtm_flags |= RTF_REJECT;
-
+  if (RIB_ZF_BLACKHOLE_FLAGS (zebra_flags >> 8))
+    {
+      unsigned bh_type = RIB_ZF_BLACKHOLE_FLAGS(zebra_flags >> 8);
+      msg.rtm.rtm_flags |= (bh_type == RIB_ZF_REJECT)
+			    ? RTF_REJECT : RTF_BLACKHOLE;
+    }
 
 #ifdef HAVE_STRUCT_SOCKADDR_IN_SIN_LEN
 #define SOCKADDRSET(X,R) \

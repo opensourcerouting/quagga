@@ -493,9 +493,9 @@ ospf_zebra_add_discard (struct prefix_ipv4 *p)
   if (zclient->redist[ZEBRA_ROUTE_OSPF])
     {
       api.type = ZEBRA_ROUTE_OSPF;
-      api.flags = ZEBRA_FLAG_BLACKHOLE;
+      api.flags = 0;
       api.message = 0;
-      SET_FLAG (api.message, ZAPI_MESSAGE_NEXTHOP);
+      SET_FLAG (api.message, ZAPI_MESSAGE_BLACKHOLE);
       api.nexthop_num = 0;
       api.ifindex_num = 0;
 
@@ -515,9 +515,9 @@ ospf_zebra_delete_discard (struct prefix_ipv4 *p)
   if (zclient->redist[ZEBRA_ROUTE_OSPF])
     {
       api.type = ZEBRA_ROUTE_OSPF;
-      api.flags = ZEBRA_FLAG_BLACKHOLE;
+      api.flags = 0;
       api.message = 0;
-      SET_FLAG (api.message, ZAPI_MESSAGE_NEXTHOP);
+      SET_FLAG (api.message, ZAPI_MESSAGE_BLACKHOLE);
       api.nexthop_num = 0;
       api.ifindex_num = 0;
 
