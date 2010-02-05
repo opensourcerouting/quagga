@@ -1219,80 +1219,6 @@ netlink_talk (struct nlmsghdr *n, struct nlsock *nl)
 
 /* Routing table change via netlink interface. */
 static int
-netlink_route (int cmd, int family, void *dest, int length, void *gate,
-               int index, int zebra_flags, int table)
-{
-  int ret;
-  int bytelen;
-  struct sockaddr_nl snl;
-  int discard;
-
-  struct
-  {
-    struct nlmsghdr n;
-    struct rtmsg r;
-    char buf[1024];
-  } req;
-
-  memset (&req, 0, sizeof req);
-
-  bytelen = (family == AF_INET ? 4 : 16);
-
-  req.n.nlmsg_len = NLMSG_LENGTH (sizeof (struct rtmsg));
-  req.n.nlmsg_flags = NLM_F_CREATE | NLM_F_REQUEST;
-  req.n.nlmsg_type = cmd;
-  req.r.rtm_family = family;
-  req.r.rtm_table = table;
-  req.r.rtm_dst_len = length;
-  req.r.rtm_protocol = RTPROT_ZEBRA;
-  req.r.rtm_scope = RT_SCOPE_UNIVERSE;
-
-  if ((zebra_flags & ZEBRA_FLAG_BLACKHOLE)
-      || (zebra_flags & ZEBRA_FLAG_REJECT))
-    discard = 1;
-  else
-    discard = 0;
-
-  if (cmd == RTM_NEWROUTE)
-    {
-      if (discard)
-        {
-          if (zebra_flags & ZEBRA_FLAG_BLACKHOLE)
-            req.r.rtm_type = RTN_BLACKHOLE;
-          else if (zebra_flags & ZEBRA_FLAG_REJECT)
-            req.r.rtm_type = RTN_UNREACHABLE;
-          else
-            assert (RTN_BLACKHOLE != RTN_UNREACHABLE);  /* false */
-        }
-      else
-        req.r.rtm_type = RTN_UNICAST;
-    }
-
-  if (dest)
-    addattr_l (&req.n, sizeof req, RTA_DST, dest, bytelen);
-
-  if (!discard)
-    {
-      if (gate)
-        addattr_l (&req.n, sizeof req, RTA_GATEWAY, gate, bytelen);
-      if (index > 0)
-        addattr32 (&req.n, sizeof req, RTA_OIF, index);
-    }
-
-  /* Destination netlink address. */
-  memset (&snl, 0, sizeof snl);
-  snl.nl_family = AF_NETLINK;
-
-  /* Talk to netlink socket. */
-  ret = netlink_talk (&req.n, &netlink_cmd);
-  if (ret < 0)
-    return -1;
-
-  return 0;
-}
-
-/* Routing table change via netlink interface. */
-static int
 netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
                          int family)
 {
@@ -1743,13 +1669,50 @@ kernel_delete_ipv6 (struct prefix *p, struct rib *rib)
   return netlink_route_multipath (RTM_DELROUTE, p, rib, AF_INET6);
 }
 
-/* Delete IPv6 route from the kernel. */
+/* Delete IPv6 route from the kernel.
+ * only called from rib_bogus_ipv6 */
 int
 kernel_delete_ipv6_old (struct prefix_ipv6 *dest, struct in6_addr *gate,
                         unsigned int index, int flags, int table)
 {
-  return netlink_route (RTM_DELROUTE, AF_INET6, &dest->prefix,
-                        dest->prefixlen, gate, index, flags, table);
+  int ret;
+  struct sockaddr_nl snl;
+
+  struct
+  {
+    struct nlmsghdr n;
+    struct rtmsg r;
+    char buf[1024];
+  } req;
+
+  memset (&req, 0, sizeof req);
+
+  req.n.nlmsg_len = NLMSG_LENGTH (sizeof (struct rtmsg));
+  req.n.nlmsg_flags = NLM_F_CREATE | NLM_F_REQUEST;
+  req.n.nlmsg_type = RTM_DELROUTE;
+  req.r.rtm_family = AF_INET6;
+  req.r.rtm_table = table;
+  req.r.rtm_dst_len = dest->prefixlen;
+  req.r.rtm_protocol = RTPROT_ZEBRA;
+  req.r.rtm_scope = RT_SCOPE_UNIVERSE;
+
+  addattr_l (&req.n, sizeof req, RTA_DST, &dest->prefix, 16);
+
+  if (gate)
+    addattr_l (&req.n, sizeof req, RTA_GATEWAY, gate, 16);
+  if (index > 0)
+    addattr32 (&req.n, sizeof req, RTA_OIF, index);
+
+  /* Destination netlink address. */
+  memset (&snl, 0, sizeof snl);
+  snl.nl_family = AF_NETLINK;
+
+  /* Talk to netlink socket. */
+  ret = netlink_talk (&req.n, &netlink_cmd);
+  if (ret < 0)
+    return -1;
+
+  return 0;
 }
 #endif /* HAVE_IPV6 */
 
