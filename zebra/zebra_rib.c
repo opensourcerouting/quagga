@@ -1837,6 +1837,7 @@ rib_delete_ipv4 (int type, int flags, struct prefix_ipv4 *p,
   struct nexthop *nexthop;
   char buf1[INET_ADDRSTRLEN];
   char buf2[INET_ADDRSTRLEN];
+  unsigned discard = RIB_ZF_BLACKHOLE_FLAGS (flags >> 8);
 
   /* Lookup table.  */
   table = vrf_table (AFI_IP, SAFI_UNICAST, 0);
@@ -1893,6 +1894,11 @@ rib_delete_ipv4 (int type, int flags, struct prefix_ipv4 *p,
       if (rib->type != type)
 	continue;
 
+      if (rib->zflags == discard)
+	{
+	  same = rib;
+	  break;
+	}
       if (gate)
 	{
 	  for (nexthop = rib->nexthop; nexthop; nexthop = nexthop->next)
@@ -2414,6 +2420,7 @@ rib_delete_ipv6 (int type, int flags, struct prefix_ipv6 *p,
   struct nexthop *nexthop;
   char buf1[INET6_ADDRSTRLEN];
   char buf2[INET6_ADDRSTRLEN];
+  unsigned discard = RIB_ZF_BLACKHOLE_FLAGS (flags >> 8);
 
   /* Apply mask. */
   apply_mask_ipv6 (p);
@@ -2456,6 +2463,11 @@ rib_delete_ipv6 (int type, int flags, struct prefix_ipv6 *p,
       if (rib->type != type)
         continue;
 
+      if (rib->zflags == discard)
+	{
+	  same = rib;
+	  break;
+	}
       if (gate)
 	{
 	  for (nexthop = rib->nexthop; nexthop; nexthop = nexthop->next)
