@@ -467,12 +467,12 @@ extern const char *zserv_command_string (unsigned int command);
 /* Zebra message flags */
 #define ZEBRA_FLAG_INTERNAL           0x01
 #define ZEBRA_FLAG_SELFROUTE          0x02
-#define ZEBRA_FLAG_BLACKHOLE          0x04
+/* 0x04 was:  FLAG_BLACKHOLE */
 #define ZEBRA_FLAG_IBGP               0x08
 #define ZEBRA_FLAG_SELECTED           0x10
 #define ZEBRA_FLAG_CHANGED            0x20
 #define ZEBRA_FLAG_STATIC             0x40
-#define ZEBRA_FLAG_REJECT             0x80
+/* 0x80 was:  FLAG_REJECT */
 
 /* Zebra nexthop flags. */
 #define ZEBRA_NEXTHOP_IFINDEX            1

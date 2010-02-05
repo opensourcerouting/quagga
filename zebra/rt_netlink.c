@@ -1226,7 +1226,7 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
   struct sockaddr_nl snl;
   struct nexthop *nexthop = NULL;
   int nexthop_num = 0;
-  int discard;
+  unsigned discard;
 
   struct
   {
@@ -1248,24 +1248,29 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
   req.r.rtm_protocol = RTPROT_ZEBRA;
   req.r.rtm_scope = RT_SCOPE_UNIVERSE;
 
-  if ((rib->flags & ZEBRA_FLAG_BLACKHOLE) || (rib->flags & ZEBRA_FLAG_REJECT))
-    discard = 1;
-  else
-    discard = 0;
+  discard = RIB_ZF_BLACKHOLE_FLAGS (rib->zflags);
 
   if (cmd == RTM_NEWROUTE)
     {
-      if (discard)
-        {
-          if (rib->flags & ZEBRA_FLAG_BLACKHOLE)
-            req.r.rtm_type = RTN_BLACKHOLE;
-          else if (rib->flags & ZEBRA_FLAG_REJECT)
-            req.r.rtm_type = RTN_UNREACHABLE;
-          else
-            assert (RTN_BLACKHOLE != RTN_UNREACHABLE);  /* false */
-        }
-      else
-        req.r.rtm_type = RTN_UNICAST;
+      switch (discard)
+	{
+	case RIB_ZF_REJECT:
+	  req.r.rtm_type = RTN_UNREACHABLE;
+	  break;
+	/* IPv6 only supports RTN_UNREACHABLE on Linux, it seems */
+	case RIB_ZF_PROHIBIT:
+	  req.r.rtm_type = RTN_PROHIBIT;
+	  if (family == AF_INET6)
+	    req.r.rtm_type = RTN_UNREACHABLE;
+	  break;
+	case RIB_ZF_BLACKHOLE:
+	  req.r.rtm_type = RTN_BLACKHOLE;
+	  if (family == AF_INET6)
+	    req.r.rtm_type = RTN_UNREACHABLE;
+	  break;
+	default:
+          req.r.rtm_type = RTN_UNICAST;
+	}
     }
 
   addattr_l (&req.n, sizeof req, RTA_DST, &p->u.prefix, bytelen);

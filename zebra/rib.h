@@ -73,6 +73,15 @@ struct rib
    */
   u_char flags;
 
+  /* flags internal to zebra, not sent to clients */
+  unsigned zflags;
+  /* blackhole route zflags, for static routes: */
+#define RIB_ZF_REJECT		1
+#define RIB_ZF_PROHIBIT		2
+#define RIB_ZF_BLACKHOLE	3
+
+#define RIB_ZF_BLACKHOLE_FLAGS(zflags) ((zflags) & RIB_ZF_BLACKHOLE)
+
   /* RIB internal status */
   u_char status;
 #define RIB_ENTRY_REMOVED	(1 << 0)
@@ -120,12 +129,8 @@ struct static_ipv4
     char *ifname;
   } gate;
 
-  /* bit flags */
-  u_char flags;
-/*
- see ZEBRA_FLAG_REJECT
-     ZEBRA_FLAG_BLACKHOLE
- */
+  /* zflags for rib */
+  unsigned zflags;
 };
 
 #ifdef HAVE_IPV6
@@ -144,17 +149,14 @@ struct static_ipv6
 #define STATIC_IPV6_GATEWAY          1
 #define STATIC_IPV6_GATEWAY_IFNAME   2
 #define STATIC_IPV6_IFNAME           3
+#define STATIC_IPV6_BLACKHOLE        4
 
   /* Nexthop value. */
   struct in6_addr ipv6;
   char *ifname;
 
-  /* bit flags */
-  u_char flags;
-/*
- see ZEBRA_FLAG_REJECT
-     ZEBRA_FLAG_BLACKHOLE
- */
+  /* zflags for rib */
+  unsigned zflags;
 };
 #endif /* HAVE_IPV6 */
 
@@ -269,7 +271,7 @@ extern void rib_init (void);
 
 extern int
 static_add_ipv4 (struct prefix *p, struct in_addr *gate, const char *ifname,
-       u_char flags, u_char distance, u_int32_t vrf_id);
+		 unsigned zflags, u_char distance, u_int32_t vrf_id);
 
 extern int
 static_delete_ipv4 (struct prefix *p, struct in_addr *gate, const char *ifname,
@@ -293,7 +295,7 @@ extern struct route_table *rib_table_ipv6;
 
 extern int
 static_add_ipv6 (struct prefix *p, u_char type, struct in6_addr *gate,
-		 const char *ifname, u_char flags, u_char distance,
+		 const char *ifname, unsigned zflags, u_char distance,
 		 u_int32_t vrf_id);
 
 extern int

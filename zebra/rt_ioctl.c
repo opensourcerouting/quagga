@@ -183,7 +183,7 @@ kernel_ioctl_ipv4 (u_long cmd, struct prefix *p, struct rib *rib, int family)
 #endif /* HAVE_STRUCT_SOCKADDR_IN_SIN_LEN */
   sin_dest.sin_addr = p->u.prefix4;
 
-  if (CHECK_FLAG (rib->flags, ZEBRA_FLAG_BLACKHOLE))
+  if (RIB_ZF_BLACKHOLE_FLAGS (rib->zflags))
     {
       SET_FLAG (rtentry.rt_flags, RTF_REJECT);
 
