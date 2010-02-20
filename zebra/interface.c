@@ -1788,16 +1788,21 @@ if_config_write (struct vty *vty)
 		  }
 		vty_out (vty, "/%d", p->prefixlen);
 
+		if (p->family == AF_INET)
+		  {
 #ifdef HAVE_NETLINK
-		if (ifc->scope)
-		  vty_out (vty, " scope %s", connected_scope_name (ifc->scope));
-		if (ifc->label)
-		  vty_out (vty, " label %s", ifc->label);
+		    if (ifc->scope)
+		      vty_out (vty, " scope %s",
+			       connected_scope_name (ifc->scope));
+		    if (ifc->label)
+		      vty_out (vty, " label %s", ifc->label);
 #endif
 #ifdef SIOCSIFADDRPREF
-		if (ifc->preference)
-		  vty_out (vty, " preference %d", ifc->preference);
+		    if (ifc->preference)
+		      vty_out (vty, " preference %d", ifc->preference);
 #endif
+		  }
+
 		vty_out (vty, "%s", VTY_NEWLINE);
 	      }
 	  }
