@@ -2092,9 +2092,9 @@ DEFUN (show_ip_mroute_count,
   return CMD_SUCCESS;
 }
 
-DEFUN (show_ip_route,
-       show_ip_route_cmd,
-       "show ip route A.B.C.D",
+DEFUN (show_ip_mroute,
+       show_ip_mroute_cmd,
+       "show ip mroute A.B.C.D",
        SHOW_STR
        IP_STR
        ROUTE_STR
@@ -4166,7 +4166,7 @@ void pim_cmd_init()
   install_element (VIEW_NODE, &show_ip_multicast_cmd);
   install_element (VIEW_NODE, &show_ip_mroute_cmd);
   install_element (VIEW_NODE, &show_ip_mroute_count_cmd);
-  install_element (VIEW_NODE, &show_ip_route_cmd);
+  install_element (VIEW_NODE, &show_ip_mroute_cmd);
   install_element (VIEW_NODE, &show_ip_ssmpingd_cmd);
   install_element (VIEW_NODE, &show_debugging_cmd);
 
@@ -4202,7 +4202,7 @@ void pim_cmd_init()
   install_element (ENABLE_NODE, &show_ip_multicast_cmd);
   install_element (ENABLE_NODE, &show_ip_mroute_cmd);
   install_element (ENABLE_NODE, &show_ip_mroute_count_cmd);
-  install_element (ENABLE_NODE, &show_ip_route_cmd);
+  install_element (ENABLE_NODE, &show_ip_mroute_cmd);
   install_element (ENABLE_NODE, &show_ip_ssmpingd_cmd);
   install_element (ENABLE_NODE, &show_debugging_cmd);
 
