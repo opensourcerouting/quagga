@@ -1963,7 +1963,7 @@ DEFUN (show_ip_multicast,
   return CMD_SUCCESS;
 }
 
-static void show_mroute(struct vty *vty)
+static void show_mfib(struct vty *vty)
 {
   struct listnode    *node;
   struct channel_oil *c_oil;
@@ -2023,18 +2023,18 @@ static void show_mroute(struct vty *vty)
   }
 }
 
-DEFUN (show_ip_mroute,
-       show_ip_mroute_cmd,
-       "show ip mroute",
+DEFUN (show_ip_mfib,
+       show_ip_mfib_cmd,
+       "show ip mfib",
        SHOW_STR
        IP_STR
        MROUTE_STR)
 {
-  show_mroute(vty);
+  show_mfib(vty);
   return CMD_SUCCESS;
 }
 
-static void show_mroute_count(struct vty *vty)
+static void show_mfib_count(struct vty *vty)
 {
   struct listnode    *node;
   struct channel_oil *c_oil;
@@ -2080,15 +2080,15 @@ static void show_mroute_count(struct vty *vty)
   }
 }
 
-DEFUN (show_ip_mroute_count,
-       show_ip_mroute_count_cmd,
-       "show ip mroute count",
+DEFUN (show_ip_mfib_count,
+       show_ip_mfib_count_cmd,
+       "show ip mfib count",
        SHOW_STR
        IP_STR
        MROUTE_STR
        "Route and packet count data\n")
 {
-  show_mroute_count(vty);
+  show_mfib_count(vty);
   return CMD_SUCCESS;
 }
 
@@ -4164,8 +4164,8 @@ void pim_cmd_init()
   install_element (VIEW_NODE, &show_ip_pim_upstream_join_desired_cmd);
   install_element (VIEW_NODE, &show_ip_pim_upstream_rpf_cmd);
   install_element (VIEW_NODE, &show_ip_multicast_cmd);
-  install_element (VIEW_NODE, &show_ip_mroute_cmd);
-  install_element (VIEW_NODE, &show_ip_mroute_count_cmd);
+  install_element (VIEW_NODE, &show_ip_mfib_cmd);
+  install_element (VIEW_NODE, &show_ip_mfib_count_cmd);
   install_element (VIEW_NODE, &show_ip_mroute_cmd);
   install_element (VIEW_NODE, &show_ip_ssmpingd_cmd);
   install_element (VIEW_NODE, &show_debugging_cmd);
@@ -4200,8 +4200,8 @@ void pim_cmd_init()
   install_element (ENABLE_NODE, &show_ip_pim_upstream_join_desired_cmd);
   install_element (ENABLE_NODE, &show_ip_pim_upstream_rpf_cmd);
   install_element (ENABLE_NODE, &show_ip_multicast_cmd);
-  install_element (ENABLE_NODE, &show_ip_mroute_cmd);
-  install_element (ENABLE_NODE, &show_ip_mroute_count_cmd);
+  install_element (ENABLE_NODE, &show_ip_mfib_cmd);
+  install_element (ENABLE_NODE, &show_ip_mfib_count_cmd);
   install_element (ENABLE_NODE, &show_ip_mroute_cmd);
   install_element (ENABLE_NODE, &show_ip_ssmpingd_cmd);
   install_element (ENABLE_NODE, &show_debugging_cmd);
