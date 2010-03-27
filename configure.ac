@@ -60,6 +60,10 @@ elif test -n "$CFLAGS" ; then
   cflags_specified=yes ;
 fi
 
+if test -n "$LDFLAGS"; then
+  ldflags_specified=yes;
+fi
+
 dnl --------------------
 dnl Check CC and friends
 dnl --------------------
@@ -141,6 +145,25 @@ if test "x${cflags_specified}" = "x" ; then
   esac
 else
   AC_MSG_RESULT([CFLAGS supplied by user])
+fi
+
+dnl --------------
+dnl get debug info
+dnl --------------
+if test -z "$ldflags_specified"; then
+  AC_CACHE_CHECK([whether $LD accepts -g], [ap_cv_ld_g], [
+    save_LDFLAGS=$LDFLAGS
+    LDFLAGS="$LDFLAGS -g"
+    AC_LINK_IFELSE([AC_LANG_SOURCE([[int main () { return 0; }]])],
+      [ap_cv_ld_g=yes], [ap_cv_ld_g=no]
+    )
+    LDFLAGS=$save_LDFLAGS
+  ])
+  if test "$ap_cv_ld_g" = "yes"; then
+    LDFLAGS="$LDFLAGS -g"
+  fi
+else
+  AC_MSG_NOTICE([user-supplied LDFLAGS, not appending -g])
 fi
 
 dnl --------------
