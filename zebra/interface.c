@@ -485,6 +485,10 @@ if_delete_update (struct interface *ifp)
 		}
 	    }
 #endif /* HAVE_IPV6 */
+	  else
+	    {
+	      last = node;
+	    }
 	}
     }
   zebra_interface_delete_update (ifp);
