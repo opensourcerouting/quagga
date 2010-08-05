@@ -103,6 +103,7 @@ extern int sockopt_v6only (int family, int sock);
 extern int sockunion_bind (int sock, union sockunion *, 
                            unsigned short, union sockunion *);
 extern int sockopt_ttl (int family, int sock, int ttl);
+extern int sockopt_cork (int sock, int onoff);
 extern int sockunion_socket (union sockunion *su);
 extern const char *inet_sutop (union sockunion *su, char *str);
 extern enum connect_result sockunion_connect (int fd, union sockunion *su, 
