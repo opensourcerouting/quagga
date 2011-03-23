@@ -741,3 +741,31 @@ setsockopt_ipvX_ttl (const int family, const int sock, int val)
 #endif /* HAVE_IPV6 */
   return 0;
 }
+
+int
+setsockopt_ipvX_minttl (const int family, const int sock, int minttl)
+{
+  int ret = -1;
+  if (family == AF_INET)
+  {
+#ifdef IP_MINTTL
+    ret = setsockopt (sock, IPPROTO_IP, IP_MINTTL, &minttl, sizeof (minttl));
+#else
+    errno = EOPNOTSUPP;
+#endif /* IP_MINTTL */
+  }
+#ifdef HAVE_IPV6
+  if (family == AF_INET6)
+  {
+#ifdef IPV6_MINHOPCOUNT
+    ret = setsockopt (sock, IPPROTO_IPV6, IPV6_MINHOPCOUNT, &minttl, sizeof (minttl));
+#else
+    errno = EOPNOTSUPP;
+#endif /* IPV6_MINHOPCOUNT */
+  }
+#endif /* HAVE_IPV6 */
+
+  if (ret < 0)
+    zlog_warn ("can't set sockopt IP_MINTTL to %d on socket %d: %s", minttl, sock, safe_strerror (errno));
+  return ret;
+}

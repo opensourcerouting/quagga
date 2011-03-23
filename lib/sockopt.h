@@ -114,4 +114,5 @@ extern int setsockopt_tcp_cork (const int, int);
 extern int setsockopt_tcp_nodelay (const int, int);
 
 extern int setsockopt_ipvX_ttl (const int, const int, int);
+extern int setsockopt_ipvX_minttl (const int, const int, int);
 #endif /*_ZEBRA_SOCKOPT_H */

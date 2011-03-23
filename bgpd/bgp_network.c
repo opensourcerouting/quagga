@@ -174,7 +174,11 @@ bgp_accept (struct thread *thread)
 
   /* In case of peer is EBGP, we should set TTL for this connection.  */
   if (peer_sort (peer1) == BGP_PEER_EBGP)
+  {
     setsockopt_ipvX_ttl (peer1->su.sa.sa_family, bgp_sock, peer1->ttl);
+    if (peer1->gtsm_hops)
+      setsockopt_ipvX_minttl (peer1->su.sa.sa_family, bgp_sock, MAXTTL + 1 - peer1->gtsm_hops);
+  }
 
   /* Make dummy peer until read Open packet. */
   if (BGP_DEBUG (events, EVENTS))
@@ -304,7 +308,11 @@ bgp_connect (struct peer *peer)
 
   /* If we can get socket for the peer, adjest TTL and make connection. */
   if (peer_sort (peer) == BGP_PEER_EBGP)
+  {
     setsockopt_ipvX_ttl (peer->su.sa.sa_family, peer->fd, peer->ttl);
+    if (peer->gtsm_hops)
+      setsockopt_ipvX_minttl (peer->su.sa.sa_family, peer->fd, MAXTTL + 1 - peer->gtsm_hops);
+  }
 
   setsockopt_so_reuseaddr (peer->fd, 1);
   setsockopt_so_reuseport (peer->fd, 1);
@@ -453,7 +461,10 @@ bgp_socket (unsigned short port, const char *address)
 	  zlog_err ("socket: %s", safe_strerror (errno));
 	  continue;
 	}
-
+	
+      /* if we intend to implement ttl-security, this socket needs ttl=255 */
+      setsockopt_ipvX_ttl (ainfo->ai_family, sock, MAXTTL);
+      
       ret = bgp_listener (sock, ainfo->ai_addr, ainfo->ai_addrlen);
       if (ret == 0)
 	++count;
@@ -485,6 +496,9 @@ bgp_socket (unsigned short port, const char *address)
       zlog_err ("socket: %s", safe_strerror (errno));
       return sock;
     }
+
+  /* if we intend to implement ttl-security, this socket needs ttl=255 */
+  sockopt_ttl (AF_INET, sock, MAXTTL);
 
   memset (&sin, 0, sizeof (struct sockaddr_in));
   sin.sin_family = AF_INET;
