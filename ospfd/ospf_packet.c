@@ -3919,8 +3919,13 @@ ospf_ls_ack_send (struct ospf_neighbor *nbr, struct ospf_lsa *lsa)
   struct ospf_interface *oi = nbr->oi;
 
   if (listcount (oi->ls_ack_direct.ls_ack) == 0)
-    oi->ls_ack_direct.dst = nbr->address.u.prefix4;
-  
+    if (oi->type == OSPF_IFTYPE_POINTOPOINT)
+      oi->ls_ack_direct.dst.s_addr = htonl (OSPF_ALLSPFROUTERS);
+    else if (oi->type == OSPF_IFTYPE_VIRTUALLINK)
+      oi->ls_ack_direct.dst = oi->vl_data->peer_addr;
+    else
+      oi->ls_ack_direct.dst = nbr->address.u.prefix4;
+
   listnode_add (oi->ls_ack_direct.ls_ack, ospf_lsa_lock (lsa));
   
   if (oi->t_ls_ack_direct == NULL)
