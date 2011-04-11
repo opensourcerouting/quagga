@@ -1150,7 +1150,11 @@ static_config_ipv4 (struct vty *vty)
               vty_out (vty, " %s", si->gate.ifname);
               break;
             case STATIC_IPV4_BLACKHOLE:
-              vty_out (vty, " Null0");
+              if (CHECK_FLAG(si->flags, ZEBRA_FLAG_REJECT)) {
+                vty_out (vty, " %s", "reject");
+              } else {
+                vty_out (vty, " Null0");
+              }
               break;
           }
         
