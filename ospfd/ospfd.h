@@ -326,6 +326,10 @@ struct ospf
   /* Statistics for LSA used for new instantiation. */
   u_int32_t rx_lsa_count;
  
+  /* "redistribute maximum-prefix ..." configuration (current number of
+     AS-External-LSAs is immediately available in LSDB). */
+  u_int32_t lsa_redist_hard_limit;
+
   struct route_table *distance_table;
 };
 

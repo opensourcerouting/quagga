@@ -2028,7 +2028,16 @@ ospf_external_lsa_originate (struct ospf *ospf, struct external_info *ei)
   /* Check the AS-external-LSA should be originated. */
   if (!ospf_redistribute_check (ospf, ei, NULL))
     return NULL;
-  
+
+  /* "redistribute maximum-prefix" check */
+  if (ospf->lsa_redist_hard_limit &&
+      ospf->lsa_redist_hard_limit <= ospf_lsdb_count (ospf->lsdb, OSPF_AS_EXTERNAL_LSA))
+  {
+    zlog_info ("Hard limit (%u) on AS-External-LSA origination reached, prefix ignored",
+               ospf->lsa_redist_hard_limit);
+    return NULL;
+  }
+
   /* Create new AS-external-LSA instance. */
   if ((new = ospf_external_lsa_new (ospf, ei, NULL)) == NULL)
     {

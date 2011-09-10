@@ -2776,6 +2776,9 @@ DEFUN (show_ip_ospf,
   vty_out (vty, " Number of external LSA %ld. Checksum Sum 0x%08x%s",
 	   ospf_lsdb_count (ospf->lsdb, OSPF_AS_EXTERNAL_LSA),
 	   ospf_lsdb_checksum (ospf->lsdb, OSPF_AS_EXTERNAL_LSA), VTY_NEWLINE);
+  if (ospf->lsa_redist_hard_limit)
+    vty_out (vty, " Hard limit on AS-External-LSA origination: %u%s",
+      ospf->lsa_redist_hard_limit, VTY_NEWLINE);
 #ifdef HAVE_OPAQUE_LSA
   vty_out (vty, " Number of opaque AS LSA %ld. Checksum Sum 0x%08x%s",
 	   ospf_lsdb_count (ospf->lsdb, OSPF_OPAQUE_AS_LSA),
@@ -6025,6 +6028,42 @@ DEFUN (no_ospf_redistribute_source,
   return ospf_redistribute_unset (ospf, source);
 }
 
+DEFUN (ospf_redistribute_maximum_prefix_arg,
+       ospf_redistribute_maximum_prefix_arg_cmd,
+       "redistribute maximum-prefix <1-4294967295>",
+       REDIST_STR
+       "Maximum number of prefixes to redistribute into OSPF\n"
+       "maximum no. of prefix limit\n")
+{
+  struct ospf *ospf = vty->index;
+  u_int32_t max;
+
+  VTY_GET_INTEGER ("maximum number", max, argv[0]);
+  ospf->lsa_redist_hard_limit = max;
+  return CMD_SUCCESS;
+}
+
+DEFUN (no_ospf_redistribute_maximum_prefix_arg,
+       no_ospf_redistribute_maximum_prefix_arg_cmd,
+       "no redistribute maximum-prefix <1-4294967295>",
+       NO_STR
+       REDIST_STR
+       "Maximum number of prefixes to redistribute into OSPF\n"
+       "maximum no. of prefix limit\n")
+{
+  struct ospf *ospf = vty->index;
+
+  ospf->lsa_redist_hard_limit = 0;
+  return CMD_SUCCESS;
+}
+
+ALIAS (no_ospf_redistribute_maximum_prefix_arg,
+       no_ospf_redistribute_maximum_prefix_cmd,
+       "no redistribute maximum-prefix",
+       NO_STR
+       REDIST_STR
+       "Maximum number of prefixes to redistribute into OSPF\n")
+
 DEFUN (ospf_distribute_list_out,
        ospf_distribute_list_out_cmd,
        "distribute-list WORD out " QUAGGA_REDIST_STR_OSPFD,
@@ -7854,6 +7893,8 @@ config_write_ospf_redistribute (struct vty *vty, struct ospf *ospf)
   int type;
 
   /* redistribute print. */
+  if (ospf->lsa_redist_hard_limit)
+    vty_out (vty, " redistribute maximum-prefix %u%s", ospf->lsa_redist_hard_limit, VTY_NEWLINE);
   for (type = 0; type < ZEBRA_ROUTE_MAX; type++)
     if (type != zclient->redist_default && zclient->redist[type])
       {
@@ -8274,6 +8315,10 @@ ospf_vty_zebra_init (void)
   install_element (OSPF_NODE, &ospf_redistribute_source_routemap_cmd);
   
   install_element (OSPF_NODE, &no_ospf_redistribute_source_cmd);
+
+  install_element (OSPF_NODE, &ospf_redistribute_maximum_prefix_arg_cmd);
+  install_element (OSPF_NODE, &no_ospf_redistribute_maximum_prefix_arg_cmd);
+  install_element (OSPF_NODE, &no_ospf_redistribute_maximum_prefix_cmd);
 
   install_element (OSPF_NODE, &ospf_distribute_list_out_cmd);
   install_element (OSPF_NODE, &no_ospf_distribute_list_out_cmd);
