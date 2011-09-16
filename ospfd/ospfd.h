@@ -328,7 +328,10 @@ struct ospf
  
   /* "redistribute maximum-prefix ..." configuration (current number of
      AS-External-LSAs is immediately available in LSDB). */
-  u_int32_t lsa_redist_hard_limit;
+  u_int32_t lsa_redist_hard_limit;   /* gauge      */
+  u_int32_t lsa_redist_soft_limit;   /* gauge      */
+  u_char    lsa_redist_soft_pctg;    /* percentage */
+  u_char    lsa_redist_warning_only; /* bool       */
 
   struct route_table *distance_table;
 };

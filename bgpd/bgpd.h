@@ -501,7 +501,6 @@ struct peer
   unsigned long pmax[AFI_MAX][SAFI_MAX];
   u_char pmax_threshold[AFI_MAX][SAFI_MAX];
   u_int16_t pmax_restart[AFI_MAX][SAFI_MAX];
-#define MAXIMUM_PREFIX_THRESHOLD_DEFAULT 75
 
   /* allowas-in. */
   char allowas_in[AFI_MAX][SAFI_MAX];

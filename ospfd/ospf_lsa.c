@@ -2030,12 +2030,19 @@ ospf_external_lsa_originate (struct ospf *ospf, struct external_info *ei)
     return NULL;
 
   /* "redistribute maximum-prefix" check */
-  if (ospf->lsa_redist_hard_limit &&
-      ospf->lsa_redist_hard_limit <= ospf_lsdb_count (ospf->lsdb, OSPF_AS_EXTERNAL_LSA))
+  if (ospf->lsa_redist_soft_limit) /* implies lsa_redist_hard_limit != 0 */
   {
-    zlog_info ("Hard limit (%u) on AS-External-LSA origination reached, prefix ignored",
-               ospf->lsa_redist_hard_limit);
-    return NULL;
+    unsigned long num_external_lsas = ospf_lsdb_count (ospf->lsdb, OSPF_AS_EXTERNAL_LSA);
+    /* Produce messages on the precise threshold edges, but WRT the actual
+       redistribution also respect the limit, which was already left behind. */
+    if (num_external_lsas == ospf->lsa_redist_soft_limit)
+      zlog_info ("Soft limit (%u%%, %u) on AS-External-LSA origination reached, going on",
+                 ospf->lsa_redist_soft_pctg, ospf->lsa_redist_soft_limit);
+    if (num_external_lsas == ospf->lsa_redist_hard_limit)
+      zlog_info ("Hard limit (%u) on AS-External-LSA origination reached, %s",
+                 ospf->lsa_redist_hard_limit, ospf->lsa_redist_warning_only ? "GOING ON" : "period");
+    if (! ospf->lsa_redist_warning_only && num_external_lsas >= ospf->lsa_redist_hard_limit)
+      return NULL;
   }
 
   /* Create new AS-external-LSA instance. */

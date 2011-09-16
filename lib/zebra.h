@@ -486,6 +486,8 @@ extern const char *zserv_command_string (unsigned int command);
 #define	INADDR_LOOPBACK	0x7f000001	/* Internet address 127.0.0.1.  */
 #endif
 
+#define MAXIMUM_PREFIX_THRESHOLD_DEFAULT 75
+
 /* Address family numbers from RFC1700. */
 #define AFI_IP                    1
 #define AFI_IP6                   2

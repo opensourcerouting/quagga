@@ -2777,8 +2777,12 @@ DEFUN (show_ip_ospf,
 	   ospf_lsdb_count (ospf->lsdb, OSPF_AS_EXTERNAL_LSA),
 	   ospf_lsdb_checksum (ospf->lsdb, OSPF_AS_EXTERNAL_LSA), VTY_NEWLINE);
   if (ospf->lsa_redist_hard_limit)
-    vty_out (vty, " Hard limit on AS-External-LSA origination: %u%s",
-      ospf->lsa_redist_hard_limit, VTY_NEWLINE);
+    vty_out (vty, " Hard limit on AS-External-LSA origination: %u%s%s",
+      ospf->lsa_redist_hard_limit, ospf->lsa_redist_warning_only ?
+      " (warning-only)" : "", VTY_NEWLINE);
+  if (ospf->lsa_redist_soft_limit)
+    vty_out (vty, " Soft limit on AS-External-LSA origination: %u (%u%%)%s",
+      ospf->lsa_redist_soft_limit, ospf->lsa_redist_soft_pctg, VTY_NEWLINE);
 #ifdef HAVE_OPAQUE_LSA
   vty_out (vty, " Number of opaque AS LSA %ld. Checksum Sum 0x%08x%s",
 	   ospf_lsdb_count (ospf->lsdb, OSPF_OPAQUE_AS_LSA),
@@ -6028,41 +6032,116 @@ DEFUN (no_ospf_redistribute_source,
   return ospf_redistribute_unset (ospf, source);
 }
 
-DEFUN (ospf_redistribute_maximum_prefix_arg,
-       ospf_redistribute_maximum_prefix_arg_cmd,
+static int
+ospf_set_redistribute_limits (struct vty *vty, const char * str_maximum,
+                              const char * str_threshold, u_char warning_only)
+{
+  struct ospf *ospf = vty->index;
+  u_int32_t maximum;
+  u_char threshold;
+
+  VTY_GET_INTEGER ("maximum number", maximum, str_maximum);
+  if (! strcmp ("", str_threshold))
+    threshold = MAXIMUM_PREFIX_THRESHOLD_DEFAULT;
+  else
+    VTY_GET_INTEGER ("threshold percentage", threshold, str_threshold);
+
+  ospf->lsa_redist_hard_limit = maximum;
+  ospf->lsa_redist_soft_pctg = threshold;
+  ospf->lsa_redist_soft_limit = maximum * (threshold / 100.0);
+  ospf->lsa_redist_warning_only = warning_only;
+  return CMD_SUCCESS;
+}
+
+DEFUN (ospf_redistribute_maximum_prefix_M,
+       ospf_redistribute_maximum_prefix_M_cmd,
        "redistribute maximum-prefix <1-4294967295>",
        REDIST_STR
-       "Maximum number of prefixes to redistribute into OSPF\n"
-       "maximum no. of prefix limit\n")
+       "Maximum number of prefixes redistributed to protocol\n"
+       "Maximum number of IP prefixes redistributed\n")
 {
-  struct ospf *ospf = vty->index;
-  u_int32_t max;
-
-  VTY_GET_INTEGER ("maximum number", max, argv[0]);
-  ospf->lsa_redist_hard_limit = max;
-  return CMD_SUCCESS;
+  return ospf_set_redistribute_limits (vty, argv[0], "", 0);
 }
 
-DEFUN (no_ospf_redistribute_maximum_prefix_arg,
-       no_ospf_redistribute_maximum_prefix_arg_cmd,
-       "no redistribute maximum-prefix <1-4294967295>",
-       NO_STR
+DEFUN (ospf_redistribute_maximum_prefix_M_T,
+       ospf_redistribute_maximum_prefix_M_T_cmd,
+       "redistribute maximum-prefix <1-4294967295> <1-100>",
        REDIST_STR
-       "Maximum number of prefixes to redistribute into OSPF\n"
-       "maximum no. of prefix limit\n")
+       "Maximum number of prefixes redistributed to protocol\n"
+       "Maximum number of IP prefixes redistributed\n"
+       "Threshold value (%) at which to generate a warning msg\n")
 {
-  struct ospf *ospf = vty->index;
-
-  ospf->lsa_redist_hard_limit = 0;
-  return CMD_SUCCESS;
+  return ospf_set_redistribute_limits (vty, argv[0], argv[1], 0);
 }
 
-ALIAS (no_ospf_redistribute_maximum_prefix_arg,
+DEFUN (ospf_redistribute_maximum_prefix_M_T_W,
+       ospf_redistribute_maximum_prefix_M_T_W_cmd,
+       "redistribute maximum-prefix <1-4294967295> <1-100> warning-only",
+       REDIST_STR
+       "Maximum number of prefixes redistributed to protocol\n"
+       "Maximum number of IP prefixes redistributed\n"
+       "Threshold value (%) at which to generate a warning msg\n"
+       "Only give warning message when limit is exceeded\n")
+{
+  return ospf_set_redistribute_limits (vty, argv[0], argv[1], 1);
+}
+
+DEFUN (ospf_redistribute_maximum_prefix_M_W,
+       ospf_redistribute_maximum_prefix_M_W_cmd,
+       "redistribute maximum-prefix <1-4294967295> warning-only",
+       REDIST_STR
+       "Maximum number of prefixes redistributed to protocol\n"
+       "Maximum number of IP prefixes redistributed\n"
+       "Only give warning message when limit is exceeded\n")
+{
+  return ospf_set_redistribute_limits (vty, argv[0], "", 1);
+}
+
+DEFUN (no_ospf_redistribute_maximum_prefix,
        no_ospf_redistribute_maximum_prefix_cmd,
        "no redistribute maximum-prefix",
        NO_STR
        REDIST_STR
-       "Maximum number of prefixes to redistribute into OSPF\n")
+       "Maximum number of prefixes redistributed to protocol\n")
+{
+  return ospf_set_redistribute_limits (vty, "0", "", 0);
+}
+
+ALIAS (no_ospf_redistribute_maximum_prefix,
+       no_ospf_redistribute_maximum_prefix_M_cmd,
+       "no redistribute maximum-prefix <1-4294967295>",
+       NO_STR
+       REDIST_STR
+       "Maximum number of prefixes redistributed to protocol\n"
+       "Maximum number of IP prefixes redistributed\n")
+
+ALIAS (no_ospf_redistribute_maximum_prefix,
+       no_ospf_redistribute_maximum_prefix_M_T_cmd,
+       "no redistribute maximum-prefix <1-4294967295> <1-100>",
+       NO_STR
+       REDIST_STR
+       "Maximum number of prefixes redistributed to protocol\n"
+       "Maximum number of IP prefixes redistributed\n"
+       "Threshold value (%) at which to generate a warning msg\n")
+
+ALIAS (no_ospf_redistribute_maximum_prefix,
+       no_ospf_redistribute_maximum_prefix_M_T_W_cmd,
+       "no redistribute maximum-prefix <1-4294967295> <1-100> warning-only",
+       NO_STR
+       REDIST_STR
+       "Maximum number of prefixes redistributed to protocol\n"
+       "Maximum number of IP prefixes redistributed\n"
+       "Threshold value (%) at which to generate a warning msg\n"
+       "Only give warning message when limit is exceeded\n")
+
+ALIAS (no_ospf_redistribute_maximum_prefix,
+       no_ospf_redistribute_maximum_prefix_M_W_cmd,
+       "no redistribute maximum-prefix <1-4294967295> warning-only",
+       NO_STR
+       REDIST_STR
+       "Maximum number of prefixes redistributed to protocol\n"
+       "Maximum number of IP prefixes redistributed\n"
+       "Only give warning message when limit is exceeded\n")
 
 DEFUN (ospf_distribute_list_out,
        ospf_distribute_list_out_cmd,
@@ -7892,9 +7971,18 @@ config_write_ospf_redistribute (struct vty *vty, struct ospf *ospf)
 {
   int type;
 
-  /* redistribute print. */
+  /* maximum-prefixes */
   if (ospf->lsa_redist_hard_limit)
-    vty_out (vty, " redistribute maximum-prefix %u%s", ospf->lsa_redist_hard_limit, VTY_NEWLINE);
+  {
+    const char * wo = ospf->lsa_redist_warning_only ? " warning-only" : "";
+    if (ospf->lsa_redist_soft_pctg == MAXIMUM_PREFIX_THRESHOLD_DEFAULT)
+      vty_out (vty, " redistribute maximum-prefix %u%s%s", ospf->lsa_redist_hard_limit,
+               wo, VTY_NEWLINE);
+    else
+      vty_out (vty, " redistribute maximum-prefix %u %u%s%s", ospf->lsa_redist_hard_limit,
+               ospf->lsa_redist_soft_pctg, wo, VTY_NEWLINE);
+  }
+  /* protocols */
   for (type = 0; type < ZEBRA_ROUTE_MAX; type++)
     if (type != zclient->redist_default && zclient->redist[type])
       {
@@ -8316,9 +8404,15 @@ ospf_vty_zebra_init (void)
   
   install_element (OSPF_NODE, &no_ospf_redistribute_source_cmd);
 
-  install_element (OSPF_NODE, &ospf_redistribute_maximum_prefix_arg_cmd);
-  install_element (OSPF_NODE, &no_ospf_redistribute_maximum_prefix_arg_cmd);
+  install_element (OSPF_NODE, &ospf_redistribute_maximum_prefix_M_cmd);
+  install_element (OSPF_NODE, &ospf_redistribute_maximum_prefix_M_T_cmd);
+  install_element (OSPF_NODE, &ospf_redistribute_maximum_prefix_M_T_W_cmd);
+  install_element (OSPF_NODE, &ospf_redistribute_maximum_prefix_M_W_cmd);
   install_element (OSPF_NODE, &no_ospf_redistribute_maximum_prefix_cmd);
+  install_element (OSPF_NODE, &no_ospf_redistribute_maximum_prefix_M_cmd);
+  install_element (OSPF_NODE, &no_ospf_redistribute_maximum_prefix_M_T_cmd);
+  install_element (OSPF_NODE, &no_ospf_redistribute_maximum_prefix_M_T_W_cmd);
+  install_element (OSPF_NODE, &no_ospf_redistribute_maximum_prefix_M_W_cmd);
 
   install_element (OSPF_NODE, &ospf_distribute_list_out_cmd);
   install_element (OSPF_NODE, &no_ospf_distribute_list_out_cmd);
