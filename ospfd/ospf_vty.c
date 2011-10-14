@@ -2776,6 +2776,8 @@ DEFUN (show_ip_ospf,
   vty_out (vty, " Number of external LSA %ld. Checksum Sum 0x%08x%s",
 	   ospf_lsdb_count (ospf->lsdb, OSPF_AS_EXTERNAL_LSA),
 	   ospf_lsdb_checksum (ospf->lsdb, OSPF_AS_EXTERNAL_LSA), VTY_NEWLINE);
+  vty_out (vty, " Number of redistributed prefixes: %u%s",
+           ospf->lsa_redistribute_count, VTY_NEWLINE);
   if (ospf->lsa_redist_hard_limit)
     vty_out (vty, " Hard limit on AS-External-LSA origination: %u%s%s",
       ospf->lsa_redist_hard_limit, ospf->lsa_redist_warning_only ?

@@ -321,13 +321,15 @@ struct ospf
   u_char distance_external;
 
   /* Statistics for LSA origination. */
+  /* Event counter, increases only, rolls over.     */
   u_int32_t lsa_originate_count;
+  /* Prefix/LSA counter, increases and decreases.   */
+  u_int32_t lsa_redistribute_count;
 
   /* Statistics for LSA used for new instantiation. */
   u_int32_t rx_lsa_count;
  
-  /* "redistribute maximum-prefix ..." configuration (current number of
-     AS-External-LSAs is immediately available in LSDB). */
+  /* "redistribute maximum-prefix ..." configuration */
   u_int32_t lsa_redist_hard_limit;   /* gauge      */
   u_int32_t lsa_redist_soft_limit;   /* gauge      */
   u_char    lsa_redist_soft_pctg;    /* percentage */
