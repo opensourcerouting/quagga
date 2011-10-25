@@ -2060,7 +2060,6 @@ ospf_external_lsa_originate (struct ospf *ospf, struct external_info *ei)
 
   /* Update LSA origination count. */
   ospf->lsa_originate_count++;
-  ospf->lsa_redistribute_count++;
 
   /* Flooding new LSA. only to AS (non-NSSA/STUB) */
   ospf_flood_through_as (ospf, NULL, new);
@@ -2235,7 +2234,6 @@ ospf_external_lsa_flush (struct ospf *ospf,
 
       /* Flush AS-external-LSA through AS. */
       ospf_lsa_flush_as (ospf, lsa);
-      ospf->lsa_redistribute_count--;
     }
 
   if (IS_DEBUG_OSPF (lsa, LSA_FLOODING))
@@ -2586,6 +2584,8 @@ ospf_discard_from_db (struct ospf *ospf,
     case OSPF_AS_EXTERNAL_LSA:
       ospf_ase_unregister_external_lsa (old, ospf);
       ospf_ls_retransmit_delete_nbr_as (ospf, old);
+      if (IS_LSA_SELF (old))
+        ospf->lsa_redistribute_count--;
       break;
 #ifdef HAVE_OPAQUE_LSA
     case OSPF_OPAQUE_AS_LSA:
@@ -2738,6 +2738,8 @@ ospf_lsa_install (struct ospf *ospf, struct ospf_interface *oi,
       break;
     case OSPF_AS_EXTERNAL_LSA:
       new = ospf_external_lsa_install (ospf, lsa, rt_recalc);
+      if (IS_LSA_SELF (lsa))
+        ospf->lsa_redistribute_count++;
       break;
 #ifdef HAVE_OPAQUE_LSA
     case OSPF_OPAQUE_LINK_LSA:
