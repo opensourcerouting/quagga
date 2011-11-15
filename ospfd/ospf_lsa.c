@@ -2029,10 +2029,8 @@ ospf_external_lsa_originate (struct ospf *ospf, struct external_info *ei)
   if (!ospf_redistribute_check (ospf, ei, NULL))
     return NULL;
 
-  /* "redistribute maximum-prefix" check
-     FIXME: integer soft limit can fall below 1 even with both the hard limit
-     and percentage > 0. */
-  if (ospf->lsa_redist_soft_limit) /* implies lsa_redist_hard_limit != 0 */
+  /* "redistribute maximum-prefix" check */
+  if (ospf->lsa_redist_hard_limit)
   {
     /* Produce messages on the precise threshold edges, but WRT the actual
        redistribution also respect the limit, which was already left behind. */
