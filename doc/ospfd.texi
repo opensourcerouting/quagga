@@ -568,6 +568,28 @@ redistributed into OSPF (@pxref{OSPF redistribute}).
 @deffnx {OSPF Command} {no distance ospf} {}
 @end deffn
 
+@deffn {OSPF Command} {redistribute maximum-prefix @var{HARDLIMIT}} {}
+@deffnx {OSPF Command} {redistribute maximum-prefix @var{HARDLIMIT} @var{SOFTLIMIT}} {}
+@deffnx {OSPF Command} {redistribute maximum-prefix @var{HARDLIMIT} @var{SOFTLIMIT} warning-only} {}
+@deffnx {OSPF Command} {redistribute maximum-prefix @var{HARDLIMIT} warning-only} {}
+@deffnx {OSPF Command} {no redistribute maximum-prefix} {}
+Configure redistribution limits as requested. Hard limit is a number
+(1-4294967295) and has no default value (no limit applied). Soft limit is a
+percentage (1-99) threshold and has a default value of 75. Effective soft limit
+is taken as SOFTLIMIT percents of the HARDLIMIT value (with appropriate roundoff).
+
+Once the soft limit is reached, a warning message is generated. As soon as the
+hard limit is reached, another warning message is generated and (unless
+"warning-only" option is explicitly requested) no further redistribution into
+OSPF happens. When the number of redistributed routes drops below the hard
+limit, redistribution begins working again.
+
+This feature applies to Type-5 AS-External self-originated (redistributed) LSAs
+only. NSSA-translated LSAs are not counted in this process. The
+"no redistribute maximum-prefix" command may accept multiple arguments, but
+regardless of their values it always resets the limits to default (disabled).
+@end deffn
+
 @node Showing OSPF information
 @section Showing OSPF information
 
