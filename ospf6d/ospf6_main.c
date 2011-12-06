@@ -131,7 +131,7 @@ Report bugs to %s\n", progname, ZEBRA_BUG_ADDRESS);
   exit (status);
 }
 
-static void
+static void __attribute__ ((noreturn))
 ospf6_exit (int status)
 {
   extern struct ospf6 *ospf6;
