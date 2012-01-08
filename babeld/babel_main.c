@@ -70,7 +70,7 @@ int link_detect = 0;
 int wireless_hello_interval = -1;
 int wired_hello_interval = -1;
 int idle_hello_interval = -1;
-char *pidfile = "/var/run/babeld.pid";
+static char *pidfile = PATH_BABELD_PID;
 
 const unsigned char zeroes[16] = {0};
 const unsigned char ones[16] =
@@ -145,7 +145,6 @@ babel_init(int argc, char **argv)
     int rc, opt;
     int do_daemonise = 0;
     char *progname = NULL;
-    char *pidfile = PATH_BABELD_PID;
 
     /* Set umask before anything for security */
     umask (0027);
