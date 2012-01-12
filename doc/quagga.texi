@@ -1,12 +1,14 @@
 \input texinfo @c -*- texinfo -*-
 @c %**start of header
 @setchapternewpage odd
-@settitle @uref{http://www.quagga.net,,@value{PACKAGE_NAME}}
 @setfilename quagga.info
 @c %**end of header
 
 @c Set variables - sourced from defines.texi
 @include defines.texi
+
+@c PACKAGE_NAME comes from defines.texi
+@settitle @uref{http://www.quagga.net,@value{PACKAGE_NAME}}
 
 @c automake will automatically generate version.texi
 @c and set EDITION, VERSION, UPDATED and UPDATED-MONTH
