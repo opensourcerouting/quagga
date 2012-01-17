@@ -30,8 +30,6 @@ not a guarantee of support, merely "we agree that it is broken".)
   NetBSD 4.x
   NetBSD-current
   OpenBSD ? [info needed on what should work]
-  Solaris 9
-  Solaris 10
 
 
 For further Quagga specific information on 'configure' and build-time

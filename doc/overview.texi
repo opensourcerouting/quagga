@@ -139,7 +139,7 @@ events.
 @cindex Compatibility with other systems
 @cindex Operating systems that support Quagga
 
-Currently Quagga supports @sc{gnu}/Linux, BSD and Solaris. Porting Quagga
+Currently Quagga supports @sc{gnu}/Linux and BSD. Porting Quagga
 to other platforms is not too difficult as platform dependent code should
 most be limited to the @command{zebra} daemon.  Protocol daemons are mostly
 platform independent. Please let us know when you find out Quagga runs on a
@@ -159,8 +159,6 @@ FreeBSD 4.x and higher
 NetBSD 1.6 and higher
 @item
 OpenBSD 2.5 and higher
-@item
-Solaris 8 and higher
 @end itemize
 
 @node Supported RFCs

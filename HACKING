@@ -318,7 +318,6 @@ and willing to verify that -current does or does not work correctly.
 
   BSD (Free, Net or Open, any platform) # without capabilities
   GNU/Linux (any distribution, i386)
-  Solaris (strict alignment, any platform)
   [future: NetBSD/sparc64]
 
 The list of daemons that are thought to be stable and that should be
