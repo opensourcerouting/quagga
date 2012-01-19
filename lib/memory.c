@@ -523,6 +523,7 @@ memory_init (void)
   install_element (RESTRICTED_NODE, &show_memory_lib_cmd);
   install_element (RESTRICTED_NODE, &show_memory_rip_cmd);
   install_element (RESTRICTED_NODE, &show_memory_ripng_cmd);
+  install_element (RESTRICTED_NODE, &show_memory_babel_cmd);
   install_element (RESTRICTED_NODE, &show_memory_bgp_cmd);
   install_element (RESTRICTED_NODE, &show_memory_ospf_cmd);
   install_element (RESTRICTED_NODE, &show_memory_ospf6_cmd);
@@ -533,6 +534,7 @@ memory_init (void)
   install_element (VIEW_NODE, &show_memory_lib_cmd);
   install_element (VIEW_NODE, &show_memory_rip_cmd);
   install_element (VIEW_NODE, &show_memory_ripng_cmd);
+  install_element (VIEW_NODE, &show_memory_babel_cmd);
   install_element (VIEW_NODE, &show_memory_bgp_cmd);
   install_element (VIEW_NODE, &show_memory_ospf_cmd);
   install_element (VIEW_NODE, &show_memory_ospf6_cmd);
@@ -544,6 +546,7 @@ memory_init (void)
   install_element (ENABLE_NODE, &show_memory_zebra_cmd);
   install_element (ENABLE_NODE, &show_memory_rip_cmd);
   install_element (ENABLE_NODE, &show_memory_ripng_cmd);
+  install_element (ENABLE_NODE, &show_memory_babel_cmd);
   install_element (ENABLE_NODE, &show_memory_bgp_cmd);
   install_element (ENABLE_NODE, &show_memory_ospf_cmd);
   install_element (ENABLE_NODE, &show_memory_ospf6_cmd);
