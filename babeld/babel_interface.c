@@ -26,6 +26,7 @@ THE SOFTWARE.
 #include "command.h"
 #include "prefix.h"
 #include "vector.h"
+#include "distribute.h"
 
 #include "babel_main.h"
 #include "util.h"
@@ -812,6 +813,24 @@ DEFUN (show_babel_database,
     return CMD_SUCCESS;
 }
 
+DEFUN (show_babel_running_config,
+       show_babel_running_config_cmd,
+       "show babel running-config",
+       SHOW_STR
+       IP_STR
+       "Babel information\n"
+       "Configuration information\n"
+       "No attributes\n")
+{
+    vty_out(vty, "    -- Babel running configuration --%s", VTY_NEWLINE);
+    show_babel_main_configuration(vty);
+    show_babeld_configuration(vty);
+    vty_out(vty, "    -- ditribution lists --%s", VTY_NEWLINE);
+    config_show_distribute(vty);
+
+    return CMD_SUCCESS;
+}
+
 void
 babel_if_init ()
 {
@@ -847,6 +866,8 @@ babel_if_init ()
     install_element(ENABLE_NODE, &show_babel_neighbour_cmd);
     install_element(VIEW_NODE, &show_babel_database_cmd);
     install_element(ENABLE_NODE, &show_babel_database_cmd);
+    install_element(VIEW_NODE, &show_babel_running_config_cmd);
+    install_element(ENABLE_NODE, &show_babel_running_config_cmd);
 }
 
 /* hooks: functions called respectively when struct interface is
