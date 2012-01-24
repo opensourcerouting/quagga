@@ -114,7 +114,7 @@ usage (char *progname, int status)
   else
     {    
       printf ("Usage : %s [OPTION...]\n\
-Daemon which manages OSPF.\n\n\
+Daemon which manages OSPF version 2.\n\n\
 -d, --daemon       Runs in daemon mode\n\
 -f, --config_file  Set configuration file name\n\
 -i, --pid_file     Set process identifier file name\n\
@@ -123,7 +123,7 @@ Daemon which manages OSPF.\n\n\
 -P, --vty_port     Set vty's port number\n\
 -u, --user         User to run as\n\
 -g, --group        Group to run as\n\
--a. --apiserver    Enable OSPF apiserver\n\
+-a, --apiserver    Enable OSPF apiserver\n\
 -v, --version      Print program version\n\
 -C, --dryrun       Check configuration for validity and exit\n\
 -h, --help         Display this help and exit\n\
