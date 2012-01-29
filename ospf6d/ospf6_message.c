@@ -1574,11 +1574,6 @@ ospf6_receive (struct thread *thread)
   if (ospf6_rxpacket_examin (oi, oh, len) != MSG_OK)
     return 0;
 
-  /* Being here means, that no sizing/alignment issues were detected in
-     the input packet. This renders the additional checks performed below
-     and also in the type-specific dispatching functions a dead code,
-     which can be dismissed in a cleanup-focused review round later. */
-
   /* Log */
   if (IS_OSPF6_DEBUG_MESSAGE (oh->type, RECV))
     {
