@@ -533,7 +533,8 @@ static void
 vty_show_ip_route_detail (struct vty *vty, struct route_node *rn)
 {
   struct rib *rib;
-  struct nexthop *nexthop;
+  struct nexthop *nexthop, *rnexthop;
+  int nhnum;
 
   for (rib = rn->info; rib; rib = rib->next)
     {
@@ -614,22 +615,11 @@ vty_show_ip_route_detail (struct vty *vty, struct route_node *rn)
 
 	  if (CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_RECURSIVE))
 	    {
-	      vty_out (vty, " (recursive");
-		
-	      switch (nexthop->rtype)
-		{
-		case NEXTHOP_TYPE_IPV4:
-		case NEXTHOP_TYPE_IPV4_IFINDEX:
-		  vty_out (vty, " via %s)", inet_ntoa (nexthop->rgate.ipv4));
-		  break;
-		case NEXTHOP_TYPE_IFINDEX:
-		case NEXTHOP_TYPE_IFNAME:
-		  vty_out (vty, " is directly connected, %s)",
-			   ifindex2ifname (nexthop->rifindex));
-		  break;
-		default:
-		  break;
-		}
+              nhnum = 0;
+              for (rnexthop = nexthop->recursive_rib->nexthop; rnexthop;
+                   rnexthop = rnexthop->next)
+                nhnum++;
+	      vty_out (vty, " (recursive via %d nexthops)", nhnum);
 	    }
 	  switch (nexthop->type)
             {
@@ -667,8 +657,8 @@ vty_show_ip_route_detail (struct vty *vty, struct route_node *rn)
 static void
 vty_show_ip_route (struct vty *vty, struct route_node *rn, struct rib *rib)
 {
-  struct nexthop *nexthop;
-  int len = 0;
+  struct nexthop *nexthop, *rnexthop;
+  int len = 0, nhnum;
   char buf[BUFSIZ];
 
   /* Nexthop information. */
@@ -724,23 +714,12 @@ vty_show_ip_route (struct vty *vty, struct route_node *rn, struct rib *rib)
 
       if (CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_RECURSIVE))
 	{
-	  vty_out (vty, " (recursive");
-		
-	  switch (nexthop->rtype)
-	    {
-	    case NEXTHOP_TYPE_IPV4:
-	    case NEXTHOP_TYPE_IPV4_IFINDEX:
-	      vty_out (vty, " via %s)", inet_ntoa (nexthop->rgate.ipv4));
-	      break;
-	    case NEXTHOP_TYPE_IFINDEX:
-	    case NEXTHOP_TYPE_IFNAME:
-	      vty_out (vty, " is directly connected, %s)",
-		       ifindex2ifname (nexthop->rifindex));
-	      break;
-	    default:
-	      break;
-	    }
-	}
+          nhnum = 0;
+          for (rnexthop = nexthop->recursive_rib->nexthop; rnexthop;
+               rnexthop = rnexthop->next)
+            nhnum++;
+	  vty_out (vty, " (recursive via %d nexthops)", nhnum);
+        }
       switch (nexthop->type)
         {
           case NEXTHOP_TYPE_IPV4:
@@ -1534,7 +1513,8 @@ static void
 vty_show_ipv6_route_detail (struct vty *vty, struct route_node *rn)
 {
   struct rib *rib;
-  struct nexthop *nexthop;
+  struct nexthop *nexthop, *rnexthop;
+  int nhnum;
   char buf[BUFSIZ];
 
   for (rib = rn->info; rib; rib = rib->next)
@@ -1617,27 +1597,11 @@ vty_show_ipv6_route_detail (struct vty *vty, struct route_node *rn)
 
 	  if (CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_RECURSIVE))
 	    {
-	      vty_out (vty, " (recursive");
-		
-	      switch (nexthop->rtype)
-		{
-		case NEXTHOP_TYPE_IPV6:
-		case NEXTHOP_TYPE_IPV6_IFINDEX:
-		case NEXTHOP_TYPE_IPV6_IFNAME:
-		  vty_out (vty, " via %s)",
-			   inet_ntop (AF_INET6, &nexthop->rgate.ipv6,
-				      buf, BUFSIZ));
-		  if (nexthop->rifindex)
-		    vty_out (vty, ", %s", ifindex2ifname (nexthop->rifindex));
-		  break;
-		case NEXTHOP_TYPE_IFINDEX:
-		case NEXTHOP_TYPE_IFNAME:
-		  vty_out (vty, " is directly connected, %s)",
-			   ifindex2ifname (nexthop->rifindex));
-		  break;
-		default:
-		  break;
-		}
+              nhnum = 0;
+              for (rnexthop = nexthop->recursive_rib->nexthop; rnexthop;
+                   rnexthop = rnexthop->next)
+                nhnum++;
+	      vty_out (vty, " (recursive via %d nexthops)", nhnum);
 	    }
 	  vty_out (vty, "%s", VTY_NEWLINE);
 	}
@@ -1649,8 +1613,8 @@ static void
 vty_show_ipv6_route (struct vty *vty, struct route_node *rn,
 		     struct rib *rib)
 {
-  struct nexthop *nexthop;
-  int len = 0;
+  struct nexthop *nexthop, *rnexthop;
+  int len = 0, nhnum;
   char buf[BUFSIZ];
 
   /* Nexthop information. */
@@ -1707,29 +1671,13 @@ vty_show_ipv6_route (struct vty *vty, struct route_node *rn,
 	vty_out (vty, " inactive");
 
       if (CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_RECURSIVE))
-	{
-	  vty_out (vty, " (recursive");
-		
-	  switch (nexthop->rtype)
-	    {
-	    case NEXTHOP_TYPE_IPV6:
-	    case NEXTHOP_TYPE_IPV6_IFINDEX:
-	    case NEXTHOP_TYPE_IPV6_IFNAME:
-	      vty_out (vty, " via %s)",
-		       inet_ntop (AF_INET6, &nexthop->rgate.ipv6,
-				  buf, BUFSIZ));
-	      if (nexthop->rifindex)
-		vty_out (vty, ", %s", ifindex2ifname (nexthop->rifindex));
-	      break;
-	    case NEXTHOP_TYPE_IFINDEX:
-	    case NEXTHOP_TYPE_IFNAME:
-	      vty_out (vty, " is directly connected, %s)",
-		       ifindex2ifname (nexthop->rifindex));
-	      break;
-	    default:
-	      break;
-	    }
-	}
+        {
+          nhnum = 0;
+          for (rnexthop = nexthop->recursive_rib->nexthop; rnexthop;
+               rnexthop = rnexthop->next)
+            nhnum++;
+          vty_out (vty, " (recursive via %d nexthops)", nhnum);
+        }
 
       if (CHECK_FLAG (rib->flags, ZEBRA_FLAG_BLACKHOLE))
        vty_out (vty, ", bh");
