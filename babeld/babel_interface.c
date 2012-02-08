@@ -330,7 +330,7 @@ DEFUN (no_babel_network,
 /* [Interface Command] Tell the interface is wire. */
 DEFUN (babel_set_wired,
        babel_set_wired_cmd,
-       "wired",
+       "babel wired",
        "Set this interface as wired (default: wireless).\n"
        "No attributes")
 {
@@ -348,7 +348,7 @@ DEFUN (babel_set_wired,
 /* [Interface Command] Tell the interface is wireless (default). */
 DEFUN (babel_set_wireless,
        babel_set_wireless_cmd,
-       "wireless",
+       "babel wireless",
        NO_STR
        "Set this interface as wireless (is default).\n"
        "No attributes")
