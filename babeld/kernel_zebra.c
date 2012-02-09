@@ -141,7 +141,6 @@ static int
 kernel_route_add_v4(const unsigned char *pref, unsigned short plen,
                     const unsigned char *gate, int ifindex, unsigned int metric)
 {
-    unsigned int tmp_ifindex = ifindex; /* (for typing) */
     struct zapi_ipv4 api;               /* quagga's communication system */
     struct prefix_ipv4 quagga_prefix;   /* quagga's prefix */
     struct in_addr babel_prefix_addr;   /* babeld's prefix addr */
@@ -164,12 +163,17 @@ kernel_route_add_v4(const unsigned char *pref, unsigned short plen,
     api.flags = 0;
     api.message = 0;
     api.safi = SAFI_UNICAST;
+
+    /* Unlike the native Linux and BSD interfaces, Quagga doesn't like
+       there to be both and IPv4 nexthop and an ifindex.  Omit the
+       ifindex, and assume that the connected prefixes be set up
+       correctly. */
+
     SET_FLAG(api.message, ZAPI_MESSAGE_NEXTHOP);
     api.nexthop_num = 1;
     api.nexthop = &nexthop_pointer;
-    SET_FLAG(api.message, ZAPI_MESSAGE_IFINDEX);
-    api.ifindex_num = 1;
-    api.ifindex = &tmp_ifindex;
+    api.ifindex_num = 0;
+
     SET_FLAG(api.message, ZAPI_MESSAGE_METRIC);
     api.metric = metric;
 
@@ -224,7 +228,6 @@ kernel_route_delete_v4(const unsigned char *pref, unsigned short plen,
                        const unsigned char *gate, int ifindex,
                        unsigned int metric)
 {
-    unsigned int tmp_ifindex = ifindex; /* (for typing) */
     struct zapi_ipv4 api;               /* quagga's communication system */
     struct prefix_ipv4 quagga_prefix;   /* quagga's prefix */
     struct in_addr babel_prefix_addr;   /* babeld's prefix addr */
@@ -250,9 +253,7 @@ kernel_route_delete_v4(const unsigned char *pref, unsigned short plen,
     SET_FLAG(api.message, ZAPI_MESSAGE_NEXTHOP);
     api.nexthop_num = 1;
     api.nexthop = &nexthop_pointer;
-    SET_FLAG(api.message, ZAPI_MESSAGE_IFINDEX);
-    api.ifindex_num = 1;
-    api.ifindex = &tmp_ifindex;
+    api.ifindex_num = 0;
     SET_FLAG(api.message, ZAPI_MESSAGE_METRIC);
     api.metric = metric;
 
