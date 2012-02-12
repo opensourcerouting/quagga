@@ -63,7 +63,7 @@ quagga_TEXINFOS = appendix.texi babeld.texi basic.texi bgpd.texi filter.texi \
 
 man_MANS = vtysh.1 bgpd.8 ospf6d.8 ospfd.8 ripd.8 ripngd.8 zebra.8 isisd.8
 
-EXTRA_DIST = BGP-TypeCode draft-zebra-00.ms draft-zebra-00.txt $(man_MANS) \
+EXTRA_DIST = draft-zebra-00.ms draft-zebra-00.txt $(man_MANS) \
 	mpls/ChangeLog.opaque.txt mpls/cli_summary.txt \
 	mpls/opaque_lsa.txt mpls/ospfd.conf \
 	$(figures_sources) $(figures_png) $(figures_txt)
