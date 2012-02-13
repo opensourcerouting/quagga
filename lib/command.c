@@ -2599,20 +2599,14 @@ DEFUN (config_write_file,
 		 VTY_NEWLINE);
         goto finished;
       }
-  if (link (config_file, config_file_sav) != 0)
+  if (rename (config_file, config_file_sav) != 0)
     {
-      vty_out (vty, "Can't backup old configuration file %s.%s", config_file_sav,
+      vty_out (vty, "Can't rename old configuration file %s.%s", config_file_sav,
 	        VTY_NEWLINE);
       goto finished;
     }
   sync ();
-  if (unlink (config_file) != 0)
-    {
-      vty_out (vty, "Can't unlink configuration file %s.%s", config_file,
-	        VTY_NEWLINE);
-      goto finished;
-    }
-  if (link (config_file_tmp, config_file) != 0)
+  if (rename (config_file_tmp, config_file) != 0)
     {
       vty_out (vty, "Can't save configuration file %s.%s", config_file,
 	       VTY_NEWLINE);
