@@ -314,7 +314,7 @@ ospf_options_dump (u_char options)
   snprintf (buf, OSPF_OPTION_STR_MAXLEN, "*|%s|%s|%s|%s|%s|%s|*",
 	    (options & OSPF_OPTION_O) ? "O" : "-",
 	    (options & OSPF_OPTION_DC) ? "DC" : "-",
-	    (options & OSPF_OPTION_EA) ? "EA" : "-",
+	    (options & OSPF_OPTION_L) ? "L" : "-",
 	    (options & OSPF_OPTION_NP) ? "N/P" : "-",
 	    (options & OSPF_OPTION_MC) ? "MC" : "-",
 	    (options & OSPF_OPTION_E) ? "E" : "-");
