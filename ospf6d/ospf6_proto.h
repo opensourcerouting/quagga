@@ -53,7 +53,7 @@
 #define DEFAULT_HELLO_INTERVAL       10
 #define DEFAULT_ROUTER_DEAD_INTERVAL 40
 
-#define OSPF6_ROUTER_BIT_W     (1 << 3)
+#define OSPF6_ROUTER_BIT_x     (1 << 3)
 #define OSPF6_ROUTER_BIT_V     (1 << 2)
 #define OSPF6_ROUTER_BIT_E     (1 << 1)
 #define OSPF6_ROUTER_BIT_B     (1 << 0)
@@ -68,7 +68,7 @@
 #define OSPF6_OPT_DC (1 << 5)   /* Demand Circuit handling Capability */
 #define OSPF6_OPT_R  (1 << 4)   /* Forwarding Capability (Any Protocol) */
 #define OSPF6_OPT_N  (1 << 3)   /* Handling Type-7 LSA Capability */
-#define OSPF6_OPT_MC (1 << 2)   /* Multicasting Capability */
+#define OSPF6_OPT_x  (1 << 2)   /* deprecated, former Multicasting Capability */
 #define OSPF6_OPT_E  (1 << 1)   /* AS External Capability */
 #define OSPF6_OPT_V6 (1 << 0)   /* IPv6 forwarding Capability */
 
@@ -89,7 +89,7 @@ struct ospf6_prefix
 
 #define OSPF6_PREFIX_OPTION_NU (1 << 0)  /* No Unicast */
 #define OSPF6_PREFIX_OPTION_LA (1 << 1)  /* Local Address */
-#define OSPF6_PREFIX_OPTION_MC (1 << 2)  /* MultiCast */
+#define OSPF6_PREFIX_OPTION_x  (1 << 2)  /* deprecated, former MultiCast */
 #define OSPF6_PREFIX_OPTION_P  (1 << 3)  /* Propagate (NSSA) */
 
 /* caddr_t OSPF6_PREFIX_BODY (struct ospf6_prefix *); */

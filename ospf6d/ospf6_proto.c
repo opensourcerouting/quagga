@@ -60,25 +60,25 @@ ospf6_prefix_options_printbuf (u_int8_t prefix_options, char *buf, int size)
 void
 ospf6_capability_printbuf (char capability, char *buf, int size)
 {
-  char w, v, e, b;
-  w = (capability & OSPF6_ROUTER_BIT_W ? 'W' : '-');
+  char x, v, e, b;
+  x = (capability & OSPF6_ROUTER_BIT_x ? 'x' : '-');
   v = (capability & OSPF6_ROUTER_BIT_V ? 'V' : '-');
   e = (capability & OSPF6_ROUTER_BIT_E ? 'E' : '-');
   b = (capability & OSPF6_ROUTER_BIT_B ? 'B' : '-');
-  snprintf (buf, size, "----%c%c%c%c", w, v, e, b);
+  snprintf (buf, size, "---%c%c%c%c", x, v, e, b);
 }
 
 void
 ospf6_options_printbuf (u_char *options, char *buf, int size)
 {
-  const char *dc, *r, *n, *mc, *e, *v6;
+  const char *dc, *r, *n, *x, *e, *v6;
   dc = (OSPF6_OPT_ISSET (options, OSPF6_OPT_DC) ? "DC" : "--");
   r  = (OSPF6_OPT_ISSET (options, OSPF6_OPT_R)  ? "R"  : "-" );
   n  = (OSPF6_OPT_ISSET (options, OSPF6_OPT_N)  ? "N"  : "-" );
-  mc = (OSPF6_OPT_ISSET (options, OSPF6_OPT_MC) ? "MC" : "--");
+  x  = (OSPF6_OPT_ISSET (options, OSPF6_OPT_x)  ? "x"  : "--");
   e  = (OSPF6_OPT_ISSET (options, OSPF6_OPT_E)  ? "E"  : "-" );
   v6 = (OSPF6_OPT_ISSET (options, OSPF6_OPT_V6) ? "V6" : "--");
-  snprintf (buf, size, "%s|%s|%s|%s|%s|%s", dc, r, n, mc, e, v6);
+  snprintf (buf, size, "%s|%s|%s|%s|%s|%s", dc, r, n, x, e, v6);
 }
 
 

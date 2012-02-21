@@ -137,7 +137,7 @@ ospf6_router_lsa_originate (struct thread *thread)
 
   OSPF6_OPT_SET (router_lsa->options, OSPF6_OPT_V6);
   OSPF6_OPT_SET (router_lsa->options, OSPF6_OPT_E);
-  OSPF6_OPT_CLEAR (router_lsa->options, OSPF6_OPT_MC);
+  OSPF6_OPT_CLEAR (router_lsa->options, OSPF6_OPT_x);
   OSPF6_OPT_CLEAR (router_lsa->options, OSPF6_OPT_N);
   OSPF6_OPT_SET (router_lsa->options, OSPF6_OPT_R);
   OSPF6_OPT_CLEAR (router_lsa->options, OSPF6_OPT_DC);
@@ -151,7 +151,7 @@ ospf6_router_lsa_originate (struct thread *thread)
   else
     UNSET_FLAG (router_lsa->bits, OSPF6_ROUTER_BIT_E);
   UNSET_FLAG (router_lsa->bits, OSPF6_ROUTER_BIT_V);
-  UNSET_FLAG (router_lsa->bits, OSPF6_ROUTER_BIT_W);
+  UNSET_FLAG (router_lsa->bits, OSPF6_ROUTER_BIT_x);
 
   /* describe links for each interfaces */
   lsdesc = (struct ospf6_router_lsdesc *)
@@ -470,7 +470,7 @@ ospf6_link_lsa_show (struct vty *vty, struct ospf6_lsa *lsa)
   int prefixnum;
   char buf[128], options[32];
   struct ospf6_prefix *prefix;
-  const char *p, *mc, *la, *nu;
+  const char *p, *x, *la, *nu;
   struct in6_addr in6;
 
   link_lsa = (struct ospf6_link_lsa *)
@@ -496,14 +496,14 @@ ospf6_link_lsa_show (struct vty *vty, struct ospf6_lsa *lsa)
 
       p = (CHECK_FLAG (prefix->prefix_options, OSPF6_PREFIX_OPTION_P) ?
            "P" : "--");
-      mc = (CHECK_FLAG (prefix->prefix_options, OSPF6_PREFIX_OPTION_MC) ?
-           "MC" : "--");
+      x = (CHECK_FLAG (prefix->prefix_options, OSPF6_PREFIX_OPTION_x) ?
+           "x" : "--");
       la = (CHECK_FLAG (prefix->prefix_options, OSPF6_PREFIX_OPTION_LA) ?
            "LA" : "--");
       nu = (CHECK_FLAG (prefix->prefix_options, OSPF6_PREFIX_OPTION_NU) ?
            "NU" : "--");
       vty_out (vty, "     Prefix Options: %s|%s|%s|%s%s",
-               p, mc, la, nu, VNL);
+               p, x, la, nu, VNL);
 
       memset (&in6, 0, sizeof (in6));
       memcpy (&in6, OSPF6_PREFIX_BODY (prefix),
@@ -624,7 +624,7 @@ ospf6_intra_prefix_lsa_show (struct vty *vty, struct ospf6_lsa *lsa)
   char buf[128];
   struct ospf6_prefix *prefix;
   char id[16], adv_router[16];
-  const char *p, *mc, *la, *nu;
+  const char *p, *x, *la, *nu;
   struct in6_addr in6;
 
   intra_prefix_lsa = (struct ospf6_intra_prefix_lsa *)
@@ -652,14 +652,14 @@ ospf6_intra_prefix_lsa_show (struct vty *vty, struct ospf6_lsa *lsa)
 
       p = (CHECK_FLAG (prefix->prefix_options, OSPF6_PREFIX_OPTION_P) ?
            "P" : "--");
-      mc = (CHECK_FLAG (prefix->prefix_options, OSPF6_PREFIX_OPTION_MC) ?
-           "MC" : "--");
+      x = (CHECK_FLAG (prefix->prefix_options, OSPF6_PREFIX_OPTION_x) ?
+           "x" : "--");
       la = (CHECK_FLAG (prefix->prefix_options, OSPF6_PREFIX_OPTION_LA) ?
            "LA" : "--");
       nu = (CHECK_FLAG (prefix->prefix_options, OSPF6_PREFIX_OPTION_NU) ?
            "NU" : "--");
       vty_out (vty, "     Prefix Options: %s|%s|%s|%s%s",
-               p, mc, la, nu, VNL);
+               p, x, la, nu, VNL);
 
       memset (&in6, 0, sizeof (in6));
       memcpy (&in6, OSPF6_PREFIX_BODY (prefix),
