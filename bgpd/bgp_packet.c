@@ -1158,7 +1158,6 @@ bgp_open_receive (struct peer *peer, bgp_size_t size)
   as_t as4 = 0;
   struct peer *realpeer;
   struct in_addr remote_id;
-  int capability;
   u_int8_t notify_data_remote_as[2];
   u_int8_t notify_data_remote_id[4];
 
@@ -1180,7 +1179,6 @@ bgp_open_receive (struct peer *peer, bgp_size_t size)
 	        inet_ntoa (remote_id));
   
   /* BEGIN to read the capability here, but dont do it yet */
-  capability = 0;
   optlen = stream_getc (peer->ibuf);
   
   if (optlen != 0)
@@ -1465,7 +1463,7 @@ bgp_open_receive (struct peer *peer, bgp_size_t size)
   /* Open option part parse. */
   if (optlen != 0) 
     {
-      ret = bgp_open_option_parse (peer, optlen, &capability);
+      ret = bgp_open_option_parse (peer, optlen);
       if (ret < 0)
 	return ret;
     }
@@ -1474,15 +1472,6 @@ bgp_open_receive (struct peer *peer, bgp_size_t size)
       if (BGP_DEBUG (normal, NORMAL))
 	zlog_debug ("%s rcvd OPEN w/ OPTION parameter len: 0",
 		   peer->host);
-    }
-
-  /* Override capability. */
-  if (! capability || CHECK_FLAG (peer->flags, PEER_FLAG_OVERRIDE_CAPABILITY))
-    {
-      peer->afc_nego[AFI_IP][SAFI_UNICAST] = peer->afc[AFI_IP][SAFI_UNICAST];
-      peer->afc_nego[AFI_IP][SAFI_MULTICAST] = peer->afc[AFI_IP][SAFI_MULTICAST];
-      peer->afc_nego[AFI_IP6][SAFI_UNICAST] = peer->afc[AFI_IP6][SAFI_UNICAST];
-      peer->afc_nego[AFI_IP6][SAFI_MULTICAST] = peer->afc[AFI_IP6][SAFI_MULTICAST];
     }
 
   /* Get sockname. */

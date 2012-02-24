@@ -102,7 +102,7 @@ struct capability_gr
 #define RESTART_R_BIT              0x8000
 #define RESTART_F_BIT              0x80
 
-extern int bgp_open_option_parse (struct peer *, u_char, int *);
+extern int bgp_open_option_parse (struct peer *, u_char);
 extern void bgp_open_capability (struct stream *, struct peer *);
 extern void bgp_capability_vty_out (struct vty *, struct peer *);
 extern as_t peek_for_as4_capability (struct peer *, u_char);
