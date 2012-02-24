@@ -137,7 +137,6 @@ bgp_afi_safi_valid_indices (afi_t afi, safi_t *safi)
               *safi = SAFI_MPLS_VPN;
             case SAFI_UNICAST:
             case SAFI_MULTICAST:
-            case SAFI_MPLS_VPN:
               return 1;
           }
     }
