@@ -714,8 +714,6 @@ end:
 }
 
 /* Parse open option.
- *
- * @param[out] mp_capability @see bgp_capability_parse() for semantics.
  */
 int
 bgp_open_option_parse (struct peer *peer, u_char length)
