@@ -415,10 +415,10 @@ attrhash_cmp (const void *p1, const void *p2)
   const struct attr * attr1 = p1;
   const struct attr * attr2 = p2;
 
-  if (attr1->flag == attr2->flag
-      && attr1->origin == attr2->origin
+  if (attr1->aspath == attr2->aspath
       && attr1->nexthop.s_addr == attr2->nexthop.s_addr
-      && attr1->aspath == attr2->aspath
+      && attr1->flag == attr2->flag
+      && attr1->origin == attr2->origin
       && attr1->community == attr2->community
       && attr1->med == attr2->med
       && attr1->local_pref == attr2->local_pref)
