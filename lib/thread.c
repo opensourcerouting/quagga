@@ -986,24 +986,6 @@ thread_timer_process (struct thread_list *list, struct timeval *timenow)
   return ready;
 }
 
-/* process a list en masse, e.g. for event thread lists */
-static unsigned int
-thread_process (struct thread_list *list)
-{
-  struct thread *thread;
-  unsigned int ready = 0;
-  
-  for (thread = list->head; thread; thread = thread->next)
-    {
-      thread_list_delete (list, thread);
-      thread->type = THREAD_READY;
-      thread_list_add (&thread->master->ready, thread);
-      ready++;
-    }
-  return ready;
-}
-
-
 /* Fetch next ready thread. */
 struct thread *
 thread_fetch (struct thread_master *m, struct thread *fetch)
@@ -1012,31 +994,27 @@ thread_fetch (struct thread_master *m, struct thread *fetch)
   fd_set readfd;
   fd_set writefd;
   fd_set exceptfd;
-  struct timeval timer_val = { .tv_sec = 0, .tv_usec = 0 };
+  struct timeval timer_val;
   struct timeval timer_val_bg;
-  struct timeval *timer_wait = &timer_val;
+  struct timeval *timer_wait;
   struct timeval *timer_wait_bg;
 
   while (1)
     {
       int num = 0;
       
-      /* Signals pre-empt everything */
+      /* Signals are highest priority */
       quagga_sigevent_process ();
        
-      /* Drain the ready queue of already scheduled jobs, before scheduling
-       * more.
+      /* Normal event are the next highest priority.  */
+      if ((thread = thread_trim_head (&m->event)) != NULL)
+        return thread_run (m, thread, fetch);
+      
+      /* If there are any ready threads from previous scheduler runs,
+       * process top of them.  
        */
       if ((thread = thread_trim_head (&m->ready)) != NULL)
         return thread_run (m, thread, fetch);
-      
-      /* To be fair to all kinds of threads, and avoid starvation, we
-       * need to be careful to consider all thread types for scheduling
-       * in each quanta. I.e. we should not return early from here on.
-       */
-       
-      /* Normal event are the next highest priority.  */
-      thread_process (&m->event);
       
       /* Structure copy.  */
       readfd = m->readfd;
@@ -1044,16 +1022,13 @@ thread_fetch (struct thread_master *m, struct thread *fetch)
       exceptfd = m->exceptfd;
       
       /* Calculate select wait timer if nothing else to do */
-      if (m->ready.count == 0)
-        {
-          quagga_get_relative (NULL);
-          timer_wait = thread_timer_wait (&m->timer, &timer_val);
-          timer_wait_bg = thread_timer_wait (&m->background, &timer_val_bg);
-          
-          if (timer_wait_bg &&
-              (!timer_wait || (timeval_cmp (*timer_wait, *timer_wait_bg) > 0)))
-            timer_wait = timer_wait_bg;
-        }
+      quagga_get_relative (NULL);
+      timer_wait = thread_timer_wait (&m->timer, &timer_val);
+      timer_wait_bg = thread_timer_wait (&m->background, &timer_val_bg);
+      
+      if (timer_wait_bg &&
+	  (!timer_wait || (timeval_cmp (*timer_wait, *timer_wait_bg) > 0)))
+	timer_wait = timer_wait_bg;
       
       num = select (FD_SETSIZE, &readfd, &writefd, &exceptfd, timer_wait);
       
