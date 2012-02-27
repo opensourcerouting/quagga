@@ -1169,6 +1169,7 @@ ospf6_packet_examin (struct ospf6_header *oh, const unsigned bytesonwire)
 {
   struct ospf6_lsupdate *lsupd;
   unsigned test;
+  u_int16_t bytesdeclared;
 
   /* length, 1st approximation */
   if (bytesonwire < OSPF6_HEADER_SIZE)
@@ -1178,11 +1179,12 @@ ospf6_packet_examin (struct ospf6_header *oh, const unsigned bytesonwire)
     return MSG_NG;
   }
   /* Now it is safe to access header fields. */
-  if (bytesonwire != ntohs (oh->length))
+  bytesdeclared = ntohs (oh->length);
+  if (bytesonwire < bytesdeclared)
   {
     if (IS_OSPF6_DEBUG_MESSAGE (OSPF6_MESSAGE_TYPE_UNKNOWN, RECV))
       zlog_debug ("%s: packet length error (%u real, %u declared)",
-                  __func__, bytesonwire, ntohs (oh->length));
+                  __func__, bytesonwire, bytesdeclared);
     return MSG_NG;
   }
   /* version check */
@@ -1197,12 +1199,12 @@ ospf6_packet_examin (struct ospf6_header *oh, const unsigned bytesonwire)
   (
     oh->type < OSPF6_MESSAGE_TYPE_ALL &&
     ospf6_packet_minlen[oh->type] &&
-    bytesonwire < OSPF6_HEADER_SIZE + ospf6_packet_minlen[oh->type]
+    bytesdeclared < OSPF6_HEADER_SIZE + ospf6_packet_minlen[oh->type]
   )
   {
     if (IS_OSPF6_DEBUG_MESSAGE (OSPF6_MESSAGE_TYPE_UNKNOWN, RECV))
       zlog_debug ("%s: undersized (%u B) %s packet", __func__,
-                  bytesonwire, LOOKUP (ospf6_message_type_str, oh->type));
+                  bytesdeclared, LOOKUP (ospf6_message_type_str, oh->type));
     return MSG_NG;
   }
   /* type-specific deeper validation */
@@ -1211,7 +1213,7 @@ ospf6_packet_examin (struct ospf6_header *oh, const unsigned bytesonwire)
   case OSPF6_MESSAGE_TYPE_HELLO:
     /* RFC5340 A.3.2, packet header + OSPF6_HELLO_MIN_SIZE bytes followed
        by N>=0 router-IDs. */
-    if (0 == (bytesonwire - OSPF6_HEADER_SIZE - OSPF6_HELLO_MIN_SIZE) % 4)
+    if (0 == (bytesdeclared - OSPF6_HEADER_SIZE - OSPF6_HELLO_MIN_SIZE) % 4)
       return MSG_OK;
     if (IS_OSPF6_DEBUG_MESSAGE (OSPF6_MESSAGE_TYPE_UNKNOWN, RECV))
       zlog_debug ("%s: alignment error in %s packet",
@@ -1223,14 +1225,14 @@ ospf6_packet_examin (struct ospf6_header *oh, const unsigned bytesonwire)
     test = ospf6_lsaseq_examin
     (
       (struct ospf6_lsa_header *) ((caddr_t) oh + OSPF6_HEADER_SIZE + OSPF6_DB_DESC_MIN_SIZE),
-      bytesonwire - OSPF6_HEADER_SIZE - OSPF6_DB_DESC_MIN_SIZE,
+      bytesdeclared - OSPF6_HEADER_SIZE - OSPF6_DB_DESC_MIN_SIZE,
       1,
       0
     );
     break;
   case OSPF6_MESSAGE_TYPE_LSREQ:
     /* RFC5340 A.3.4, packet header + N>=0 LS description blocks. */
-    if (0 == (bytesonwire - OSPF6_HEADER_SIZE - OSPF6_LS_REQ_MIN_SIZE) % OSPF6_LSREQ_LSDESC_FIX_SIZE)
+    if (0 == (bytesdeclared - OSPF6_HEADER_SIZE - OSPF6_LS_REQ_MIN_SIZE) % OSPF6_LSREQ_LSDESC_FIX_SIZE)
       return MSG_OK;
     if (IS_OSPF6_DEBUG_MESSAGE (OSPF6_MESSAGE_TYPE_UNKNOWN, RECV))
       zlog_debug ("%s: alignment error in %s packet",
@@ -1243,7 +1245,7 @@ ospf6_packet_examin (struct ospf6_header *oh, const unsigned bytesonwire)
     test = ospf6_lsaseq_examin
     (
       (struct ospf6_lsa_header *) ((caddr_t) lsupd + OSPF6_LS_UPD_MIN_SIZE),
-      bytesonwire - OSPF6_HEADER_SIZE - OSPF6_LS_UPD_MIN_SIZE,
+      bytesdeclared - OSPF6_HEADER_SIZE - OSPF6_LS_UPD_MIN_SIZE,
       0,
       ntohl (lsupd->lsa_number) /* 32 bits */
     );
@@ -1253,7 +1255,7 @@ ospf6_packet_examin (struct ospf6_header *oh, const unsigned bytesonwire)
     test = ospf6_lsaseq_examin
     (
       (struct ospf6_lsa_header *) ((caddr_t) oh + OSPF6_HEADER_SIZE + OSPF6_LS_ACK_MIN_SIZE),
-      bytesonwire - OSPF6_HEADER_SIZE - OSPF6_LS_ACK_MIN_SIZE,
+      bytesdeclared - OSPF6_HEADER_SIZE - OSPF6_LS_ACK_MIN_SIZE,
       1,
       0
     );
