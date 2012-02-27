@@ -1848,7 +1848,7 @@ aspath_cmp (const void *arg1, const void *arg2)
 void
 aspath_init (void)
 {
-  ashash = hash_create_size (32767, aspath_key_make, aspath_cmp);
+  ashash = hash_create_size (128*1024, aspath_key_make, aspath_cmp);
 }
 
 void

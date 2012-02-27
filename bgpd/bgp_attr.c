@@ -452,7 +452,7 @@ attrhash_cmp (const void *p1, const void *p2)
 static void
 attrhash_init (void)
 {
-  attrhash = hash_create (attrhash_key_make, attrhash_cmp);
+  attrhash = hash_create_size (256*1024, attrhash_key_make, attrhash_cmp);
 }
 
 static void
