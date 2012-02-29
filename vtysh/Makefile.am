@@ -36,5 +36,6 @@ vtysh_cmd_FILES = $(top_srcdir)/bgpd/*.c $(top_srcdir)/isisd/*.c \
 		  $(top_srcdir)/zebra/zebra_routemap.c
 
 vtysh_cmd.c: $(vtysh_cmd_FILES)
-	./$(EXTRA_DIST) $(vtysh_cmd_FILES) > vtysh_cmd.c
+	./$(EXTRA_DIST) $(vtysh_cmd_FILES) > vtysh_cmd.c.tmp
+	mv vtysh_cmd.c.tmp vtysh_cmd.c
 
