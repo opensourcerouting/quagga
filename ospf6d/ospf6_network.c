@@ -36,16 +36,6 @@ int  ospf6_sock;
 struct in6_addr allspfrouters6;
 struct in6_addr alldrouters6;
 
-/* setsockopt ReUseAddr to on */
-void
-ospf6_set_reuseaddr (void)
-{
-  u_int on = 0;
-  if (setsockopt (ospf6_sock, SOL_SOCKET, SO_REUSEADDR, &on,
-                  sizeof (u_int)) < 0)
-    zlog_warn ("Network: set SO_REUSEADDR failed: %s", safe_strerror (errno));
-}
-
 /* setsockopt MulticastLoop to off */
 void
 ospf6_reset_mcastloop (void)
@@ -103,11 +93,7 @@ ospf6_serv_sock (void)
       zlog_err ("ospf_sock_init: could not lower privs");
 
   /* set socket options */
-#if 1
   sockopt_reuseaddr (ospf6_sock);
-#else
-  ospf6_set_reuseaddr ();
-#endif /*1*/
   ospf6_reset_mcastloop ();
   ospf6_set_pktinfo ();
   ospf6_set_transport_class ();
