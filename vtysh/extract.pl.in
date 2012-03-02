@@ -124,6 +124,12 @@ foreach (@ARGV) {
 	   if ($file =~ /vty.c/) {
 	      $protocol = "VTYSH_ALL";
 	   }
+	   if ($file =~ /thread.c/) {
+	      $protocol = "VTYSH_ALL";
+	   }
+	   if ($file =~ /workqueue.c/) {
+	      $protocol = "VTYSH_ALL";
+	   }
         } else {
            ($protocol) = ($file =~ /^.*\/([a-z0-9]+)\/[a-zA-Z0-9_\-]+\.c$/);
            $protocol = "VTYSH_" . uc $protocol;

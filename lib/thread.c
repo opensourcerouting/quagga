@@ -494,6 +494,16 @@ thread_master_debug (struct thread_master *m)
   printf ("total alloc: [%ld]\n", m->alloc);
   printf ("-----------\n");
 }
+
+void
+install_thread_cmds(void)
+{
+  install_element (VIEW_NODE, &show_thread_cpu_cmd);
+  install_element (ENABLE_NODE, &show_thread_cpu_cmd);
+  install_element (RESTRICTED_NODE, &show_thread_cpu_cmd);
+  
+  install_element (ENABLE_NODE, &clear_thread_cpu_cmd);
+}
 
 /* Allocate new thread master.  */
 struct thread_master *

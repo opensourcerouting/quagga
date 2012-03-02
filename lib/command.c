@@ -3641,13 +3641,8 @@ cmd_init (int terminal)
       install_element (CONFIG_NODE, &service_terminal_length_cmd);
       install_element (CONFIG_NODE, &no_service_terminal_length_cmd);
 
-      install_element (VIEW_NODE, &show_thread_cpu_cmd);
-      install_element (ENABLE_NODE, &show_thread_cpu_cmd);
-      install_element (RESTRICTED_NODE, &show_thread_cpu_cmd);
-      
-      install_element (ENABLE_NODE, &clear_thread_cpu_cmd);
-      install_element (VIEW_NODE, &show_work_queues_cmd);
-      install_element (ENABLE_NODE, &show_work_queues_cmd);
+      install_thread_cmds();
+      install_work_queues_cmds();
     }
   srand(time(NULL));
 }

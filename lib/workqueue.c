@@ -204,6 +204,13 @@ DEFUN(show_work_queues,
   return CMD_SUCCESS;
 }
 
+void
+install_work_queues_cmds(void)
+{
+  install_element (VIEW_NODE, &show_work_queues_cmd);
+  install_element (ENABLE_NODE, &show_work_queues_cmd);
+}
+
 /* 'plug' a queue: Stop it from being scheduled,
  * ie: prevent the queue from draining.
  */
