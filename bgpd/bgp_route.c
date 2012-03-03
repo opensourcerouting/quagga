@@ -1092,12 +1092,10 @@ bgp_announce_check_rsclient (struct bgp_info *ri, struct peer *rsclient,
   struct bgp_filter *filter;
   struct bgp_info info;
   struct peer *from;
-  struct bgp *bgp;
   struct attr *riattr;
 
   from = ri->peer;
   filter = &rsclient->filter[afi][safi];
-  bgp = rsclient->bgp;
   riattr = bgp_info_mpath_count (ri) ? bgp_info_mpath_attr (ri) : ri->attr;
 
   if (DISABLE_BGP_ANNOUNCE)
@@ -1568,7 +1566,7 @@ bgp_process_main (struct work_queue *wq, void *data)
         {
           if (CHECK_FLAG (old_select->flags, BGP_INFO_IGP_CHANGED) ||
 	      CHECK_FLAG (old_select->flags, BGP_INFO_MULTIPATH_CHG))
-            bgp_zebra_announce (p, old_select, bgp);
+            bgp_zebra_announce (p, old_select, bgp, safi);
           
 	  UNSET_FLAG (old_select->flags, BGP_INFO_MULTIPATH_CHG);
           UNSET_FLAG (rn->flags, BGP_NODE_PROCESS_SCHEDULED);
@@ -1593,20 +1591,20 @@ bgp_process_main (struct work_queue *wq, void *data)
     }
 
   /* FIB update. */
-  if (safi == SAFI_UNICAST && ! bgp->name &&
-      ! bgp_option_check (BGP_OPT_NO_FIB))
+  if ((safi == SAFI_UNICAST || safi == SAFI_MULTICAST) && (! bgp->name &&
+      ! bgp_option_check (BGP_OPT_NO_FIB)))
     {
       if (new_select 
 	  && new_select->type == ZEBRA_ROUTE_BGP 
 	  && new_select->sub_type == BGP_ROUTE_NORMAL)
-	bgp_zebra_announce (p, new_select, bgp);
+	bgp_zebra_announce (p, new_select, bgp, safi);
       else
 	{
 	  /* Withdraw the route from the kernel. */
 	  if (old_select 
 	      && old_select->type == ZEBRA_ROUTE_BGP
 	      && old_select->sub_type == BGP_ROUTE_NORMAL)
-	    bgp_zebra_withdraw (p, old_select);
+	    bgp_zebra_withdraw (p, old_select, safi);
 	}
     }
     
@@ -1736,7 +1734,7 @@ bgp_maximum_prefix_overflow (struct peer *peer, afi_t afi,
        u_int8_t ndata[7];
 
        if (safi == SAFI_MPLS_VPN)
-         safi = BGP_SAFI_VPNV4;
+         safi = SAFI_MPLS_LABELED_VPN;
          
        ndata[0] = (afi >>  8);
        ndata[1] = afi;
@@ -1889,11 +1887,11 @@ bgp_update_rsclient (struct peer *rsclient, afi_t afi, safi_t safi,
   bgp_attr_unintern (&attr_new2);
 
   /* IPv4 unicast next hop check.  */
-  if (afi == AFI_IP && safi == SAFI_UNICAST)
+  if ((afi == AFI_IP) && ((safi == SAFI_UNICAST) || safi == SAFI_MULTICAST))
     {
-     /* Next hop must not be 0.0.0.0 nor Class E address. */
+     /* Next hop must not be 0.0.0.0 nor Class D/E address. */
       if (new_attr.nexthop.s_addr == 0
-         || ntohl (new_attr.nexthop.s_addr) >= 0xe0000000)
+         || IPV4_CLASS_DE (ntohl (new_attr.nexthop.s_addr)))
        {
          bgp_attr_unintern (&attr_new);
 
@@ -2140,18 +2138,18 @@ bgp_update_main (struct peer *peer, struct prefix *p, struct attr *attr,
       /* If the peer is EBGP and nexthop is not on connected route,
 	 discard it.  */
       if (peer_sort (peer) == BGP_PEER_EBGP && peer->ttl == 1
-	  && ! bgp_nexthop_check_ebgp (afi, &new_attr)
+	  && ! bgp_nexthop_onlink (afi, &new_attr)
 	  && ! CHECK_FLAG (peer->flags, PEER_FLAG_DISABLE_CONNECTED_CHECK))
 	{
 	  reason = "non-connected next-hop;";
 	  goto filtered;
 	}
 
-      /* Next hop must not be 0.0.0.0 nor Class E address.  Next hop
+      /* Next hop must not be 0.0.0.0 nor Class D/E address. Next hop
 	 must not be my own address.  */
       if (bgp_nexthop_self (afi, &new_attr)
 	  || new_attr.nexthop.s_addr == 0
-	  || ntohl (new_attr.nexthop.s_addr) >= 0xe0000000)
+	  || IPV4_CLASS_DE (ntohl (new_attr.nexthop.s_addr)))
 	{
 	  reason = "martian next-hop;";
 	  goto filtered;
@@ -3013,7 +3011,7 @@ bgp_cleanup_routes (void)
 	  if (CHECK_FLAG (ri->flags, BGP_INFO_SELECTED)
 	      && ri->type == ZEBRA_ROUTE_BGP 
 	      && ri->sub_type == BGP_ROUTE_NORMAL)
-	    bgp_zebra_withdraw (&rn->p, ri);
+	    bgp_zebra_withdraw (&rn->p, ri,SAFI_UNICAST);
 
       table = bgp->rib[AFI_IP6][SAFI_UNICAST];
 
@@ -3022,7 +3020,7 @@ bgp_cleanup_routes (void)
 	  if (CHECK_FLAG (ri->flags, BGP_INFO_SELECTED)
 	      && ri->type == ZEBRA_ROUTE_BGP 
 	      && ri->sub_type == BGP_ROUTE_NORMAL)
-	    bgp_zebra_withdraw (&rn->p, ri);
+	    bgp_zebra_withdraw (&rn->p, ri,SAFI_UNICAST);
     }
 }
 
@@ -4246,7 +4244,7 @@ DEFUN (ipv6_bgp_network,
        "Specify a network to announce via BGP\n"
        "IPv6 prefix <network>/<length>\n")
 {
-  return bgp_static_set (vty, vty->index, argv[0], AFI_IP6, SAFI_UNICAST,
+  return bgp_static_set (vty, vty->index, argv[0], AFI_IP6, bgp_node_safi(vty),
                          NULL, 0);
 }
 
@@ -4269,7 +4267,7 @@ DEFUN (no_ipv6_bgp_network,
        "Specify a network to announce via BGP\n"
        "IPv6 prefix <network>/<length>\n")
 {
-  return bgp_static_unset (vty, vty->index, argv[0], AFI_IP6, SAFI_UNICAST);
+  return bgp_static_unset (vty, vty->index, argv[0], AFI_IP6, bgp_node_safi(vty));
 }
 
 ALIAS (no_ipv6_bgp_network,
@@ -5321,7 +5319,8 @@ ALIAS (no_ipv6_aggregate_address_summary_only,
 
 /* Redistribute route treatment. */
 void
-bgp_redistribute_add (struct prefix *p, struct in_addr *nexthop,
+bgp_redistribute_add (struct prefix *p, const struct in_addr *nexthop,
+		      const struct in6_addr *nexthop6,
 		      u_int32_t metric, u_char type)
 {
   struct bgp *bgp;
@@ -5340,6 +5339,15 @@ bgp_redistribute_add (struct prefix *p, struct in_addr *nexthop,
   bgp_attr_default_set (&attr, BGP_ORIGIN_INCOMPLETE);
   if (nexthop)
     attr.nexthop = *nexthop;
+
+#ifdef HAVE_IPV6
+  if (nexthop6)
+    {
+      struct attr_extra *extra = bgp_attr_extra_get(&attr);
+      extra->mp_nexthop_global = *nexthop6;
+      extra->mp_nexthop_len = 16;
+    }
+#endif
 
   attr.med = metric;
   attr.flag |= ATTR_FLAG_BIT (BGP_ATTR_MULTI_EXIT_DISC);
@@ -9461,10 +9469,8 @@ bgp_table_stats_vty (struct vty *vty, const char *name,
         safi = SAFI_MULTICAST;
       else if (strncmp (safi_str, "u", 1) == 0)
         safi = SAFI_UNICAST;
-      else if (strncmp (safi_str, "vpnv4", 5) == 0)
-        safi = BGP_SAFI_VPNV4;
-      else if (strncmp (safi_str, "vpnv6", 6) == 0)
-        safi = BGP_SAFI_VPNV6;
+      else if (strncmp (safi_str, "vpnv4", 5) == 0 || strncmp (safi_str, "vpnv6", 5) == 0)
+        safi = SAFI_MPLS_LABELED_VPN;
       else
         {
           vty_out (vty, "%% Invalid subsequent address family %s%s",
@@ -9479,13 +9485,6 @@ bgp_table_stats_vty (struct vty *vty, const char *name,
       return CMD_WARNING;
     }
 
-  if ((afi == AFI_IP && safi ==  BGP_SAFI_VPNV6)
-      || (afi == AFI_IP6 && safi == BGP_SAFI_VPNV4))
-    {
-      vty_out (vty, "%% Invalid subsequent address family %s for %s%s",
-               afi_str, safi_str, VTY_NEWLINE);
-      return CMD_WARNING;
-    }
   return bgp_table_stats (vty, bgp, afi, safi);
 }
 
@@ -12662,6 +12661,9 @@ bgp_route_init (void)
   install_element (BGP_IPV6_NODE, &ipv6_aggregate_address_summary_only_cmd);
   install_element (BGP_IPV6_NODE, &no_ipv6_aggregate_address_cmd);
   install_element (BGP_IPV6_NODE, &no_ipv6_aggregate_address_summary_only_cmd);
+
+  install_element (BGP_IPV6M_NODE, &ipv6_bgp_network_cmd);
+  install_element (BGP_IPV6M_NODE, &no_ipv6_bgp_network_cmd);
 
   /* Old config IPv6 BGP commands.  */
   install_element (BGP_NODE, &old_ipv6_bgp_network_cmd);
