@@ -2321,6 +2321,13 @@ ospf_verify_header (struct stream *ibuf, struct ospf_interface *oi,
       return -1;
     }
 
+  /* Valid OSPFv2 packet types are 1 through 5 inclusive. */
+  if (ospfh->type < 1 || ospfh->type > 5)
+  {
+    zlog_warn ("interface %s: invalid packet type %u", IF_NAME (oi), ospfh->type);
+    return -1;
+  }
+
   /* Check Area ID. */
   if (!ospf_check_area_id (oi, ospfh))
     {
@@ -2430,14 +2437,28 @@ ospf_read (struct thread *thread)
       return 0;
     }
 
-  /* Adjust size to message length. */
+  /* Advance from IP header to OSPF header (iph->ip_hl has been verified
+     by ospf_recv_packet() to be correct). */
   stream_forward_getp (ibuf, iph->ip_hl * 4);
-  
-  /* Get ospf packet header. */
+
+  /* Make sure the OSPF header is really there. */
+  if (stream_get_endp (ibuf) - stream_get_getp (ibuf) < OSPF_HEADER_SIZE)
+  {
+    zlog_debug ("ospf_read: ignored OSPF packet with undersized (%u bytes) header",
+                stream_get_endp (ibuf) - stream_get_getp (ibuf));
+    return -1;
+  }
+
+  /* Now it is safe to access all fields of OSPF packet header. */
   ospfh = (struct ospf_header *) STREAM_PNT (ibuf);
 
   /* associate packet with ospf interface */
   oi = ospf_if_lookup_recv_if (ospf, iph->ip_src, ifp);
+
+  /* ospf_verify_header() relies on a valid "oi" and thus can be called only
+     after the passive/backbone/other checks below are passed. These checks
+     in turn access the fields of unverified "ospfh" structure for their own
+     purposes and must remain very accurate in doing this. */
 
   /* If incoming interface is passive one, ignore it. */
   if (oi && OSPF_IF_PASSIVE_STATUS (oi) == OSPF_IF_PASSIVE)
@@ -2529,6 +2550,17 @@ ospf_read (struct thread *thread)
       return 0;
     }
 
+  /* Verify more OSPF header fields. */
+  ret = ospf_verify_header (ibuf, oi, iph, ospfh);
+  if (ret < 0)
+  {
+    if (IS_DEBUG_OSPF_PACKET (0, RECV))
+      zlog_debug ("ospf_read[%s]: Header check failed, "
+                  "dropping.",
+                  inet_ntoa (iph->ip_src));
+    return ret;
+  }
+
   /* Show debug receiving packet. */
   if (IS_DEBUG_OSPF_PACKET (ospfh->type - 1, RECV))
     {
@@ -2547,20 +2579,6 @@ ospf_read (struct thread *thread)
       if (IS_DEBUG_OSPF_PACKET (ospfh->type - 1, DETAIL))
 	zlog_debug ("-----------------------------------------------------");
   }
-
-  /* Some header verification. */
-  ret = ospf_verify_header (ibuf, oi, iph, ospfh);
-  if (ret < 0)
-    {
-      if (IS_DEBUG_OSPF_PACKET (ospfh->type - 1, RECV))
-        {
-          zlog_debug ("ospf_read[%s/%s]: Header check failed, "
-                     "dropping.",
-                     ospf_packet_type_str[ospfh->type],
-                     inet_ntoa (iph->ip_src));
-        }
-      return ret;
-    }
 
   stream_forward_getp (ibuf, OSPF_HEADER_SIZE);
 
