@@ -732,7 +732,7 @@ netlink_routing_table (struct sockaddr_nl *snl, struct nlmsghdr *h)
 
       if (!tb[RTA_MULTIPATH])
           rib_add_ipv4 (ZEBRA_ROUTE_KERNEL, flags, &p, gate, src, index,
-                        table, metric, 0);
+                        table, metric, 0, SAFI_UNICAST);
       else
         {
           /* This is a multipath route */
@@ -786,7 +786,7 @@ netlink_routing_table (struct sockaddr_nl *snl, struct nlmsghdr *h)
           if (rib->nexthop_num == 0)
             XFREE (MTYPE_RIB, rib);
           else
-            rib_add_ipv4_multipath (&p, rib);
+            rib_add_ipv4_multipath (&p, rib, SAFI_UNICAST);
         }
     }
 #ifdef HAVE_IPV6
@@ -798,7 +798,7 @@ netlink_routing_table (struct sockaddr_nl *snl, struct nlmsghdr *h)
       p.prefixlen = rtm->rtm_dst_len;
 
       rib_add_ipv6 (ZEBRA_ROUTE_KERNEL, flags, &p, gate, index, table,
-		    metric, 0);
+		    metric, 0, SAFI_UNICAST);
     }
 #endif /* HAVE_IPV6 */
 
@@ -934,7 +934,7 @@ netlink_route_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
         {
           if (!tb[RTA_MULTIPATH])
             rib_add_ipv4 (ZEBRA_ROUTE_KERNEL, 0, &p, gate, src, index, table,
-                          metric, 0);
+                          metric, 0, SAFI_UNICAST);
           else
             {
               /* This is a multipath route */
@@ -988,11 +988,11 @@ netlink_route_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
               if (rib->nexthop_num == 0)
                 XFREE (MTYPE_RIB, rib);
               else
-                rib_add_ipv4_multipath (&p, rib);
+                rib_add_ipv4_multipath (&p, rib, SAFI_UNICAST);
             }
         }
       else
-        rib_delete_ipv4 (ZEBRA_ROUTE_KERNEL, 0, &p, gate, index, table);
+        rib_delete_ipv4 (ZEBRA_ROUTE_KERNEL, 0, &p, gate, index, table, SAFI_UNICAST);
     }
 
 #ifdef HAVE_IPV6
@@ -1018,9 +1018,9 @@ netlink_route_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
         }
 
       if (h->nlmsg_type == RTM_NEWROUTE)
-        rib_add_ipv6 (ZEBRA_ROUTE_KERNEL, 0, &p, gate, index, table, metric, 0);
+        rib_add_ipv6 (ZEBRA_ROUTE_KERNEL, 0, &p, gate, index, table, metric, 0, SAFI_UNICAST);
       else
-        rib_delete_ipv6 (ZEBRA_ROUTE_KERNEL, 0, &p, gate, index, table);
+        rib_delete_ipv6 (ZEBRA_ROUTE_KERNEL, 0, &p, gate, index, table, SAFI_UNICAST);
     }
 #endif /* HAVE_IPV6 */
 
@@ -1954,11 +1954,7 @@ extern struct thread_master *master;
 static int
 kernel_read (struct thread *thread)
 {
-  int ret;
-  int sock;
-
-  sock = THREAD_FD (thread);
-  ret = netlink_parse_info (netlink_information_fetch, &netlink);
+  netlink_parse_info (netlink_information_fetch, &netlink);
   thread_add_read (zebrad.master, kernel_read, NULL, netlink.sock);
 
   return 0;
