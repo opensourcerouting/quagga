@@ -1021,6 +1021,22 @@ bgp_redistribute_metric_unset (struct bgp *bgp, afi_t afi, int type)
 
   return 1;
 }
+
+/* Ask zebra to send routes again. */
+int
+bgp_redistribute_reset (struct bgp *bgp, afi_t afi, int type)
+{
+  if (zclient->sock < 0)
+    return 0;
+
+  zebra_redistribute_send (ZEBRA_REDISTRIBUTE_DELETE, zclient, type);
+
+  zclient->redist[type] = 0; /* dirty */
+  bgp_redistribute_set (bgp, afi, type);
+
+  return 1;
+}
+
 
 void
 bgp_zclient_reset (void)

@@ -52,6 +52,7 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #include "bgpd/bgp_mplsvpn.h"
 #include "bgpd/bgp_ecommunity.h"
 #include "bgpd/bgp_vty.h"
+#include "bgpd/bgp_zebra.h"
 
 /* Memo of route-map commands.
 
@@ -579,7 +580,8 @@ route_match_aspath (void *rule, struct prefix *prefix,
       bgp_info = object;
     
       /* Perform match. */
-      return ((as_list_apply (as_list, bgp_info->attr->aspath) == AS_FILTER_DENY) ? RMAP_NOMATCH : RMAP_MATCH);
+      return ((as_list_apply (as_list, bgp_info->attr->aspath) == AS_FILTER_DENY)
+              ? RMAP_NOMATCH : RMAP_MATCH);
     }
   return RMAP_NOMATCH;
 }
@@ -2393,6 +2395,57 @@ bgp_route_map_update (const char *unused)
 	}
     }
 }
+
+/* Update redistributed routes when route-map changed and
+ * bgp_redistribute_responsive is set. */
+
+static
+void bgp_route_map_changed (route_map_event_t e, const char *rm)
+{
+  int i;
+  struct listnode *mnode, *mnnode;
+  struct bgp *bgp;
+
+  if (!bgp_option_check (BGP_OPT_REDIST_RMAP_RESPONSIVE))
+    return;
+
+  for (ALL_LIST_ELEMENTS (bm->bgp, mnode, mnnode, bgp))
+    {
+      for (i = 0; i < ZEBRA_ROUTE_MAX; i++)
+        {
+          if (bgp->rmap[ZEBRA_FAMILY_IPV4][i].map)
+              bgp_redistribute_reset (bgp, AFI_IP, i);
+          #ifdef HAVE_IPV6
+          if (bgp->rmap[ZEBRA_FAMILY_IPV6][i].map)
+              bgp_redistribute_reset (bgp, AFI_IP6, i);
+          #endif /* HAVE_IPV6 */
+        }
+    }
+}
+
+DEFUN (responsive_rmap,
+       responsive_rmap_cmd,
+       "bgp redistribute responsive",
+       NO_STR
+       "Redistribute options\n"
+       "Enable responsiveness of redistribution route-maps\n")
+{
+  bgp_option_set (BGP_OPT_REDIST_RMAP_RESPONSIVE);
+  bgp_route_map_changed (0, 0);
+  return CMD_SUCCESS;
+}
+
+DEFUN (no_responsive_rmap,
+       no_responsive_rmap_cmd,
+       "no bgp redistribute responsive",
+       NO_STR
+       "Redistribute options\n"
+       "Disable responsiveness of redistribution route-maps\n")
+{
+  bgp_option_unset (BGP_OPT_REDIST_RMAP_RESPONSIVE);
+  return CMD_SUCCESS;
+}
+
 
 DEFUN (match_peer,
        match_peer_cmd,
@@ -3827,6 +3880,10 @@ bgp_route_map_init (void)
   route_map_init_vty ();
   route_map_add_hook (bgp_route_map_update);
   route_map_delete_hook (bgp_route_map_update);
+  route_map_event_hook (bgp_route_map_changed);
+
+  install_element (CONFIG_NODE, &responsive_rmap_cmd);
+  install_element (CONFIG_NODE, &no_responsive_rmap_cmd);
 
   route_map_install_match (&route_match_peer_cmd);
   route_map_install_match (&route_match_ip_address_cmd);

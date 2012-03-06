@@ -81,6 +81,7 @@ bgp_option_set (int flag)
     case BGP_OPT_NO_FIB:
     case BGP_OPT_MULTIPLE_INSTANCE:
     case BGP_OPT_CONFIG_CISCO:
+    case BGP_OPT_REDIST_RMAP_RESPONSIVE:
       SET_FLAG (bm->options, flag);
       break;
     default:
@@ -100,6 +101,7 @@ bgp_option_unset (int flag)
       /* Fall through.  */
     case BGP_OPT_NO_FIB:
     case BGP_OPT_CONFIG_CISCO:
+    case BGP_OPT_REDIST_RMAP_RESPONSIVE:
       UNSET_FLAG (bm->options, flag);
       break;
     default:
@@ -4977,6 +4979,12 @@ bgp_config_write (struct vty *vty)
   if (bgp_option_check (BGP_OPT_CONFIG_CISCO))
     {    
       vty_out (vty, "bgp config-type cisco%s", VTY_NEWLINE);
+      write++;
+    }
+
+  if (bgp_option_check (BGP_OPT_REDIST_RMAP_RESPONSIVE))
+    {
+      vty_out (vty, "bgp redistribute responsive%s", VTY_NEWLINE);
       write++;
     }
 
