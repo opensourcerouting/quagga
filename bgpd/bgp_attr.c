@@ -1486,6 +1486,13 @@ bgp_mp_reach_parse (struct peer *peer, const bgp_size_t length,
 
 	  attre->mp_nexthop_len = 16;
 	}
+      if (!peer->shared_network)
+        {
+          if (BGP_DEBUG (update, UPDATE_IN))
+            zlog_debug ("%s got two nexthop but the peer is not on a shared network", 
+                       peer->host);
+	  attre->mp_nexthop_len = 16;
+        }
       break;
 #endif /* HAVE_IPV6 */
     default:
