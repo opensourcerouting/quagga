@@ -5264,7 +5264,7 @@ bgp_redistribute_add (struct prefix *p, const struct in_addr *nexthop,
     attr.nexthop = *nexthop;
 
 #ifdef HAVE_IPV6
-  if (nexthop6)
+  if (nexthop6 && !IN6_IS_ADDR_LINKLOCAL(nexthop6))
     {
       struct attr_extra *extra = bgp_attr_extra_get(&attr);
       extra->mp_nexthop_global = *nexthop6;
