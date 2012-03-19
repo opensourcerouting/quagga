@@ -1023,7 +1023,7 @@ DEFUN (ipv6_ospf6_ifmtu,
     oi = ospf6_interface_create (ifp);
   assert (oi);
 
-  ifmtu = strtol (argv[0], NULL, 10);
+  VTY_GET_SHORTINT ("ifmtu", ifmtu, argv[0]);
 
   if (oi->ifmtu == ifmtu)
     return CMD_SUCCESS;
@@ -1129,19 +1129,53 @@ DEFUN (ipv6_ospf6_cost,
     oi = ospf6_interface_create (ifp);
   assert (oi);
 
-  lcost = strtol (argv[0], NULL, 10);
+  VTY_GET_SHORTINT ("cost", lcost, argv[0]);
 
-  if (lcost > UINT32_MAX)
-    {
-      vty_out (vty, "Cost %ld is out of range%s", lcost, VNL);
-      return CMD_WARNING;
-    }
-  
   if (oi->cost == lcost)
     return CMD_SUCCESS;
-  
+
   oi->cost = lcost;
-  
+
+  /* update cost held in route_connected list in ospf6_interface */
+  ospf6_interface_connected_route_update (oi->interface);
+
+  /* execute LSA hooks */
+  if (oi->area)
+    {
+      OSPF6_LINK_LSA_SCHEDULE (oi);
+      OSPF6_ROUTER_LSA_SCHEDULE (oi->area);
+      OSPF6_NETWORK_LSA_SCHEDULE (oi);
+      OSPF6_INTRA_PREFIX_LSA_SCHEDULE_TRANSIT (oi);
+      OSPF6_INTRA_PREFIX_LSA_SCHEDULE_STUB (oi->area);
+    }
+
+  return CMD_SUCCESS;
+}
+
+DEFUN (no_ipv6_ospf6_cost,
+       no_ipv6_ospf6_cost_cmd,
+      "no ipv6 ospf6 cost",
+       NO_STR
+       IP6_STR
+       OSPF6_STR
+      "Interface cost\n")
+{
+  struct interface *ifp;
+  struct ospf6_interface *oi;
+
+  ifp = (struct interface *) vty->index;
+  assert (ifp);
+
+  oi = (struct ospf6_interface *) ifp->info;
+
+  if (!oi)
+    return CMD_SUCCESS;
+
+  if (oi->cost == OSPF6_INTERFACE_COST)
+    return CMD_SUCCESS;
+
+  oi->cost = OSPF6_INTERFACE_COST;
+
   /* update cost held in route_connected list in ospf6_interface */
   ospf6_interface_connected_route_update (oi->interface);
 
@@ -1178,7 +1212,30 @@ DEFUN (ipv6_ospf6_hellointerval,
     oi = ospf6_interface_create (ifp);
   assert (oi);
 
-  oi->hello_interval = strtol (argv[0], NULL, 10);
+  VTY_GET_SHORTINT ("hello-interval", oi->hello_interval, argv[0]);
+
+  return CMD_SUCCESS;
+}
+
+DEFUN (no_ipv6_ospf6_hellointerval,
+       no_ipv6_ospf6_hellointerval_cmd,
+      "no ipv6 ospf6 hello-interval",
+       NO_STR
+       IP6_STR
+       OSPF6_STR
+      "Interval time of Hello packets\n")
+{
+  struct interface *ifp;
+  struct ospf6_interface *oi;
+
+  ifp = (struct interface *) vty->index;
+  assert (ifp);
+
+  oi = (struct ospf6_interface *) ifp->info;
+  if (!oi)
+    return CMD_SUCCESS;
+
+  oi->hello_interval = OSPF6_INTERFACE_HELLO_INTERVAL;
   return CMD_SUCCESS;
 }
 
@@ -1203,7 +1260,30 @@ DEFUN (ipv6_ospf6_deadinterval,
     oi = ospf6_interface_create (ifp);
   assert (oi);
 
-  oi->dead_interval = strtol (argv[0], NULL, 10);
+  VTY_GET_SHORTINT ("dead-interval", oi->dead_interval, argv[0]);
+
+  return CMD_SUCCESS;
+}
+
+DEFUN (no_ipv6_ospf6_deadinterval,
+       no_ipv6_ospf6_deadinterval_cmd,
+      "no ipv6 ospf6 dead-interval",
+       NO_STR
+       IP6_STR
+       OSPF6_STR
+      "Interval time after which a neighbor is declared down\n")
+{
+  struct interface *ifp;
+  struct ospf6_interface *oi;
+
+  ifp = (struct interface *) vty->index;
+  assert (ifp);
+
+  oi = (struct ospf6_interface *) ifp->info;
+  if (!oi)
+    return CMD_SUCCESS;
+
+  oi->dead_interval = OSPF6_INTERFACE_DEAD_INTERVAL;
   return CMD_SUCCESS;
 }
 
@@ -1228,7 +1308,30 @@ DEFUN (ipv6_ospf6_transmitdelay,
     oi = ospf6_interface_create (ifp);
   assert (oi);
 
-  oi->transdelay = strtol (argv[0], NULL, 10);
+  VTY_GET_INTEGER_RANGE ("transmit-delay", oi->transdelay, argv[0], 1, 3600);
+
+  return CMD_SUCCESS;
+}
+
+DEFUN (no_ipv6_ospf6_transmitdelay,
+       no_ipv6_ospf6_transmitdelay_cmd,
+      "no ipv6 ospf6 transmit-delay",
+       NO_STR
+       IP6_STR
+       OSPF6_STR
+      "Transmit delay of this interface\n")
+{
+  struct interface *ifp;
+  struct ospf6_interface *oi;
+
+  ifp = (struct interface *) vty->index;
+  assert (ifp);
+
+  oi = (struct ospf6_interface *) ifp->info;
+  if (!oi)
+    return CMD_SUCCESS;
+
+  oi->transdelay = OSPF6_INTERFACE_TRANSDELAY;
   return CMD_SUCCESS;
 }
 
@@ -1253,7 +1356,30 @@ DEFUN (ipv6_ospf6_retransmitinterval,
     oi = ospf6_interface_create (ifp);
   assert (oi);
 
-  oi->rxmt_interval = strtol (argv[0], NULL, 10);
+  VTY_GET_SHORTINT ("retransmit-interval", oi->rxmt_interval, argv[0]);
+
+  return CMD_SUCCESS;
+}
+
+DEFUN (no_ipv6_ospf6_retransmitinterval,
+       no_ipv6_ospf6_retransmitinterval_cmd,
+      "no ipv6 ospf6 retransmit-interval",
+       NO_STR
+       IP6_STR
+       OSPF6_STR
+      "Time between retransmitting lost link state advertisements\n")
+{
+  struct ospf6_interface *oi;
+  struct interface *ifp;
+
+  ifp = (struct interface *) vty->index;
+  assert (ifp);
+
+  oi = (struct ospf6_interface *) ifp->info;
+  if (!oi)
+    return CMD_SUCCESS;
+
+  oi->rxmt_interval = OSPF6_INTERFACE_RXMT_INTERVAL;
   return CMD_SUCCESS;
 }
 
@@ -1278,7 +1404,36 @@ DEFUN (ipv6_ospf6_priority,
     oi = ospf6_interface_create (ifp);
   assert (oi);
 
-  oi->priority = strtol (argv[0], NULL, 10);
+  VTY_GET_INTEGER_RANGE ("priority", oi->priority, argv[0], 0, 255);
+
+  if (oi->area)
+    ospf6_interface_state_change (dr_election (oi), oi);
+
+  return CMD_SUCCESS;
+}
+
+DEFUN (no_ipv6_ospf6_priority,
+       no_ipv6_ospf6_priority_cmd,
+      "no ipv6 ospf6 priority",
+       NO_STR
+       IP6_STR
+       OSPF6_STR
+      "Router priority\n")
+{
+  struct interface *ifp;
+  struct ospf6_interface *oi;
+
+  ifp = (struct interface *) vty->index;
+  assert (ifp);
+
+  oi = (struct ospf6_interface *) ifp->info;
+  if (!oi)
+    return CMD_SUCCESS;
+
+  if (oi->priority == OSPF6_INTERFACE_PRIORITY)
+    return CMD_SUCCESS;
+
+  oi->priority = OSPF6_INTERFACE_PRIORITY;
 
   if (oi->area)
     ospf6_interface_state_change (dr_election (oi), oi);
@@ -1306,7 +1461,30 @@ DEFUN (ipv6_ospf6_instance,
     oi = ospf6_interface_create (ifp);
   assert (oi);
 
-  oi->instance_id = strtol (argv[0], NULL, 10);
+  VTY_GET_INTEGER_RANGE ("instance-id", oi->instance_id, argv[0], 0, 255);
+  return CMD_SUCCESS;
+}
+
+DEFUN (no_ipv6_ospf6_instance,
+       no_ipv6_ospf6_instance_cmd,
+      "no ipv6 ospf6 instance-id",
+       NO_STR
+       IP6_STR
+       OSPF6_STR
+      "Instance ID for this interface\n")
+{
+  struct ospf6_interface *oi;
+  struct interface *ifp;
+
+  ifp = (struct interface *) vty->index;
+  assert (ifp);
+
+  oi = (struct ospf6_interface *) ifp->info;
+  if (!oi)
+    return CMD_SUCCESS;
+
+  oi->instance_id = OSPF6_INTERFACE_INSTANCE_ID;
+
   return CMD_SUCCESS;
 }
 
@@ -1603,14 +1781,21 @@ ospf6_interface_init (void)
   install_element (INTERFACE_NODE, &interface_desc_cmd);
   install_element (INTERFACE_NODE, &no_interface_desc_cmd);
   install_element (INTERFACE_NODE, &ipv6_ospf6_cost_cmd);
+  install_element (INTERFACE_NODE, &no_ipv6_ospf6_cost_cmd);
   install_element (INTERFACE_NODE, &ipv6_ospf6_ifmtu_cmd);
   install_element (INTERFACE_NODE, &no_ipv6_ospf6_ifmtu_cmd);
   install_element (INTERFACE_NODE, &ipv6_ospf6_deadinterval_cmd);
+  install_element (INTERFACE_NODE, &no_ipv6_ospf6_deadinterval_cmd);
   install_element (INTERFACE_NODE, &ipv6_ospf6_hellointerval_cmd);
+  install_element (INTERFACE_NODE, &no_ipv6_ospf6_hellointerval_cmd);
   install_element (INTERFACE_NODE, &ipv6_ospf6_priority_cmd);
+  install_element (INTERFACE_NODE, &no_ipv6_ospf6_priority_cmd);
   install_element (INTERFACE_NODE, &ipv6_ospf6_retransmitinterval_cmd);
+  install_element (INTERFACE_NODE, &no_ipv6_ospf6_retransmitinterval_cmd);
   install_element (INTERFACE_NODE, &ipv6_ospf6_transmitdelay_cmd);
+  install_element (INTERFACE_NODE, &no_ipv6_ospf6_transmitdelay_cmd);
   install_element (INTERFACE_NODE, &ipv6_ospf6_instance_cmd);
+  install_element (INTERFACE_NODE, &no_ipv6_ospf6_instance_cmd);
 
   install_element (INTERFACE_NODE, &ipv6_ospf6_passive_cmd);
   install_element (INTERFACE_NODE, &no_ipv6_ospf6_passive_cmd);
