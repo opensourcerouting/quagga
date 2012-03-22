@@ -2117,7 +2117,7 @@ ospf_recv_packet (int fd, struct interface **ifp, struct stream *ibuf)
   msgh.msg_control = (caddr_t) buff;
   msgh.msg_controllen = sizeof (buff);
   
-  ret = stream_recvmsg (ibuf, fd, &msgh, 0, OSPF_MAX_PACKET_SIZE+1);
+  ret = stream_recvmsg (ibuf, fd, &msgh, 0, stream_get_size (ibuf));
   if (ret < 0)
     {
       zlog_warn("stream_recvmsg failed: %s", safe_strerror(errno));
