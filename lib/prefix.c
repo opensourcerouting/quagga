@@ -2769,37 +2769,6 @@ apply_mask (struct prefix *p)
   return;
 }
 
-/* Utility function of convert between struct prefix <=> union sockunion.
- * FIXME This function isn't used anywhere. */
-struct prefix *
-sockunion2prefix (const union sockunion *dest,
-		  const union sockunion *mask)
-{
-  if (dest->sa.sa_family == AF_INET)
-    {
-      struct prefix_ipv4 *p;
-
-      p = prefix_ipv4_new ();
-      p->family = AF_INET;
-      p->prefix = dest->sin.sin_addr;
-      p->prefixlen = ip_masklen (mask->sin.sin_addr);
-      return (struct prefix *) p;
-    }
-#ifdef HAVE_IPV6
-  if (dest->sa.sa_family == AF_INET6)
-    {
-      struct prefix_ipv6 *p;
-
-      p = prefix_ipv6_new ();
-      p->family = AF_INET6;
-      p->prefixlen = ip6_masklen (mask->sin6.sin6_addr);
-      memcpy (&p->prefix, &dest->sin6.sin6_addr, sizeof (struct in6_addr));
-      return (struct prefix *) p;
-    }
-#endif /* HAVE_IPV6 */
-  return NULL;
-}
-
 /* Utility function of convert between struct prefix <=> union sockunion. */
 struct prefix *
 sockunion2hostprefix (const union sockunion *su)

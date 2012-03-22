@@ -161,8 +161,6 @@ extern int prefix_common_bits (const struct prefix *, const struct prefix *);
 extern void prefix_copy (struct prefix *dest, const struct prefix *src);
 extern void apply_mask (struct prefix *);
 
-extern struct prefix *sockunion2prefix (const union sockunion *dest,
-                                        const union sockunion *mask);
 extern struct prefix *sockunion2hostprefix (const union sockunion *);
 extern void prefix2sockunion (const struct prefix *, union sockunion *);
 
