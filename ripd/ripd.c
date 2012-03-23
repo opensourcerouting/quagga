@@ -2915,7 +2915,7 @@ DEFUN (rip_route,
   struct route_node *node;
 
   ret = str2prefix_ipv4 (argv[0], &p);
-  if (ret < 0)
+  if (ret == 0)
     {
       vty_out (vty, "Malformed address%s", VTY_NEWLINE);
       return CMD_WARNING;
@@ -2951,7 +2951,7 @@ DEFUN (no_rip_route,
   struct route_node *node;
 
   ret = str2prefix_ipv4 (argv[0], &p);
-  if (ret < 0)
+  if (ret == 0)
     {
       vty_out (vty, "Malformed address%s", VTY_NEWLINE);
       return CMD_WARNING;

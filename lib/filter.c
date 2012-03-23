@@ -1179,7 +1179,7 @@ filter_set_zebra (struct vty *vty, const char *name_str, const char *type_str,
   if (afi == AFI_IP)
     {
       ret = str2prefix_ipv4 (prefix_str, (struct prefix_ipv4 *)&p);
-      if (ret <= 0)
+      if (ret == 0)
 	{
 	  vty_out (vty, "IP address prefix/prefixlen is malformed%s",
 		   VTY_NEWLINE);

@@ -1182,7 +1182,7 @@ ip_address_install (struct vty *vty, struct interface *ifp,
   int ret;
 
   ret = str2prefix_ipv4 (addr_str, &cp);
-  if (ret <= 0)
+  if (ret == 0)
     {
       vty_out (vty, "%% Malformed address %s", VTY_NEWLINE);
       return CMD_WARNING;
@@ -1267,7 +1267,7 @@ ip_address_uninstall (struct vty *vty, struct interface *ifp,
 
   /* Convert to prefix structure. */
   ret = str2prefix_ipv4 (addr_str, &cp);
-  if (ret <= 0)
+  if (ret == 0)
     {
       vty_out (vty, "%% Malformed address %s", VTY_NEWLINE);
       return CMD_WARNING;

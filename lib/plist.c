@@ -705,7 +705,7 @@ vty_prefix_list_install (struct vty *vty, afi_t afi, const char *name,
       else
 	ret = str2prefix_ipv4 (prefix, (struct prefix_ipv4 *) &p);
 
-      if (ret <= 0)
+      if (ret == 0)
 	{
 	  vty_out (vty, "%% Malformed IPv4 prefix%s", VTY_NEWLINE);
 	  return CMD_WARNING;
@@ -844,7 +844,7 @@ vty_prefix_list_uninstall (struct vty *vty, afi_t afi, const char *name,
       else
 	ret = str2prefix_ipv4 (prefix, (struct prefix_ipv4 *) &p);
 
-      if (ret <= 0)
+      if (ret == 0)
 	{
 	  vty_out (vty, "%% Malformed IPv4 prefix%s", VTY_NEWLINE);
 	  return CMD_WARNING;

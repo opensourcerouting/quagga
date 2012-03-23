@@ -1299,7 +1299,7 @@ DEFUN (rip_neighbor,
 
   ret = str2prefix_ipv4 (argv[0], &p);
 
-  if (ret <= 0)
+  if (ret == 0)
     {
       vty_out (vty, "Please specify address by A.B.C.D%s", VTY_NEWLINE);
       return CMD_WARNING;
@@ -1323,7 +1323,7 @@ DEFUN (no_rip_neighbor,
 
   ret = str2prefix_ipv4 (argv[0], &p);
 
-  if (ret <= 0)
+  if (ret == 0)
     {
       vty_out (vty, "Please specify address by A.B.C.D%s", VTY_NEWLINE);
       return CMD_WARNING;

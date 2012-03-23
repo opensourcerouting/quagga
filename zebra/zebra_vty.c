@@ -969,7 +969,7 @@ DEFUN (show_ip_route_addr,
   struct route_node *rn;
 
   ret = str2prefix_ipv4 (argv[0], &p);
-  if (ret <= 0)
+  if (ret == 0)
     {
       vty_out (vty, "%% Malformed IPv4 address%s", VTY_NEWLINE);
       return CMD_WARNING;
@@ -1007,7 +1007,7 @@ DEFUN (show_ip_route_prefix,
   struct route_node *rn;
 
   ret = str2prefix_ipv4 (argv[0], &p);
-  if (ret <= 0)
+  if (ret == 0)
     {
       vty_out (vty, "%% Malformed IPv4 address%s", VTY_NEWLINE);
       return CMD_WARNING;

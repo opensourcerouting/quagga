@@ -194,7 +194,7 @@ do {                                                                            
 do {                                                                             \
   int retv;                                                                   \
   retv = str2prefix_ipv4 ((STR), &(V));                                       \
-  if (retv <= 0)                                                              \
+  if (retv == 0)                                                              \
     {                                                                         \
       vty_out (vty, "%% Invalid %s value%s", NAME, VTY_NEWLINE);              \
       return CMD_WARNING;                                                     \
