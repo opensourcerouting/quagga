@@ -228,11 +228,12 @@ process_summary_lsa (struct ospf_area *area, struct route_table *rt,
   p.prefix = sl->header.id;
    
   if (sl->header.type == OSPF_SUMMARY_LSA)
+  {
     p.prefixlen = ip_masklen (sl->mask);
+    apply_mask_ipv4 (&p);
+  }
   else
     p.prefixlen = IPV4_MAX_BITLEN;
-      
-  apply_mask_ipv4 (&p);
 
   if (sl->header.type == OSPF_SUMMARY_LSA &&
       (range = ospf_area_range_match_any (ospf, &p)) &&
@@ -253,7 +254,6 @@ process_summary_lsa (struct ospf_area *area, struct route_table *rt,
   abr.family = AF_INET;
   abr.prefix = sl->header.adv_router;
   abr.prefixlen = IPV4_MAX_BITLEN;
-  apply_mask_ipv4 (&abr);
 
   abr_or = ospf_find_abr_route (rtrs, &abr, area);
 
@@ -319,7 +319,6 @@ ospf_update_network_route (struct ospf *ospf,
   abr.family = AF_INET;
   abr.prefix =lsa->header.adv_router;
   abr.prefixlen = IPV4_MAX_BITLEN;
-  apply_mask_ipv4 (&abr);
 
   abr_or = ospf_find_abr_route (rtrs, &abr, area);
 
@@ -446,7 +445,6 @@ ospf_update_router_route (struct ospf *ospf,
   abr.family = AF_INET;
   abr.prefix = lsa->header.adv_router;
   abr.prefixlen = IPV4_MAX_BITLEN;
-  apply_mask_ipv4 (&abr);
 
   abr_or = ospf_find_abr_route (rtrs, &abr, area);
 

@@ -348,7 +348,6 @@ ospf_ase_calculate_route (struct ospf *ospf, struct ospf_lsa * lsa)
   asbr.family = AF_INET;
   asbr.prefix = al->header.adv_router;
   asbr.prefixlen = IPV4_MAX_BITLEN;
-  apply_mask_ipv4 (&asbr);
   
   asbr_route = ospf_find_asbr_route (ospf, ospf->new_rtrs, &asbr);
   if (asbr_route == NULL)
