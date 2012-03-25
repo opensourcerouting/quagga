@@ -392,7 +392,7 @@ nexthop_active_ipv4 (struct rib *rib, struct nexthop *nexthop, int set,
 			    || newhop->type == NEXTHOP_TYPE_IPV4_IFINDEX)
 			  nexthop->rifindex = newhop->ifindex;
 		      }
-		    return 1;
+                    return 1;
 		  }
 	      return 0;
 	    }
@@ -861,7 +861,10 @@ nexthop_active_check (struct route_node *rn, struct rib *rib,
   if (!rmap && proto_rm[family][ZEBRA_ROUTE_MAX])
     rmap = route_map_lookup_by_name (proto_rm[family][ZEBRA_ROUTE_MAX]);
   if (rmap) {
-      ret = route_map_apply(rmap, &rn->p, RMAP_ZEBRA, nexthop);
+    struct zebra_rmap rmap_obj;
+    rmap_obj.nexthop = nexthop;
+    rmap_obj.rib = rib;
+    ret = route_map_apply(rmap, &rn->p, RMAP_ZEBRA, &rmap_obj);
   }
 
   if (ret == RMAP_DENYMATCH)
@@ -1091,7 +1094,8 @@ rib_process (struct route_node *rn)
           /* Set real nexthop. */
           nexthop_active_update (rn, select, 1);
   
-          if (! RIB_SYSTEM_ROUTE (select))
+          if (! RIB_SYSTEM_ROUTE (select) &&
+	      ! CHECK_FLAG (select->status, RIB_ENTRY_FILTER_FIB))
             rib_install_kernel (rn, select);
           redistribute_add (&rn->p, select);
         }
@@ -1110,7 +1114,8 @@ rib_process (struct route_node *rn)
               installed = 1;
               break;
             }
-          if (! installed) 
+          if (! installed &&
+	      ! CHECK_FLAG (select->status, RIB_ENTRY_FILTER_FIB))
             rib_install_kernel (rn, select);
         }
       goto end;
@@ -1146,7 +1151,8 @@ rib_process (struct route_node *rn)
       /* Set real nexthop. */
       nexthop_active_update (rn, select, 1);
 
-      if (! RIB_SYSTEM_ROUTE (select))
+      if (! RIB_SYSTEM_ROUTE (select) &&
+	  ! CHECK_FLAG (select->status, RIB_ENTRY_FILTER_FIB))
         rib_install_kernel (rn, select);
       SET_FLAG (select->flags, ZEBRA_FLAG_SELECTED);
       redistribute_add (&rn->p, select);

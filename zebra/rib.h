@@ -76,6 +76,7 @@ struct rib
   /* RIB internal status */
   u_char status;
 #define RIB_ENTRY_REMOVED	(1 << 0)
+#define RIB_ENTRY_FILTER_FIB 	(1 << 1)
 
   /* Nexthop information. */
   u_char nexthop_num;
@@ -218,6 +219,13 @@ struct vrf
 
   /* Static route configuration.  */
   struct route_table *stable[AFI_MAX][SAFI_MAX];
+};
+
+/* RMAP_ZEBRA structure passed to zebra route-map functions */
+struct zebra_rmap
+{
+  struct nexthop *nexthop;
+  struct rib *rib;
 };
 
 extern struct nexthop *nexthop_ifindex_add (struct rib *, unsigned int);
