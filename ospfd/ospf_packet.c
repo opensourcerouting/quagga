@@ -1558,8 +1558,8 @@ static struct list *
 ospf_ls_upd_list_lsa (struct ospf_neighbor *nbr, struct stream *s,
                       struct ospf_interface *oi, size_t size)
 {
-  u_int16_t count, sum;
-  u_int32_t length;
+  u_int16_t sum, length;
+  u_int32_t count;
   struct lsa_header *lsah;
   struct ospf_lsa *lsa;
   struct list *lsas;
@@ -1567,19 +1567,11 @@ ospf_ls_upd_list_lsa (struct ospf_neighbor *nbr, struct stream *s,
   lsas = list_new ();
 
   count = stream_getl (s);
-  size -= OSPF_LS_UPD_MIN_SIZE; /* # LSAs */
 
-  for (; size >= OSPF_LSA_HEADER_SIZE && count > 0;
-       size -= length, stream_forward_getp (s, length), count--)
+  for (; count > 0; stream_forward_getp (s, length), count--)
     {
       lsah = (struct lsa_header *) STREAM_PNT (s);
       length = ntohs (lsah->length);
-
-      if (length > size)
-	{
-	  zlog_warn ("Link State Update: LSA length exceeds packet size.");
-	  break;
-	}
 
       /* Validate the LSA's LS checksum. */
       sum = lsah->checksum;
@@ -1592,13 +1584,6 @@ ospf_ls_upd_list_lsa (struct ospf_neighbor *nbr, struct stream *s,
 		     sum, lsah->checksum, inet_ntoa (lsah->id),
 		     inet_ntoa (nbr->src), inet_ntoa (nbr->router_id),
 		     inet_ntoa (lsah->adv_router));
-	  continue;
-	}
-
-      /* Examine the LSA's LS type. */
-      if (lsah->type < OSPF_MIN_LSA || lsah->type >= OSPF_MAX_LSA)
-	{
-	  zlog_warn ("Link State Update: Unknown LS type %d", lsah->type);
 	  continue;
 	}
 
