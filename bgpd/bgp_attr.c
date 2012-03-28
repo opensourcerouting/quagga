@@ -1318,8 +1318,30 @@ bgp_attr_munge_as4_attrs (struct peer *peer, struct attr *attr,
 /* Community attribute. */
 static int
 bgp_attr_community (struct peer *peer, bgp_size_t length, 
-		    struct attr *attr, u_char flag)
+		    struct attr *attr, u_char flag, u_char *startp)
 {
+  bgp_size_t total;
+
+  total = length + (CHECK_FLAG (flag, BGP_ATTR_FLAG_EXTLEN) ? 4 : 3);
+  /* Flags check. */
+  if ((flag & ~BGP_ATTR_FLAG_EXTLEN) != (BGP_ATTR_FLAG_OPTIONAL | BGP_ATTR_FLAG_TRANS))
+  {
+    bgp_attr_flags_diagnose (peer, BGP_ATTR_COMMUNITIES, BGP_ATTR_FLAG_OPTIONAL | BGP_ATTR_FLAG_TRANS, flag);
+    bgp_notify_send_with_data (peer, BGP_NOTIFY_UPDATE_ERR, BGP_NOTIFY_UPDATE_ATTR_FLAG_ERR, startp, total);
+    return -1;
+  }
+
+  /* Length check. */
+  if (length % 4)
+    {
+      zlog (peer->log, LOG_ERR, "COMMUNITIES attribute length isn't a multiple of 4 [%u]", length);
+      bgp_notify_send_with_data (peer,
+				 BGP_NOTIFY_UPDATE_ERR,
+				 BGP_NOTIFY_UPDATE_ATTR_LENG_ERR,
+				 startp, total);
+      return -1;
+    }
+
   if (length == 0)
     {
       attr->community = NULL;
@@ -1332,9 +1354,6 @@ bgp_attr_community (struct peer *peer, bgp_size_t length,
   /* XXX: fix community_parse to use stream API and remove this */
   stream_forward_getp (peer->ibuf, length);
 
-  if (!attr->community)
-    return -1;
-  
   attr->flag |= ATTR_FLAG_BIT (BGP_ATTR_COMMUNITIES);
 
   return 0;
@@ -1838,7 +1857,7 @@ bgp_attr_parse (struct peer *peer, struct attr *attr, bgp_size_t size,
 	  ret = bgp_attr_as4_aggregator (peer, length, attr, &as4_aggregator, &as4_aggregator_addr, flag, startp);
 	  break;
 	case BGP_ATTR_COMMUNITIES:
-	  ret = bgp_attr_community (peer, length, attr, flag);
+	  ret = bgp_attr_community (peer, length, attr, flag, startp);
 	  break;
 	case BGP_ATTR_ORIGINATOR_ID:
 	  ret = bgp_attr_originator_id (peer, length, attr, flag, startp);
