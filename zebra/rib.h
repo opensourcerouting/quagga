@@ -77,6 +77,7 @@ struct rib
   u_char status;
 #define RIB_ENTRY_REMOVED	(1 << 0)
 #define RIB_ENTRY_FILTER_FIB 	(1 << 1)
+#define RIB_ENTRY_NEW   	(1 << 2)
 
   /* Nexthop information. */
   u_char nexthop_num;
@@ -197,6 +198,9 @@ struct nexthop
   unsigned int rifindex;
   union g_addr rgate;
   union g_addr src;
+
+  /* Recursive route for ecmp nexthops */
+  struct rib *recursive_rib;
 };
 
 /* Routing table instance.  */
