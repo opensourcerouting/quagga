@@ -1169,15 +1169,26 @@ bgp_attr_aggregator (struct peer *peer, bgp_size_t length,
 static int
 bgp_attr_as4_aggregator (struct peer *peer, bgp_size_t length,
 		     struct attr *attr, as_t *as4_aggregator_as,
-		     struct in_addr *as4_aggregator_addr)
+		     struct in_addr *as4_aggregator_addr, u_char flag, u_char *startp)
 {
+  bgp_size_t total;
+
+  total = length + (CHECK_FLAG (flag, BGP_ATTR_FLAG_EXTLEN) ? 4 : 3);
+  /* Flags check. */
+  if ((flag & ~BGP_ATTR_FLAG_EXTLEN) != (BGP_ATTR_FLAG_OPTIONAL | BGP_ATTR_FLAG_TRANS))
+  {
+    bgp_attr_flags_diagnose (peer, BGP_ATTR_AS4_AGGREGATOR, BGP_ATTR_FLAG_OPTIONAL | BGP_ATTR_FLAG_TRANS, flag);
+    bgp_notify_send_with_data (peer, BGP_NOTIFY_UPDATE_ERR, BGP_NOTIFY_UPDATE_ATTR_FLAG_ERR, startp, total);
+    return -1;
+  }
   if (length != 8)
     {
       zlog (peer->log, LOG_ERR, "New Aggregator length is not 8 [%d]", length);
 
-      bgp_notify_send (peer,
-		       BGP_NOTIFY_UPDATE_ERR,
-		       BGP_NOTIFY_UPDATE_ATTR_LENG_ERR);
+      bgp_notify_send_with_data (peer,
+				 BGP_NOTIFY_UPDATE_ERR,
+				 BGP_NOTIFY_UPDATE_ATTR_LENG_ERR,
+				 startp, total);
       return -1;
     }
   *as4_aggregator_as = stream_getl (peer->ibuf);
@@ -1824,7 +1835,7 @@ bgp_attr_parse (struct peer *peer, struct attr *attr, bgp_size_t size,
 	  ret = bgp_attr_aggregator (peer, length, attr, flag, startp);
 	  break;
 	case BGP_ATTR_AS4_AGGREGATOR:
-	  ret = bgp_attr_as4_aggregator (peer, length, attr, &as4_aggregator, &as4_aggregator_addr);
+	  ret = bgp_attr_as4_aggregator (peer, length, attr, &as4_aggregator, &as4_aggregator_addr, flag, startp);
 	  break;
 	case BGP_ATTR_COMMUNITIES:
 	  ret = bgp_attr_community (peer, length, attr, flag);
