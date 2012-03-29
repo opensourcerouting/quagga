@@ -125,12 +125,6 @@ ospf6_as_external_lsa_originate (struct ospf6_route *route)
       p += sizeof (struct in6_addr);
     }
 
-  /* External Route Tag */
-  if (CHECK_FLAG (as_external_lsa->bits_metric, OSPF6_ASBR_BIT_T))
-    {
-      /* xxx */
-    }
-
   /* Fill LSA Header */
   lsa_header->age = 0;
   lsa_header->type = htons (OSPF6_LSTYPE_AS_EXTERNAL);
