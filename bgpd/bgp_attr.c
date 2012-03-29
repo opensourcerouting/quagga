@@ -1629,8 +1629,30 @@ bgp_mp_unreach_parse (struct peer *peer, const bgp_size_t length,
 /* Extended Community attribute. */
 static int
 bgp_attr_ext_communities (struct peer *peer, bgp_size_t length, 
-			  struct attr *attr, u_char flag)
+			  struct attr *attr, u_char flag, u_char *startp)
 {
+  bgp_size_t total;
+
+  total = length + (CHECK_FLAG (flag, BGP_ATTR_FLAG_EXTLEN) ? 4 : 3);
+  /* Flags check. */
+  if ((flag & ~BGP_ATTR_FLAG_EXTLEN) != (BGP_ATTR_FLAG_OPTIONAL | BGP_ATTR_FLAG_TRANS))
+  {
+    bgp_attr_flags_diagnose (peer, BGP_ATTR_EXT_COMMUNITIES, BGP_ATTR_FLAG_OPTIONAL | BGP_ATTR_FLAG_TRANS, flag);
+    bgp_notify_send_with_data (peer, BGP_NOTIFY_UPDATE_ERR, BGP_NOTIFY_UPDATE_ATTR_FLAG_ERR, startp, total);
+    return -1;
+  }
+
+  /* Length check. */
+  if (length % ECOMMUNITY_SIZE)
+    {
+      zlog (peer->log, LOG_ERR, "EXT_COMMUNITIES attribute length isn't a multiple of 8 [%u]", length);
+      bgp_notify_send_with_data (peer,
+				 BGP_NOTIFY_UPDATE_ERR,
+				 BGP_NOTIFY_UPDATE_ATTR_LENG_ERR,
+				 startp, total);
+      return -1;
+    }
+
   if (length == 0)
     {
       if (attr->extra)
@@ -1643,9 +1665,6 @@ bgp_attr_ext_communities (struct peer *peer, bgp_size_t length,
     ecommunity_parse ((u_int8_t *)stream_pnt (peer->ibuf), length);
   /* XXX: fix ecommunity_parse to use stream API */
   stream_forward_getp (peer->ibuf, length);
-  
-  if (!attr->extra->ecommunity)
-    return -1;
   
   attr->flag |= ATTR_FLAG_BIT (BGP_ATTR_EXT_COMMUNITIES);
 
@@ -1872,7 +1891,7 @@ bgp_attr_parse (struct peer *peer, struct attr *attr, bgp_size_t size,
 	  ret = bgp_mp_unreach_parse (peer, length, flag, startp, mp_withdraw);
 	  break;
 	case BGP_ATTR_EXT_COMMUNITIES:
-	  ret = bgp_attr_ext_communities (peer, length, attr, flag);
+	  ret = bgp_attr_ext_communities (peer, length, attr, flag, startp);
 	  break;
 	default:
 	  ret = bgp_attr_unknown (peer, attr, flag, type, length, startp);
