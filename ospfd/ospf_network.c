@@ -203,8 +203,6 @@ ospf_sock_init (void)
       if ( ospfd_privs.change (ZPRIVS_LOWER) )
         zlog_err ("ospf_sock_init: could not lower privs, %s",
                    safe_strerror (errno) );
-      zlog_warn ("can't set sockopt IP_TOS %d to socket %d: %s",
-      		 tos, ospf_sock, safe_strerror(save_errno));
       close (ospf_sock);	/* Prevent sd leak. */
       return ret;
     }
