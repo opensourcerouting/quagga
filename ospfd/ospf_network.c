@@ -196,16 +196,7 @@ ospf_sock_init (void)
 #else
 #warning "IP_HDRINCL not available on this system"
 #warning "using IPTOS_PREC_INTERNETCONTROL"
-  ret = setsockopt_ipv4_tos(ospf_sock, IPTOS_PREC_INTERNETCONTROL);
-  if (ret < 0)
-    {
-      int save_errno = errno;
-      if ( ospfd_privs.change (ZPRIVS_LOWER) )
-        zlog_err ("ospf_sock_init: could not lower privs, %s",
-                   safe_strerror (errno) );
-      close (ospf_sock);	/* Prevent sd leak. */
-      return ret;
-    }
+  setsockopt_ipv4_tos (ospf_sock, IPTOS_PREC_INTERNETCONTROL);
 #endif /* IP_HDRINCL */
 
   ret = setsockopt_ifindex (AF_INET, ospf_sock, 1);
