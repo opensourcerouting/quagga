@@ -99,7 +99,7 @@ Specify which kind of routes should be redistributed into Babel.
 
 @deffn {Command} {show babel database} {}
 @deffnx {Command} {show babel interface} {}
-@deffnx {Command} {show babel neighbour} {}
+@deffnx {Command} {show babel neighbor} {}
 @deffnx {Command} {show babel parameters} {}
 These commands dump various parts of @command{babeld}'s internal
 state.  They are mostly useful for troubleshooting.

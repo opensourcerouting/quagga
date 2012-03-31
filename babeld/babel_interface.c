@@ -741,11 +741,11 @@ show_babel_neighbour_sub (struct vty *vty, struct neighbour *neigh)
 
 DEFUN (show_babel_neighbour,
        show_babel_neighbour_cmd,
-       "show babel neighbour [INTERFACE]",
+       "show babel neighbor [INTERFACE]",
        SHOW_STR
        IP_STR
        "Babel information\n"
-       "Print neighbours\n"
+       "Print neighbors\n"
        "Interface name\n")
 {
     struct neighbour *neigh;
