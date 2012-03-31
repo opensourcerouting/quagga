@@ -700,7 +700,6 @@ rip_packet_dump (struct rip_packet *packet, int size, const char *sndrcv)
   struct rte *rte;
   const char *command_str;
   char pbuf[BUFSIZ], nbuf[BUFSIZ];
-  u_char netmask = 0;
   u_char *p;
 
   /* Set command string. */
@@ -720,7 +719,7 @@ rip_packet_dump (struct rip_packet *packet, int size, const char *sndrcv)
     {
       if (packet->version == RIPv2)
 	{
-	  netmask = ip_masklen (rte->mask);
+	  char netmask = ip_masklen_safe (rte->mask);
 
           if (rte->family == htons (RIP_FAMILY_AUTH))
             {
@@ -1107,6 +1106,7 @@ rip_response_process (struct rip_packet *packet, int size,
   struct prefix_ipv4 ifaddr;
   struct prefix_ipv4 ifaddrclass;
   int subnetted;
+  u_char masklen_issues = 0;
       
   /* We don't know yet. */
   subnetted = -1;
@@ -1307,6 +1307,15 @@ rip_response_process (struct rip_packet *packet, int size,
 	    }
 	}
 
+      /* The "Subnet Mask" RTE field must contain a valid netmask. */
+      if (packet->version == RIPv2 && ip_masklen_safe (rte->mask) < 0)
+	{
+	  if (IS_RIP_DEBUG_RECV)
+	    zlog_warn ("%s: malformed RIPv2 RTE netmask", __func__);
+	  masklen_issues = 1;
+	  continue;
+	}
+
       /* In case of RIPv2, if prefix in RTE is not netmask applied one
          ignore the entry.  */
       if ((packet->version == RIPv2) 
@@ -1332,6 +1341,8 @@ rip_response_process (struct rip_packet *packet, int size,
       /* Routing table updates. */
       rip_rte_process (rte, from, ifc->ifp);
     }
+  if (masklen_issues)
+    rip_peer_bad_packet (from);
 }
 
 /* Make socket for RIP protocol. */
@@ -1647,6 +1658,7 @@ rip_request_process (struct rip_packet *packet, int size,
   struct route_node *rp;
   struct rip_info *rinfo;
   struct rip_interface *ri;
+  u_char masklen_issues = 0;
 
   /* Does not reponse to the requests on the loopback interfaces */
   if (if_is_loopback (ifc->ifp))
@@ -1707,8 +1719,17 @@ rip_request_process (struct rip_packet *packet, int size,
 
       for (; ((caddr_t) rte) < lim; rte++)
 	{
+	  char masklen = ip_masklen_safe (rte->mask);
+	  if (masklen < 0)
+	    {
+	      if (IS_RIP_DEBUG_RECV)
+	        zlog_warn ("%s: malformed RIPv2 RTE netmask", __func__);
+	      rte->metric = htonl (RIP_METRIC_INFINITY);
+	      masklen_issues = 1;
+	      continue;
+	    }
 	  p.prefix = rte->prefix;
-	  p.prefixlen = ip_masklen (rte->mask);
+	  p.prefixlen = masklen;
 	  apply_mask_ipv4 (&p);
 	  
 	  rp = route_node_lookup (rip->table, (struct prefix *) &p);
@@ -1726,6 +1747,8 @@ rip_request_process (struct rip_packet *packet, int size,
       rip_send_packet ((u_char *)packet, size, from, ifc);
     }
   rip_global_queries++;
+  if (masklen_issues)
+    rip_peer_bad_packet (from);
 }
 
 #if RIP_RECVMSG
