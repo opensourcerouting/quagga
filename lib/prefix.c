@@ -2588,7 +2588,10 @@ masklen2ip (const int masklen, struct in_addr *netmask)
 }
 
 /* Convert IP address's netmask into integer. We assume netmask is
-   sequential one. Argument netmask should be network byte order. */
+   sequential one. Argument netmask should be network byte order.
+   This function is fast, partly because it does no verification of input
+   data, thus it must be used on data, which is known to be valid. One of
+   the possible ways to validate data is ip_masklen_safe(). */
 u_char
 ip_masklen (struct in_addr netmask)
 {
@@ -2599,6 +2602,29 @@ ip_masklen (struct in_addr netmask)
   } u;
   u.int32 = netmask.s_addr;
   return map64kto17_nbo[u.int16[0]] + map64kto17_nbo[u.int16[1]];
+}
+
+/* This is a slower counterpart of ip_masklen(), which detects non-contiguous
+   netmasks and returns -1 in that case. This function is in the first turn
+   purposed to be used against data, which comes from an external source such
+   as user input or live packet data. */
+char
+ip_masklen_safe (const struct in_addr netmask)
+{
+  char round1, round2;
+  union
+  {
+    u_int32_t int32;
+    u_int16_t int16[2];
+  } u;
+  u.int32 = netmask.s_addr;
+  if ((round1 = map64kto17_nbo[u.int16[0]]) == -1)
+    return -1;
+  if ((round2 = map64kto17_nbo[u.int16[1]]) == -1)
+    return -1;
+  if (round1 != 16 && round2 != 0)
+    return -1;
+  return round1 + round2;
 }
 
 /* Apply mask to IPv4 prefix (network byte order). */
@@ -2946,7 +2972,7 @@ netmask_str2prefix_str (const char *net_str, const char *mask_str,
 {
   struct in_addr network;
   struct in_addr mask;
-  u_char prefixlen;
+  char prefixlen;
   u_int32_t destination;
   int ret;
 
@@ -2960,7 +2986,8 @@ netmask_str2prefix_str (const char *net_str, const char *mask_str,
       if (! ret)
         return 0;
 
-      prefixlen = ip_masklen (mask);
+      if ((prefixlen = ip_masklen_safe (mask)) < 0)
+        return 0;
     }
   else 
     {
