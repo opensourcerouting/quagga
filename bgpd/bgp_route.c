@@ -4443,20 +4443,6 @@ bgp_aggregate_route (struct bgp *bgp, struct prefix *p, struct bgp_info *rinew,
 		first = 0;
 	      }
 
-#ifdef AGGREGATE_NEXTHOP_CHECK
-	    if (! IPV4_ADDR_SAME (&ri->attr->nexthop, &nexthop)
-		|| ri->attr->med != med)
-	      {
-		if (aspath)
-		  aspath_free (aspath);
-		if (community)
-		  community_free (community);
-		bgp_unlock_node (rn);
-		bgp_unlock_node (top);
-		return;
-	      }
-#endif /* AGGREGATE_NEXTHOP_CHECK */
-
 	    if (ri->sub_type != BGP_ROUTE_AGGREGATE)
 	      {
 		if (aggregate->summary_only)
