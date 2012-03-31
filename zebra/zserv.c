@@ -1616,10 +1616,17 @@ DEFUN (show_zebra_client,
 {
   struct listnode *node;
   struct zserv *client;
+  u_char i;
 
   for (ALL_LIST_ELEMENTS_RO (zebrad.client_list, node, client))
-    vty_out (vty, "Client fd %d%s", client->sock, VTY_NEWLINE);
-  
+  {
+    vty_out (vty, "Client fd %d", client->sock);
+    for (i = 0; i < ZEBRA_ROUTE_MAX; i++)
+      if (route_type_oaths[i] == client->sock)
+        vty_out (vty, " (%s)", zebra_route_string (i));
+    vty_out (vty, "%s", VTY_NEWLINE);
+  }
+
   return CMD_SUCCESS;
 }
 
