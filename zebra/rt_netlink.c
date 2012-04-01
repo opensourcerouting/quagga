@@ -44,6 +44,8 @@
 #include "zebra/interface.h"
 #include "zebra/debug.h"
 
+#define NL_PKT_BUF_SIZE 4096
+
 /* Socket interface to kernel */
 struct nlsock
 {
@@ -282,7 +284,7 @@ netlink_parse_info (int (*filter) (struct sockaddr_nl *, struct nlmsghdr *),
 
   while (1)
     {
-      char buf[4096];
+      char buf[NL_PKT_BUF_SIZE];
       struct iovec iov = { buf, sizeof buf };
       struct sockaddr_nl snl;
       struct msghdr msg = { (void *) &snl, sizeof snl, &iov, 1, NULL, 0, 0 };
@@ -1238,7 +1240,7 @@ netlink_route (int cmd, int family, void *dest, int length, void *gate,
   {
     struct nlmsghdr n;
     struct rtmsg r;
-    char buf[1024];
+    char buf[NL_PKT_BUF_SIZE];
   } req;
 
   memset (&req, 0, sizeof req);
@@ -1313,7 +1315,7 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
   {
     struct nlmsghdr n;
     struct rtmsg r;
-    char buf[1024];
+    char buf[NL_PKT_BUF_SIZE];
   } req;
 
   memset (&req, 0, sizeof req);
@@ -1525,7 +1527,7 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
     }
   else
     {
-      char buf[1024];
+      char buf[NL_PKT_BUF_SIZE];
       struct rtattr *rta = (void *) buf;
       struct rtnexthop *rtnh;
       union g_addr *src = NULL;
@@ -1569,7 +1571,7 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
                   if (nexthop->rtype == NEXTHOP_TYPE_IPV4
                       || nexthop->rtype == NEXTHOP_TYPE_IPV4_IFINDEX)
                     {
-                      rta_addattr_l (rta, 4096, RTA_GATEWAY,
+                      rta_addattr_l (rta, NL_PKT_BUF_SIZE, RTA_GATEWAY,
                                      &nexthop->rgate.ipv4, bytelen);
                       rtnh->rtnh_len += sizeof (struct rtattr) + 4;
 
@@ -1587,7 +1589,7 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
                       || nexthop->rtype == NEXTHOP_TYPE_IPV6_IFNAME
                       || nexthop->rtype == NEXTHOP_TYPE_IPV6_IFINDEX)
 		    {
-		      rta_addattr_l (rta, 4096, RTA_GATEWAY,
+		      rta_addattr_l (rta, NL_PKT_BUF_SIZE, RTA_GATEWAY,
 				     &nexthop->rgate.ipv6, bytelen);
 
 		      if (IS_ZEBRA_DEBUG_KERNEL)
@@ -1643,7 +1645,7 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
                   if (nexthop->type == NEXTHOP_TYPE_IPV4
                       || nexthop->type == NEXTHOP_TYPE_IPV4_IFINDEX)
                     {
-		      rta_addattr_l (rta, 4096, RTA_GATEWAY,
+		      rta_addattr_l (rta, NL_PKT_BUF_SIZE, RTA_GATEWAY,
 				     &nexthop->gate.ipv4, bytelen);
 		      rtnh->rtnh_len += sizeof (struct rtattr) + 4;
 
@@ -1661,7 +1663,7 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
                       || nexthop->type == NEXTHOP_TYPE_IPV6_IFNAME
                       || nexthop->type == NEXTHOP_TYPE_IPV6_IFINDEX)
 		    { 
-		      rta_addattr_l (rta, 4096, RTA_GATEWAY,
+		      rta_addattr_l (rta, NL_PKT_BUF_SIZE, RTA_GATEWAY,
 				     &nexthop->gate.ipv6, bytelen);
 
 		      if (IS_ZEBRA_DEBUG_KERNEL)
@@ -1707,7 +1709,7 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
         addattr_l (&req.n, sizeof req, RTA_PREFSRC, &src->ipv4, bytelen);
 
       if (rta->rta_len > RTA_LENGTH (0))
-        addattr_l (&req.n, 1024, RTA_MULTIPATH, RTA_DATA (rta),
+        addattr_l (&req.n, NL_PKT_BUF_SIZE, RTA_MULTIPATH, RTA_DATA (rta),
                    RTA_PAYLOAD (rta));
     }
 
@@ -1776,7 +1778,7 @@ netlink_address (int cmd, int family, struct interface *ifp,
   {
     struct nlmsghdr n;
     struct ifaddrmsg ifa;
-    char buf[1024];
+    char buf[NL_PKT_BUF_SIZE];
   } req;
 
   p = ifc->address;
