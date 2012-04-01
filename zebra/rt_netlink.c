@@ -1,6 +1,8 @@
 /* Kernel routing table updates using netlink over GNU/Linux system.
  * Copyright (C) 1997, 98, 99 Kunihiro Ishiguro
  *
+ * Portions of this file are Copyright 2012 Cumulus Networks, inc.
+ *
  * This file is part of GNU Zebra.
  *
  * GNU Zebra is free software; you can redistribute it and/or modify it
@@ -1507,6 +1509,10 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
 			zlog_debug("netlink_route_multipath() (single hop): "
 				   "nexthop via if %u", nexthop->ifindex);
 		    }
+
+		  if (nexthop->type == NEXTHOP_TYPE_IFINDEX ||
+		      nexthop->type == NEXTHOP_TYPE_IFNAME)
+		    req.r.rtm_scope = RT_SCOPE_LINK;
                 }
 
               if (cmd == RTM_NEWROUTE)
