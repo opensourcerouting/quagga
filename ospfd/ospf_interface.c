@@ -2,6 +2,8 @@
  * OSPF Interface functions.
  * Copyright (C) 1999, 2000 Toshiaki Takada
  *
+ * Portions of this file are Copyright 2012 Cumulus Networks, inc.
+ *
  * This file is part of GNU Zebra.
  * 
  * GNU Zebra is free software; you can redistribute it and/or modify
@@ -462,8 +464,16 @@ ospf_if_lookup_recv_if (struct ospf *ospf, struct in_addr src,
       if (if_is_loopback (oi->ifp))
         continue;
 
-      if (prefix_match (CONNECTED_PREFIX(oi->connected),
-      			(struct prefix *) &addr))
+      /* Pick the oi if this is an unnumbered point-to-point if or it's                                     the most specific connected interface on a numbered if */
+      if ((match == NULL) &&
+          (oi->type == OSPF_IFTYPE_POINTOPOINT) &&
+          (oi->address->prefixlen == 32))
+	{
+	  match = oi;
+	  break;
+	}
+      else if (prefix_match (CONNECTED_PREFIX(oi->connected),
+			     (struct prefix *) &addr))
 	{
 	  if ( (match == NULL) || 
 	       (match->address->prefixlen < oi->address->prefixlen)
