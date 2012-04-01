@@ -33,6 +33,7 @@
 #define OSPF_LS_REQ_MIN_SIZE      0U
 #define OSPF_LS_UPD_MIN_SIZE      4U
 #define OSPF_LS_ACK_MIN_SIZE      0U
+#define OSPF_LSA_KEY_SIZE        12U /* type(4) + id(4) + ar(4) */
 
 #define OSPF_MSG_HELLO         1  /* OSPF Hello Message. */
 #define OSPF_MSG_DB_DESC       2  /* OSPF Database Descriptoin Message. */

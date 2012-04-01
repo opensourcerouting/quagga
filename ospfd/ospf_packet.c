@@ -870,8 +870,6 @@ ospf_hello (struct ip *iph, struct ospf_header *ospfh,
 	       ospf_options_dump (hello->options));
 
   /* Compare options. */
-#define REJECT_IF_TBIT_ON	1 /* XXX */
-#ifdef REJECT_IF_TBIT_ON
   if (CHECK_FLAG (hello->options, OSPF_OPTION_T))
     {
       /*
@@ -882,7 +880,6 @@ ospf_hello (struct ip *iph, struct ospf_header *ospfh,
 		 inet_ntoa (ospfh->router_id));
       return;
     }
-#endif /* REJECT_IF_TBIT_ON */
 
 #ifdef HAVE_OPAQUE_LSA
   if (CHECK_FLAG (oi->ospf->config, OSPF_OPAQUE_CAPABLE)
@@ -1226,7 +1223,6 @@ ospf_db_desc (struct ip *iph, struct ospf_header *ospfh,
       SET_FLAG (dd->options, OSPF_OPTION_NP);
     }
 
-#ifdef REJECT_IF_TBIT_ON
   if (CHECK_FLAG (dd->options, OSPF_OPTION_T))
     {
       /*
@@ -1236,7 +1232,6 @@ ospf_db_desc (struct ip *iph, struct ospf_header *ospfh,
       zlog_warn ("Packet[DD]: Neighbor %s: T-bit on?", inet_ntoa (nbr->router_id));
       return;
     }
-#endif /* REJECT_IF_TBIT_ON */
 
 #ifdef HAVE_OPAQUE_LSA
   if (CHECK_FLAG (dd->options, OSPF_OPTION_O)
@@ -1447,8 +1442,6 @@ ospf_db_desc (struct ip *iph, struct ospf_header *ospfh,
       break;
     }
 }
-
-#define OSPF_LSA_KEY_SIZE       12 /* type(4) + id(4) + ar(4) */
 
 /* OSPF Link State Request Read -- RFC2328 Section 10.7. */
 static void
