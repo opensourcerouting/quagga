@@ -436,6 +436,22 @@ ospf_if_lookup_by_prefix (struct ospf *ospf, struct prefix_ipv4 *p)
   return NULL;
 }
 
+/* determine the interface by ifindex */
+struct ospf_interface *
+ospf_if_lookup_by_ifindex (struct ospf *ospf, unsigned int ifindex)
+{
+  struct listnode *node;
+  struct ospf_interface *oi;
+
+  /* Check each Interface. */
+  for (ALL_LIST_ELEMENTS_RO (ospf->oiflist, node, oi))
+    {
+      if (oi->ifp->ifindex == ifindex)
+	return oi;
+    }
+  return NULL;
+}
+
 /* determine receiving interface by ifp and source address */
 struct ospf_interface *
 ospf_if_lookup_recv_if (struct ospf *ospf, struct in_addr src,

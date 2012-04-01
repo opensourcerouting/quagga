@@ -1,6 +1,8 @@
 /* OSPF SPF calculation.
    Copyright (C) 1999, 2000 Kunihiro Ishiguro, Toshiaki Takada
 
+   Portions of this file are Copyright 2012 Cumulus Networks, inc.
+
 This file is part of GNU Zebra.
 
 GNU Zebra is free software; you can redistribute it and/or modify it
@@ -545,53 +547,77 @@ ospf_nexthop_calculation (struct ospf_area *area, struct vertex *v,
                  is a constituent of the PtMP link, and its address is 
                  a nexthop address for V.
               */
-              oi = ospf_if_is_configured (area->ospf, &l->link_data);
-              if (oi && oi->type == OSPF_IFTYPE_POINTOMULTIPOINT)
-                {
-                  struct prefix_ipv4 la;
 
-                  la.family = AF_INET;
-                  la.prefixlen = oi->address->prefixlen;
+	      int nexthop_valid = 0 ;
+	      struct in_addr nexthop;
 
-                  /* V links to W on PtMP interface
-                     - find the interface address on W */
-                  while ((l2 = ospf_get_next_link (w, v, l2)))
-                    {
-                      la.prefix = l2->link_data;
+	      if (ntohl(l->link_data.s_addr) <= 0x00ffffff)
+		{
+		  /* Link data is an ifindex for nnumbered point-to-point
+		     links and an IP address for numbered.  All valid IP
+		     addresses have at least one bit set in the upper
+		     byte. */
 
-                      if (prefix_cmp ((struct prefix *) &la,
-                                      oi->address) == 0)
-                        /* link_data is on our PtMP network */
-                        break;
-                    }
-                } /* end l is on point-to-multipoint link */
-              else
-                {
-                  /* l is a regular point-to-point link.
-                     Look for a link from W to V.
-                   */
-                  while ((l2 = ospf_get_next_link (w, v, l2)))
-                    {
-                      oi = ospf_if_is_configured (area->ospf,
-                                                  &(l2->link_data));
+		  oi = ospf_if_lookup_by_ifindex(area->ospf,
+						 ntohl(l->link_data.s_addr));
+		  nexthop_valid = oi && (oi->type == OSPF_IFTYPE_POINTOPOINT);
+		  nexthop = l->link_id;
+		}
+	      else
+		{
+		  oi = ospf_if_is_configured (area->ospf, &l->link_data);
+		  if (oi && oi->type == OSPF_IFTYPE_POINTOMULTIPOINT)
+		    {
+		      struct prefix_ipv4 la;
 
-                      if (oi == NULL)
-                        continue;
+		      la.family = AF_INET;
+		      la.prefixlen = oi->address->prefixlen;
 
-                      if (!IPV4_ADDR_SAME (&oi->address->u.prefix4,
-                                           &l->link_data))
-                        continue;
+		      /* V links to W on PtMP interface
+			 - find the interface address on W */
+		      while ((l2 = ospf_get_next_link (w, v, l2)))
+			{
+			  la.prefix = l2->link_data;
 
-                      break;
-                    }
-                }
+			  if (prefix_cmp ((struct prefix *) &la,
+					  oi->address) == 0)
+			    /* link_data is on our PtMP network */
+			    break;
+			}
+		    } /* end l is on point-to-multipoint link */
+		  else
+		    {
+		      /* l is a regular point-to-point link.
+			 Look for a link from W to V.
+		      */
+		      while ((l2 = ospf_get_next_link (w, v, l2)))
+			{
+			  oi = ospf_if_is_configured (area->ospf,
+						      &(l2->link_data));
 
-              if (oi && l2)
+			  if (oi == NULL)
+			    continue;
+
+			  if (!IPV4_ADDR_SAME (&oi->address->u.prefix4,
+					       &l->link_data))
+			    continue;
+
+			  break;
+			}
+		    }
+		  if (oi && l2)
+		    {
+		      nexthop_valid = 1;
+		      nexthop = l2->link_data;
+		    }
+		}
+
+              if (nexthop_valid)
                 {
                   /* found all necessary info to build nexthop */
                   nh = vertex_nexthop_new ();
                   nh->oi = oi;
-                  nh->router = l2->link_data;
+                  nh->router = nexthop;
                   ospf_spf_add_parent (v, w, nh, distance);
                   return 1;
                 }
