@@ -2510,7 +2510,7 @@ rib_delete_ipv6 (int type, int flags, struct prefix_ipv6 *p,
 
 /* Install static route into rib. */
 static void
-static_install_ipv6 (struct prefix *p, struct static_ipv6 *si)
+static_install_ipv6 (struct prefix_ipv6 *p, struct static_ipv6 *si)
 {
   struct rib *rib;
   struct route_table *table;
@@ -2522,7 +2522,7 @@ static_install_ipv6 (struct prefix *p, struct static_ipv6 *si)
     return;
 
   /* Lookup existing route */
-  rn = route_node_get (table, p);
+  rn = route_node_get (table, (struct prefix *) p);
   for (rib = rn->info; rib; rib = rib->next)
     {
       if (CHECK_FLAG(rib->status, RIB_ENTRY_REMOVED))
@@ -2603,7 +2603,7 @@ static_ipv6_nexthop_same (struct nexthop *nexthop, struct static_ipv6 *si)
 }
 
 static void
-static_uninstall_ipv6 (struct prefix *p, struct static_ipv6 *si)
+static_uninstall_ipv6 (struct prefix_ipv6 *p, struct static_ipv6 *si)
 {
   struct route_table *table;
   struct route_node *rn;
@@ -2666,7 +2666,7 @@ static_uninstall_ipv6 (struct prefix *p, struct static_ipv6 *si)
 
 /* Add static route into static route configuration. */
 int
-static_add_ipv6 (struct prefix *p, u_char type, struct in6_addr *gate,
+static_add_ipv6 (struct prefix_ipv6 *p, u_char type, struct in6_addr *gate,
 		 const char *ifname, u_char flags, u_char distance,
 		 u_int32_t vrf_id)
 {
@@ -2690,7 +2690,7 @@ static_add_ipv6 (struct prefix *p, u_char type, struct in6_addr *gate,
     return -1;
 
   /* Lookup static route prefix. */
-  rn = route_node_get (stable, p);
+  rn = route_node_get (stable, (struct prefix *) p);
 
   /* Do nothing if there is a same static route.  */
   for (si = rn->info; si; si = si->next)
@@ -2754,7 +2754,7 @@ static_add_ipv6 (struct prefix *p, u_char type, struct in6_addr *gate,
 
 /* Delete static route from static route configuration. */
 int
-static_delete_ipv6 (struct prefix *p, u_char type, struct in6_addr *gate,
+static_delete_ipv6 (struct prefix_ipv6 *p, u_char type, struct in6_addr *gate,
 		    const char *ifname, u_char distance, u_int32_t vrf_id)
 {
   struct route_node *rn;
@@ -2767,7 +2767,7 @@ static_delete_ipv6 (struct prefix *p, u_char type, struct in6_addr *gate,
     return -1;
 
   /* Lookup static route prefix. */
-  rn = route_node_lookup (stable, p);
+  rn = route_node_lookup (stable, (struct prefix *) p);
   if (! rn)
     return 0;
 

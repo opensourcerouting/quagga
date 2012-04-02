@@ -1213,14 +1213,14 @@ static_ipv6_func (struct vty *vty, int add_cmd, const char *dest_str,
 {
   int ret;
   u_char distance;
-  struct prefix p;
+  struct prefix_ipv6 p;
   struct in6_addr *gate = NULL;
   struct in6_addr gate_addr;
   u_char type = 0;
   int table = 0;
   u_char flag = 0;
   
-  ret = str2prefix (dest_str, &p);
+  ret = str2prefix_ipv6 (dest_str, &p);
   if (ret <= 0)
     {
       vty_out (vty, "%% Malformed address%s", VTY_NEWLINE);
@@ -1228,7 +1228,7 @@ static_ipv6_func (struct vty *vty, int add_cmd, const char *dest_str,
     }
 
   /* Apply mask for given prefix. */
-  apply_mask (&p);
+  apply_mask_ipv6 (&p);
 
   /* Route flags */
   if (flag_str) {
