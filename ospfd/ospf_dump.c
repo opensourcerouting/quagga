@@ -76,7 +76,7 @@ const struct message ospf_lsa_type_msg[] =
   { OSPF_ROUTER_LSA,       "router-LSA" },
   { OSPF_NETWORK_LSA,      "network-LSA" },
   { OSPF_SUMMARY_LSA,      "summary-LSA" },
-  { OSPF_ASBR_SUMMARY_LSA, "summary-LSA" },
+  { OSPF_ASBR_SUMMARY_LSA, "ASBR-summary-LSA" },
   { OSPF_AS_EXTERNAL_LSA,  "AS-external-LSA" },
   { OSPF_GROUP_MEMBER_LSA, "GROUP MEMBER LSA" },
   { OSPF_AS_NSSA_LSA,      "NSSA-LSA" },
