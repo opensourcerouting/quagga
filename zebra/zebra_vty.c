@@ -38,13 +38,13 @@ zebra_static_ipv4 (struct vty *vty, int add_cmd, const char *dest_str,
 {
   int ret;
   u_char distance;
-  struct prefix p;
+  struct prefix_ipv4 p;
   struct in_addr gate;
   struct in_addr mask;
   const char *ifname;
   u_char flag = 0;
   
-  ret = str2prefix (dest_str, &p);
+  ret = str2prefix_ipv4 (dest_str, &p);
   if (ret <= 0)
     {
       vty_out (vty, "%% Malformed address%s", VTY_NEWLINE);
@@ -70,7 +70,7 @@ zebra_static_ipv4 (struct vty *vty, int add_cmd, const char *dest_str,
     }
 
   /* Apply mask for given prefix. */
-  apply_mask (&p);
+  apply_mask_ipv4 (&p);
 
   /* Administrative distance. */
   if (distance_str)

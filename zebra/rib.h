@@ -269,11 +269,11 @@ extern void rib_init (void);
 extern unsigned long rib_score_proto (u_char proto);
 
 extern int
-static_add_ipv4 (struct prefix *p, struct in_addr *gate, const char *ifname,
+static_add_ipv4 (struct prefix_ipv4 *p, struct in_addr *gate, const char *ifname,
        u_char flags, u_char distance, u_int32_t vrf_id);
 
 extern int
-static_delete_ipv4 (struct prefix *p, struct in_addr *gate, const char *ifname,
+static_delete_ipv4 (struct prefix_ipv4 *p, struct in_addr *gate, const char *ifname,
 		    u_char distance, u_int32_t vrf_id);
 
 #ifdef HAVE_IPV6

@@ -1960,7 +1960,7 @@ rib_delete_ipv4 (int type, int flags, struct prefix_ipv4 *p,
 
 /* Install static route into rib. */
 static void
-static_install_ipv4 (struct prefix *p, struct static_ipv4 *si)
+static_install_ipv4 (struct prefix_ipv4 *p, struct static_ipv4 *si)
 {
   struct rib *rib;
   struct route_node *rn;
@@ -1972,7 +1972,7 @@ static_install_ipv4 (struct prefix *p, struct static_ipv4 *si)
     return;
 
   /* Lookup existing route */
-  rn = route_node_get (table, p);
+  rn = route_node_get (table, (struct prefix *) p);
   for (rib = rn->info; rib; rib = rib->next)
     {
        if (CHECK_FLAG (rib->status, RIB_ENTRY_REMOVED))
@@ -2051,7 +2051,7 @@ static_ipv4_nexthop_same (struct nexthop *nexthop, struct static_ipv4 *si)
 
 /* Uninstall static route from RIB. */
 static void
-static_uninstall_ipv4 (struct prefix *p, struct static_ipv4 *si)
+static_uninstall_ipv4 (struct prefix_ipv4 *p, struct static_ipv4 *si)
 {
   struct route_node *rn;
   struct rib *rib;
@@ -2064,7 +2064,7 @@ static_uninstall_ipv4 (struct prefix *p, struct static_ipv4 *si)
     return;
   
   /* Lookup existing route with type and distance. */
-  rn = route_node_lookup (table, p);
+  rn = route_node_lookup (table, (struct prefix *) p);
   if (! rn)
     return;
 
@@ -2112,7 +2112,7 @@ static_uninstall_ipv4 (struct prefix *p, struct static_ipv4 *si)
 
 /* Add static route into static route configuration. */
 int
-static_add_ipv4 (struct prefix *p, struct in_addr *gate, const char *ifname,
+static_add_ipv4 (struct prefix_ipv4 *p, struct in_addr *gate, const char *ifname,
 		 u_char flags, u_char distance, u_int32_t vrf_id)
 {
   u_char type = 0;
@@ -2129,7 +2129,7 @@ static_add_ipv4 (struct prefix *p, struct in_addr *gate, const char *ifname,
     return -1;
   
   /* Lookup static route prefix. */
-  rn = route_node_get (stable, p);
+  rn = route_node_get (stable, (struct prefix *) p);
 
   /* Make flags. */
   if (gate)
@@ -2207,7 +2207,7 @@ static_add_ipv4 (struct prefix *p, struct in_addr *gate, const char *ifname,
 
 /* Delete static route from static route configuration. */
 int
-static_delete_ipv4 (struct prefix *p, struct in_addr *gate, const char *ifname,
+static_delete_ipv4 (struct prefix_ipv4 *p, struct in_addr *gate, const char *ifname,
 		    u_char distance, u_int32_t vrf_id)
 {
   u_char type = 0;
@@ -2221,7 +2221,7 @@ static_delete_ipv4 (struct prefix *p, struct in_addr *gate, const char *ifname,
     return -1;
 
   /* Lookup static route prefix. */
-  rn = route_node_lookup (stable, p);
+  rn = route_node_lookup (stable, (struct prefix *) p);
   if (! rn)
     return 0;
 
