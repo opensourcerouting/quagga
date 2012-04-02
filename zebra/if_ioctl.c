@@ -253,7 +253,11 @@ if_getaddrs (void)
 
 	  addr = (struct sockaddr_in *) ifap->ifa_addr;
 	  mask = (struct sockaddr_in *) ifap->ifa_netmask;
-	  prefixlen = ip_masklen (mask->sin_addr);
+	  if ((prefixlen = ip_masklen_safe (mask->sin_addr)) < 0)
+	    {
+	      zlog_warn ("%s: malformed netmask", __func__);
+	      continue;
+	    }
 
 	  dest_pnt = NULL;
 
@@ -342,7 +346,7 @@ if_get_addr (struct interface *ifp)
   struct sockaddr_in mask;
   struct sockaddr_in dest;
   struct in_addr *dest_pnt;
-  u_char prefixlen;
+  char prefixlen;
   int flags = 0;
 
   /* Interface's name and address family. */
@@ -378,7 +382,11 @@ if_get_addr (struct interface *ifp)
 #else
   memcpy (&mask, &ifreq.ifr_addr, sizeof (struct sockaddr_in));
 #endif /* ifr_netmask */
-  prefixlen = ip_masklen (mask.sin_addr);
+  if ((prefixlen = ip_masklen_safe (mask.sin_addr)) < 0)
+    {
+      zlog_warn ("%s: malformed netmask", __func__);
+      return -1;
+    }
 
   /* Point to point or borad cast address pointer init. */
   dest_pnt = NULL;

@@ -577,7 +577,7 @@ ifam_read_mesg (struct ifa_msghdr *ifm,
 			ifm->ifam_flags,
 			inet_ntop(AF_INET,&addr->sin.sin_addr,
 			          buf[0],sizeof(buf[0])),
-			ip_masklen(mask->sin.sin_addr),
+			ip_masklen_safe (mask->sin.sin_addr),
 			inet_ntop(AF_INET,&brd->sin.sin_addr,
 			          buf[1],sizeof(buf[1])),
 			inet_ntop(AF_INET,&dst.sin.sin_addr,
@@ -631,6 +631,7 @@ ifam_read (struct ifa_msghdr *ifam)
   short ifnlen = 0;
   char isalias = 0;
   int flags = 0;
+  char masklen;
   
   ifname[0] = ifname[INTERFACE_NAMSIZ - 1] = '\0';
   
@@ -666,14 +667,20 @@ ifam_read (struct ifa_msghdr *ifam)
   switch (sockunion_family (&addr))
     {
     case AF_INET:
+      masklen = ip_masklen_safe (mask.sin.sin_addr);
+      if (masklen < 0)
+        {
+          zlog_warn ("%s: malformed netmask", __func__);
+          return -1;
+        }
       if (ifam->ifam_type == RTM_NEWADDR)
 	connected_add_ipv4 (ifp, flags, &addr.sin.sin_addr, 
-			    ip_masklen (mask.sin.sin_addr),
+			    masklen,
 			    &brd.sin.sin_addr,
 			    (isalias ? ifname : NULL));
       else
 	connected_delete_ipv4 (ifp, flags, &addr.sin.sin_addr, 
-			       ip_masklen (mask.sin.sin_addr),
+			       masklen,
 			       &brd.sin.sin_addr);
       break;
 #ifdef HAVE_IPV6
@@ -829,7 +836,15 @@ rtm_read (struct rt_msghdr *rtm)
       if (flags & RTF_HOST)
 	p.prefixlen = IPV4_MAX_PREFIXLEN;
       else
-	p.prefixlen = ip_masklen (mask.sin.sin_addr);
+      {
+        char prefixlen = ip_masklen_safe (mask.sin.sin_addr);
+        if (prefixlen < 0)
+        {
+          zlog_warn ("%s: malformed netmask", __func__);
+          return;
+        }
+        p.prefixlen = prefixlen;
+      }
       
       /* Catch self originated messages and match them against our current RIB.
        * At the same time, ignore unconfirmed messages, they should be tracked

@@ -73,6 +73,7 @@ proc_route_read (void)
       struct in_addr tmpmask;
       struct in_addr gateway;
       u_char zebra_flags = 0;
+      char masklen;
 
       n = sscanf (buf, "%s %s %s %x %d %d %d %s %d %d %d",
 		  iface, dest, gate, &flags, &refcnt, &use, &metric, 
@@ -93,7 +94,12 @@ proc_route_read (void)
       p.family = AF_INET;
       sscanf (dest, "%lX", (unsigned long *)&p.prefix);
       sscanf (mask, "%lX", (unsigned long *)&tmpmask);
-      p.prefixlen = ip_masklen (tmpmask);
+      if ((masklen = ip_masklen_safe (tmpmask)) < 0)
+        {
+          zlog_warn ("%s: malformed netmask", __func__);
+          continue;
+        }
+      p.prefixlen = masklen;
       sscanf (gate, "%lX", (unsigned long *)&gateway);
 
       rib_add_ipv4 (ZEBRA_ROUTE_KERNEL, zebra_flags, &p, &gateway, NULL, 0, 0, 0, 0, SAFI_UNICAST);

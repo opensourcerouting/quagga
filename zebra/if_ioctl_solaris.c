@@ -256,7 +256,7 @@ if_get_addr (struct interface *ifp, struct sockaddr *addr, const char *label)
   struct lifreq lifreq;
   struct sockaddr_storage mask, dest;
   char *dest_pnt = NULL;
-  u_char prefixlen = 0;
+  char prefixlen = 0;
   afi_t af;
   int flags = 0;
 
@@ -299,7 +299,11 @@ if_get_addr (struct interface *ifp, struct sockaddr *addr, const char *label)
         }
       memcpy (&mask, &lifreq.lifr_addr, ADDRLEN (addr));
 
-      prefixlen = ip_masklen (SIN (&mask)->sin_addr);
+      if ((prefixlen = ip_masklen_safe (SIN (&mask)->sin_addr)) < 0)
+        {
+          zlog_warn ("%s: malformed netmask", __func__);
+          return -1;
+        }
       if (!dest_pnt && (if_ioctl (SIOCGLIFBRDADDR, (caddr_t) & lifreq) >= 0))
 	{
           memcpy (&dest, &lifreq.lifr_broadaddr, sizeof (struct sockaddr_in));

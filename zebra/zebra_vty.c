@@ -55,12 +55,18 @@ zebra_static_ipv4 (struct vty *vty, int add_cmd, const char *dest_str,
   if (mask_str)
     {
       ret = inet_aton (mask_str, &mask);
+      char masklen;
       if (ret == 0)
         {
-          vty_out (vty, "%% Malformed address%s", VTY_NEWLINE);
+          vty_out (vty, "%% Malformed netmask%s", VTY_NEWLINE);
           return CMD_WARNING;
         }
-      p.prefixlen = ip_masklen (mask);
+      if ((masklen = ip_masklen_safe (mask)) < 0)
+        {
+          vty_out (vty, "%% Malformed netmask%s", VTY_NEWLINE);
+          return CMD_WARNING;
+        }
+      p.prefixlen = masklen;
     }
 
   /* Apply mask for given prefix. */

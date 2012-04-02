@@ -72,6 +72,7 @@ handle_route_entry (mib2_ipRouteEntry_t *routeEntry)
 	struct prefix_ipv4	prefix;
  	struct in_addr		tmpaddr, gateway;
 	u_char			zebra_flags = 0;
+	char                    masklen;
 
 	if (routeEntry->ipRouteInfo.re_ire_type & IRE_CACHETABLE)
 		return;
@@ -85,7 +86,12 @@ handle_route_entry (mib2_ipRouteEntry_t *routeEntry)
 	prefix.prefix = tmpaddr;
 
 	tmpaddr.s_addr = routeEntry->ipRouteMask;
-	prefix.prefixlen = ip_masklen (tmpaddr);
+	if ((masklen = ip_masklen_safe (tmpaddr)) < 0)
+	{
+		zlog_warn ("%s: malformed netmask", __func__);
+		return;
+	}
+	prefix.prefixlen = masklen;
 
 	gateway.s_addr = routeEntry->ipRouteNextHop;
 
