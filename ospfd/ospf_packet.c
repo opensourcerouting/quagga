@@ -805,6 +805,7 @@ ospf_hello (struct ip *iph, struct ospf_header *ospfh,
   struct ospf_neighbor *nbr;
   int old_state;
   struct prefix p;
+  char masklen;
 
   /* increment statistics. */
   oi->hello_in++;
@@ -825,8 +826,14 @@ ospf_hello (struct ip *iph, struct ospf_header *ospfh,
     }
 
   /* get neighbor prefix. */
+  if ((masklen = ip_masklen_safe (hello->network_mask)) < 0)
+    {
+      if (IS_DEBUG_OSPF_PACKET (OSPF_MSG_HELLO - 1, RECV))
+        zlog_warn ("%s: malformed netmask", __func__);
+      return;
+    }
   p.family = AF_INET;
-  p.prefixlen = ip_masklen (hello->network_mask);
+  p.prefixlen = masklen;
   p.u.prefix4 = iph->ip_src;
 
   /* Compare network mask. */
@@ -1545,6 +1552,49 @@ ospf_ls_req (struct ip *iph, struct ospf_header *ospfh,
     list_free (ls_upd);
 }
 
+/* Verify that contained IPv4 netmasks, if any, are valid (contiguous). */
+static int
+ospf_lsa_netmasks_examin (struct lsa_header *lsah)
+{
+  struct router_lsa *rlsa;
+  struct network_lsa *nlsa;
+  struct summary_lsa *slsa;
+  struct as_external_lsa *aselsa;
+  u_int16_t i, num_links;
+
+  switch (lsah->type)
+  {
+  case OSPF_ROUTER_LSA:
+    rlsa = (struct router_lsa *) lsah;
+    num_links = ntohs (rlsa->links);
+    for (i = 0; i < num_links; i++)
+      if
+      (
+        rlsa->link[i].type == LSA_LINK_TYPE_STUB &&
+        ip_masklen_safe (rlsa->link[i].link_data) < 0
+      )
+        return MSG_NG;
+    break;
+  case OSPF_NETWORK_LSA:
+    nlsa = (struct network_lsa *) lsah;
+    if (ip_masklen_safe (nlsa->mask) < 0)
+      return MSG_NG;
+    break;
+  case OSPF_SUMMARY_LSA:
+    slsa = (struct summary_lsa *) lsah;
+    if (ip_masklen_safe (slsa->mask) < 0)
+      return MSG_NG;
+    break;
+  case OSPF_AS_EXTERNAL_LSA:
+  case OSPF_AS_NSSA_LSA:
+    aselsa = (struct as_external_lsa *) lsah;
+    if (ip_masklen_safe (aselsa->mask) < 0)
+      return MSG_NG;
+    break;
+  }
+  return MSG_OK;
+}
+
 /* Get the list of LSAs from Link State Update packet.
    And process some validation -- RFC2328 Section 13. (1)-(2). */
 static struct list *
@@ -1577,6 +1627,18 @@ ospf_ls_upd_list_lsa (struct ospf_neighbor *nbr, struct stream *s,
 		     sum, lsah->checksum, inet_ntoa (lsah->id),
 		     inet_ntoa (nbr->src), inet_ntoa (nbr->router_id),
 		     inet_ntoa (lsah->adv_router));
+	  continue;
+	}
+
+      /* Placing this check here makes it possible to discard malformed LSA(s)
+       * only, as opposed to ospf_lsa_examin(), which detects fatal structural
+       * issues affecting the whole packet. */
+      if (MSG_OK != ospf_lsa_netmasks_examin (lsah))
+	{
+	  if (IS_DEBUG_OSPF_PACKET (OSPF_MSG_LS_UPD - 1, RECV))
+	    zlog_warn ("%s: malformed netmask in %s, ID=%s, adv router %s",
+		       __func__, LOOKUP (ospf_lsa_type_msg, lsah->type),
+		       inet_ntoa (lsah->id), inet_ntoa (lsah->adv_router));
 	  continue;
 	}
 
