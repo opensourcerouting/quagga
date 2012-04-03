@@ -1324,15 +1324,10 @@ ospf_summary_lsa_refresh (struct ospf *ospf, struct ospf_lsa *lsa)
 
 /* summary-ASBR-LSA related functions. */
 static void
-ospf_summary_asbr_lsa_body_set (struct stream *s, struct prefix *p,
-				u_int32_t metric)
+ospf_summary_asbr_lsa_body_set (struct stream *s, u_int32_t metric)
 {
-  struct in_addr mask;
-
-  masklen2ip (p->prefixlen, &mask);
-
   /* Put Network Mask. */
-  stream_put_ipv4 (s, mask.s_addr);
+  stream_put_ipv4 (s, 0);
 
   /* Set # TOS. */
   stream_putc (s, (u_char) 0);
@@ -1342,8 +1337,7 @@ ospf_summary_asbr_lsa_body_set (struct stream *s, struct prefix *p,
 }
 
 static struct ospf_lsa *
-ospf_summary_asbr_lsa_new (struct ospf_area *area, struct prefix *p,
-			   u_int32_t metric, struct in_addr id)
+ospf_summary_asbr_lsa_new (struct ospf_area *area, u_int32_t metric, struct in_addr id)
 {
   struct stream *s;
   struct ospf_lsa *new;
@@ -1370,7 +1364,7 @@ ospf_summary_asbr_lsa_new (struct ospf_area *area, struct prefix *p,
 		  id, area->ospf->router_id);
 
   /* Set summary-LSA body fields. */
-  ospf_summary_asbr_lsa_body_set (s, p, metric);
+  ospf_summary_asbr_lsa_body_set (s, metric);
 
   /* Set length. */
   length = stream_get_endp (s);
@@ -1409,7 +1403,7 @@ ospf_summary_asbr_lsa_originate (struct prefix_ipv4 *p, u_int32_t metric,
     }
   
   /* Create new summary-LSA instance. */
-  new = ospf_summary_asbr_lsa_new (area, (struct prefix *) p, metric, id);
+  new = ospf_summary_asbr_lsa_new (area, metric, id);
   if (!new)
     return NULL;
 
@@ -1437,15 +1431,12 @@ ospf_summary_asbr_lsa_refresh (struct ospf *ospf, struct ospf_lsa *lsa)
 {
   struct ospf_lsa *new;
   struct summary_lsa *sl;
-  struct prefix p;
 
   /* Sanity check. */
   assert (lsa->data);
 
   sl = (struct summary_lsa *)lsa->data;
-  p.prefixlen = ip_masklen (sl->mask);
-  new = ospf_summary_asbr_lsa_new (lsa->area, &p, GET_METRIC (sl->metric),
-				   sl->header.id);
+  new = ospf_summary_asbr_lsa_new (lsa->area, GET_METRIC (sl->metric), sl->header.id);
   if (!new)
     return NULL;
   
