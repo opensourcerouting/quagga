@@ -149,6 +149,7 @@ void isis_circuit_del (struct isis_circuit *circuit);
 void isis_circuit_configure (struct isis_circuit *circuit,
 			     struct isis_area *area);
 void isis_circuit_up (struct isis_circuit *circuit);
+extern void isis_circuit_down (struct isis_circuit *);
 void isis_circuit_deconfigure (struct isis_circuit *circuit,
 			       struct isis_area *area);
 

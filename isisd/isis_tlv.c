@@ -45,11 +45,6 @@
 
 extern struct isis *isis;
 
-/*
- * Prototypes.
- */
-int add_tlv (u_char, u_char, u_char *, struct stream *);
-
 void
 free_tlv (void *val)
 {

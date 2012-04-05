@@ -64,7 +64,6 @@ extern struct isis *isis;
 /*
  * Prototypes.
  */
-void isis_circuit_down(struct isis_circuit *);
 int isis_interface_config_write(struct vty *);
 int isis_if_new_hook(struct interface *);
 int isis_if_delete_hook(struct interface *);
