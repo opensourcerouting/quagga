@@ -227,9 +227,8 @@ ripng_interface_up (int command, struct zclient *zclient, zebra_size_t length)
     return 0;
 
   if (IS_RIPNG_DEBUG_ZEBRA)
-    zlog_debug ("interface up %s index %d flags %llx metric %d mtu %d",
-	       ifp->name, ifp->ifindex, (unsigned long long)ifp->flags,
-	       ifp->metric, ifp->mtu6);
+    zlog_debug ("interface up %s index %d flags %#"PRIx64" metric %d mtu %d",
+	       ifp->name, ifp->ifindex, ifp->flags, ifp->metric, ifp->mtu6);
 
   /* Check if this interface is RIPng enabled or not. */
   ripng_enable_apply (ifp);
@@ -261,9 +260,8 @@ ripng_interface_down (int command, struct zclient *zclient,
   ripng_if_down (ifp);
 
   if (IS_RIPNG_DEBUG_ZEBRA)
-    zlog_debug ("interface down %s index %d flags %#llx metric %d mtu %d",
-		ifp->name, ifp->ifindex,
-		(unsigned long long) ifp->flags, ifp->metric, ifp->mtu6);
+    zlog_debug ("interface down %s index %d flags %#"PRIx64" metric %d mtu %d",
+		ifp->name, ifp->ifindex, ifp->flags, ifp->metric, ifp->mtu6);
 
   return 0;
 }
@@ -277,9 +275,8 @@ ripng_interface_add (int command, struct zclient *zclient, zebra_size_t length)
   ifp = zebra_interface_add_read (zclient->ibuf);
 
   if (IS_RIPNG_DEBUG_ZEBRA)
-    zlog_debug ("RIPng interface add %s index %d flags %#llx metric %d mtu %d",
-		ifp->name, ifp->ifindex, (unsigned long long) ifp->flags,
-		ifp->metric, ifp->mtu6);
+    zlog_debug ("RIPng interface add %s index %d flags %#"PRIx64" metric %d mtu %d",
+		ifp->name, ifp->ifindex, ifp->flags, ifp->metric, ifp->mtu6);
 
   /* Check is this interface is RIP enabled or not.*/
   ripng_enable_apply (ifp);
@@ -311,9 +308,8 @@ ripng_interface_delete (int command, struct zclient *zclient,
     ripng_if_down(ifp);
   }
 
-  zlog_info("interface delete %s index %d flags %#llx metric %d mtu %d",
-            ifp->name, ifp->ifindex, (unsigned long long) ifp->flags,
-	    ifp->metric, ifp->mtu6);
+  zlog_info("interface delete %s index %d flags %#"PRIx64" metric %d mtu %d",
+            ifp->name, ifp->ifindex, ifp->flags, ifp->metric, ifp->mtu6);
 
   /* To support pseudo interface do not free interface structure.  */
   /* if_delete(ifp); */

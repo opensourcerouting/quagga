@@ -71,8 +71,8 @@ isis_zebra_if_add (int command, struct zclient *zclient, zebra_size_t length)
   ifp = zebra_interface_add_read (zclient->ibuf);
 
   if (isis->debugs & DEBUG_ZEBRA)
-    zlog_debug ("Zebra I/F add: %s index %d flags %ld metric %d mtu %d",
-		ifp->name, ifp->ifindex, (long)ifp->flags, ifp->metric, ifp->mtu);
+    zlog_debug ("Zebra I/F add: %s index %d flags %#"PRIx64" metric %d mtu %d",
+		ifp->name, ifp->ifindex, ifp->flags, ifp->metric, ifp->mtu);
 
   if (if_is_operative (ifp))
     isis_csm_state_change (IF_UP_FROM_Z, circuit_scan_by_ifp (ifp), ifp);
@@ -97,8 +97,8 @@ isis_zebra_if_del (int command, struct zclient *zclient, zebra_size_t length)
 	       ifp->name);
 
   if (isis->debugs & DEBUG_ZEBRA)
-    zlog_debug ("Zebra I/F delete: %s index %d flags %ld metric %d mtu %d",
-		ifp->name, ifp->ifindex, (long)ifp->flags, ifp->metric, ifp->mtu);
+    zlog_debug ("Zebra I/F delete: %s index %d flags %#"PRIx64" metric %d mtu %d",
+		ifp->name, ifp->ifindex, ifp->flags, ifp->metric, ifp->mtu);
 
 
   /* Cannot call if_delete because we should retain the pseudo interface
