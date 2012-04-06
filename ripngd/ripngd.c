@@ -117,9 +117,7 @@ ripng_make_socket (void)
   ret = setsockopt_ipv6_pktinfo (sock, 1);
   if (ret < 0)
     return ret;
-  ret = setsockopt_ipv6_tclass (sock, IPTOS_PREC_INTERNETCONTROL);
-  if (ret < 0)
-    return ret;
+  setsockopt_ipv6_tclass (sock, IPTOS_PREC_INTERNETCONTROL);
   ret = setsockopt_ipv6_multicast_hops (sock, 255);
   if (ret < 0)
     return ret;
