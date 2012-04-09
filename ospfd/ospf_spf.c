@@ -326,7 +326,7 @@ ospf_lsa_has_link (struct lsa_header *w, struct lsa_header *v)
            i < ntohs (rl->links) && length >= sizeof (struct router_lsa);
            i++, length -= 12)
         {
-          switch (rl->link[i].type)
+          switch (rl->link[i].m[0].type)
             {
             case LSA_LINK_TYPE_POINTOPOINT:
             case LSA_LINK_TYPE_VIRTUALLINK:

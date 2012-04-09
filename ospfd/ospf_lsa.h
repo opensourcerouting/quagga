@@ -167,14 +167,14 @@ struct router_lsa
   u_char flags;
   u_char zero;
   u_int16_t links;
-  struct
-  {
-    struct in_addr link_id;
-    struct in_addr link_data;
-    u_char type;
-    u_char tos;
-    u_int16_t metric;
-  } link[1];
+  /* Accessing array-like field below is a bit tricky. First, not all
+     Router-LSAs have >= 1 link descriptors (see comment above). Second, each
+     link descriptor structure is variable-sized depending on number of
+     additional TOS metrics. Even though additional TOS metrics are no-op in
+     the current OSPFv2 specification, having these in an incoming live packet
+     is considered valid. This means, that assuming a fixed-size (TOS 0 only)
+     case for the purpose of iteration is often, if not always, wrong. */
+  struct router_lsa_link link[1];
 };
 
 /* OSPF Network-LSAs structure. */

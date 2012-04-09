@@ -419,9 +419,9 @@ ospf_router_lsa_dump (struct stream *s, u_int16_t length)
     {
       zlog_debug ("    Link ID %s", inet_ntoa (rl->link[i].link_id));
       zlog_debug ("    Link Data %s", inet_ntoa (rl->link[i].link_data));
-      zlog_debug ("    Type %d", (u_char) rl->link[i].type);
-      zlog_debug ("    TOS %d", (u_char) rl->link[i].tos);
-      zlog_debug ("    metric %d", ntohs (rl->link[i].metric));
+      zlog_debug ("    Type %u", rl->link[i].m[0].type);
+      zlog_debug ("    # TOS %u", rl->link[i].m[0].tos_count);
+      zlog_debug ("    metric %u", ntohs (rl->link[i].m[0].metric));
 
       len -= 12;
     }

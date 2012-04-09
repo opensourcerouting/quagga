@@ -1044,7 +1044,7 @@ ospf_vl_set_params (struct ospf_vl_data *vl_data, struct vertex *v)
                  vl_data->vl_oi->ifp->name);
       for (i = 0; i < ntohs (rl->links); i++)
         {
-          switch (rl->link[i].type)
+          switch (rl->link[i].m[0].type)
             {
               case LSA_LINK_TYPE_VIRTUALLINK:
                 if (IS_DEBUG_OSPF_EVENT)

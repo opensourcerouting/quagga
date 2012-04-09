@@ -3620,7 +3620,7 @@ show_ip_ospf_database_router_links (struct vty *vty,
   len = ntohs (rl->header.length) - 4;
   for (i = 0; i < ntohs (rl->links) && len > 0; len -= 12, i++)
     {
-      type = rl->link[i].type;
+      type = rl->link[i].m[0].type;
 
       vty_out (vty, "    Link connected to: %s%s",
 	       link_type_desc[type], VTY_NEWLINE);
@@ -3630,7 +3630,7 @@ show_ip_ospf_database_router_links (struct vty *vty,
 	       inet_ntoa (rl->link[i].link_data), VTY_NEWLINE);
       vty_out (vty, "      Number of TOS metrics: 0%s", VTY_NEWLINE);
       vty_out (vty, "       TOS 0 Metric: %d%s",
-	       ntohs (rl->link[i].metric), VTY_NEWLINE);
+	       ntohs (rl->link[i].m[0].metric), VTY_NEWLINE);
       vty_out (vty, "%s", VTY_NEWLINE);
     }
 }

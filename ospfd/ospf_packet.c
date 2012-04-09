@@ -1570,7 +1570,7 @@ ospf_lsa_netmasks_examin (struct lsa_header *lsah)
     for (i = 0; i < num_links; i++)
       if
       (
-        rlsa->link[i].type == LSA_LINK_TYPE_STUB &&
+        rlsa->link[i].m[0].type == LSA_LINK_TYPE_STUB &&
         ip_masklen_safe (rlsa->link[i].link_data) < 0
       )
         return MSG_NG;
@@ -2481,7 +2481,7 @@ ospf_lsa_examin (struct lsa_header * lsah, const u_int16_t lsalen, const u_char 
     rlsa = (struct router_lsa *) lsah;
     ret = ospf_router_lsa_links_examin
     (
-      (struct router_lsa_link *) rlsa->link,
+      rlsa->link,
       lsalen - OSPF_LSA_HEADER_SIZE - 4, /* skip: basic header, "flags", 0, "# links" */
       ntohs (rlsa->links) /* 16 bits */
     );
