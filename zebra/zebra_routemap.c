@@ -141,7 +141,7 @@ route_match_interface (void *rule, struct prefix *prefix,
       ifindex = ifname2ifindex(ifname);
       if (ifindex == 0)
 	return RMAP_NOMATCH;
-      nexthop = ((struct zebra_rmap *)object)->nexthop;
+      nexthop = object;
       if (!nexthop)
 	return RMAP_NOMATCH;
       if (nexthop->ifindex == ifindex)
@@ -403,25 +403,6 @@ ALIAS (no_set_src,
        "src address for route\n"
        "src address\n")
 
-DEFUN (set_filter_fib,
-       set_filter_fib_cmd,
-       "set filter-fib",
-       SET_STR
-       "Filter from kernel FIB\n" )
-{
-  return zebra_route_set_add (vty, vty->index, "filter-fib", NULL);
-}
-
-DEFUN (no_set_filter_fib,
-       no_set_filter_fib_cmd,
-       "no set filter-fib",
-       NO_STR
-       SET_STR
-       "Filter from kernel FIB\n" )
-{
-  return zebra_route_set_delete (vty, vty->index, "filter-fib", NULL);
-}
-
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXX*/
 
 /* `match ip next-hop IP_ACCESS_LIST' */
@@ -437,7 +418,7 @@ route_match_ip_next_hop (void *rule, struct prefix *prefix,
 
   if (type == RMAP_ZEBRA)
     {
-      nexthop = ((struct zebra_rmap *)object)->nexthop;
+      nexthop = object;
       switch (nexthop->type) {
       case NEXTHOP_TYPE_IFINDEX:
       case NEXTHOP_TYPE_IFNAME:
@@ -503,7 +484,7 @@ route_match_ip_next_hop_prefix_list (void *rule, struct prefix *prefix,
 
   if (type == RMAP_ZEBRA)
     {
-      nexthop = ((struct zebra_rmap *)object)->nexthop;
+      nexthop = object;
       switch (nexthop->type) {
       case NEXTHOP_TYPE_IFINDEX:
       case NEXTHOP_TYPE_IFNAME:
@@ -651,7 +632,7 @@ route_set_src (void *rule, struct prefix *prefix,
     {
       struct nexthop *nexthop;
 
-      nexthop = ((struct zebra_rmap *)object)->nexthop;
+      nexthop = object;
       nexthop->src = *(union g_addr *)rule;
     }
   return RMAP_OKAY;
@@ -661,17 +642,14 @@ route_set_src (void *rule, struct prefix *prefix,
 static void *
 route_set_src_compile (const char *arg)
 {
-  sa_family_t family;
   union g_addr src, *psrc;
 
-  if (inet_pton(AF_INET, arg, &src.ipv4) > 0)
-    family = AF_INET;
+  if (inet_pton(AF_INET, arg, &src.ipv4) != 1
 #ifdef HAVE_IPV6
-  else if (inet_pton(AF_INET6, arg, &src.ipv6) > 0)
-    family = AF_INET6;
+      && inet_pton(AF_INET6, arg, &src.ipv6) != 1
 #endif /* HAVE_IPV6 */
-  else
-   return NULL;
+     )
+    return NULL;
 
   psrc = XMALLOC (MTYPE_ROUTE_MAP_COMPILED, sizeof (union g_addr));
   *psrc = src;
@@ -695,44 +673,6 @@ static struct route_map_rule_cmd route_set_src_cmd =
   route_set_src_free,
 };
 
-/* `set filter-fib' */
-
-/* Set filter-fib */
-static route_map_result_t
-route_set_filter_fib (void *rule, struct prefix *prefix, 
-		      route_map_object_t type, void *object)
-{
-  if (type == RMAP_ZEBRA)
-    {
-      struct rib *rib = ((struct zebra_rmap *)object)->rib;
-      if (rib)
-	SET_FLAG (rib->status, RIB_ENTRY_FILTER_FIB);
-    }
-  return RMAP_OKAY;
-}
-
-/* set filter-fib compilation. */
-static void *
-route_set_filter_fib_compile (const char *arg)
-{
-  return (void *)1;
-}
-
-/* Free route map's compiled `set filter-fib' value. */
-static void
-route_set_filter_fib_free (void *rule)
-{
-}
-
-/* Set filter-fib rule structure. */
-static struct route_map_rule_cmd route_set_filter_fib_cmd = 
-{
-  "filter-fib",
-  route_set_filter_fib,
-  route_set_filter_fib_compile,
-  route_set_filter_fib_free,
-};
-
 void
 zebra_route_map_init ()
 {
@@ -746,7 +686,6 @@ zebra_route_map_init ()
   route_map_install_match (&route_match_ip_address_prefix_list_cmd);
 /* */
   route_map_install_set (&route_set_src_cmd);
-  route_map_install_set (&route_set_filter_fib_cmd);
 /* */
   install_element (RMAP_NODE, &match_interface_cmd);
   install_element (RMAP_NODE, &no_match_interface_cmd); 
@@ -766,7 +705,4 @@ zebra_route_map_init ()
 /* */
   install_element (RMAP_NODE, &set_src_cmd);
   install_element (RMAP_NODE, &no_set_src_cmd);
-  install_element (RMAP_NODE, &no_set_src_val_cmd);
-  install_element (RMAP_NODE, &set_filter_fib_cmd);
-  install_element (RMAP_NODE, &no_set_filter_fib_cmd);
 }
