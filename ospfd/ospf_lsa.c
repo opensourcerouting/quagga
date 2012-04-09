@@ -2,6 +2,8 @@
  * OSPF Link State Advertisement
  * Copyright (C) 1999, 2000 Toshiaki Takada
  *
+ * Portions of this file are Copyright 2012 Cumulus Networks, inc.
+ *
  * This file is part of GNU Zebra.
  *
  * GNU Zebra is free software; you can redistribute it and/or modify it
@@ -522,26 +524,52 @@ lsa_link_ptop_set (struct stream *s, struct ospf_interface *oi)
   struct ospf_neighbor *nbr;
   struct in_addr id, mask;
   u_int16_t cost = ospf_link_cost (oi);
+  int unnumbered = 0;
 
   if (IS_DEBUG_OSPF (lsa, LSA_GENERATE))
     zlog_debug ("LSA[Type1]: Set link Point-to-Point");
 
+  /* The interface is unnumbered if it's prefix is 255.255.255.255 */
+  if (oi->address->prefixlen == 32)
+    {
+      unnumbered = 1;
+    }
+
   if ((nbr = ospf_nbr_lookup_ptop (oi)))
     if (nbr->state == NSM_Full)
       {
-	/* For unnumbered point-to-point networks, the Link Data field
-	   should specify the interface's MIB-II ifIndex value. */
-	links += link_info_set (s, nbr->router_id, oi->address->u.prefix4,
-		                LSA_LINK_TYPE_POINTOPOINT, 0, cost);
+	if (unnumbered)
+	  {
+	    /* For unnumbered point-to-point networks, the Link Data field
+	       should specify the interface's MIB-II ifIndex value. */
+	    id.s_addr = htonl(oi->ifp->ifindex);
+	  }
+	else
+	  {
+	    /* For numbered point-to-point networks, the Link Data field
+	       should specify our IP address on the interface. */
+	    id = oi->address->u.prefix4;
+	  }
+	links += link_info_set (s, nbr->router_id, id,
+				LSA_LINK_TYPE_POINTOPOINT, 0, cost);
       }
 
-  /* Regardless of the state of the neighboring router, we must
-     add a Type 3 link (stub network).
-     N.B. Options 1 & 2 share basically the same logic. */
-  masklen2ip (oi->address->prefixlen, &mask);
-  id.s_addr = CONNECTED_PREFIX(oi->connected)->u.prefix4.s_addr & mask.s_addr;
-  links += link_info_set (s, id, mask, LSA_LINK_TYPE_STUB, 0,
-			  oi->output_cost);
+  if (unnumbered)
+    {
+      /* Unnumbered interfaces are given addresses from another interface
+	 that will be advertized as Type 3 (stubs)... no need for
+	 redundant stub links */
+    }
+  else
+    {
+      /* Regardless of the state of the neighboring router, we must
+	 add a Type 3 link (stub network).
+	 N.B. Options 1 & 2 share basically the same logic. */
+      masklen2ip (oi->address->prefixlen, &mask);
+      id.s_addr = CONNECTED_PREFIX(oi->connected)->u.prefix4.s_addr & mask.s_addr;
+      links += link_info_set (s, id, mask, LSA_LINK_TYPE_STUB, 0,
+			      oi->output_cost);
+    }
   return links;
 }
 

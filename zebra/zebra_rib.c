@@ -1,6 +1,8 @@
 /* Routing Information Base.
  * Copyright (C) 1997, 98, 99, 2001 Kunihiro Ishiguro
  *
+ * Portions of this file are Copyright 2012 Cumulus Networks, inc.
+ *
  * This file is part of GNU Zebra.
  *
  * GNU Zebra is free software; you can redistribute it and/or modify it
@@ -312,6 +314,32 @@ nexthop_blackhole_add (struct rib *rib)
   return nexthop;
 }
 
+/* Check the prefix and nexthop to find host routes (fully specified address)
+   that points to a specific ifindex without any IP indirection.
+   These are routes to routing protocol neighbors on unnumbered interfaces */
+static int
+nexthop_is_connected_host_route(struct prefix *p, struct rib *rib)
+{
+  struct nexthop *nexthop;
+
+  if ((rib->type > ZEBRA_ROUTE_STATIC) &&
+      (((p->family == AF_INET)  && (p->prefixlen == IPV4_MAX_BITLEN)) ||
+       ((p->family == AF_INET6) && (p->prefixlen == IPV6_MAX_BITLEN))))
+    {
+      for (nexthop = rib->nexthop; nexthop; nexthop = nexthop->next)
+	{
+	  if (nexthop->type == NEXTHOP_TYPE_IFINDEX)
+	    {
+	      if (IS_ZEBRA_DEBUG_RIB_Q &&
+		  (p->family == AF_INET))
+		rib_dump (__func__, (struct prefix_ipv4 *)p, rib);
+	      return 1;
+	    }
+	}
+    }
+  return 0;
+}
+
 /* If force flag is not set, do not modify falgs at all for uninstall
    the route from FIB. */
 static int
@@ -372,7 +400,8 @@ nexthop_active_ipv4 (struct rib *rib, struct nexthop *nexthop, int set,
 	}
       else
 	{
-	  if (match->type == ZEBRA_ROUTE_CONNECT)
+	  if ((match->type == ZEBRA_ROUTE_CONNECT) ||
+	      nexthop_is_connected_host_route(&rn->p, match))
 	    {
 	      /* Directly point connected route. */
 	      newhop = match->nexthop;
@@ -1255,6 +1284,11 @@ rib_meta_queue_add (struct meta_queue *mq, struct route_node *rn)
     {
       u_char qindex = meta_queue_map[rib->type];
 
+      /* Process directly connected host routes from routing protocols so that
+	 first so that subsequent routes can go "via" them */
+      if (nexthop_is_connected_host_route(&rn->p, rib))
+	  qindex = meta_queue_map[ZEBRA_ROUTE_CONNECT];
+
       /* Invariant: at this point we always have rn->info set. */
       if (CHECK_FLAG (((struct rib *)rn->info)->rn_status, RIB_ROUTE_QUEUED(qindex)))
 	{
@@ -1644,10 +1678,12 @@ void rib_dump (const char * func, const struct prefix_ipv4 * p, const struct rib
     inet_ntop (AF_INET, &nexthop->rgate.ipv4.s_addr, straddr2, INET_ADDRSTRLEN);
     zlog_debug
     (
-      "%s: NH %s (%s) with flags %s%s%s",
+      "%s: NH %s (%s) type %d ifindex %d with flags %s%s%s",
       func,
       straddr1,
       straddr2,
+      nexthop->type,
+      nexthop->ifindex,
       (CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_ACTIVE) ? "ACTIVE " : ""),
       (CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_FIB) ? "FIB " : ""),
       (CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_RECURSIVE) ? "RECURSIVE" : "")

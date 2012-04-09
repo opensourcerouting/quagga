@@ -2,6 +2,8 @@
  * OSPF Interface functions.
  * Copyright (C) 1999 Toshiaki Takada
  *
+ * Portions of this file are Copyright 2012 Cumulus Networks, inc.
+ *
  * This file is part of GNU Zebra.
  * 
  * GNU Zebra is free software; you can redistribute it and/or modify
@@ -250,6 +252,8 @@ extern struct ospf_interface *ospf_if_lookup_by_local_addr (struct ospf *,
 							    struct in_addr);
 extern struct ospf_interface *ospf_if_lookup_by_prefix (struct ospf *,
 							struct prefix_ipv4 *);
+extern struct ospf_interface *ospf_if_lookup_by_ifindex (struct ospf *,
+							 unsigned int);
 extern struct ospf_interface *ospf_if_table_lookup (struct interface *,
 						    struct prefix *);
 extern struct ospf_interface *ospf_if_addr_local (struct in_addr);
