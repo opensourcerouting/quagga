@@ -2421,6 +2421,14 @@ ospf_router_lsa_links_examin
 
   while (linkbytes)
   {
+    /* A link descriptor must have at least TOS 0 metric and "# TOS" field. */
+    if (OSPF_ROUTER_LSA_LINK_SIZE > linkbytes)
+    {
+      if (IS_DEBUG_OSPF_PACKET (0, RECV))
+        zlog_debug ("%s: undersized (%uB) link block #%u", __func__, linkbytes, counted_links);
+      return MSG_NG;
+    }
+    /* OK, "# TOS" is within packet bytes. */
     thislinklen = OSPF_ROUTER_LSA_LINK_SIZE + 4 * link->m[0].tos_count;
     if (thislinklen > linkbytes)
     {

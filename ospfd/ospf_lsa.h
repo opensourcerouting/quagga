@@ -48,7 +48,7 @@
 #define OSPF_OPAQUE_AS_LSA	     11
 
 #define OSPF_LSA_HEADER_SIZE	     20U
-#define OSPF_ROUTER_LSA_LINK_SIZE    12U
+#define OSPF_ROUTER_LSA_LINK_SIZE    12U /* w/1 TOS 0 metric */
 #define OSPF_ROUTER_LSA_TOS_SIZE      4U
 #define OSPF_MAX_LSA_SIZE	   1500U
 
