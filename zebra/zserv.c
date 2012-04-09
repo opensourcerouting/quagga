@@ -316,71 +316,6 @@ zsend_interface_update (int cmd, struct zserv *client, struct interface *ifp)
   return zebra_server_send_message(client);
 }
 
-/* returns 1 if the nexthop is found on the stream */
-static int
-zsend_check_duplicate_nexthop (struct stream *s, int start, int end,
-                               struct nexthop *nexthop)
-{
-  size_t pos;
-  u_char type;
-  struct in_addr addr;
-  struct in6_addr addr6;
-  u_int32_t ifindex;
-
-  pos = stream_get_getp (s);
-  stream_set_getp (s, start);
-  while (stream_get_getp(s) < end)
-    {
-      type = stream_getc (s);
-      switch (type)
-        {
-          case NEXTHOP_TYPE_IPV4:
-            addr.s_addr = stream_get_ipv4 (s);
-            if (nexthop->type == NEXTHOP_TYPE_IPV4 ||
-                nexthop->type == NEXTHOP_TYPE_IPV4_IFINDEX ||
-                nexthop->type == NEXTHOP_TYPE_IPV4_IFNAME)
-              if (addr.s_addr == nexthop->gate.ipv4.s_addr)
-                {
-                  stream_set_getp (s, pos);
-                  return 1;
-                }
-            break;
-#ifdef HAVE_IPV6
-          case NEXTHOP_TYPE_IPV6:
-            stream_get (&addr6, s, 16);
-            if (nexthop->type == NEXTHOP_TYPE_IPV6 ||
-                nexthop->type == NEXTHOP_TYPE_IPV6_IFINDEX ||
-                nexthop->type == NEXTHOP_TYPE_IPV6_IFNAME)
-              if (memcmp (&addr6.s6_addr, &nexthop->gate.ipv6.s6_addr, 16) == 0)
-                {
-                  stream_set_getp (s, pos);
-                  return 1;
-                }
-            break;
-#endif
-          case NEXTHOP_TYPE_IFINDEX:
-            ifindex = stream_getl (s);
-            if (nexthop->type == NEXTHOP_TYPE_IPV4_IFINDEX
-#ifdef HAVE_IPV6
-                || nexthop->type == NEXTHOP_TYPE_IPV6_IFINDEX
-#endif
-                )
-              if (ifindex == nexthop->ifindex)
-                {
-                  stream_set_getp (s, pos);
-                  return 1;
-                }
-            break;
-          default:
-            /* unknown type so don't parse */
-            stream_set_getp (s, pos);
-            return 0;
-        }
-    }
-  stream_set_getp (s, pos);
-  return 0;
-}
-
 /*
  * The zebra server sends the clients  a ZEBRA_IPV4_ROUTE_ADD or a
  * ZEBRA_IPV6_ROUTE_ADD via zsend_route_multipath in the following
@@ -410,7 +345,7 @@ zsend_route_multipath (int cmd, struct zserv *client, struct prefix *p,
 {
   int psize;
   struct stream *s;
-  struct nexthop *nexthop, *rnexthop;
+  struct nexthop *nexthop;
   unsigned long nhnummark = 0, messmark = 0;
   int nhnum = 0;
   u_char zapi_flags = 0;
@@ -433,118 +368,65 @@ zsend_route_multipath (int cmd, struct zserv *client, struct prefix *p,
   stream_putc (s, p->prefixlen);
   stream_write (s, (u_char *) & p->u.prefix, psize);
 
-  /*
-   * The message format sent by zebra below does match the format
+  /* 
+   * XXX The message format sent by zebra below does not match the format
    * of the corresponding message expected by the zebra server
-   * itself (e.g., see zread_ipv4_add).
+   * itself (e.g., see zread_ipv4_add). The nexthop_num is not set correctly,
+   * (is there a bug on the client side if more than one segment is sent?)
+   * nexthop ZEBRA_NEXTHOP_IPV4 is never set, ZEBRA_NEXTHOP_IFINDEX 
+   * is hard-coded.
    */
   /* Nexthop */
-  nhnummark = stream_get_endp (s);
-  stream_putc (s, 0); /* placeholder */
   
   for (nexthop = rib->nexthop; nexthop; nexthop = nexthop->next)
     {
-      /* TODO: change to NEXTHOP_FLAG_FIB when rt_netlink
-       * multipath install works */
-      if (CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_ACTIVE))
+      if (CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_FIB))
         {
           SET_FLAG (zapi_flags, ZAPI_MESSAGE_NEXTHOP);
-          switch(nexthop->type)
+          SET_FLAG (zapi_flags, ZAPI_MESSAGE_IFINDEX);
+          
+          if (nhnummark == 0)
+            {
+              nhnummark = stream_get_endp (s);
+              stream_putc (s, 1); /* placeholder */
+            }
+          
+          nhnum++;
+
+          switch(nexthop->type) 
             {
               case NEXTHOP_TYPE_IPV4:
               case NEXTHOP_TYPE_IPV4_IFINDEX:
-              case NEXTHOP_TYPE_IPV4_IFNAME:
-                if (CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_RECURSIVE))
-                  {
-                    for (rnexthop = nexthop->recursive_rib->nexthop; rnexthop;
-                         rnexthop = rnexthop->next)
-                      {
-                        if (zsend_check_duplicate_nexthop (s, nhnummark+1,
-                                                           stream_get_endp (s),
-                                                           rnexthop))
-                          continue;
-                        switch(rnexthop->type)
-                          {
-                            case NEXTHOP_TYPE_IPV4:
-                            case NEXTHOP_TYPE_IPV4_IFINDEX:
-                            case NEXTHOP_TYPE_IPV4_IFNAME:
-                              stream_putc (s, NEXTHOP_TYPE_IPV4);
-                              stream_put_in_addr (s, &rnexthop->gate.ipv4);
-                              nhnum++;
-                              break;
-#ifdef HAVE_IPV6
-                            case NEXTHOP_TYPE_IPV6:
-                            case NEXTHOP_TYPE_IPV6_IFINDEX:
-                            case NEXTHOP_TYPE_IPV6_IFNAME:
-                              stream_putc (s, NEXTHOP_TYPE_IPV6);
-                              stream_write (s, (u_char *) &rnexthop->gate.ipv6,
-                                            16);
-                              nhnum++;
-                              break;
-#endif
-                            default:
-                              break;
-                          }
-                      }
-                  }
-                else
-                  {
-                    stream_putc (s, NEXTHOP_TYPE_IPV4);
-                    stream_put_in_addr (s, &nexthop->gate.ipv4);
-                    nhnum++;
-                  }
+                stream_put_in_addr (s, &nexthop->gate.ipv4);
                 break;
 #ifdef HAVE_IPV6
               case NEXTHOP_TYPE_IPV6:
               case NEXTHOP_TYPE_IPV6_IFINDEX:
               case NEXTHOP_TYPE_IPV6_IFNAME:
-                if (CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_RECURSIVE))
+                stream_write (s, (u_char *) &nexthop->gate.ipv6, 16);
+                break;
+#endif
+              default:
+                if (cmd == ZEBRA_IPV4_ROUTE_ADD 
+                    || cmd == ZEBRA_IPV4_ROUTE_DELETE)
                   {
-                    for (rnexthop = nexthop->recursive_rib->nexthop; rnexthop;
-                         rnexthop = rnexthop->next)
-                      {
-                        if (zsend_check_duplicate_nexthop (s, nhnummark+1,
-                                                           stream_get_endp (s),
-                                                           rnexthop))
-                          continue;
-                        switch (rnexthop->type)
-                          {
-                            case NEXTHOP_TYPE_IPV4:
-                            case NEXTHOP_TYPE_IPV4_IFINDEX:
-                            case NEXTHOP_TYPE_IPV4_IFNAME:
-                              stream_putc (s, NEXTHOP_TYPE_IPV4);
-                              stream_put_in_addr (s, &rnexthop->gate.ipv4);
-                              nhnum++;
-                              break;
-                            case NEXTHOP_TYPE_IPV6:
-                            case NEXTHOP_TYPE_IPV6_IFINDEX:
-                            case NEXTHOP_TYPE_IPV6_IFNAME:
-                              stream_putc (s, NEXTHOP_TYPE_IPV6);
-                              stream_write (s, (u_char *) &rnexthop->gate.ipv6,
-                                            16);
-                              nhnum++;
-                              break;
-                            default:
-                              break;
-                          }
-                      }
+                    struct in_addr empty;
+                    memset (&empty, 0, sizeof (struct in_addr));
+                    stream_write (s, (u_char *) &empty, IPV4_MAX_BYTELEN);
                   }
                 else
                   {
-                    stream_putc (s, NEXTHOP_TYPE_IPV6);
-                    stream_write (s, (u_char *) &nexthop->gate.ipv6, 16);
-                    nhnum++;
+                    struct in6_addr empty;
+                    memset (&empty, 0, sizeof (struct in6_addr));
+                    stream_write (s, (u_char *) &empty, IPV6_MAX_BYTELEN);
                   }
-                break;
-#endif
-              case NEXTHOP_TYPE_IFINDEX:
-                stream_putc (s, NEXTHOP_TYPE_IFINDEX);
-                stream_putl (s, nexthop->ifindex);
-                nhnum++;
-                break;
-              default:
-                break;
-            }
+              }
+
+          /* Interface index. */
+          stream_putc (s, 1);
+          stream_putl (s, nexthop->ifindex);
+
+          break;
         }
     }
 

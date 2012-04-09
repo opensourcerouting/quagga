@@ -321,10 +321,7 @@ nexthop_active_ipv4 (struct rib *rib, struct nexthop *nexthop, int set,
     nexthop->ifindex = 0;
 
   if (set)
-    {
-      UNSET_FLAG (nexthop->flags, NEXTHOP_FLAG_RECURSIVE);
-      nexthop->recursive_rib = NULL;
-    }
+    UNSET_FLAG (nexthop->flags, NEXTHOP_FLAG_RECURSIVE);
 
   /* Make lookup prefix. */
   memset (&p, 0, sizeof (struct prefix_ipv4));
@@ -386,7 +383,6 @@ nexthop_active_ipv4 (struct rib *rib, struct nexthop *nexthop, int set,
 		    if (set)
 		      {
 			SET_FLAG (nexthop->flags, NEXTHOP_FLAG_RECURSIVE);
-                        nexthop->recursive_rib = match;
 			nexthop->rtype = newhop->type;
 			if (newhop->type == NEXTHOP_TYPE_IPV4 ||
 			    newhop->type == NEXTHOP_TYPE_IPV4_IFINDEX)
@@ -426,10 +422,7 @@ nexthop_active_ipv6 (struct rib *rib, struct nexthop *nexthop, int set,
     nexthop->ifindex = 0;
 
   if (set)
-    {
-      UNSET_FLAG (nexthop->flags, NEXTHOP_FLAG_RECURSIVE);
-      nexthop->recursive_rib = NULL;
-    }
+    UNSET_FLAG (nexthop->flags, NEXTHOP_FLAG_RECURSIVE);
 
   /* Make lookup prefix. */
   memset (&p, 0, sizeof (struct prefix_ipv6));
@@ -492,7 +485,6 @@ nexthop_active_ipv6 (struct rib *rib, struct nexthop *nexthop, int set,
 		    if (set)
 		      {
 			SET_FLAG (nexthop->flags, NEXTHOP_FLAG_RECURSIVE);
-                        nexthop->recursive_rib = match;
 			nexthop->rtype = newhop->type;
 			if (newhop->type == NEXTHOP_TYPE_IPV6
 			    || newhop->type == NEXTHOP_TYPE_IPV6_IFINDEX
@@ -1003,8 +995,6 @@ rib_process (struct route_node *rn)
        * may be passed to rib_unlink() in the middle of iteration.
        */
       next = rib->next;
-
-      UNSET_FLAG (rib->status, RIB_ENTRY_NEW);
       
       /* Currently installed rib. */
       if (CHECK_FLAG (rib->flags, ZEBRA_FLAG_SELECTED))
@@ -1424,8 +1414,6 @@ static void
 rib_link (struct route_node *rn, struct rib *rib)
 {
   struct rib *head;
-  struct route_node *rn_temp;
-  struct rib *rib_temp;
   char buf[INET6_ADDRSTRLEN];
   
   assert (rib && rn);
@@ -1452,27 +1440,6 @@ rib_link (struct route_node *rn, struct rib *rib)
   rib->next = head;
   rn->info = rib;
   rib_queue_add (&zebrad, rn);
-
-  /* Trigger resolution of BGP nexthop when a route changes.
-   * BGP routes are not used to resolve BGP nexthops, so we can
-   * skip this step if this is a BGP route.
-   */
-  if (rib->type != ZEBRA_ROUTE_BGP)
-    /* FIXME: process all BGP routes for recursive resolution */
-    for (rn_temp = route_top (rn->table); rn_temp;
-	 rn_temp = route_next (rn_temp))
-      {
-	for (rib_temp = rn_temp->info; rib_temp; rib_temp = rib_temp->next)
-	  {
-	    if (CHECK_FLAG (rib_temp->status, RIB_ENTRY_REMOVED))
-	      continue;
-	    if (rib_temp->type == ZEBRA_ROUTE_BGP)
-	      {
-		rib_queue_add (&zebrad, rn_temp);
-		break;
-	      }
-	  }
-      }
 }
 
 static void
@@ -1494,42 +1461,6 @@ rib_addnode (struct route_node *rn, struct rib *rib)
       return;
     }
   rib_link (rn, rib);
-}
-
-static void
-rib_unlink_recursive_rib (struct route_node *rn, struct rib *rib)
-{
-  struct route_node *rn_temp;
-  struct rib *rib_temp;
-  struct nexthop *nexthop;
-
-  if (rn == NULL || rib == NULL)
-    return;
-
-  /* If this is a BGP route, it could not be used for nexthop resolution,
-   * so we don't need to unlink here.
-   */
-  if (rib->type == ZEBRA_ROUTE_BGP)
-    return;
-
-  /* unlink given rib from all nexthops that use this as recursive_rib.
-   * TODO: not scalable, optimize this code using global nexthop table. */
-  for (rn_temp = route_top (rn->table); rn_temp;
-       rn_temp = route_next (rn_temp))
-    {
-      for (rib_temp = rn_temp->info; rib_temp; rib_temp = rib_temp->next)
-        {
-          for (nexthop = rib_temp->nexthop; nexthop; nexthop = nexthop->next)
-            {
-              if (nexthop->recursive_rib == rib)
-                {
-                  UNSET_FLAG (nexthop->flags, NEXTHOP_FLAG_ACTIVE);
-                  UNSET_FLAG (nexthop->flags, NEXTHOP_FLAG_RECURSIVE);
-                  nexthop->recursive_rib = NULL;
-                }
-            }
-        }
-    }
 }
 
 static void
@@ -1571,8 +1502,6 @@ rib_unlink (struct route_node *rn, struct rib *rib)
       next = nexthop->next;
       nexthop_free (nexthop);
     }
-  rib->nexthop = NULL;
-
   XFREE (MTYPE_RIB, rib);
 
   route_unlock_node (rn); /* rn route table reference */
@@ -1588,19 +1517,8 @@ rib_delnode (struct route_node *rn, struct rib *rib)
     zlog_debug ("%s: %s/%d: rn %p, rib %p, removing", __func__,
       buf, rn->p.prefixlen, rn, rib);
   }
-  /* If this rib has not been processed by rib_process() yet, we can
-   * just delete the rib right away. This is not the case for system
-   * routes, because they may have already been used for nexthop
-   * resolution.
-   */
-  if (CHECK_FLAG (rib->status, RIB_ENTRY_NEW) && !RIB_SYSTEM_ROUTE (rib))
-    rib_unlink (rn, rib);
-  else
-    {
-      SET_FLAG (rib->status, RIB_ENTRY_REMOVED);
-      rib_unlink_recursive_rib (rn, rib);
-      rib_queue_add (&zebrad, rn);
-    }
+  SET_FLAG (rib->status, RIB_ENTRY_REMOVED);
+  rib_queue_add (&zebrad, rn);
 }
 
 int
@@ -1690,7 +1608,6 @@ rib_add_ipv4 (int type, int flags, struct prefix_ipv4 *p,
   /* Link new rib to node.*/
   if (IS_ZEBRA_DEBUG_RIB)
     zlog_debug ("%s: calling rib_addnode (%p, %p)", __func__, rn, rib);
-  SET_FLAG (rib->status, RIB_ENTRY_NEW);
   rib_addnode (rn, rib);
   
   /* Free implicit route.*/
@@ -1909,7 +1826,6 @@ rib_add_ipv4_multipath (struct prefix_ipv4 *p, struct rib *rib)
       SET_FLAG (nexthop->flags, NEXTHOP_FLAG_FIB);
 
   /* Link new rib to node.*/
-  SET_FLAG (rib->status, RIB_ENTRY_NEW);
   rib_addnode (rn, rib);
   if (IS_ZEBRA_DEBUG_RIB)
   {
@@ -2479,7 +2395,6 @@ rib_add_ipv6 (int type, int flags, struct prefix_ipv6 *p,
       SET_FLAG (nexthop->flags, NEXTHOP_FLAG_FIB);
 
   /* Link new rib to node.*/
-  SET_FLAG (rib->status, RIB_ENTRY_NEW);
   rib_addnode (rn, rib);
 
   /* Free implicit route.*/
