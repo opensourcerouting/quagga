@@ -61,6 +61,36 @@ static const char *ospf_network_type_str[] =
   "LOOPBACK"
 };
 
+static const struct message ospf_router_lsa_link_type_str[] =
+{
+  { LSA_LINK_TYPE_POINTOPOINT, "another Router (point-to-point)" },
+  { LSA_LINK_TYPE_TRANSIT,     "a Transit Network"               },
+  { LSA_LINK_TYPE_STUB,        "Stub Network"                    },
+  { LSA_LINK_TYPE_VIRTUALLINK, "a Virtual Link"                  },
+};
+static const size_t ospf_router_lsa_link_type_str_max = sizeof (ospf_router_lsa_link_type_str) /
+  sizeof (ospf_router_lsa_link_type_str[0]);
+
+static const struct message ospf_router_lsa_link_id_str[] =
+{
+  { LSA_LINK_TYPE_POINTOPOINT, "Neighboring Router ID"     },
+  { LSA_LINK_TYPE_TRANSIT,     "Designated Router address" },
+  { LSA_LINK_TYPE_STUB,        "Net"                       },
+  { LSA_LINK_TYPE_VIRTUALLINK, "Neighboring Router ID"     },
+};
+static const size_t ospf_router_lsa_link_id_str_max = sizeof (ospf_router_lsa_link_id_str) /
+  sizeof (ospf_router_lsa_link_id_str[0]);
+
+static const struct message ospf_router_lsa_link_data_str[] =
+{
+  { LSA_LINK_TYPE_POINTOPOINT, "Router Interface address" },
+  { LSA_LINK_TYPE_TRANSIT,     "Router Interface address" },
+  { LSA_LINK_TYPE_STUB,        "Network Mask"             },
+  { LSA_LINK_TYPE_VIRTUALLINK, "Router Interface address" },
+};
+static const size_t ospf_router_lsa_link_data_str_max = sizeof (ospf_router_lsa_link_data_str) /
+  sizeof (ospf_router_lsa_link_data_str[0]);
+
 
 /* Utility functions. */
 static int
@@ -3583,33 +3613,6 @@ show_ip_ospf_database_header (struct vty *vty, struct ospf_lsa *lsa)
   vty_out (vty, "  Length: %d%s", ntohs (lsa->data->length), VTY_NEWLINE);
 }
 
-const char *link_type_desc[] =
-{
-  "(null)",
-  "another Router (point-to-point)",
-  "a Transit Network",
-  "Stub Network",
-  "a Virtual Link",
-};
-
-const char *link_id_desc[] =
-{
-  "(null)",
-  "Neighboring Router ID",
-  "Designated Router address",
-  "Net",
-  "Neighboring Router ID",
-};
-
-const char *link_data_desc[] =
-{
-  "(null)",
-  "Router Interface address",
-  "Router Interface address",
-  "Network Mask",
-  "Router Interface address",
-};
-
 /* Show router-LSA each Link information. */
 static void
 show_ip_ospf_database_router_links (struct vty *vty,
@@ -3623,10 +3626,10 @@ show_ip_ospf_database_router_links (struct vty *vty,
       type = rl->link[i].m[0].type;
 
       vty_out (vty, "    Link connected to: %s%s",
-	       link_type_desc[type], VTY_NEWLINE);
-      vty_out (vty, "     (Link ID) %s: %s%s", link_id_desc[type],
+	       LOOKUP (ospf_router_lsa_link_type_str, type), VTY_NEWLINE);
+      vty_out (vty, "     (Link ID) %s: %s%s", LOOKUP (ospf_router_lsa_link_id_str, type),
 	       inet_ntoa (rl->link[i].link_id), VTY_NEWLINE);
-      vty_out (vty, "     (Link Data) %s: %s%s", link_data_desc[type],
+      vty_out (vty, "     (Link Data) %s: %s%s", LOOKUP (ospf_router_lsa_link_data_str, type),
 	       inet_ntoa (rl->link[i].link_data), VTY_NEWLINE);
       vty_out (vty, "      Number of TOS metrics: 0%s", VTY_NEWLINE);
       vty_out (vty, "       TOS 0 Metric: %d%s",
