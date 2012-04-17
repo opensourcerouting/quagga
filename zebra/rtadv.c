@@ -583,10 +583,10 @@ static int
 rtadv_setsockopt (int sock)
 {
   return (setsockopt_ipv6_pktinfo (sock, 1)
-       || setsockopt_ipv6_multicast_loop (sock, 0)
-       || setsockopt_ipv6_unicast_hops (sock, 255)
-       || setsockopt_ipv6_multicast_hops (sock, 255)
-       || setsockopt_ipv6_hoplimit (sock, 1)
+        | setsockopt_ipv6_multicast_loop (sock, 0)
+        | setsockopt_ipv6_unicast_hops (sock, 255)
+        | setsockopt_ipv6_multicast_hops (sock, 255)
+        | setsockopt_ipv6_hoplimit (sock, 1)
          );
 }
 
