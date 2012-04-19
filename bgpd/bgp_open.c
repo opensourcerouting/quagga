@@ -429,7 +429,7 @@ static const struct message capcode_str[] =
 static const int capcode_str_max = sizeof(capcode_str)/sizeof(capcode_str[0]);
 
 /* Minimum sizes for length field of each cap (so not inc. the header) */
-static const size_t cap_minsizes[] = 
+static const unsigned cap_minsizes[] =
 {
   [CAPABILITY_CODE_MP]		= sizeof (struct capability_mp_data),
   [CAPABILITY_CODE_REFRESH]	= CAPABILITY_CODE_REFRESH_LEN,
@@ -508,7 +508,7 @@ bgp_capability_parse (struct peer *peer, size_t length, int *mp_capability,
                              peer->host, 
                              LOOKUP (capcode_str, caphdr.code),
                              caphdr.length, 
-			     (unsigned) cap_minsizes[caphdr.code]);
+			     cap_minsizes[caphdr.code]);
                   bgp_notify_send (peer, BGP_NOTIFY_CEASE, 0);
                   return -1;
                 }
