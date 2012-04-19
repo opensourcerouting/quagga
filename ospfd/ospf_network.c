@@ -214,14 +214,14 @@ ospf_sock_init (void)
 }
 
 void
-ospf_adjust_sndbuflen (struct ospf * ospf, int buflen)
+ospf_adjust_sndbuflen (struct ospf * ospf, unsigned buflen)
 {
   int ret, newbuflen;
   /* Check if any work has to be done at all. */
   if (ospf->maxsndbuflen >= buflen)
     return;
   if (IS_DEBUG_OSPF (zebra, ZEBRA_INTERFACE))
-    zlog_debug ("%s: adjusting OSPF send buffer size to %d",
+    zlog_debug ("%s: adjusting OSPF send buffer size to %u",
       __func__, buflen);
   if (ospfd_privs.change (ZPRIVS_RAISE))
     zlog_err ("%s: could not raise privs, %s", __func__,
@@ -235,8 +235,8 @@ ospf_adjust_sndbuflen (struct ospf * ospf, int buflen)
    */
   ret = setsockopt_so_sendbuf (ospf->fd, buflen);
   newbuflen = getsockopt_so_sendbuf (ospf->fd);
-  if (ret < 0 || newbuflen < buflen)
-    zlog_warn ("%s: tried to set SO_SNDBUF to %d, but got %d",
+  if (ret < 0 || newbuflen < (int) buflen)
+    zlog_warn ("%s: tried to set SO_SNDBUF to %u, but got %d",
       __func__, buflen, newbuflen);
   if (newbuflen >= 0)
     ospf->maxsndbuflen = newbuflen;
