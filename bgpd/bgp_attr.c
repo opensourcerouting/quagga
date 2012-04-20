@@ -1959,9 +1959,6 @@ bgp_attr_parse (struct peer *peer, struct attr *attr, bgp_size_t size,
                 "%s: Attribute %s, parse error", 
                 peer->host, 
                 LOOKUP (attr_str, type));
-           bgp_notify_send (peer, 
-                            BGP_NOTIFY_UPDATE_ERR,
-                            BGP_NOTIFY_UPDATE_MAL_ATTR);
            return ret;
         }
 
