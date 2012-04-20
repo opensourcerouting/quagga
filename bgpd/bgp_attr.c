@@ -1492,6 +1492,7 @@ bgp_mp_reach_parse (struct peer *peer, const bgp_size_t length,
     {
       zlog_info ("%s: %s sent invalid length, %lu", 
 		 __func__, peer->host, (unsigned long)length);
+      bgp_notify_send_with_data (peer, BGP_NOTIFY_UPDATE_ERR, BGP_NOTIFY_UPDATE_ATTR_LENG_ERR, startp, total);
       return -1;
     }
   
@@ -1506,6 +1507,7 @@ bgp_mp_reach_parse (struct peer *peer, const bgp_size_t length,
     {
       zlog_info ("%s: %s, MP nexthop length, %u, goes past end of attribute", 
 		 __func__, peer->host, attre->mp_nexthop_len);
+      bgp_notify_send_with_data (peer, BGP_NOTIFY_UPDATE_ERR, BGP_NOTIFY_UPDATE_ATTR_LENG_ERR, startp, total);
       return -1;
     }
   
@@ -1556,6 +1558,7 @@ bgp_mp_reach_parse (struct peer *peer, const bgp_size_t length,
     default:
       zlog_info ("%s: (%s) Wrong multiprotocol next hop length: %d", 
 		 __func__, peer->host, attre->mp_nexthop_len);
+      bgp_notify_send_with_data (peer, BGP_NOTIFY_UPDATE_ERR, BGP_NOTIFY_UPDATE_ATTR_LENG_ERR, startp, total);
       return -1;
     }
 
@@ -1563,6 +1566,7 @@ bgp_mp_reach_parse (struct peer *peer, const bgp_size_t length,
     {
       zlog_info ("%s: (%s) Failed to read SNPA and NLRI(s)",
                  __func__, peer->host);
+      bgp_notify_send_with_data (peer, BGP_NOTIFY_UPDATE_ERR, BGP_NOTIFY_UPDATE_ATTR_LENG_ERR, startp, total);
       return -1;
     }
   
@@ -1579,6 +1583,7 @@ bgp_mp_reach_parse (struct peer *peer, const bgp_size_t length,
     {
       zlog_info ("%s: (%s) Failed to read NLRI",
                  __func__, peer->host);
+      bgp_notify_send_with_data (peer, BGP_NOTIFY_UPDATE_ERR, BGP_NOTIFY_UPDATE_ATTR_LENG_ERR, startp, total);
       return -1;
     }
  
@@ -1589,6 +1594,7 @@ bgp_mp_reach_parse (struct peer *peer, const bgp_size_t length,
         {
           zlog_info ("%s: (%s) NLRI doesn't pass sanity check",
                      __func__, peer->host);
+	  bgp_notify_send_with_data (peer, BGP_NOTIFY_UPDATE_ERR, BGP_NOTIFY_UPDATE_ATTR_LENG_ERR, startp, total);
 	  return -1;
 	}
     }
@@ -1630,7 +1636,10 @@ bgp_mp_unreach_parse (struct peer *peer, const bgp_size_t length,
   
 #define BGP_MP_UNREACH_MIN_SIZE 3
   if ((length > STREAM_READABLE(s)) || (length <  BGP_MP_UNREACH_MIN_SIZE))
+  {
+    bgp_notify_send_with_data (peer, BGP_NOTIFY_UPDATE_ERR, BGP_NOTIFY_UPDATE_ATTR_LENG_ERR, startp, total);
     return -1;
+  }
   
   afi = stream_getw (s);
   safi = stream_getc (s);
@@ -1641,7 +1650,10 @@ bgp_mp_unreach_parse (struct peer *peer, const bgp_size_t length,
     {
       ret = bgp_nlri_sanity_check (peer, afi, stream_pnt (s), withdraw_len);
       if (ret < 0)
+      {
+	bgp_notify_send_with_data (peer, BGP_NOTIFY_UPDATE_ERR, BGP_NOTIFY_UPDATE_ATTR_LENG_ERR, startp, total);
 	return -1;
+      }
     }
 
   mp_withdraw->afi = afi;
