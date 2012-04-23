@@ -1175,10 +1175,24 @@ bgp_attr_as4_aggregator (struct peer *peer, bgp_size_t length,
 
   total = length + (CHECK_FLAG (flag, BGP_ATTR_FLAG_EXTLEN) ? 4 : 3);
   /* Flags check. */
-  if ((flag & ~BGP_ATTR_FLAG_EXTLEN) != (BGP_ATTR_FLAG_OPTIONAL | BGP_ATTR_FLAG_TRANS))
+  if (! CHECK_FLAG (flag, BGP_ATTR_FLAG_OPTIONAL))
   {
-    bgp_attr_flags_diagnose (peer, BGP_ATTR_AS4_AGGREGATOR, BGP_ATTR_FLAG_OPTIONAL | BGP_ATTR_FLAG_TRANS, flag);
-    bgp_notify_send_with_data (peer, BGP_NOTIFY_UPDATE_ERR, BGP_NOTIFY_UPDATE_ATTR_FLAG_ERR, startp, total);
+    zlog (peer->log, LOG_ERR,
+          "AS4_AGGREGATOR attribute must be flagged as \"optional\" (%u)", flag);
+    bgp_notify_send_with_data (peer,
+                               BGP_NOTIFY_UPDATE_ERR,
+                               BGP_NOTIFY_UPDATE_ATTR_FLAG_ERR,
+                               startp, total);
+    return -1;
+  }
+  if (! CHECK_FLAG (flag, BGP_ATTR_FLAG_TRANS))
+  {
+    zlog (peer->log, LOG_ERR,
+          "AS4_AGGREGATOR attribute must be flagged as \"transitive\" (%u)", flag);
+    bgp_notify_send_with_data (peer,
+                               BGP_NOTIFY_UPDATE_ERR,
+                               BGP_NOTIFY_UPDATE_ATTR_FLAG_ERR,
+                               startp, total);
     return -1;
   }
   if (length != 8)
@@ -1324,10 +1338,24 @@ bgp_attr_community (struct peer *peer, bgp_size_t length,
 
   total = length + (CHECK_FLAG (flag, BGP_ATTR_FLAG_EXTLEN) ? 4 : 3);
   /* Flags check. */
-  if ((flag & ~BGP_ATTR_FLAG_EXTLEN) != (BGP_ATTR_FLAG_OPTIONAL | BGP_ATTR_FLAG_TRANS))
+  if (! CHECK_FLAG (flag, BGP_ATTR_FLAG_OPTIONAL))
   {
-    bgp_attr_flags_diagnose (peer, BGP_ATTR_COMMUNITIES, BGP_ATTR_FLAG_OPTIONAL | BGP_ATTR_FLAG_TRANS, flag);
-    bgp_notify_send_with_data (peer, BGP_NOTIFY_UPDATE_ERR, BGP_NOTIFY_UPDATE_ATTR_FLAG_ERR, startp, total);
+    zlog (peer->log, LOG_ERR,
+          "COMMUNITIES attribute must be flagged as \"optional\" (%u)", flag);
+    bgp_notify_send_with_data (peer,
+                               BGP_NOTIFY_UPDATE_ERR,
+                               BGP_NOTIFY_UPDATE_ATTR_FLAG_ERR,
+                               startp, total);
+    return -1;
+  }
+  if (! CHECK_FLAG (flag, BGP_ATTR_FLAG_TRANS))
+  {
+    zlog (peer->log, LOG_ERR,
+          "COMMUNITIES attribute must be flagged as \"transitive\" (%u)", flag);
+    bgp_notify_send_with_data (peer,
+                               BGP_NOTIFY_UPDATE_ERR,
+                               BGP_NOTIFY_UPDATE_ATTR_FLAG_ERR,
+                               startp, total);
     return -1;
   }
 
@@ -1635,10 +1663,24 @@ bgp_attr_ext_communities (struct peer *peer, bgp_size_t length,
 
   total = length + (CHECK_FLAG (flag, BGP_ATTR_FLAG_EXTLEN) ? 4 : 3);
   /* Flags check. */
-  if ((flag & ~BGP_ATTR_FLAG_EXTLEN) != (BGP_ATTR_FLAG_OPTIONAL | BGP_ATTR_FLAG_TRANS))
+  if (! CHECK_FLAG (flag, BGP_ATTR_FLAG_OPTIONAL))
   {
-    bgp_attr_flags_diagnose (peer, BGP_ATTR_EXT_COMMUNITIES, BGP_ATTR_FLAG_OPTIONAL | BGP_ATTR_FLAG_TRANS, flag);
-    bgp_notify_send_with_data (peer, BGP_NOTIFY_UPDATE_ERR, BGP_NOTIFY_UPDATE_ATTR_FLAG_ERR, startp, total);
+    zlog (peer->log, LOG_ERR,
+          "EXT_COMMUNITIES attribute must be flagged as \"optional\" (%u)", flag);
+    bgp_notify_send_with_data (peer,
+                               BGP_NOTIFY_UPDATE_ERR,
+                               BGP_NOTIFY_UPDATE_ATTR_FLAG_ERR,
+                               startp, total);
+    return -1;
+  }
+  if (! CHECK_FLAG (flag, BGP_ATTR_FLAG_TRANS))
+  {
+    zlog (peer->log, LOG_ERR,
+          "EXT_COMMUNITIES attribute must be flagged as \"transitive\" (%u)", flag);
+    bgp_notify_send_with_data (peer,
+                               BGP_NOTIFY_UPDATE_ERR,
+                               BGP_NOTIFY_UPDATE_ATTR_FLAG_ERR,
+                               startp, total);
     return -1;
   }
 
