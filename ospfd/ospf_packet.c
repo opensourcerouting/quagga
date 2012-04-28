@@ -94,6 +94,11 @@ static const u_int16_t ospf_lsa_minlen[] =
 /* for ospf_check_auth() */
 static int ospf_check_sum (struct ospf_header *);
 
+static void ospf_ls_upd_send (struct ospf_neighbor *, struct list *, const int);
+static void ospf_ls_ack_send (struct ospf_neighbor *, struct ospf_lsa *);
+static void ospf_ls_ack_send_delayed (struct ospf_interface *);
+static int ospf_hello_reply_timer (struct thread *);
+
 /* OSPF authentication checking function */
 static int
 ospf_auth_type (struct ospf_interface *oi)
@@ -114,7 +119,7 @@ ospf_auth_type (struct ospf_interface *oi)
 
 }
 
-struct ospf_packet *
+static struct ospf_packet *
 ospf_packet_new (size_t size)
 {
   struct ospf_packet *new;
@@ -146,7 +151,7 @@ ospf_fifo_new ()
 }
 
 /* Add new packet to fifo. */
-void
+static void
 ospf_fifo_push (struct ospf_fifo *fifo, struct ospf_packet *op)
 {
   if (fifo->tail)
@@ -174,7 +179,7 @@ ospf_fifo_push_head (struct ospf_fifo *fifo, struct ospf_packet *op)
 }
 
 /* Delete first packet from fifo. */
-struct ospf_packet *
+static struct ospf_packet *
 ospf_fifo_pop (struct ospf_fifo *fifo)
 {
   struct ospf_packet *op;
@@ -195,14 +200,14 @@ ospf_fifo_pop (struct ospf_fifo *fifo)
 }
 
 /* Return first fifo entry. */
-struct ospf_packet *
+static struct ospf_packet *
 ospf_fifo_head (struct ospf_fifo *fifo)
 {
   return fifo->head;
 }
 
 /* Flush ospf packet fifo. */
-void
+static void
 ospf_fifo_flush (struct ospf_fifo *fifo)
 {
   struct ospf_packet *op;
@@ -226,7 +231,7 @@ ospf_fifo_free (struct ospf_fifo *fifo)
   XFREE (MTYPE_OSPF_FIFO, fifo);
 }
 
-void
+static void
 ospf_packet_add (struct ospf_interface *oi, struct ospf_packet *op)
 {
   if (!oi->obuf)
@@ -268,7 +273,7 @@ ospf_packet_add_top (struct ospf_interface *oi, struct ospf_packet *op)
   /* ospf_fifo_debug (oi->obuf); */
 }
 
-void
+static void
 ospf_packet_delete (struct ospf_interface *oi)
 {
   struct ospf_packet *op;
@@ -279,7 +284,7 @@ ospf_packet_delete (struct ospf_interface *oi)
     ospf_packet_free (op);
 }
 
-struct ospf_packet *
+static struct ospf_packet *
 ospf_packet_dup (struct ospf_packet *op)
 {
   struct ospf_packet *new;
@@ -3469,8 +3474,7 @@ ospf_poll_timer (struct thread *thread)
   return 0;
 }
 
-
-int
+static int
 ospf_hello_reply_timer (struct thread *thread)
 {
   struct ospf_neighbor *nbr;
@@ -3815,8 +3819,8 @@ ospf_ls_upd_send_queue_event (struct thread *thread)
   return 0;
 }
 
-void
-ospf_ls_upd_send (struct ospf_neighbor *nbr, struct list *update, int flag)
+static void
+ospf_ls_upd_send (struct ospf_neighbor *nbr, struct list *update, const int flag)
 {
   struct ospf_interface *oi;
   struct ospf_lsa *lsa;
@@ -3909,7 +3913,7 @@ ospf_ls_ack_send_event (struct thread *thread)
   return 0;
 }
 
-void
+static void
 ospf_ls_ack_send (struct ospf_neighbor *nbr, struct ospf_lsa *lsa)
 {
   struct ospf_interface *oi = nbr->oi;
@@ -3925,7 +3929,7 @@ ospf_ls_ack_send (struct ospf_neighbor *nbr, struct ospf_lsa *lsa)
 }
 
 /* Send Link State Acknowledgment delayed. */
-void
+static void
 ospf_ls_ack_send_delayed (struct ospf_interface *oi)
 {
   struct in_addr dst;
