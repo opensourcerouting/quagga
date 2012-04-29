@@ -94,6 +94,10 @@ Enable support for Equal Cost Multipath. @var{ARG} is the maximum number
 of ECMP paths to allow, set to 0 to allow unlimited number of paths.
 @item --enable-rtadv
 Enable support IPV6 router advertisement in zebra.
+@item --with-libgcrypt
+Assume gcrypt library to be available, locate it and use to build protocol
+processes having gcrypt-dependent features. With this option, if the library
+is missing, the build will fail.
 @end table
 
 You may specify any combination of the above options to the configure
