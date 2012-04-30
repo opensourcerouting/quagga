@@ -23,6 +23,9 @@
 #ifndef _ZEBRA_TABLE_H
 #define _ZEBRA_TABLE_H
 
+/* for struct prefix */
+#include "prefix.h"
+
 /* Routing table top structure. */
 struct route_table
 {
