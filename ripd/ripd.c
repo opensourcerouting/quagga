@@ -714,8 +714,6 @@ rip_packet_dump (struct rip_packet *packet, int size, const char *sndrcv)
     {
       if (packet->version == RIPv2)
 	{
-	  char netmask = ip_masklen_safe (rte->mask);
-
           if (rte->family == htons (RIP_FAMILY_AUTH))
             {
               if (rte->tag == htons (RIP_AUTH_SIMPLE_PASSWORD))
@@ -761,8 +759,9 @@ rip_packet_dump (struct rip_packet *packet, int size, const char *sndrcv)
 	  else
 	    zlog_debug ("  %s/%d -> %s family %d tag %d metric %ld",
                        inet_ntop (AF_INET, &rte->prefix, pbuf, BUFSIZ),
-                       netmask, inet_ntop (AF_INET, &rte->nexthop, nbuf,
-                                           BUFSIZ), ntohs (rte->family),
+                       ip_masklen_safe (rte->mask),
+                       inet_ntop (AF_INET, &rte->nexthop, nbuf, BUFSIZ),
+                       ntohs (rte->family),
                        ntohs (rte->tag), (u_long) ntohl (rte->metric));
 	}
       else
