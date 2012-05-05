@@ -36,42 +36,6 @@ int  ospf6_sock;
 struct in6_addr allspfrouters6;
 struct in6_addr alldrouters6;
 
-/* setsockopt MulticastLoop to off */
-void
-ospf6_reset_mcastloop (void)
-{
-  u_int off = 0;
-  if (setsockopt (ospf6_sock, IPPROTO_IPV6, IPV6_MULTICAST_LOOP,
-                  &off, sizeof (u_int)) < 0)
-    zlog_warn ("Network: reset IPV6_MULTICAST_LOOP failed: %s",
-               safe_strerror (errno));
-}
-
-void
-ospf6_set_pktinfo (void)
-{
-  setsockopt_ipv6_pktinfo (ospf6_sock, 1);
-}
-
-void
-ospf6_set_transport_class (void)
-{
-  setsockopt_ipv6_tclass (ospf6_sock, IPTOS_PREC_INTERNETCONTROL);
-}
-
-void
-ospf6_set_checksum (void)
-{
-  int offset = 12;
-#ifndef DISABLE_IPV6_CHECKSUM
-  if (setsockopt (ospf6_sock, IPPROTO_IPV6, IPV6_CHECKSUM,
-                  &offset, sizeof (offset)) < 0)
-    zlog_warn ("Network: set IPV6_CHECKSUM failed: %s", safe_strerror (errno));
-#else
-  zlog_warn ("Network: Don't set IPV6_CHECKSUM");
-#endif /* DISABLE_IPV6_CHECKSUM */
-}
-
 /* Make ospf6d's server socket. */
 int
 ospf6_serv_sock (void)
@@ -92,10 +56,10 @@ ospf6_serv_sock (void)
 
   /* set socket options */
   sockopt_reuseaddr (ospf6_sock);
-  ospf6_reset_mcastloop ();
-  ospf6_set_pktinfo ();
-  ospf6_set_transport_class ();
-  ospf6_set_checksum ();
+  setsockopt_ipv6_multicast_loop (ospf6_sock, 0);
+  setsockopt_ipv6_pktinfo (ospf6_sock, 1);
+  setsockopt_ipv6_tclass (ospf6_sock, IPTOS_PREC_INTERNETCONTROL);
+  setsockopt_ipv6_checksum (ospf6_sock, 12);
 
   /* setup global in6_addr, allspf6 and alldr6 for later use */
   inet_pton (AF_INET6, ALLSPFROUTERS6, &allspfrouters6);

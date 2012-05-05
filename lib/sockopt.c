@@ -114,13 +114,7 @@ setsockopt_ipv6_pktinfo (int sock, int val)
 int
 setsockopt_ipv6_checksum (int sock, int val)
 {
-  int ret;
-
-#ifdef GNU_LINUX
-  ret = setsockopt(sock, IPPROTO_RAW, IPV6_CHECKSUM, &val, sizeof(val));
-#else
-  ret = setsockopt(sock, IPPROTO_IPV6, IPV6_CHECKSUM, &val, sizeof(val));
-#endif /* GNU_LINUX */
+  int ret = setsockopt(sock, IPPROTO_IPV6, IPV6_CHECKSUM, &val, sizeof(val));
   if (ret < 0)
     zlog_warn ("can't setsockopt IPV6_CHECKSUM");
   return ret;
