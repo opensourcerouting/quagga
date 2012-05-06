@@ -344,6 +344,7 @@ ospf_zebra_add (struct prefix_ipv4 *p, struct ospf_route *or)
   struct ospf_path *path;
   struct listnode *node;
   char nexthopbuf[8 + INET_ADDRSTRLEN];
+  char prefixbuf[INET_ADDRSTRLEN];
 
   if (zclient->redist[ZEBRA_ROUTE_OSPF])
     {
@@ -394,12 +395,11 @@ ospf_zebra_add (struct prefix_ipv4 *p, struct ospf_route *or)
 	      stream_put_in_addr (s, &path->nexthop);
 	      sprintf(nexthopbuf, "nexthop %s",
 		      inet_ntop(AF_INET, &path->nexthop,
-				nexthopbuf, sizeof(nexthopbuf)));
+				prefixbuf, sizeof(prefixbuf)));
             }
 
           if (IS_DEBUG_OSPF (zebra, ZEBRA_REDISTRIBUTE))
             {
-	      char prefixbuf[INET_ADDRSTRLEN];
 	      zlog_debug("Zebra: Route add %s/%d %s",
 			 inet_ntop(AF_INET, &p->prefix,
 				   prefixbuf, sizeof(prefixbuf)),
