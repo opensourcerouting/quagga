@@ -383,6 +383,15 @@ setsockopt_ipv4_tos(int sock, int tos)
   return ret;
 }
 
+int
+setsockopt_ipv4_multicast_loop (const int sock, int val)
+{
+  int ret = setsockopt (sock, IPPROTO_IP, IP_MULTICAST_LOOP, (void *)&val, sizeof (val));
+  if (ret < 0)
+    zlog_warn ("can't setsockopt IP_MULTICAST_LOOP to %d for fd %d: %s",
+	       val, sock, safe_strerror (errno));
+  return ret;
+}
 
 int
 setsockopt_ifindex (int af, int sock, int val)

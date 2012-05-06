@@ -135,14 +135,10 @@ ospf_if_ipmulticast (struct ospf *top, struct prefix *p, unsigned int ifindex)
   u_char val;
   int ret, len;
   
-  val = 0;
   len = sizeof (val);
   
-  /* Prevent receiving self-origined multicast packets. */
-  ret = setsockopt (top->fd, IPPROTO_IP, IP_MULTICAST_LOOP, (void *)&val, len);
-  if (ret < 0)
-    zlog_warn ("can't setsockopt IP_MULTICAST_LOOP(0) for fd %d: %s",
-	       top->fd, safe_strerror(errno));
+  /* Prevent receiving self-originated multicast packets. */
+  setsockopt_ipv4_multicast_loop (top->fd, 0);
   
   /* Explicitly set multicast ttl to 1 -- endo. */
   val = 1;

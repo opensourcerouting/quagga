@@ -90,6 +90,7 @@ extern int setsockopt_ipv4_multicast(int sock, int optname,
                                      unsigned int mcast_addr,
 			             unsigned int ifindex);
 extern int setsockopt_ipv4_tos(int sock, int tos);
+extern int setsockopt_ipv4_multicast_loop (const int, int);
 
 /* Ask for, and get, ifindex, by whatever method is supported. */
 extern int setsockopt_ifindex (int, int, int);
