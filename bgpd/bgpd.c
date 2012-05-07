@@ -25,6 +25,7 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #include "buffer.h"
 #include "stream.h"
 #include "command.h"
+#include "sockopt.h"
 #include "sockunion.h"
 #include "network.h"
 #include "memory.h"
@@ -2675,7 +2676,7 @@ peer_ebgp_multihop_set (struct peer *peer, int ttl)
   if (! CHECK_FLAG (peer->sflags, PEER_STATUS_GROUP))
     {
       if (peer->fd >= 0 && peer_sort (peer) != BGP_PEER_IBGP)
-	sockopt_ttl (peer->su.sa.sa_family, peer->fd, peer->ttl);
+	setsockopt_ipvX_ttl (peer->su.sa.sa_family, peer->fd, peer->ttl);
     }
   else
     {
@@ -2688,7 +2689,7 @@ peer_ebgp_multihop_set (struct peer *peer, int ttl)
 	  peer->ttl = group->conf->ttl;
 
 	  if (peer->fd >= 0)
-	    sockopt_ttl (peer->su.sa.sa_family, peer->fd, peer->ttl);
+	    setsockopt_ipvX_ttl (peer->su.sa.sa_family, peer->fd, peer->ttl);
 	}
     }
   return 0;
@@ -2711,7 +2712,7 @@ peer_ebgp_multihop_unset (struct peer *peer)
   if (! CHECK_FLAG (peer->sflags, PEER_STATUS_GROUP))
     {
       if (peer->fd >= 0 && peer_sort (peer) != BGP_PEER_IBGP)
-	sockopt_ttl (peer->su.sa.sa_family, peer->fd, peer->ttl);
+	setsockopt_ipvX_ttl (peer->su.sa.sa_family, peer->fd, peer->ttl);
     }
   else
     {
@@ -2724,7 +2725,7 @@ peer_ebgp_multihop_unset (struct peer *peer)
 	  peer->ttl = 1;
 	  
 	  if (peer->fd >= 0)
-	    sockopt_ttl (peer->su.sa.sa_family, peer->fd, peer->ttl);
+	    setsockopt_ipvX_ttl (peer->su.sa.sa_family, peer->fd, peer->ttl);
 	}
     }
   return 0;

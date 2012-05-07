@@ -1423,8 +1423,8 @@ zebra_serv ()
 #endif /* HAVE_STRUCT_SOCKADDR_IN_SIN_LEN */
   addr.sin_addr.s_addr = htonl (INADDR_LOOPBACK);
 
-  sockopt_reuseaddr (accept_sock);
-  sockopt_reuseport (accept_sock);
+  setsockopt_so_reuseaddr (accept_sock, 1);
+  setsockopt_so_reuseport (accept_sock, 1);
 
   if ( zserv_privs.change(ZPRIVS_RAISE) )
     zlog (NULL, LOG_ERR, "Can't raise privileges");

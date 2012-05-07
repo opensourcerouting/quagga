@@ -27,6 +27,7 @@
 #include "buffer.h"
 #include <lib/version.h>
 #include "command.h"
+#include "sockopt.h"
 #include "sockunion.h"
 #include "memory.h"
 #include "str.h"
@@ -1817,9 +1818,10 @@ vty_serv_sock_addrinfo (const char *hostname, unsigned short port)
       if (sock < 0)
 	continue;
 
-      sockopt_v6only (ainfo->ai_family, sock);
-      sockopt_reuseaddr (sock);
-      sockopt_reuseport (sock);
+      if (ainfo->ai_family == AF_INET6)
+        setsockopt_ipv6_v6only (sock, 1);
+      setsockopt_so_reuseaddr (sock, 1);
+      setsockopt_so_reuseport (sock, 1);
 
       ret = bind (sock, ainfo->ai_addr, ainfo->ai_addrlen);
       if (ret < 0)
@@ -1883,8 +1885,8 @@ vty_serv_sock_family (const char* addr, unsigned short port, int family)
     return;
 
   /* This is server, so reuse address. */
-  sockopt_reuseaddr (accept_sock);
-  sockopt_reuseport (accept_sock);
+  setsockopt_so_reuseaddr (accept_sock, 1);
+  setsockopt_so_reuseport (accept_sock, 1);
 
   /* Bind socket to universal address and given port. */
   ret = sockunion_bind (accept_sock, &su, port, naddr);

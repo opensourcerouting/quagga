@@ -28,6 +28,8 @@ extern int setsockopt_so_recvbuf (int sock, int size);
 extern int setsockopt_so_sendbuf (const int sock, int size);
 extern int getsockopt_so_sendbuf (const int sock);
 extern int setsockopt_so_broadcast (const int, int);
+extern int setsockopt_so_reuseaddr (const int, int);
+extern int setsockopt_so_reuseport (const int, int);
 
 #ifdef HAVE_IPV6
 extern int setsockopt_ipv6_pktinfo (int, int);
@@ -37,6 +39,7 @@ extern int setsockopt_ipv6_unicast_hops (int, int);
 extern int setsockopt_ipv6_hoplimit (int, int);
 extern int setsockopt_ipv6_multicast_loop (int, int);
 extern int setsockopt_ipv6_tclass (int, int);
+extern int setsockopt_ipv6_v6only (const int, int);
 #endif /* HAVE_IPV6 */
 
 /*
@@ -104,4 +107,7 @@ extern void sockopt_iphdrincl_swab_systoh (struct ip *iph);
 
 extern int sockopt_tcp_signature(int sock, union sockunion *su,
                                  const char *password);
+extern int setsockopt_tcp_cork (const int, int);
+
+extern int setsockopt_ipvX_ttl (const int, const int, int);
 #endif /*_ZEBRA_SOCKOPT_H */

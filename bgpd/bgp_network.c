@@ -174,7 +174,7 @@ bgp_accept (struct thread *thread)
 
   /* In case of peer is EBGP, we should set TTL for this connection.  */
   if (peer_sort (peer1) == BGP_PEER_EBGP)
-    sockopt_ttl (peer1->su.sa.sa_family, bgp_sock, peer1->ttl);
+    setsockopt_ipvX_ttl (peer1->su.sa.sa_family, bgp_sock, peer1->ttl);
 
   /* Make dummy peer until read Open packet. */
   if (BGP_DEBUG (events, EVENTS))
@@ -304,10 +304,10 @@ bgp_connect (struct peer *peer)
 
   /* If we can get socket for the peer, adjest TTL and make connection. */
   if (peer_sort (peer) == BGP_PEER_EBGP)
-    sockopt_ttl (peer->su.sa.sa_family, peer->fd, peer->ttl);
+    setsockopt_ipvX_ttl (peer->su.sa.sa_family, peer->fd, peer->ttl);
 
-  sockopt_reuseaddr (peer->fd);
-  sockopt_reuseport (peer->fd);
+  setsockopt_so_reuseaddr (peer->fd, 1);
+  setsockopt_so_reuseport (peer->fd, 1);
   
   if (bgpd_privs.change (ZPRIVS_RAISE))
     zlog_err ("%s: could not raise privs", __func__);
@@ -371,8 +371,8 @@ bgp_listener (int sock, struct sockaddr *sa, socklen_t salen)
   struct bgp_listener *listener;
   int ret, en;
 
-  sockopt_reuseaddr (sock);
-  sockopt_reuseport (sock);
+  setsockopt_so_reuseaddr (sock, 1);
+  setsockopt_so_reuseport (sock, 1);
 
   if (bgpd_privs.change (ZPRIVS_RAISE))
     zlog_err ("%s: could not raise privs", __func__);
@@ -381,10 +381,11 @@ bgp_listener (int sock, struct sockaddr *sa, socklen_t salen)
     setsockopt_ipv4_tos (sock, IPTOS_PREC_INTERNETCONTROL);
 #  ifdef HAVE_IPV6
   else if (sa->sa_family == AF_INET6)
+  {
     setsockopt_ipv6_tclass (sock, IPTOS_PREC_INTERNETCONTROL);
+    setsockopt_ipv6_v6only (sock, 1);
+  }
 #  endif
-
-  sockopt_v6only (sa->sa_family, sock);
 
   ret = bind (sock, sa, salen);
   en = errno;

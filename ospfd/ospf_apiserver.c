@@ -626,8 +626,8 @@ ospf_apiserver_serv_sock_family (unsigned short port, int family)
     return accept_sock;
 
   /* This is a server, so reuse address and port */
-  sockopt_reuseaddr (accept_sock);
-  sockopt_reuseport (accept_sock);
+  setsockopt_so_reuseaddr (accept_sock, 1);
+  setsockopt_so_reuseport (accept_sock, 1);
 
   /* Bind socket to address and given port. */
   rc = sockunion_bind (accept_sock, &su, port, NULL);

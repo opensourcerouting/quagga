@@ -27,6 +27,7 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #include "command.h"
 #include "log.h"
 #include "memory.h"
+#include "sockopt.h"
 #include "sockunion.h"		/* for inet_ntop () */
 #include "linklist.h"
 #include "plist.h"
@@ -614,7 +615,7 @@ bgp_write (struct thread *thread)
   if (!s)
     return 0;	/* nothing to send */
 
-  sockopt_cork (peer->fd, 1);
+  setsockopt_tcp_cork (peer->fd, 1);
 
   /* Nonblocking write until TCP output buffer is full.  */
   do
@@ -688,7 +689,7 @@ bgp_write (struct thread *thread)
   if (bgp_write_proceed (peer))
     BGP_WRITE_ON (peer->t_write, bgp_write, peer->fd);
   else
-    sockopt_cork (peer->fd, 0);
+    setsockopt_tcp_cork (peer->fd, 0);
   
   return 0;
 }

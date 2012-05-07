@@ -215,8 +215,8 @@ smux_socket (void)
       sock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
       if (sock < 0)
 	continue;
-      sockopt_reuseaddr (sock);
-      sockopt_reuseport (sock);
+      setsockopt_so_reuseaddr (sock, 1);
+      setsockopt_so_reuseport (sock, 1);
       ret = connect (sock, res->ai_addr, res->ai_addrlen);
       if (ret < 0)
 	{
@@ -251,8 +251,8 @@ smux_socket (void)
 
   serv.sin_addr.s_addr = htonl (INADDR_LOOPBACK);
 
-  sockopt_reuseaddr (sock);
-  sockopt_reuseport (sock);
+  setsockopt_so_reuseaddr (sock, 1);
+  setsockopt_so_reuseport (sock, 1);
 
   ret = connect (sock, (struct sockaddr *) &serv, sizeof (struct sockaddr_in));
   if (ret < 0)

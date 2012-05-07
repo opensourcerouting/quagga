@@ -1318,8 +1318,8 @@ rip_create_socket (struct sockaddr_in *from)
     }
 
   setsockopt_so_broadcast (sock, 1);
-  sockopt_reuseaddr (sock);
-  sockopt_reuseport (sock);
+  setsockopt_so_reuseaddr (sock, 1);
+  setsockopt_so_reuseport (sock, 1);
   setsockopt_ipv4_tos (sock, IPTOS_PREC_INTERNETCONTROL);
 
   if (ripd_privs.change (ZPRIVS_RAISE))

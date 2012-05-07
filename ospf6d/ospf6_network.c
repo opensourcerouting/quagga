@@ -55,7 +55,7 @@ ospf6_serv_sock (void)
       zlog_err ("ospf_sock_init: could not lower privs");
 
   /* set socket options */
-  sockopt_reuseaddr (ospf6_sock);
+  setsockopt_so_reuseaddr (ospf6_sock, 1);
   setsockopt_ipv6_multicast_loop (ospf6_sock, 0);
   setsockopt_ipv6_pktinfo (ospf6_sock, 1);
   setsockopt_ipv6_tclass (ospf6_sock, IPTOS_PREC_INTERNETCONTROL);

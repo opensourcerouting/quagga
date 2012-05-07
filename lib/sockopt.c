@@ -76,6 +76,27 @@ setsockopt_so_broadcast (const int sock, int on)
   return ret;
 }
 
+int
+setsockopt_so_reuseaddr (const int sock, int val)
+{
+  int ret = setsockopt (sock, SOL_SOCKET, SO_REUSEADDR, &val, sizeof (val));
+  if (ret < 0)
+    zlog_warn ("can't set sockopt SO_REUSEADDR %d, fd %d: %s", val, sock, safe_strerror (errno));
+  return ret;
+}
+
+int
+setsockopt_so_reuseport (const int sock, int val)
+{
+  int ret = 0;
+#ifdef SO_REUSEPORT
+  ret = setsockopt (sock, SOL_SOCKET, SO_REUSEPORT, &val, sizeof (val));
+  if (ret < 0)
+    zlog_warn ("can't set sockopt SO_REUSEPORT %d, fd %d: %s", val, sock, safe_strerror (errno));
+#endif
+  return ret;
+}
+
 static void *
 getsockopt_cmsg_data (struct msghdr *msgh, int level, int type)
 {
@@ -195,6 +216,18 @@ setsockopt_ipv6_tclass(int sock, int tclass)
     zlog_warn ("Can't set IPV6_TCLASS option for fd %d to %#x: %s",
 	       sock, tclass, safe_strerror(errno));
 #endif
+  return ret;
+}
+
+int
+setsockopt_ipv6_v6only (const int sock, int val)
+{
+  int ret = 0;
+#ifdef IPV6_V6ONLY
+  ret = setsockopt (sock, IPPROTO_IPV6, IPV6_V6ONLY, &val, sizeof (val));
+  if (ret < 0)
+    zlog_warn ("can't set sockopt IPV6_V6ONLY %d, fd %d: %s", val, sock, safe_strerror (errno));
+#endif /* IPV6_V6ONLY */
   return ret;
 }
 #endif /* HAVE_IPV6 */
@@ -630,4 +663,41 @@ sockopt_tcp_signature (int sock, union sockunion *su, const char *password)
 #else /* HAVE_TCP_MD5SIG */
   return -2;
 #endif /* !HAVE_TCP_MD5SIG */
+}
+
+int
+setsockopt_tcp_cork (const int sock, int val)
+{
+  int ret = 0;
+#ifdef TCP_CORK
+  ret = setsockopt (sock, IPPROTO_TCP, TCP_CORK, &val, sizeof (val));
+  if (ret < 0)
+    zlog_warn ("can't setsockopt TCP_CORK %d, fd %d: %s", val, sock, safe_strerror (errno));
+#endif
+  return ret;
+}
+
+int
+setsockopt_ipvX_ttl (const int family, const int sock, int val)
+{
+  int ret;
+#ifdef IP_TTL
+  if (family == AF_INET)
+    {
+      ret = setsockopt (sock, IPPROTO_IP, IP_TTL, &val, sizeof (val));
+      if (ret < 0)
+        zlog_warn ("can't set sockopt IP_TTL %d, fd %d: %s", val, sock, safe_strerror (errno));
+      return ret;
+    }
+#endif /* IP_TTL */
+#ifdef HAVE_IPV6
+  if (family == AF_INET6)
+    {
+      ret = setsockopt (sock, IPPROTO_IPV6, IPV6_UNICAST_HOPS, &val, sizeof (val));
+      if (ret < 0)
+        zlog_warn ("can't set sockopt IPV6_UNICAST_HOPS %d, fd %d: %s", val, sock, safe_strerror (errno));
+      return ret;
+    }
+#endif /* HAVE_IPV6 */
+  return 0;
 }
