@@ -1904,7 +1904,6 @@ bgp_route_refresh_receive (struct peer *peer, bgp_size_t size)
 {
   afi_t afi;
   safi_t safi;
-  u_char reserved;
   struct stream *s;
 
   /* If peer does not have the capability, send notification. */
@@ -1932,7 +1931,7 @@ bgp_route_refresh_receive (struct peer *peer, bgp_size_t size)
   
   /* Parse packet. */
   afi = stream_getw (s);
-  reserved = stream_getc (s);
+  stream_getc (s); /* reserved, ignored */
   safi = stream_getc (s);
 
   if (BGP_DEBUG (normal, NORMAL))
@@ -1992,7 +1991,7 @@ bgp_route_refresh_receive (struct peer *peer, bgp_size_t size)
 	      int psize;
 	      char name[BUFSIZ];
 	      char buf[BUFSIZ];
-	      int ret;
+	      int ret = CMD_WARNING;
 
 	      if (BGP_DEBUG (normal, NORMAL))
 		{
@@ -2026,7 +2025,7 @@ bgp_route_refresh_receive (struct peer *peer, bgp_size_t size)
 		      prefix_bgp_orf_remove_all (name);
 		      break;
 		    }
-		  ok = ((p_end - p_pnt) >= sizeof(u_int32_t)) ;
+		  ok = (p_end >= p_pnt + sizeof (u_int32_t));
 		  if (ok)
 		    {
 		  memcpy (&seq, p_pnt, sizeof (u_int32_t));
@@ -2075,7 +2074,7 @@ bgp_route_refresh_receive (struct peer *peer, bgp_size_t size)
 				 (common & ORF_COMMON_PART_DENY ? 0 : 1 ),
 				 (common & ORF_COMMON_PART_REMOVE ? 0 : 1));
 
-		  if (!ok || (ret != CMD_SUCCESS))
+		  if (ret != CMD_SUCCESS)
 		    {
 		      if (BGP_DEBUG (normal, NORMAL))
 			zlog_debug ("%s Received misformatted prefixlist ORF. Remove All pfxlist", peer->host);
@@ -2110,11 +2109,9 @@ bgp_capability_msg_parse (struct peer *peer, u_char *pnt, bgp_size_t length)
   struct capability_mp_data mpc;
   struct capability_header *hdr;
   u_char action;
-  struct bgp *bgp;
   afi_t afi;
   safi_t safi;
 
-  bgp = peer->bgp;
   end = pnt + length;
 
   while (pnt < end)
