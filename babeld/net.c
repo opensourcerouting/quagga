@@ -42,33 +42,19 @@ babel_socket(int port)
     struct sockaddr_in6 sin6;
     int s, rc;
     int saved_errno;
-    int one = 1, zero = 0;
 
     s = socket(PF_INET6, SOCK_DGRAM, 0);
     if(s < 0)
         return -1;
 
-    rc = setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, &one, sizeof(one));
-    if(rc < 0)
-        goto fail;
-
-    rc = setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
-    if(rc < 0)
-        goto fail;
-
-    rc = setsockopt(s, IPPROTO_IPV6, IPV6_MULTICAST_LOOP,
-                    &zero, sizeof(zero));
-    if(rc < 0)
-        goto fail;
-
-    rc = setsockopt(s, IPPROTO_IPV6, IPV6_UNICAST_HOPS,
-                    &one, sizeof(one));
-    if(rc < 0)
-        goto fail;
-
-    rc = setsockopt(s, IPPROTO_IPV6, IPV6_MULTICAST_HOPS,
-                    &one, sizeof(one));
-    if(rc < 0)
+    if
+    (
+        setsockopt_ipv6_v6only         (s, 1) < 0 ||
+        setsockopt_so_reuseaddr        (s, 1) < 0 ||
+        setsockopt_ipv6_multicast_loop (s, 0) < 0 ||
+        setsockopt_ipv6_unicast_hops   (s, 1) < 0 ||
+        setsockopt_ipv6_multicast_hops (s, 1) < 0
+    )
         goto fail;
 
     setsockopt_ipv6_tclass (s, IPTOS_PREC_INTERNETCONTROL);
