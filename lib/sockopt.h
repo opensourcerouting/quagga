@@ -25,6 +25,7 @@
 #include "sockunion.h"
 
 extern int setsockopt_so_recvbuf (int sock, int size);
+extern int getsockopt_so_recvbuf (const int);
 extern int setsockopt_so_sendbuf (const int sock, int size);
 extern int getsockopt_so_sendbuf (const int sock);
 extern int setsockopt_so_broadcast (const int, int);
@@ -94,11 +95,13 @@ extern int setsockopt_ipv4_multicast(int sock, int optname,
 			             unsigned int ifindex);
 extern int setsockopt_ipv4_tos(int sock, int tos);
 extern int setsockopt_ipv4_multicast_loop (const int, int);
+extern int setsockopt_ipv4_multicast_hops (const int, int);
 
 /* Ask for, and get, ifindex, by whatever method is supported. */
 extern int setsockopt_ifindex (int, int, int);
 extern int getsockopt_ifindex (int, struct msghdr *);
 
+extern int setsockopt_ipv4_hdrincl (const int, int);
 /* swab the fields in iph between the host order and system order expected 
  * for IP_HDRINCL.
  */
@@ -108,6 +111,7 @@ extern void sockopt_iphdrincl_swab_systoh (struct ip *iph);
 extern int sockopt_tcp_signature(int sock, union sockunion *su,
                                  const char *password);
 extern int setsockopt_tcp_cork (const int, int);
+extern int setsockopt_tcp_nodelay (const int, int);
 
 extern int setsockopt_ipvX_ttl (const int, const int, int);
 #endif /*_ZEBRA_SOCKOPT_H */

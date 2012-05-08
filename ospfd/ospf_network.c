@@ -132,20 +132,13 @@ ospf_if_drop_alldrouters (struct ospf *top, struct prefix *p, unsigned int
 int
 ospf_if_ipmulticast (struct ospf *top, struct prefix *p, unsigned int ifindex)
 {
-  u_char val;
-  int ret, len;
-  
-  len = sizeof (val);
-  
+  int ret;
+
   /* Prevent receiving self-originated multicast packets. */
   setsockopt_ipv4_multicast_loop (top->fd, 0);
   
   /* Explicitly set multicast ttl to 1 -- endo. */
-  val = 1;
-  ret = setsockopt (top->fd, IPPROTO_IP, IP_MULTICAST_TTL, (void *)&val, len);
-  if (ret < 0)
-    zlog_warn ("can't setsockopt IP_MULTICAST_TTL(1) for fd %d: %s",
-	       top->fd, safe_strerror (errno));
+  setsockopt_ipv4_multicast_hops (top->fd, 1);
 
   ret = setsockopt_ipv4_multicast_if (top->fd, ifindex);
   if (ret < 0)

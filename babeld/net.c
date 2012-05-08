@@ -150,14 +150,12 @@ tcp_server_socket(int port, int local)
 {
     struct sockaddr_in6 sin6;
     int s, rc, saved_errno;
-    int one = 1;
 
     s = socket(PF_INET6, SOCK_STREAM, 0);
     if(s < 0)
         return -1;
 
-    rc = setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
-    if(rc < 0)
+    if (setsockopt_so_reuseaddr (s, 1) < 0)
         goto fail;
 
     rc = fcntl(s, F_GETFL, 0);

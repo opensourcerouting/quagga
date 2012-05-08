@@ -282,7 +282,6 @@ send_packet(struct interface *ifp,
   char buf[256];
   struct in_pktinfo *pktinfo;
   u_long src;
-  int on;
  
   if (!(ifp->flags & IFF_UP))
     return;
@@ -310,11 +309,7 @@ send_packet(struct interface *ifp,
   /* icmp->checksum is already calculated */
   ip->ip_len  = sizeof(struct ip) + stream_get_endp(s);
 
-  on = 1;
-  if (setsockopt(irdp_sock, IPPROTO_IP, IP_HDRINCL,
-		 (char *) &on, sizeof(on)) < 0)
-    zlog_warn("sendto %s", safe_strerror (errno));
-
+  setsockopt_ipv4_hdrincl (irdp_sock, 1);
   if (dst == INADDR_BROADCAST)
     setsockopt_so_broadcast (irdp_sock, 1);
   else

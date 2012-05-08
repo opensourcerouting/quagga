@@ -37,6 +37,20 @@ setsockopt_so_recvbuf (int sock, int size)
   return ret;
 }
 
+int getsockopt_so_recvbuf (const int sock)
+{
+  u_int32_t optval;
+  socklen_t optlen = sizeof (optval);
+  int ret = getsockopt (sock, SOL_SOCKET, SO_RCVBUF, (char *)&optval, &optlen);
+  if (ret < 0)
+  {
+    zlog_err ("fd %d: can't getsockopt SO_SNDBUF: %d (%s)",
+      sock, errno, safe_strerror (errno));
+    return ret;
+  }
+  return optval;
+}
+
 int
 setsockopt_so_sendbuf (const int sock, int size)
 {
@@ -427,6 +441,15 @@ setsockopt_ipv4_multicast_loop (const int sock, int val)
 }
 
 int
+setsockopt_ipv4_multicast_hops (const int sock, int val)
+{
+  int ret = setsockopt(sock, IPPROTO_IP, IP_MULTICAST_TTL, &val, sizeof (val));
+  if (ret < 0)
+    zlog_warn ("can't setsockopt IP_MULTICAST_TTL %d, fd %d: %s", val, sock, safe_strerror (errno));
+  return ret;
+}
+
+int
 setsockopt_ifindex (int af, int sock, int val)
 {
   int ret = -1;
@@ -536,6 +559,14 @@ getsockopt_ifindex (int af, struct msghdr *msgh)
         zlog_warn ("getsockopt_ifindex: unknown address family %d", af);
         return 0;
     }
+}
+
+extern int setsockopt_ipv4_hdrincl (const int sock, int val)
+{
+  int ret = setsockopt (sock, IPPROTO_IP, IP_HDRINCL, &val, sizeof (val));
+  if (ret < 0)
+    zlog_warn ("can't setsockopt IP_HDRINCL %d, fd %d: %s", val, sock, safe_strerror (errno));
+  return ret;
 }
 
 /* swab iph between order system uses for IP_HDRINCL and host order */
@@ -674,6 +705,15 @@ setsockopt_tcp_cork (const int sock, int val)
   if (ret < 0)
     zlog_warn ("can't setsockopt TCP_CORK %d, fd %d: %s", val, sock, safe_strerror (errno));
 #endif
+  return ret;
+}
+
+int
+setsockopt_tcp_nodelay (const int sock, int val)
+{
+  int ret = setsockopt (sock, IPPROTO_TCP, TCP_NODELAY, &val, sizeof (val));
+  if (ret < 0)
+    zlog_warn ("can't setsockopt TCP_NODELAY %d, fd %d: %s", val, sock, safe_strerror (errno));
   return ret;
 }
 

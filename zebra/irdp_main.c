@@ -79,7 +79,7 @@ int irdp_timer_interval = IRDP_DEFAULT_INTERVAL;
 int
 irdp_sock_init (void)
 {
-  int ret, i;
+  int ret;
   int save_errno;
   int sock;
 
@@ -99,11 +99,8 @@ irdp_sock_init (void)
     return sock;
   };
   
-  i = 1;
-  ret = setsockopt (sock, IPPROTO_IP, IP_TTL, 
-                        (void *) &i, sizeof (i));
+  ret = setsockopt_ipvX_ttl (AF_INET, sock, 1);
   if (ret < 0) {
-    zlog_warn ("IRDP: can't do irdp sockopt %s", safe_strerror(errno));
     close(sock);
     return ret;
   };

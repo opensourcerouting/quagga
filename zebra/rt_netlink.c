@@ -35,6 +35,7 @@
 #include "rib.h"
 #include "thread.h"
 #include "privs.h"
+#include "sockopt.h"
 
 #include "zebra/zserv.h"
 #include "zebra/rt.h"
@@ -116,34 +117,15 @@ static int
 netlink_recvbuf (struct nlsock *nl, uint32_t newsize)
 {
   u_int32_t oldsize;
-  socklen_t newlen = sizeof(newsize);
-  socklen_t oldlen = sizeof(oldsize);
-  int ret;
 
-  ret = getsockopt(nl->sock, SOL_SOCKET, SO_RCVBUF, &oldsize, &oldlen);
-  if (ret < 0)
-    {
-      zlog (NULL, LOG_ERR, "Can't get %s receive buffer size: %s", nl->name,
-	    safe_strerror (errno));
-      return -1;
-    }
-
-  ret = setsockopt(nl->sock, SOL_SOCKET, SO_RCVBUF, &nl_rcvbufsize,
-		   sizeof(nl_rcvbufsize));
-  if (ret < 0)
-    {
-      zlog (NULL, LOG_ERR, "Can't set %s receive buffer size: %s", nl->name,
-	    safe_strerror (errno));
-      return -1;
-    }
-
-  ret = getsockopt(nl->sock, SOL_SOCKET, SO_RCVBUF, &newsize, &newlen);
-  if (ret < 0)
-    {
-      zlog (NULL, LOG_ERR, "Can't get %s receive buffer size: %s", nl->name,
-	    safe_strerror (errno));
-      return -1;
-    }
+  oldsize = getsockopt_so_recvbuf (nl->sock);
+  if (oldsize < 0)
+    return -1;
+  if (setsockopt_so_recvbuf (nl->sock, newsize) < 0)
+    return -1;
+  newsize = getsockopt_so_recvbuf (nl->sock);
+  if (newsize < 0)
+    return -1;
 
   zlog (NULL, LOG_INFO,
 	"Setting netlink socket receive buffer size: %u -> %u",

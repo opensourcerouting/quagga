@@ -1689,8 +1689,6 @@ vty_accept (struct thread *thread)
 {
   int vty_sock;
   union sockunion su;
-  int ret;
-  unsigned int on;
   int accept_sock;
   struct prefix *p = NULL;
   struct access_list *acl = NULL;
@@ -1760,12 +1758,7 @@ vty_accept (struct thread *thread)
   
   prefix_free (p);
 
-  on = 1;
-  ret = setsockopt (vty_sock, IPPROTO_TCP, TCP_NODELAY, 
-		    (char *) &on, sizeof (on));
-  if (ret < 0)
-    zlog (NULL, LOG_INFO, "can't set sockopt to vty_sock : %s", 
-	  safe_strerror (errno));
+  setsockopt_tcp_nodelay (vty_sock, 1);
 
   zlog (NULL, LOG_INFO, "Vty connection from %s",
     (bufp = sockunion_su2str (&su)));
