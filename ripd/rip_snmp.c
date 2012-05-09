@@ -31,7 +31,6 @@
 #include <snmp_impl.h>
 #endif
 
-#include "if.h"
 #include "log.h"
 #include "prefix.h"
 #include "command.h"
@@ -40,6 +39,9 @@
 
 #include "ripd/ripd.h"
 #include "ripd/rip_interface.h"
+#include "ripd/rip_main.h"
+#include "ripd/rip_peer.h"
+#include "ripd/rip_snmp.h"
 
 /* RIPv2-MIB. */
 #define RIPV2MIB 1,3,6,1,2,1,23
@@ -155,7 +157,6 @@ static struct variable rip_variables[] =
    3, {4, 1, 6}}
 };
 
-extern struct thread_master *master;
 
 static u_char *
 rip2Globals (struct variable *v, oid name[], size_t *length,
