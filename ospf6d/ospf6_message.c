@@ -461,7 +461,7 @@ ospf6_dbdesc_recv_master (struct ospf6_header *oh,
 
       if (IS_OSPF6_DEBUG_MESSAGE (oh->type, RECV))
         zlog_debug ("Not duplicate dbdesc in state %s",
-		    ospf6_neighbor_state_str[on->state]);
+		    LOOKUP (ospf6_neighbor_state_str, on->state));
       thread_add_event (master, seqnumber_mismatch, on, 0);
       return;
 
@@ -682,7 +682,7 @@ ospf6_dbdesc_recv_slave (struct ospf6_header *oh,
 
       if (IS_OSPF6_DEBUG_MESSAGE (oh->type, RECV))
         zlog_debug ("Not duplicate dbdesc in state %s",
-		    ospf6_neighbor_state_str[on->state]);
+		    LOOKUP (ospf6_neighbor_state_str, on->state));
       thread_add_event (master, seqnumber_mismatch, on, 0);
       return;
 
@@ -1791,7 +1791,7 @@ ospf6_dbdesc_send (struct thread *thread)
     {
       if (IS_OSPF6_DEBUG_MESSAGE (OSPF6_MESSAGE_TYPE_DBDESC, SEND))
         zlog_debug ("Quit to send DbDesc to neighbor %s state %s",
-		    on->name, ospf6_neighbor_state_str[on->state]);
+		    on->name, LOOKUP (ospf6_neighbor_state_str, on->state));
       return 0;
     }
 
@@ -1909,7 +1909,7 @@ ospf6_lsreq_send (struct thread *thread)
     {
       if (IS_OSPF6_DEBUG_MESSAGE (OSPF6_MESSAGE_TYPE_LSREQ, SEND))
         zlog_debug ("Quit to send LSReq to neighbor %s state %s",
-		    on->name, ospf6_neighbor_state_str[on->state]);
+		    on->name, LOOKUP (ospf6_neighbor_state_str, on->state));
       return 0;
     }
 
@@ -1975,7 +1975,7 @@ ospf6_lsupdate_send_neighbor (struct thread *thread)
     {
       if (IS_OSPF6_DEBUG_MESSAGE (OSPF6_MESSAGE_TYPE_LSUPDATE, SEND))
         zlog_debug ("Quit to send (neighbor state %s)",
-		    ospf6_neighbor_state_str[on->state]);
+		    LOOKUP (ospf6_neighbor_state_str, on->state));
       return 0;
     }
 
@@ -2146,7 +2146,7 @@ ospf6_lsack_send_neighbor (struct thread *thread)
     {
       if (IS_OSPF6_DEBUG_MESSAGE (OSPF6_MESSAGE_TYPE_LSACK, SEND))
         zlog_debug ("Quit to send LSAck to neighbor %s state %s",
-		    on->name, ospf6_neighbor_state_str[on->state]);
+		    on->name, LOOKUP (ospf6_neighbor_state_str, on->state));
       return 0;
     }
 

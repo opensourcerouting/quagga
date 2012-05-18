@@ -105,7 +105,8 @@ struct ospf6_neighbor
 #define OSPF6_NEIGHBOR_LOADING  7
 #define OSPF6_NEIGHBOR_FULL     8
 
-extern const char *ospf6_neighbor_state_str[];
+extern const struct message ospf6_neighbor_state_str[];
+extern const size_t ospf6_neighbor_state_str_max;
 
 
 /* Function Prototypes */

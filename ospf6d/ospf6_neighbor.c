@@ -42,9 +42,19 @@
 
 unsigned char conf_debug_ospf6_neighbor = 0;
 
-const char *ospf6_neighbor_state_str[] =
-{ "None", "Down", "Attempt", "Init", "Twoway", "ExStart", "ExChange",
-  "Loading", "Full", NULL };
+const struct message ospf6_neighbor_state_str[] =
+{
+  { OSPF6_NEIGHBOR_DOWN,     "Down"     },
+  { OSPF6_NEIGHBOR_ATTEMPT,  "Attempt"  },
+  { OSPF6_NEIGHBOR_INIT,     "Init"     },
+  { OSPF6_NEIGHBOR_TWOWAY,   "2-Way"   },
+  { OSPF6_NEIGHBOR_EXSTART,  "ExStart"  },
+  { OSPF6_NEIGHBOR_EXCHANGE, "Exchange" },
+  { OSPF6_NEIGHBOR_LOADING,  "Loading"  },
+  { OSPF6_NEIGHBOR_FULL,     "Full"     },
+};
+const size_t ospf6_neighbor_state_str_max = sizeof (ospf6_neighbor_state_str) /
+  sizeof (ospf6_neighbor_state_str[0]);
 
 int
 ospf6_neighbor_cmp (void *va, void *vb)
@@ -160,8 +170,8 @@ ospf6_neighbor_state_change (u_char next_state, struct ospf6_neighbor *on)
   if (IS_OSPF6_DEBUG_NEIGHBOR (STATE))
     {
       zlog_debug ("Neighbor state change %s: [%s]->[%s]", on->name,
-		  ospf6_neighbor_state_str[prev_state],
-		  ospf6_neighbor_state_str[next_state]);
+		  LOOKUP (ospf6_neighbor_state_str, prev_state),
+		  LOOKUP (ospf6_neighbor_state_str, next_state));
     }
 
   if (prev_state == OSPF6_NEIGHBOR_FULL || next_state == OSPF6_NEIGHBOR_FULL)
@@ -607,7 +617,7 @@ ospf6_neighbor_show (struct vty *vty, struct ospf6_neighbor *on)
 
   vty_out (vty, "%-15s %3d %11s %6s/%-12s %11s %s[%s]%s",
            router_id, on->priority, deadtime,
-           ospf6_neighbor_state_str[on->state], nstate, duration,
+           LOOKUP (ospf6_neighbor_state_str, on->state), nstate, duration,
            on->ospf6_if->interface->name,
            ospf6_interface_state_str[on->ospf6_if->state], VNL);
 }
@@ -635,7 +645,7 @@ ospf6_neighbor_show_drchoice (struct vty *vty, struct ospf6_neighbor *on)
   timerstring (&res, duration, sizeof (duration));
 
   vty_out (vty, "%-15s %6s/%-11s %-15s %-15s %s[%s]%s",
-           router_id, ospf6_neighbor_state_str[on->state],
+           router_id, LOOKUP (ospf6_neighbor_state_str, on->state),
            duration, drouter, bdrouter, on->ospf6_if->interface->name,
            ospf6_interface_state_str[on->ospf6_if->state],
            VNL);
@@ -669,7 +679,7 @@ ospf6_neighbor_show_detail (struct vty *vty, struct ospf6_neighbor *on)
            on->ifindex, linklocal_addr,
            VNL);
   vty_out (vty, "    State %s for a duration of %s%s",
-           ospf6_neighbor_state_str[on->state], duration,
+           LOOKUP (ospf6_neighbor_state_str, on->state), duration,
            VNL);
   vty_out (vty, "    His choice of DR/BDR %s/%s, Priority %d%s",
            drouter, bdrouter, on->priority,
