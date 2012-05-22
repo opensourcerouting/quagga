@@ -93,3 +93,14 @@ set_nonblocking(int fd)
     }
   return 0;
 }
+
+int set_blocking (const int fd)
+{
+  int flags, ret;
+
+  if ((ret = flags = fcntl (fd, F_GETFL)) < 0)
+    zlog_warn ("%s: fcntl (%d, F_GETFL): %s", __func__, fd, safe_strerror (errno));
+  else if ((ret = fcntl (fd, F_SETFL, flags & ~O_NONBLOCK)) < 0)
+    zlog_warn ("%s: fcntl (%d, F_SETFL, %d): %s", __func__, fd, flags, safe_strerror (errno));
+  return ret;
+}

@@ -698,7 +698,7 @@ bgp_write (struct thread *thread)
 static int
 bgp_write_notify (struct peer *peer)
 {
-  int ret, val;
+  int ret;
   u_char type;
   struct stream *s; 
 
@@ -708,9 +708,7 @@ bgp_write_notify (struct peer *peer)
     return 0;
   assert (stream_get_endp (s) >= BGP_HEADER_SIZE);
 
-  /* Put socket in blocking mode. */
-  val = fcntl (peer->fd, F_GETFL, 0);
-  fcntl (peer->fd, F_SETFL, val & ~O_NONBLOCK);
+  set_blocking (peer->fd);
 
   ret = writen (peer->fd, STREAM_DATA (s), stream_get_endp (s));
   if (ret <= 0)

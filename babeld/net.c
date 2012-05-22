@@ -35,6 +35,7 @@ THE SOFTWARE.
 #include "util.h"
 #include "net.h"
 #include "sockopt.h"
+#include "network.h"
 
 int
 babel_socket(int port)
@@ -59,12 +60,7 @@ babel_socket(int port)
 
     setsockopt_ipv6_tclass (s, IPTOS_PREC_INTERNETCONTROL);
 
-    rc = fcntl(s, F_GETFL, 0);
-    if(rc < 0)
-        goto fail;
-
-    rc = fcntl(s, F_SETFL, (rc | O_NONBLOCK));
-    if(rc < 0)
+    if (set_nonblocking (s) < 0)
         goto fail;
 
     rc = fcntl(s, F_GETFD, 0);
@@ -158,12 +154,7 @@ tcp_server_socket(int port, int local)
     if (setsockopt_so_reuseaddr (s, 1) < 0)
         goto fail;
 
-    rc = fcntl(s, F_GETFL, 0);
-    if(rc < 0)
-        goto fail;
-
-    rc = fcntl(s, F_SETFL, (rc | O_NONBLOCK));
-    if(rc < 0)
+    if (set_nonblocking (s) < 0)
         goto fail;
 
     rc = fcntl(s, F_GETFD, 0);
