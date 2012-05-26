@@ -927,30 +927,27 @@ interface_config_write (struct vty *vty)
         if (ifp->desc)
             vty_out (vty, " description %s%s", ifp->desc,
                      VTY_NEWLINE);
-        if (IS_ENABLE (ifp))
+        babel_interface_nfo *babel_ifp = babel_get_if_nfo (ifp);
+        /* wireless/no split-horizon is the default */
+        if (CHECK_FLAG (babel_ifp->flags, BABEL_IF_WIRED))
         {
-            babel_interface_nfo *babel_ifp = babel_get_if_nfo (ifp);
-            /* wireless/no split-horizon is the default */
-            if (CHECK_FLAG (babel_ifp->flags, BABEL_IF_WIRED))
-            {
-                vty_out (vty, " babel wired%s", VTY_NEWLINE);
-                write++;
-            }
-            if (CHECK_FLAG (babel_ifp->flags, BABEL_IF_SPLIT_HORIZON))
-            {
-                vty_out (vty, " babel split-horizon%s", VTY_NEWLINE);
-                write++;
-            }
-            if (babel_ifp->hello_interval != BABEL_DEFAULT_HELLO_INTERVAL)
-            {
-                vty_out (vty, " babel hello-interval %u%s", babel_ifp->hello_interval, VTY_NEWLINE);
-                write++;
-            }
-            if (babel_ifp->update_interval != BABEL_DEFAULT_UPDATE_INTERVAL)
-            {
-                vty_out (vty, " babel update-interval %u%s", babel_ifp->update_interval, VTY_NEWLINE);
-                write++;
-            }
+            vty_out (vty, " babel wired%s", VTY_NEWLINE);
+            write++;
+        }
+        if (CHECK_FLAG (babel_ifp->flags, BABEL_IF_SPLIT_HORIZON))
+        {
+            vty_out (vty, " babel split-horizon%s", VTY_NEWLINE);
+            write++;
+        }
+        if (babel_ifp->hello_interval != BABEL_DEFAULT_HELLO_INTERVAL)
+        {
+            vty_out (vty, " babel hello-interval %u%s", babel_ifp->hello_interval, VTY_NEWLINE);
+            write++;
+        }
+        if (babel_ifp->update_interval != BABEL_DEFAULT_UPDATE_INTERVAL)
+        {
+            vty_out (vty, " babel update-interval %u%s", babel_ifp->update_interval, VTY_NEWLINE);
+            write++;
         }
         vty_out (vty, "!%s", VTY_NEWLINE);
         write++;
