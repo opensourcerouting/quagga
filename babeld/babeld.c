@@ -43,6 +43,7 @@ THE SOFTWARE.
 #include "resend.h"
 #include "babel_filter.h"
 #include "babel_zebra.h"
+#include "babel_auth.h"
 
 
 static int babel_init_routing_process(struct thread *thread);
@@ -90,6 +91,7 @@ babel_config_write (struct vty *vty)
         vty_out (vty, " babel resend-delay %u%s", resend_delay, VTY_NEWLINE);
         lines++;
     }
+    lines += babel_auth_config_write (vty);
     /* list enabled interfaces */
     lines = 1 + babel_enable_if_config_write (vty);
     /* list redistributed protocols */

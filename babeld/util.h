@@ -132,6 +132,7 @@ static inline void debugf(int level, const char *format, ...) { return; }
 #define BABEL_DEBUG_TIMEOUT     (1 << 3)
 #define BABEL_DEBUG_IF          (1 << 4)
 #define BABEL_DEBUG_ROUTE       (1 << 5)
+#define BABEL_DEBUG_AUTH        (1 << 6)
 #define BABEL_DEBUG_ALL         (0xFFFF)
 
 #if defined __STDC_VERSION__ && __STDC_VERSION__ >= 199901L

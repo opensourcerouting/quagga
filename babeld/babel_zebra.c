@@ -51,6 +51,7 @@ static struct {
     {BABEL_DEBUG_TIMEOUT, 1, "timeout"},
     {BABEL_DEBUG_IF,      1, "interface"},
     {BABEL_DEBUG_ROUTE,   1, "route"},
+    {BABEL_DEBUG_AUTH,    1, "authentication"},
     {BABEL_DEBUG_ALL,     1, "all"},
     {0, 0, NULL}
 };
@@ -222,7 +223,7 @@ DEFUN (no_babel_redistribute_type,
 /* [Babel Command] */
 DEFUN (debug_babel,
        debug_babel_cmd,
-       "debug babel (common|kernel|filter|timeout|interface|route|all)",
+       "debug babel (common|kernel|filter|timeout|interface|route|authentication|all)",
        "Enable debug messages for specific or all part.\n"
        "Babel information\n"
        "Common messages (default)\n"
@@ -231,6 +232,7 @@ DEFUN (debug_babel,
        "Timeout messages\n"
        "Interface messages\n"
        "Route messages\n"
+       "Packet authentication\n"
        "All messages\n")
 {
     int i;
@@ -251,7 +253,7 @@ DEFUN (debug_babel,
 /* [Babel Command] */
 DEFUN (no_debug_babel,
        no_debug_babel_cmd,
-       "no debug babel (common|kernel|filter|timeout|interface|route|all)",
+       "no debug babel (common|kernel|filter|timeout|interface|route|authentication|all)",
        NO_STR
        "Disable debug messages for specific or all part.\n"
        "Babel information\n"
@@ -261,6 +263,7 @@ DEFUN (no_debug_babel,
        "Timeout messages\n"
        "Interface messages\n"
        "Route messages\n"
+       "Packet authentication\n"
        "All messages\n")
 {
     int i;

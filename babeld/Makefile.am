@@ -13,12 +13,12 @@ sbin_PROGRAMS = babeld
 libbabel_a_SOURCES = \
 	babel_zebra.c net.c kernel.c util.c source.c neighbour.c	\
 	route.c xroute.c message.c resend.c babel_interface.c babeld.c	\
-	babel_filter.c
+	babel_filter.c babel_auth.c
 
 noinst_HEADERS = \
 	babel_zebra.h net.h kernel.h util.h source.h neighbour.h	\
 	route.h xroute.h message.h resend.h babel_interface.h babeld.h	\
-	babel_filter.h babel_main.h
+	babel_filter.h babel_main.h babel_auth.h
 
 babeld_SOURCES = \
 	babel_main.c $(libbabel_a_SOURCES)

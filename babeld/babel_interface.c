@@ -27,6 +27,8 @@ THE SOFTWARE.
 #include "prefix.h"
 #include "vector.h"
 #include "distribute.h"
+#include "cryptohash.h"
+#include "keychain.h"
 
 #include "babel_main.h"
 #include "util.h"
@@ -38,6 +40,7 @@ THE SOFTWARE.
 #include "neighbour.h"
 #include "route.h"
 #include "xroute.h"
+#include "babel_auth.h"
 
 
 #define IS_ENABLE(ifp) (babel_enable_if_lookup(ifp->name) >= 0)
@@ -462,6 +465,108 @@ DEFUN (babel_set_update_interval,
     return CMD_SUCCESS;
 }
 
+/* Return matching security association or NULL of none was found. */
+static struct babel_csa_item *
+babel_csalist_lookup (const struct list *csalist, const unsigned hash_algo, const char *keychain_name)
+{
+  struct listnode *node;
+  struct babel_csa_item *csa;
+
+  for (ALL_LIST_ELEMENTS_RO (csalist, node, csa))
+    if (csa->hash_algo == hash_algo && ! strcmp (csa->keychain_name, keychain_name))
+      return csa;
+  return NULL;
+}
+
+/* Callback function to deallocate a CSA structure stored in a list. */
+static void
+babel_csa_item_free (void * node)
+{
+    XFREE (MTYPE_BABEL_AUTH, ((struct babel_csa_item *)node)->keychain_name);
+    XFREE (MTYPE_BABEL_AUTH, node);
+}
+
+DEFUN (babel_authentication_mode_keychain,
+       babel_authentication_mode_keychain_cmd,
+       "babel authentication mode (sha256|sha384|sha512|rmd160|whirlpool) key-chain LINE",
+       "Babel interface commands\n"
+       "Packet authentication\n"
+       "Authentication mode\n"
+       "HMAC-SHA-256\n"
+       "HMAC-SHA-384\n"
+       "HMAC-SHA-512\n"
+       "HMAC-RIPEMD-160\n"
+       "HMAC-Whirlpool\n"
+       "Authentication key-chain\n"
+       "name of key-chain\n")
+{
+    struct interface *ifp = vty->index;
+    babel_interface_nfo *babel_ifp = babel_get_if_nfo (ifp);
+    unsigned hash_algo = hash_algo_byname (argv[0]);
+    struct babel_csa_item *csa = babel_csalist_lookup (babel_ifp->csalist, hash_algo, argv[1]);
+
+    if (csa)
+    {
+        vty_out (vty, "Duplicate security association for this interface!%s", VTY_NEWLINE);
+        return CMD_WARNING;
+    }
+    if (! hash_algo_enabled (hash_algo))
+    {
+        vty_out (vty, "Algorithm '%s' is not enabled in this build%s", argv[0], VTY_NEWLINE);
+        return CMD_ERR_NO_MATCH;
+    }
+    csa = XCALLOC (MTYPE_BABEL_AUTH, sizeof (struct babel_csa_item));
+    csa->hash_algo = hash_algo;
+    csa->keychain_name = XSTRDUP (MTYPE_BABEL_AUTH, argv[1]);
+    listnode_add (babel_ifp->csalist, csa);
+    return CMD_SUCCESS;
+}
+
+DEFUN (no_babel_authentication_mode_keychain,
+       no_babel_authentication_mode_keychain_cmd,
+       "no babel authentication mode (sha256|sha384|sha512|rmd160|whirlpool) key-chain LINE",
+       NO_STR
+       "Babel interface commands\n"
+       "Packet authentication\n"
+       "Authentication mode\n"
+       "HMAC-SHA-256\n"
+       "HMAC-SHA-384\n"
+       "HMAC-SHA-512\n"
+       "HMAC-RIPEMD-160\n"
+       "HMAC-Whirlpool\n"
+       "Authentication key-chain\n"
+       "name of key-chain\n")
+{
+    struct interface *ifp = vty->index;
+    babel_interface_nfo *babel_ifp = babel_get_if_nfo (ifp);
+    unsigned hash_algo = hash_algo_byname (argv[0]);
+    struct babel_csa_item *csa = babel_csalist_lookup (babel_ifp->csalist, hash_algo, argv[1]);
+
+    if (! csa)
+    {
+        vty_out (vty, "No such security association configured for this interface!%s", VTY_NEWLINE);
+        return CMD_WARNING;
+    }
+    listnode_delete (babel_ifp->csalist, csa); /* does not call "del" hook */
+    XFREE (MTYPE_BABEL_AUTH, csa->keychain_name);
+    XFREE (MTYPE_BABEL_AUTH, csa);
+    return CMD_SUCCESS;
+}
+
+DEFUN (no_babel_authentication,
+       no_babel_authentication_cmd,
+       "no babel authentication",
+       NO_STR
+       "Babel interface commands\n"
+       "Packet authentication\n")
+{
+    struct interface *ifp = vty->index;
+    babel_interface_nfo *babel_ifp = babel_get_if_nfo (ifp);
+
+    list_delete_all_node (babel_ifp->csalist); /* calls "del" hook */
+    return CMD_SUCCESS;
+}
+
 /* This should be no more than half the hello interval, so that hellos
    aren't sent late.  The result is in milliseconds. */
 unsigned
@@ -672,6 +777,9 @@ show_babel_interface_sub (struct vty *vty, struct interface *ifp)
 {
   int is_up;
   babel_interface_nfo *babel_ifp;
+  struct listnode *node;
+  struct babel_csa_item *csa;
+  time_t now = quagga_time (NULL);
 
   vty_out (vty, "%s is %s%s", ifp->name,
     ((is_up = if_is_operative(ifp)) ? "up" : "down"), VTY_NEWLINE);
@@ -696,6 +804,27 @@ show_babel_interface_sub (struct vty *vty, struct interface *ifp)
            CHECK_FLAG (babel_ifp->flags, BABEL_IF_SPLIT_HORIZON) ? "On" : "Off", VTY_NEWLINE);
   vty_out (vty, "  Hello interval is %u ms%s", babel_ifp->hello_interval, VTY_NEWLINE);
   vty_out (vty, "  Update interval is %u ms%s", babel_ifp->update_interval, VTY_NEWLINE);
+  vty_out (vty, "  Packet authentication is %s%s", listcount (babel_ifp->csalist) ?
+           "enabled" : "disabled", VTY_NEWLINE);
+  for (ALL_LIST_ELEMENTS_RO (babel_ifp->csalist, node, csa))
+  {
+    struct keychain *keychain = keychain_lookup (csa->keychain_name);
+    struct list *eligible;
+
+    vty_out (vty, "    Algorithm %s key-chain \"%s\" (",
+             LOOKUP (hash_algo_str, csa->hash_algo), csa->keychain_name);
+    if (! keychain)
+    {
+      vty_out (vty, "does not exist)%s", VTY_NEWLINE);
+      continue;
+    }
+    eligible = keys_valid_for_send (keychain, now);
+    vty_out (vty, "keys: %u/%u OK for Tx, ", listcount (eligible), listcount (keychain->key));
+    list_delete (eligible);
+    eligible = keys_valid_for_accept (keychain, now);
+    vty_out (vty, "%u/%u OK for Rx)%s", listcount (eligible), listcount (keychain->key), VTY_NEWLINE);
+    list_delete (eligible);
+  }
 }
 
 DEFUN (show_babel_interface,
@@ -861,6 +990,8 @@ DEFUN (show_babel_parameters,
     show_babel_main_configuration(vty);
     vty_out(vty, "    -- distribution lists --%s", VTY_NEWLINE);
     config_show_distribute(vty);
+    vty_out(vty, "    -- packet authentication --%s", VTY_NEWLINE);
+    show_babel_auth_parameters(vty);
 
     return CMD_SUCCESS;
 }
@@ -891,6 +1022,10 @@ babel_if_init ()
     install_element(INTERFACE_NODE, &babel_set_wireless_cmd);
     install_element(INTERFACE_NODE, &babel_set_hello_interval_cmd);
     install_element(INTERFACE_NODE, &babel_set_update_interval_cmd);
+
+    install_element(INTERFACE_NODE, &babel_authentication_mode_keychain_cmd);
+    install_element(INTERFACE_NODE, &no_babel_authentication_mode_keychain_cmd);
+    install_element(INTERFACE_NODE, &no_babel_authentication_cmd);
 
     /* "show babel ..." commands */
     install_element(VIEW_NODE, &show_babel_interface_cmd);
@@ -932,6 +1067,8 @@ interface_config_write (struct vty *vty)
     struct listnode *node;
     struct interface *ifp;
     int write = 0;
+    struct listnode *csanode;
+    struct babel_csa_item *csa;
 
     for (ALL_LIST_ELEMENTS_RO (iflist, node, ifp)) {
         vty_out (vty, "interface %s%s", ifp->name,
@@ -959,6 +1096,12 @@ interface_config_write (struct vty *vty)
         if (babel_ifp->update_interval != BABEL_DEFAULT_UPDATE_INTERVAL)
         {
             vty_out (vty, " babel update-interval %u%s", babel_ifp->update_interval, VTY_NEWLINE);
+            write++;
+        }
+        for (ALL_LIST_ELEMENTS_RO (babel_ifp->csalist, csanode, csa))
+        {
+            vty_out (vty, " babel authentication mode %s key-chain %s%s",
+                     LOOKUP (hash_algo_cli_str, csa->hash_algo), csa->keychain_name, VTY_NEWLINE);
             write++;
         }
         vty_out (vty, "!%s", VTY_NEWLINE);
@@ -1003,6 +1146,8 @@ babel_interface_allocate (void)
     babel_ifp->update_interval = BABEL_DEFAULT_UPDATE_INTERVAL;
     babel_ifp->channel = BABEL_IF_CHANNEL_INTERFERING;
     babel_set_wired_internal(babel_ifp, 0);
+    babel_ifp->csalist = list_new();
+    babel_ifp->csalist->del = babel_csa_item_free;
 
     return babel_ifp;
 }
@@ -1010,5 +1155,6 @@ babel_interface_allocate (void)
 static void
 babel_interface_free (babel_interface_nfo *babel_ifp)
 {
+    list_delete (babel_ifp->csalist);
     XFREE(MTYPE_BABEL_IF, babel_ifp);
 }

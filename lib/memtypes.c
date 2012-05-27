@@ -178,6 +178,7 @@ struct memory_list memory_list_babel[] =
 {
   { MTYPE_BABEL,              "Babel structure"			},
   { MTYPE_BABEL_IF,           "Babel interface"			},
+  { MTYPE_BABEL_AUTH,         "Babel authentication"		},
   { -1, NULL }
 };
 

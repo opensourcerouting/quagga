@@ -32,6 +32,7 @@ THE SOFTWARE.
 #include "command.h"
 #include "vty.h"
 #include "memory.h"
+#include "keychain.h"
 
 #include "babel_main.h"
 #include "babeld.h"
@@ -44,6 +45,7 @@ THE SOFTWARE.
 #include "message.h"
 #include "resend.h"
 #include "babel_zebra.h"
+#include "babel_auth.h"
 
 
 static void babel_init (int argc, char **argv);
@@ -238,6 +240,7 @@ babel_init(int argc, char **argv)
     cmd_init (1);
     vty_init (master);
     memory_init ();
+    keychain_init();
 
     resend_delay = BABEL_DEFAULT_RESEND_DELAY;
 
@@ -256,6 +259,7 @@ babel_init(int argc, char **argv)
 
     /* init some quagga's dependencies, and babeld's commands */
     babeld_quagga_init();
+    babel_auth_init();
     /* init zebra client's structure and it's commands */
     /* this replace kernel_setup && kernel_setup_socket */
     babelz_zebra_init ();

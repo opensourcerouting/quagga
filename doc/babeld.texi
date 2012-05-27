@@ -80,10 +80,65 @@ to fairly high values on links with little packet loss.  The default
 is 20000@dmn{ms}.
 @end deffn
 
+@deffn {Interface Command} {babel authentication mode @var{authmode} key-chain @var{keychain}} {}
+@deffnx {Interface Command} {no babel authentication mode @var{authmode} key-chain @var{keychain}} {}
+Manage (add or remove) configured security associations (CSAs) for the current
+interface. There may be multiple CSAs configured for an interface.
+@var{keychain} stands for a name of a standard key chain. @var{authmode} stands
+for a HMAC algorithm based on one of the following hash functions of choice.
+A HMAC algorithm uses a secret key and a compound PC/TS number to produce one
+or more digests for each protocol packet.
+@itemize @bullet
+@item
+@code{sha256/sha384/sha512}:
+SHA-256, SHA-384 and SHA-512 hash functions respectively, which belong to SHA-2
+family of hash functions and produce a digest 256-bit, 384-bit and 512-bit long
+respectively.
+@item
+@code{rmd160}:
+RIPEMD-160 hash function, which produces a digest 160-bit long.
+@item
+@code{whirlpool}:
+Whirlpool hash function, which produces a digest 512-bit long.
+@end itemize
+All of the hash functions listed above are considered relatively strong at the
+time of this writing and require Quagga to be built with gcrypt library.
+@ref{The Configure script and its options}
+@end deffn
+
+@deffn {Interface Command} {no babel authentication} {}
+Remove all configured security associations (CSAs) from the current interface.
+@end deffn
+
 @deffn {Babel Command} {babel resend-delay <20-655340>}
 Specifies the time in milliseconds after which an ``important''
 request or update will be resent.  The default is 2000@dmn{ms}.  You
 probably don't want to tweak this value.
+@end deffn
+
+@deffn {Babel Command} {anm-timeout <5-4294967295>} {}
+@deffnx {Babel Command} {no anm-timeout [<5-4294967295>]} {}
+Specifies the time in seconds, for which a record about a formerly active
+authentic Babel neighbor will be retained in ANM (authentic neighbor memory).
+The default is 300@dmn{s}.
+@end deffn
+
+@deffn {Babel Command} {ts-base (zero|unixtime)} {}
+@deffnx {Babel Command} {no ts-base [(zero|unixtime)]} {}
+Controls setting of TS (Timestamp) variable of local routing process. TS is
+put into a PC/TS TLV of every packet being authenticated to prevent replay
+attacks.
+@itemize @bullet
+@item
+@code{unixtime}:
+Configures UNIX time as TS base: makes TS be greater or equal to the current
+UNIX time, which allows for unique PC/TS pairs for the deployed lifetime of
+a Babel router. This is the default mode in Quagga.
+@item
+@code{zero}
+Configures 0 as TS base: TS starts at value 0 and increment each time the
+Packet Counter wraps.
+@end itemize
 @end deffn
 
 @node Babel redistribution, Show Babel information, Babel configuration, Babel
@@ -105,6 +160,24 @@ These commands dump various parts of @command{babeld}'s internal
 state.  They are mostly useful for troubleshooting.
 @end deffn
 
+@deffn {Command} {show babel authentication stats} {}
+@deffnx {Command} {clear babel authentication stats} {}
+There are some statistics built during operation of packet authentication
+extension. These commands display and reset those statistics.
+@end deffn
+
+@deffn {Command} {show babel authentication memory} {}
+@deffnx {Command} {clear babel authentication memory} {}
+Babel packet authentication extension maintains an internal table known as
+"authentic neighbors memory" (ANM), which is used to protect against packet
+replay attacks. ANM retains PC/TS values of authentic Babel neighbors, both
+current and formerly active, for "ANM timeout" period of time.
+
+The commands display and reset ANM records. Resetting ANM records may be
+necessary to avoid a "quarantine period" for restarted Babel neighbors
+operating in "NVRAM-less wrap counter" TS mode.
+@end deffn
+
 @node Babel debugging commands,  , Show Babel information, Babel
 @section Babel debugging commands
 
@@ -112,7 +185,7 @@ state.  They are mostly useful for troubleshooting.
 @deffnx {Babel Command} {no debug babel @var{kind}} {}
 Enable or disable debugging messages of a given kind.  @var{kind} can
 be one of @samp{common}, @samp{kernel}, @samp{filter}, @samp{timeout},
-@samp{interface}, @samp{route} or @samp{all}.  Note that if you have
+@samp{interface}, @samp{route}, @samp{authentication} or @samp{all}. Note that if you have
 compiled with the NO_DEBUG flag, then these commands aren't available.
 @end deffn
 
