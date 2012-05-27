@@ -1766,7 +1766,10 @@ DEFUN (no_ipv6_nd_rdnss_addr,
   if (1 != inet_pton (AF_INET6, argv[0], &v6addr))
     return CMD_WARNING;
   if (! (entry = rtadv_rdnss_lookup (zif->rtadv.AdvRDNSSList, &v6addr)))
-    return CMD_ERR_NO_MATCH;
+  {
+    vty_out (vty, "There is no such RDNSS address configured!%s", VTY_NEWLINE);
+    return CMD_WARNING;
+  }
   listnode_delete (zif->rtadv.AdvRDNSSList, entry);
   XFREE (MTYPE_RTADV_PREFIX, entry);
   zif->rtadv.AdvIntervalTimer = 0; /* resend immediately */
@@ -1974,7 +1977,10 @@ DEFUN (no_ipv6_nd_dnssl_domain,
   struct rtadv_dnssl_entry *entry;
 
   if (! (entry = rtadv_dnssl_lookup (zif->rtadv.AdvDNSSLList, argv[0])))
-    return CMD_ERR_NO_MATCH;
+  {
+    vty_out (vty, "There is no such DNSSL domain configured!%s", VTY_NEWLINE);
+    return CMD_WARNING;
+  }
   listnode_delete (zif->rtadv.AdvDNSSLList, entry);
   XFREE (MTYPE_RTADV_PREFIX, entry);
   zif->rtadv.AdvIntervalTimer = 0; /* resend immediately */
