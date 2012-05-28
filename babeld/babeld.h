@@ -98,9 +98,6 @@ THE SOFTWARE.
 #define BABEL_DEFAULT_RESEND_DELAY 2000
 
 
-/* Babel socket. */
-extern int protocol_socket;
-
 /* Babel structure. */
 struct babel
 {

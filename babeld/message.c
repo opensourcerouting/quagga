@@ -34,6 +34,7 @@ THE SOFTWARE.
 #include "resend.h"
 #include "message.h"
 #include "kernel.h"
+#include "babel_main.h"
 
 unsigned char packet_header[4] = {42, 2};
 
