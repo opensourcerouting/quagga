@@ -20,6 +20,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+#ifndef BABEL_MAIN_H
+#define BABEL_MAIN_H
+
 #include "vty.h"
 
 extern struct timeval babel_now;         /* current time             */
@@ -39,3 +42,5 @@ extern int max_request_hopcount;
 
 void babel_load_state_file(void);
 void show_babel_main_configuration (struct vty *vty);
+
+#endif /* BABEL_MAIN_H */

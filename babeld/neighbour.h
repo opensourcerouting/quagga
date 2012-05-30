@@ -20,6 +20,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+#ifndef BABEL_NEIGHBOUR_H
+#define BABEL_NEIGHBOUR_H
+
 struct neighbour {
     struct neighbour *next;
     /* This is -1 when unknown, so don't make it unsigned */
@@ -48,3 +51,5 @@ unsigned check_neighbours(void);
 unsigned neighbour_txcost(struct neighbour *neigh);
 unsigned neighbour_rxcost(struct neighbour *neigh);
 unsigned neighbour_cost(struct neighbour *neigh);
+
+#endif /* BABEL_NEIGHBOUR_H */

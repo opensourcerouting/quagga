@@ -21,6 +21,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+#ifndef BABEL_UTIL_H
+#define BABEL_UTIL_H
+
 #include "babeld.h"
 #include "babel_main.h"
 #include "log.h"
@@ -147,3 +150,4 @@ static inline void debugf(int level, const char *format, ...) { return; }
 
 #endif /* NO_DEBUG */
 
+#endif /* BABEL_UTIL_H */

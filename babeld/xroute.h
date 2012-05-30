@@ -21,6 +21,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+#ifndef BABEL_XROUTE_H
+#define BABEL_XROUTE_H
+
 struct xroute {
     unsigned char prefix[16];
     unsigned char plen;
@@ -41,3 +44,5 @@ int babel_ipv6_route_delete (struct zapi_ipv6 *api, struct prefix_ipv6 *prefix,
                              unsigned int ifindex);
 int xroutes_estimate(void);
 void for_all_xroutes(void (*f)(struct xroute*, void*), void *closure);
+
+#endif /* BABEL_XROUTE_H */

@@ -20,6 +20,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+#ifndef BABEL_KERNEL_H
+#define BABEL_KERNEL_H
+
 #include <netinet/in.h>
 #include "babel_main.h"
 #include "if.h"
@@ -51,3 +54,5 @@ int kernel_route(int operation, const unsigned char *dest, unsigned short plen,
 int if_eui64(char *ifname, int ifindex, unsigned char *eui);
 int gettime(struct timeval *tv);
 int read_random_bytes(void *buf, size_t len);
+
+#endif /* BABEL_KERNEL_H */
