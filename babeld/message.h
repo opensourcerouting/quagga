@@ -41,6 +41,7 @@ THE SOFTWARE.
 #define MESSAGE_UPDATE 8
 #define MESSAGE_REQUEST 9
 #define MESSAGE_MH_REQUEST 10
+#define MESSAGE_MAX 10
 
 
 extern unsigned short myseqno;

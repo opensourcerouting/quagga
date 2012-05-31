@@ -51,6 +51,22 @@ struct timeval unicast_flush_timeout = {0, 0};
 static const unsigned char v4prefix[16] =
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF, 0, 0, 0, 0 };
 
+/* Minimum TLV _body_ length for TLVs of particular types (0 = no limit). */
+static const unsigned char tlv_min_length[MESSAGE_MAX + 1] =
+{
+    [ MESSAGE_PAD1       ] =  0,
+    [ MESSAGE_PADN       ] =  0,
+    [ MESSAGE_ACK_REQ    ] =  6,
+    [ MESSAGE_ACK        ] =  2,
+    [ MESSAGE_HELLO      ] =  6,
+    [ MESSAGE_IHU        ] =  6,
+    [ MESSAGE_ROUTER_ID  ] = 10,
+    [ MESSAGE_NH         ] =  2,
+    [ MESSAGE_UPDATE     ] = 10,
+    [ MESSAGE_REQUEST    ] =  2,
+    [ MESSAGE_MH_REQUEST ] = 14,
+};
+
 /* Parse a network prefix, encoded in the somewhat baroque compressed
    representation used by Babel.  Return the number of bytes parsed. */
 static int
@@ -174,6 +190,45 @@ channels_len(unsigned char *channels)
     return p ? (p - channels) : DIVERSITY_HOPS;
 }
 
+/* Check, that the provided frame consists of a valid Babel packet header
+   followed by a sequence of TLVs. TLVs of known types are also checked to meet
+   minimum length constraints defined for each. Return 0 for no errors. */
+static int
+babel_packet_examin(const unsigned char *packet, int packetlen)
+{
+    unsigned i = 0, bodylen;
+    const unsigned char *message;
+    unsigned char type, len;
+
+    if(packetlen < 4 || packet[0] != 42 || packet[1] != 2)
+        return 1;
+    DO_NTOHS(bodylen, packet + 2);
+    while (i < bodylen){
+        message = packet + 4 + i;
+        type = message[0];
+        if(type == MESSAGE_PAD1) {
+            i++;
+            continue;
+        }
+        if(i + 1 > bodylen) {
+            debugf(BABEL_DEBUG_COMMON,"Received truncated message.");
+            return 1;
+        }
+        len = message[1];
+        if(i + len > bodylen) {
+            debugf(BABEL_DEBUG_COMMON,"Received truncated message.");
+            return 1;
+        }
+        /* not Pad1 */
+        if(type <= MESSAGE_MAX && tlv_min_length[type] && len < tlv_min_length[type]) {
+            debugf(BABEL_DEBUG_COMMON,"Undersized %u TLV", type);
+            return 1;
+        }
+        i += len + 2;
+    }
+    return 0;
+}
+
 void
 parse_packet(const unsigned char *from, struct interface *ifp,
              const unsigned char *packet, int packetlen)
@@ -194,15 +249,9 @@ parse_packet(const unsigned char *from, struct interface *ifp,
         return;
     }
 
-    if(packet[0] != 42) {
+    if (babel_packet_examin (packet, packetlen)) {
         zlog_err("Received malformed packet on %s from %s.",
                  ifp->name, format_address(from));
-        return;
-    }
-
-    if(packet[1] != 2) {
-        zlog_err("Received packet with unknown version %d on %s from %s.",
-                 packet[1], ifp->name, format_address(from));
         return;
     }
 
@@ -230,22 +279,13 @@ parse_packet(const unsigned char *from, struct interface *ifp,
             i++;
             continue;
         }
-        if(i + 1 > bodylen) {
-            zlog_err("Received truncated message.");
-            break;
-        }
         len = message[1];
-        if(i + len > bodylen) {
-            zlog_err("Received truncated message.");
-            break;
-        }
 
         if(type == MESSAGE_PADN) {
             debugf(BABEL_DEBUG_COMMON,"Received pad%d from %s on %s.",
                    len, format_address(from), ifp->name);
         } else if(type == MESSAGE_ACK_REQ) {
             unsigned short nonce, interval;
-            if(len < 6) goto fail;
             DO_NTOHS(nonce, message + 4);
             DO_NTOHS(interval, message + 6);
             debugf(BABEL_DEBUG_COMMON,"Received ack-req (%04X %d) from %s on %s.",
@@ -258,7 +298,6 @@ parse_packet(const unsigned char *from, struct interface *ifp,
         } else if(type == MESSAGE_HELLO) {
             unsigned short seqno, interval;
             int changed;
-            if(len < 6) goto fail;
             DO_NTOHS(seqno, message + 4);
             DO_NTOHS(interval, message + 6);
             debugf(BABEL_DEBUG_COMMON,"Received hello %d (%d) from %s on %s.",
@@ -272,7 +311,6 @@ parse_packet(const unsigned char *from, struct interface *ifp,
             unsigned short txcost, interval;
             unsigned char address[16];
             int rc;
-            if(len < 6) goto fail;
             DO_NTOHS(txcost, message + 4);
             DO_NTOHS(interval, message + 6);
             rc = network_address(message[2], message + 8, len - 6, address);
@@ -291,10 +329,6 @@ parse_packet(const unsigned char *from, struct interface *ifp,
                     schedule_neighbours_check(interval * 10 * 3, 0);
             }
         } else if(type == MESSAGE_ROUTER_ID) {
-            if(len < 10) {
-                have_router_id = 0;
-                goto fail;
-            }
             memcpy(router_id, message + 4, 8);
             have_router_id = 1;
             debugf(BABEL_DEBUG_COMMON,"Received router-id %s from %s on %s.",
@@ -302,11 +336,6 @@ parse_packet(const unsigned char *from, struct interface *ifp,
         } else if(type == MESSAGE_NH) {
             unsigned char nh[16];
             int rc;
-            if(len < 2) {
-                have_v4_nh = 0;
-                have_v6_nh = 0;
-                goto fail;
-            }
             rc = network_address(message[2], message + 4, len - 2,
                                  nh);
             if(rc < 0) {
@@ -330,11 +359,6 @@ parse_packet(const unsigned char *from, struct interface *ifp,
             unsigned char channels[DIVERSITY_HOPS];
             unsigned short interval, seqno, metric;
             int rc, parsed_len;
-            if(len < 10) {
-                if(len < 2 || message[3] & 0x80)
-                    have_v4_prefix = have_v6_prefix = 0;
-                goto fail;
-            }
             DO_NTOHS(interval, message + 6);
             DO_NTOHS(seqno, message + 8);
             DO_NTOHS(metric, message + 10);
@@ -429,7 +453,6 @@ parse_packet(const unsigned char *from, struct interface *ifp,
         } else if(type == MESSAGE_REQUEST) {
             unsigned char prefix[16], plen;
             int rc;
-            if(len < 2) goto fail;
             rc = network_prefix(message[2], message[3], 0,
                                 message + 4, NULL, len - 2, prefix);
             if(rc < 0) goto fail;
@@ -457,7 +480,6 @@ parse_packet(const unsigned char *from, struct interface *ifp,
             unsigned char prefix[16], plen;
             unsigned short seqno;
             int rc;
-            if(len < 14) goto fail;
             DO_NTOHS(seqno, message + 4);
             rc = network_prefix(message[2], message[3], 0,
                                 message + 16, NULL, len - 14, prefix);
