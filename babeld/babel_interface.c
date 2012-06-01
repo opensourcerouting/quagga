@@ -188,9 +188,9 @@ babel_interface_address_delete (int cmd, struct zclient *client,
     struct connected *ifc;
     struct prefix *prefix;
 
-    debugf(BABEL_DEBUG_IF, "receive a 'interface address add'");
+    debugf(BABEL_DEBUG_IF, "receive a 'interface address delete'");
 
-    ifc = zebra_interface_address_read (ZEBRA_INTERFACE_ADDRESS_ADD,
+    ifc = zebra_interface_address_read (ZEBRA_INTERFACE_ADDRESS_DELETE,
                                         zclient->ibuf);
 
     if (ifc == NULL)
