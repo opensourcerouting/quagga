@@ -36,16 +36,15 @@ THE SOFTWARE.
 #include "kernel.h"
 #include "babel_main.h"
 
-unsigned char packet_header[4] = {42, 2};
+static unsigned char packet_header[4] = {42, 2};
 
 int split_horizon = 1;
 
 unsigned short myseqno = 0;
-struct timeval seqno_time = {0, 0};
 
 #define UNICAST_BUFSIZE 1024
-int unicast_buffered = 0;
-unsigned char *unicast_buffer = NULL;
+static int unicast_buffered = 0;
+static unsigned char *unicast_buffer = NULL;
 struct neighbour *unicast_neighbour = NULL;
 struct timeval unicast_flush_timeout = {0, 0};
 
@@ -1192,7 +1191,6 @@ void
 update_myseqno()
 {
     myseqno = seqno_plus(myseqno, 1);
-    seqno_time = babel_now;
 }
 
 static void

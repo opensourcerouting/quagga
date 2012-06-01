@@ -518,8 +518,8 @@ interface_recalculate(struct interface *ifp)
         mtu = 128;
     }
 
-    /* 40 for IPv6 header, 8 for UDP header, 12 for good luck. */
-    babel_ifp->bufsize = mtu - sizeof(packet_header) - 60;
+    /* 4 for Babel header; 40 for IPv6 header, 8 for UDP header, 12 for good luck. */
+    babel_ifp->bufsize = mtu - 4 - 60;
     tmp = babel_ifp->sendbuf;
     babel_ifp->sendbuf = realloc(babel_ifp->sendbuf, babel_ifp->bufsize);
     if(babel_ifp->sendbuf == NULL) {

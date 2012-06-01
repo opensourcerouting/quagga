@@ -49,8 +49,6 @@ extern struct timeval seqno_time;
 extern int broadcast_ihu;
 extern int split_horizon;
 
-extern unsigned char packet_header[4];
-
 extern struct neighbour *unicast_neighbour;
 extern struct timeval unicast_flush_timeout;
 
