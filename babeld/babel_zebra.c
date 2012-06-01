@@ -161,7 +161,7 @@ babel_zebra_read_ipv4 (int command, struct zclient *zclient,
     else
         api.metric = 0;
 
-    if (command == ZEBRA_IPV6_ROUTE_ADD) {
+    if (command == ZEBRA_IPV4_ROUTE_ADD) {
         babel_ipv4_route_add(&api, &prefix, ifindex, &nexthop);
     } else {
         babel_ipv4_route_delete(&api, &prefix, ifindex);
