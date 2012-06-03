@@ -700,12 +700,10 @@ show_babel_interface_sub (struct vty *vty, struct interface *ifp)
 
 DEFUN (show_babel_interface,
        show_babel_interface_cmd,
-       "show babel interface [INTERFACE]",
+       "show babel interface",
        SHOW_STR
-       IP_STR
        "Babel information\n"
-       "Interface information\n"
-       "Interface name\n")
+       "Interface information\n")
 {
   struct interface *ifp;
   struct listnode *node;
@@ -725,6 +723,14 @@ DEFUN (show_babel_interface,
   return CMD_SUCCESS;
 }
 
+ALIAS (show_babel_interface,
+       show_babel_interface_ifname_cmd,
+       "show babel interface IFNAME",
+       SHOW_STR
+       "Babel information\n"
+       "Interface information\n"
+       "Interface name\n")
+
 static void
 show_babel_neighbour_sub (struct vty *vty, struct neighbour *neigh)
 {
@@ -741,12 +747,10 @@ show_babel_neighbour_sub (struct vty *vty, struct neighbour *neigh)
 
 DEFUN (show_babel_neighbour,
        show_babel_neighbour_cmd,
-       "show babel neighbor [INTERFACE]",
+       "show babel neighbor",
        SHOW_STR
-       IP_STR
        "Babel information\n"
-       "Print neighbors\n"
-       "Interface name\n")
+       "Print neighbors\n")
 {
     struct neighbour *neigh;
     struct interface *ifp;
@@ -769,6 +773,14 @@ DEFUN (show_babel_neighbour,
     }
     return CMD_SUCCESS;
 }
+
+ALIAS (show_babel_neighbour,
+       show_babel_neighbour_ifname_cmd,
+       "show babel neighbor IFNAME",
+       SHOW_STR
+       "Babel information\n"
+       "Print neighbors\n"
+       "Interface name\n")
 
 static void
 show_babel_routes_sub (struct babel_route *route, void *closure)
@@ -830,10 +842,8 @@ DEFUN (show_babel_database,
        show_babel_database_cmd,
        "show babel database",
        SHOW_STR
-       IP_STR
        "Babel information\n"
-       "Database information\n"
-       "No attributes\n")
+       "Database information\n")
 {
     for_all_routes(show_babel_routes_sub, vty);
     for_all_xroutes(show_babel_xroutes_sub, vty);
@@ -844,10 +854,8 @@ DEFUN (show_babel_parameters,
        show_babel_parameters_cmd,
        "show babel parameters",
        SHOW_STR
-       IP_STR
        "Babel information\n"
-       "Configuration information\n"
-       "No attributes\n")
+       "Configuration information\n")
 {
     vty_out(vty, "    -- Babel running configuration --%s", VTY_NEWLINE);
     show_babel_main_configuration(vty);
@@ -887,8 +895,12 @@ babel_if_init ()
     /* "show babel ..." commands */
     install_element(VIEW_NODE, &show_babel_interface_cmd);
     install_element(ENABLE_NODE, &show_babel_interface_cmd);
+    install_element(VIEW_NODE, &show_babel_interface_ifname_cmd);
+    install_element(ENABLE_NODE, &show_babel_interface_ifname_cmd);
     install_element(VIEW_NODE, &show_babel_neighbour_cmd);
     install_element(ENABLE_NODE, &show_babel_neighbour_cmd);
+    install_element(VIEW_NODE, &show_babel_neighbour_ifname_cmd);
+    install_element(ENABLE_NODE, &show_babel_neighbour_ifname_cmd);
     install_element(VIEW_NODE, &show_babel_database_cmd);
     install_element(ENABLE_NODE, &show_babel_database_cmd);
     install_element(VIEW_NODE, &show_babel_parameters_cmd);
