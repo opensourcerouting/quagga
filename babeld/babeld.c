@@ -132,6 +132,7 @@ babel_create_routing_process (void)
     /* wait a little: zebra will announce interfaces, addresses, routes... */
     babel_routing_process->t_update =
     thread_add_timer_msec(master, &babel_init_routing_process, NULL, 200L);
+    schedule_auth_housekeeping();
     return 0;
 
 fail:
@@ -290,6 +291,9 @@ babel_clean_routing_process()
     }
     if (babel_routing_process->t_update != NULL) {
         thread_cancel(babel_routing_process->t_update);
+    }
+    if (babel_routing_process->t_authhk != NULL) {
+        thread_cancel(babel_routing_process->t_authhk);
     }
 
     XFREE(MTYPE_BABEL, babel_routing_process);
@@ -473,6 +477,17 @@ babel_set_timer(struct timeval *timeout)
     }
     babel_routing_process->t_update =
     thread_add_timer_msec(master, &babel_main_loop, NULL, msecs);
+}
+
+void
+schedule_auth_housekeeping(void)
+{
+#ifdef HAVE_LIBGCRYPT
+  if (babel_routing_process->t_authhk != NULL)
+      thread_cancel(babel_routing_process->t_authhk);
+  babel_routing_process->t_authhk =
+  thread_add_timer_msec (master, babel_auth_do_housekeeping, NULL, 1000L);
+#endif /* HAVE_LIBGCRYPT */
 }
 
 /* Schedule a neighbours check after roughly 3/2 times msecs have elapsed. */

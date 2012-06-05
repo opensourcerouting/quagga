@@ -33,11 +33,21 @@ struct babel_csa_item
 #include "command.h"
 
 #ifdef HAVE_LIBGCRYPT
+#include "cryptohash.h"
+#include "if.h"
+#include "thread.h"
 #define BABEL_MAXDIGESTSOUT 8
 #define BABEL_MAXDIGESTSIN 4
+/* 1 PC/TS, maximum size/amount of HD TLVs, all including Type and Length fields */
+#define BABEL_MAXAUTHSPACE (8 + BABEL_MAXDIGESTSOUT * (4 + HASH_SIZE_MAX))
+extern int babel_auth_check_packet (struct interface *, const unsigned char *,
+                                    const unsigned char *, const u_int16_t);
+extern int babel_auth_make_packet (struct interface *, unsigned char *, const u_int16_t);
+extern int babel_auth_do_housekeeping (struct thread *);
 #else
 #define BABEL_MAXDIGESTSOUT 0
 #define BABEL_MAXDIGESTSIN 0
+#define BABEL_MAXAUTHSPACE 0
 #endif /* HAVE_LIBGCRYPT */
 
 extern void babel_auth_init (void);

@@ -35,6 +35,7 @@ THE SOFTWARE.
 #include "message.h"
 #include "kernel.h"
 #include "babel_main.h"
+#include "babel_auth.h"
 
 static unsigned char packet_header[4] = {42, 2};
 
@@ -256,6 +257,13 @@ parse_packet(const unsigned char *from, struct interface *ifp,
                  ifp->name, format_address(from));
         return;
     }
+
+#ifdef HAVE_LIBGCRYPT
+    /* Authenticate before find_neighbor() can create a new neighbor record,
+     * but only after packet structure is confirmed to be OK. */
+    if (MSG_OK != babel_auth_check_packet (ifp, from, packet, packetlen))
+        return;
+#endif /* HAVE_LIBGCRYPT */
 
     neigh = find_neighbour(from, ifp);
     if(neigh == NULL) {
@@ -558,6 +566,10 @@ flushbuf(struct interface *ifp)
             memcpy(&sin6.sin6_addr, protocol_group, 16);
             sin6.sin6_port = htons(protocol_port);
             sin6.sin6_scope_id = ifp->ifindex;
+#ifdef HAVE_LIBGCRYPT
+            babel_ifp->buffered = babel_auth_make_packet (ifp, babel_ifp->sendbuf, babel_ifp->buffered);
+            assert (babel_ifp->buffered <= babel_ifp->bufsize);
+#endif /* HAVE_LIBGCRYPT */
             DO_HTONS(packet_header + 2, babel_ifp->buffered);
             rc = babel_send(protocol_socket,
                             packet_header, sizeof(packet_header),
@@ -620,7 +632,7 @@ static void
 ensure_space(struct interface *ifp, int space)
 {
     babel_interface_nfo *babel_ifp = babel_get_if_nfo(ifp);
-    if(babel_ifp->bufsize - babel_ifp->buffered < space)
+    if(babel_ifp->bufsize - babel_ifp->buffered < space + BABEL_MAXAUTHSPACE)
         flushbuf(ifp);
 }
 
@@ -628,7 +640,7 @@ static void
 start_message(struct interface *ifp, int type, int len)
 {
   babel_interface_nfo *babel_ifp = babel_get_if_nfo(ifp);
-    if(babel_ifp->bufsize - babel_ifp->buffered < len + 2)
+    if(babel_ifp->bufsize - babel_ifp->buffered < len + 2 + BABEL_MAXAUTHSPACE)
         flushbuf(ifp);
     babel_ifp->sendbuf[babel_ifp->buffered++] = type;
     babel_ifp->sendbuf[babel_ifp->buffered++] = len;
@@ -673,7 +685,7 @@ start_unicast_message(struct neighbour *neigh, int type, int len)
 {
     if(unicast_neighbour) {
         if(neigh != unicast_neighbour ||
-           unicast_buffered + len + 2 >=
+           unicast_buffered + len + 2 + BABEL_MAXAUTHSPACE >=
            MIN(UNICAST_BUFSIZE, babel_get_if_nfo(neigh->ifp)->bufsize))
             flush_unicast(0);
     }
@@ -793,6 +805,10 @@ flush_unicast(int dofree)
         memcpy(&sin6.sin6_addr, unicast_neighbour->address, 16);
         sin6.sin6_port = htons(protocol_port);
         sin6.sin6_scope_id = unicast_neighbour->ifp->ifindex;
+#ifdef HAVE_LIBGCRYPT
+        unicast_buffered = babel_auth_make_packet (unicast_neighbour->ifp, unicast_buffer, unicast_buffered);
+        assert (unicast_buffered <= babel_get_if_nfo (unicast_neighbour->ifp)->bufsize);
+#endif /* HAVE_LIBGCRYPT */
         DO_HTONS(packet_header + 2, unicast_buffered);
         rc = babel_send(protocol_socket,
                         packet_header, sizeof(packet_header),

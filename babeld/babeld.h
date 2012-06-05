@@ -104,6 +104,7 @@ struct babel
     /* Babel threads. */
     struct thread *t_read;    /* on Babel protocol's socket */
     struct thread *t_update;  /* timers */
+    struct thread *t_authhk;  /* authentication housekeeping */
 };
 
 
@@ -117,6 +118,7 @@ extern int redistribute_filter(const unsigned char *prefix, unsigned short plen,
                                unsigned int ifindex, int proto);
 extern int resize_receive_buffer(int size);
 extern void schedule_neighbours_check(int msecs, int override);
+extern void schedule_auth_housekeeping(void);
 
 
 #endif /* BABEL_BABELD_H */
