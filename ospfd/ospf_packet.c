@@ -290,9 +290,8 @@ ospf_packet_dup (struct ospf_packet *op)
   struct ospf_packet *new;
 
   if (stream_get_endp(op->s) != op->length)
-    /* XXX size_t */
-    zlog_warn ("ospf_packet_dup stream %lu ospf_packet %u size mismatch",
-	       (u_long)STREAM_SIZE(op->s), op->length);
+    zlog_warn ("ospf_packet_dup stream %zu ospf_packet %u size mismatch",
+	       STREAM_SIZE(op->s), op->length);
 
   /* Reserve space for MD5 authentication that may be added later. */
   new = ospf_packet_new (stream_get_endp(op->s) + OSPF_AUTH_MD5_SIZE);
@@ -426,9 +425,8 @@ ospf_make_md5_digest (struct ospf_interface *oi, struct ospf_packet *op)
   op->length = ntohs (ospfh->length) + OSPF_AUTH_MD5_SIZE;
 
   if (stream_get_endp(op->s) != op->length)
-    /* XXX size_t */
-    zlog_warn("ospf_make_md5_digest: length mismatch stream %lu ospf_packet %u",
-	      (u_long)stream_get_endp(op->s), op->length);
+    zlog_warn("ospf_make_md5_digest: length mismatch stream %zu ospf_packet %u",
+	      stream_get_endp(op->s), op->length);
 
   return OSPF_AUTH_MD5_SIZE;
 }
@@ -3699,10 +3697,10 @@ ospf_ls_upd_packet_new (struct list *update, struct ospf_interface *oi)
   if (size > OSPF_MAX_PACKET_SIZE)
     {
       zlog_warn ("ospf_ls_upd_packet_new: oversized LSA id:%s too big,"
-                 " %d bytes, packet size %ld, dropping it completely."
+                 " %d bytes, packet size %zu, dropping it completely."
                  " OSPF routing is broken!",
                  inet_ntoa (lsa->data->id), ntohs (lsa->data->length),
-                 (long int) size);
+                 size);
       list_delete_node (update, ln);
       return NULL;
     }
