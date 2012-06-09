@@ -168,7 +168,9 @@ enum nexthop_types_t
   NEXTHOP_TYPE_IPV6,             /* IPv6 nexthop.  */
   NEXTHOP_TYPE_IPV6_IFINDEX,     /* IPv6 nexthop with ifindex.  */
   NEXTHOP_TYPE_IPV6_IFNAME,      /* IPv6 nexthop with ifname.  */
-  NEXTHOP_TYPE_BLACKHOLE,        /* Null0 nexthop.  */
+  NEXTHOP_TYPE_BLACKHOLE,
+  /* Null0 nexthop is typically seen in a RIB structure flagged
+   * ZEBRA_FLAG_REJECT or ZEBRA_FLAG_BLACKHOLE */
 };
 
 /* Nexthop structure. */

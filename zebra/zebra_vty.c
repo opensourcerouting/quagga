@@ -1591,6 +1591,9 @@ vty_show_ipv6_route_detail (struct vty *vty, struct route_node *rn)
 	      vty_out (vty, " directly connected, %s",
 		       nexthop->ifname);
 	      break;
+	    case NEXTHOP_TYPE_BLACKHOLE:
+	      vty_out (vty, " directly connected, Null0");
+	      break;
 	    default:
 	      break;
 	    }
@@ -1681,6 +1684,9 @@ vty_show_ipv6_route (struct vty *vty, struct route_node *rn,
 	case NEXTHOP_TYPE_IFNAME:
 	  vty_out (vty, " is directly connected, %s",
 		   nexthop->ifname);
+	  break;
+	case NEXTHOP_TYPE_BLACKHOLE:
+	  vty_out (vty, " is directly connected, Null0");
 	  break;
 	default:
 	  break;

@@ -305,7 +305,6 @@ nexthop_blackhole_add (struct rib *rib)
 
   nexthop = XCALLOC (MTYPE_NEXTHOP, sizeof (struct nexthop));
   nexthop->type = NEXTHOP_TYPE_BLACKHOLE;
-  SET_FLAG (rib->flags, ZEBRA_FLAG_BLACKHOLE);
 
   nexthop_add (rib, nexthop);
 
@@ -1997,6 +1996,9 @@ static_install_ipv4 (struct prefix_ipv4 *p, struct static_ipv4 *si)
             break;
           case STATIC_IPV4_BLACKHOLE:
             nexthop_blackhole_add (rib);
+            /* nexthop_blackhole_add() formerly did exactly that, hence this
+             * side-effect is preserved regardless of being right or not. */
+            SET_FLAG (rib->flags, ZEBRA_FLAG_BLACKHOLE);
             break;
         }
       rib_queue_add (&zebrad, rn);
@@ -2008,6 +2010,7 @@ static_install_ipv4 (struct prefix_ipv4 *p, struct static_ipv4 *si)
       
       rib->type = ZEBRA_ROUTE_STATIC;
       rib->distance = si->distance;
+      rib->flags = si->flags;
       rib->metric = 0;
       rib->nexthop_num = 0;
 
@@ -2023,9 +2026,6 @@ static_install_ipv4 (struct prefix_ipv4 *p, struct static_ipv4 *si)
             nexthop_blackhole_add (rib);
             break;
         }
-
-      /* Save the flags of this static routes (reject, blackhole) */
-      rib->flags = si->flags;
 
       /* Link this rib to the tree. */
       rib_addnode (rn, rib);
@@ -2367,6 +2367,9 @@ rib_add_ipv6 (int type, int flags, struct prefix_ipv6 *p,
       else
 	nexthop_ipv6_add (rib, gate);
     }
+  else if (CHECK_FLAG (flags, ZEBRA_FLAG_BLACKHOLE | ZEBRA_FLAG_REJECT))
+    /* IPv6 messages flagged this way come nexthop-less */
+    nexthop_blackhole_add (rib);
   else
     nexthop_ifindex_add (rib, ifindex);
 

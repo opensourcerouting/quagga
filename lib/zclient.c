@@ -486,7 +486,7 @@ zapi_ipv4_route (u_char cmd, struct zclient *zclient, struct prefix_ipv4 *p,
   /* Nexthop, ifindex, distance and metric information. */
   if (CHECK_FLAG (api->message, ZAPI_MESSAGE_NEXTHOP))
     {
-      if (CHECK_FLAG (api->flags, ZEBRA_FLAG_BLACKHOLE))
+      if (CHECK_FLAG (api->flags, ZEBRA_FLAG_BLACKHOLE | ZEBRA_FLAG_REJECT))
         {
           stream_putc (s, 1);
           stream_putc (s, ZEBRA_NEXTHOP_BLACKHOLE);
@@ -520,6 +520,11 @@ zapi_ipv4_route (u_char cmd, struct zclient *zclient, struct prefix_ipv4 *p,
 }
 
 #ifdef HAVE_IPV6
+/* Route add/delete IPv6 message is similar to that of IPv4 with a difference
+ * in blackhole/reject route encoding. Namely, there are no nexthop data units
+ * in a message flagged ZEBRA_FLAG_BLACKHOLE or ZEBRA_FLAG_REJECT. A nexthop
+ * structure will will be added to the RIB record structure on zserv side of
+ * the socket with a call to nexthop_blackhole_add(). */
 int
 zapi_ipv6_route (u_char cmd, struct zclient *zclient, struct prefix_ipv6 *p,
 	       struct zapi_ipv6 *api)
