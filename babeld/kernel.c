@@ -173,7 +173,7 @@ kernel_route_v4(int add,
     SET_FLAG(api.message, ZAPI_MESSAGE_NEXTHOP);
     api.ifindex_num = 0;
     if(metric >= KERNEL_INFINITY) {
-        api.flags = ZEBRA_FLAG_BLACKHOLE;
+        api.flags = ZEBRA_FLAG_REJECT;
         api.nexthop_num = 0;
     } else {
         api.nexthop_num = 1;
@@ -216,12 +216,12 @@ kernel_route_v6(int add, const unsigned char *pref, unsigned short plen,
     api.flags = 0;
     api.message = 0;
     api.safi = SAFI_UNICAST;
-    SET_FLAG(api.message, ZAPI_MESSAGE_NEXTHOP);
     if(metric >= KERNEL_INFINITY) {
-        api.flags = ZEBRA_FLAG_BLACKHOLE;
+        api.flags = ZEBRA_FLAG_REJECT;
         api.nexthop_num = 0;
         api.ifindex_num = 0;
     } else {
+        SET_FLAG(api.message, ZAPI_MESSAGE_NEXTHOP);
         api.nexthop_num = 1;
         api.nexthop = &nexthop_pointer;
         SET_FLAG(api.message, ZAPI_MESSAGE_IFINDEX);
