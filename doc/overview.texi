@@ -171,8 +171,8 @@ OpenBSD 2.5 and higher
 @item @asis{RFC1058}
 @cite{Routing Information Protocol. C.L. Hedrick. Jun-01-1988.}
 
-@item @asis{RF2082}
-@cite{RIP-2 MD5 Authentication. F. Baker, R. Atkinson. January 1997.}
+@item @asis{RFC4822}
+@cite{RIPv2 Cryptographic Authentication. R. Atkinson, M. Fanto. February 2007.}
 
 @item @asis{RFC2453}
 @cite{RIP Version 2. G. Malkin. November 1998.}
@@ -215,6 +215,9 @@ OpenBSD 2.5 and higher
 
 @item @asis{RFC3137}
 @cite{OSPF Stub Router Advertisement, A. Retana, L. Nguyen, R. White, A. Zinin, D. McPherson. June 2001}
+
+@item @asis{RFC6106}
+@cite{IPv6 Router Advertisement Options for DNS Configuration. J. Jeong et al. November 2010.}
 @end table
 
   When SNMP support is enabled, below RFC is also supported.
