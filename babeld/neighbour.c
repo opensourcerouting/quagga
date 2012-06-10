@@ -56,6 +56,8 @@ find_neighbour_nocreate(const unsigned char *address, struct interface *ifp)
 void
 flush_neighbour(struct neighbour *neigh)
 {
+    debugf(BABEL_DEBUG_COMMON,"Flushing neighbour %s (reach 0x%04x)",
+           format_address(neigh->address), neigh->reach);
     flush_neighbour_routes(neigh);
     if(unicast_neighbour == neigh)
         flush_unicast(1);
