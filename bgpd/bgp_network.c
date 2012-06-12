@@ -499,7 +499,7 @@ bgp_socket (unsigned short port, const char *address)
     }
 
   /* if we intend to implement ttl-security, this socket needs ttl=255 */
-  sockopt_ttl (AF_INET, sock, MAXTTL);
+  setsockopt_ipvX_ttl (AF_INET, sock, MAXTTL);
 
   memset (&sin, 0, sizeof (struct sockaddr_in));
   sin.sin_family = AF_INET;
