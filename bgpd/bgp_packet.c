@@ -2422,8 +2422,7 @@ bgp_read (struct thread *thread)
 	    plog_debug (peer->log,
 		      "%s bad message length - %d for %s",
 		      peer->host, size, 
-		      type == 128 ? "ROUTE-REFRESH" :
-		      bgp_type_str[(int) type]);
+		      LOOKUP (bgp_type_str, type));
 	  bgp_notify_send_with_data (peer,
 				     BGP_NOTIFY_HEADER_ERR,
 			  	     BGP_NOTIFY_HEADER_BAD_MESLEN,

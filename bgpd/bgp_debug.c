@@ -71,16 +71,17 @@ const struct message bgp_status_msg[] =
 const int bgp_status_msg_max = BGP_STATUS_MAX;
 
 /* BGP message type string. */
-const char *bgp_type_str[] =
+const struct message bgp_type_str[] =
 {
-  NULL,
-  "OPEN",
-  "UPDATE",
-  "NOTIFICATION",
-  "KEEPALIVE",
-  "ROUTE-REFRESH",
-  "CAPABILITY"
+  { BGP_MSG_OPEN,              "OPEN"                },
+  { BGP_MSG_UPDATE,            "UPDATE"              },
+  { BGP_MSG_NOTIFY,            "NOTIFICATION"        },
+  { BGP_MSG_KEEPALIVE,         "KEEPALIVE"           },
+  { BGP_MSG_ROUTE_REFRESH_NEW, "ROUTE-REFRESH"       },
+  { BGP_MSG_CAPABILITY,        "CAPABILITY"          },
+  { BGP_MSG_ROUTE_REFRESH_OLD, "ROUTE-REFRESH (old)" },
 };
+const size_t bgp_type_str_max = sizeof (bgp_type_str) / sizeof (struct message);
 
 /* message for BGP-4 Notify */
 static const struct message bgp_notify_msg[] = 
