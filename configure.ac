@@ -1053,6 +1053,7 @@ dnl ----------
     AC_DEFINE(INRIA_IPV6,1,INRIA IPv6)
     RIPNGD="ripngd"
     OSPF6D="ospf6d"
+    BABELD="babeld"
     LIB_IPV6=""
     AC_MSG_RESULT(INRIA IPv6)
 dnl ---------
@@ -1064,6 +1065,7 @@ dnl ---------
     AC_DEFINE(KAME,1,KAME IPv6)
     RIPNGD="ripngd"
     OSPF6D="ospf6d"
+    BABELD="babeld"
     if test -d /usr/local/v6/lib -a -f /usr/local/v6/lib/libinet6.a; then
       LIB_IPV6="-L/usr/local/v6/lib -linet6"
     fi
@@ -1080,6 +1082,7 @@ dnl -------------------------
     AC_DEFINE(KAME,1,KAME IPv6 stack)
     RIPNGD="ripngd"
     OSPF6D="ospf6d"
+    BABELD="babeld"
     if test -d /usr/local/v6/lib -a -f /usr/local/v6/lib/libinet6.a; then
       LIB_IPV6="-L/usr/local/v6/lib -linet6"
     fi
@@ -1093,6 +1096,7 @@ dnl ---------
     AC_DEFINE(NRL,1,NRL)
     RIPNGD="ripngd"
     OSPF6D="ospf6d"
+    BABELD="babeld"
     if test x"$opsys" = x"bsdi";then
       AC_DEFINE(BSDI_NRL,,BSDI)
       AC_MSG_RESULT(BSDI_NRL)
@@ -1108,6 +1112,7 @@ dnl ------------------------------------
     AC_DEFINE(SOLARIS_IPV6, 1, Solaris IPv6)
     RIPNGD="ripngd"
     OSPF6D="ospf6d"
+    BABELD="babeld"
     AC_MSG_RESULT(Solaris IPv6)
 dnl ----------
 dnl Linux IPv6
@@ -1158,6 +1163,7 @@ dnl ----------
     )
     RIPNGD="ripngd"
     OSPF6D="ospf6d"
+    BABELD="babeld"
     if test "$glibc" != "yes"; then
       INCLUDES="-I/usr/inet6/include"
       if test x`ls /usr/inet6/lib/libinet6.a 2>/dev/null` != x;then
@@ -1239,12 +1245,6 @@ else
   OSPFD="ospfd"
 fi
 
-if test "${enable_babeld}" = "no";then
-  BABELD=""
-else
-  BABELD="babeld"
-fi
-
 if test "${enable_watchquagga}" = "no";then
   WATCHQUAGGA=""
 else
@@ -1272,6 +1272,12 @@ esac
 case "${enable_ospf6d}" in
   "yes") OSPF6D="ospf6d";;
   "no" ) OSPF6D="";;
+  *    ) ;;
+esac
+
+case "${enable_babeld}" in
+  "yes") BABELD="babeld";;
+  "no" ) BABELD="";;
   *    ) ;;
 esac
 
