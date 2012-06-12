@@ -146,7 +146,4 @@ struct rtadv_dnssl_entry
   u_char    track_maxrai;
   u_int32_t lifetime;
 };
-
-extern const char *rtadv_pref_strs[];
-
 #endif /* _ZEBRA_RTADV_H */
