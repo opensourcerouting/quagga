@@ -2301,4 +2301,10 @@ rtadv_init (void)
 {
   /* Empty.*/;
 }
+
+void
+rtadv_config_write (struct vty *vty, struct interface *ifp)
+{
+  /* Empty.*/;
+}
 #endif /* RTADV && HAVE_IPV6 */
