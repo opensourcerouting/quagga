@@ -197,7 +197,7 @@ struct rtadv
   struct thread *ra_timer;
 };
 
-struct rtadv *rtadv = NULL;
+static struct rtadv *rtadv = NULL;
 
 static struct rtadv *
 rtadv_new (void)
