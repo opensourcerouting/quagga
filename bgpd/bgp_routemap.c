@@ -102,6 +102,15 @@ o Local extention
 
 */ 
 
+struct rmap_set_metric
+{
+  signed char mode;
+  u_int32_t value;
+};
+#define BGP_METRIC_SET 0
+#define BGP_METRIC_ADD 1
+#define BGP_METRIC_SUB -1
+
  /* 'match peer (A.B.C.D|X:X::X:X)' */
 
 /* Compares the peer specified in the 'match peer' clause with the peer
@@ -1117,8 +1126,7 @@ static route_map_result_t
 route_set_metric (void *rule, struct prefix *prefix, 
 		  route_map_object_t type, void *object)
 {
-  char *metric;
-  u_int32_t metric_val;
+  struct rmap_set_metric *metric;
   struct bgp_info *bgp_info;
 
   if (type == RMAP_BGP)
@@ -1131,28 +1139,25 @@ route_set_metric (void *rule, struct prefix *prefix,
 	bgp_info->attr->med = 0;
       bgp_info->attr->flag |= ATTR_FLAG_BIT (BGP_ATTR_MULTI_EXIT_DISC);
 
-      if (all_digit (metric))
+      if (metric->mode == BGP_METRIC_SET)
 	{
-	  metric_val = strtoul (metric, (char **)NULL, 10);
-	  bgp_info->attr->med = metric_val;
+	  bgp_info->attr->med = metric->value;
 	}
       else
 	{
-	  metric_val = strtoul (metric+1, (char **)NULL, 10);
-
-	  if (strncmp (metric, "+", 1) == 0)
+	  if (metric->mode == BGP_METRIC_ADD)
 	    {
-	      if (bgp_info->attr->med/2 + metric_val/2 > BGP_MED_MAX/2)
+	      if (bgp_info->attr->med/2 + metric->value/2 > BGP_MED_MAX/2)
 	        bgp_info->attr->med = BGP_MED_MAX - 1;
 	      else
-	        bgp_info->attr->med += metric_val;
+	        bgp_info->attr->med += metric->value;
 	    }
-	  else if (strncmp (metric, "-", 1) == 0)
+	  else if (metric->mode == BGP_METRIC_SUB)
 	    {
-	      if (bgp_info->attr->med <= metric_val)
+	      if (bgp_info->attr->med <= metric->value)
 	        bgp_info->attr->med = 0;
 	      else
-	        bgp_info->attr->med -= metric_val;
+	        bgp_info->attr->med -= metric->value;
 	    }
 	}
     }
@@ -1163,7 +1168,7 @@ route_set_metric (void *rule, struct prefix *prefix,
 static void *
 route_set_metric_compile (const char *arg)
 {
-  u_int32_t metric;
+  struct rmap_set_metric *metric;
   unsigned long larg;
   char *endptr = NULL;
 
@@ -1174,7 +1179,9 @@ route_set_metric_compile (const char *arg)
       larg = strtoul (arg, &endptr, 10);
       if (*endptr != '\0' || errno || larg > UINT32_MAX)
         return NULL;
-      metric = larg;
+      metric = XCALLOC (MTYPE_ROUTE_MAP_COMPILED, sizeof (*metric));
+      metric->mode = BGP_METRIC_SET;
+      metric->value = larg;
     }
   else
     {
@@ -1188,10 +1195,12 @@ route_set_metric_compile (const char *arg)
       larg = strtoul (arg+1, &endptr, 10);
       if (*endptr != '\0' || errno || larg > UINT32_MAX)
 	return NULL;
-      metric = larg;
+      metric = XCALLOC (MTYPE_ROUTE_MAP_COMPILED, sizeof (*metric));
+      metric->mode = arg[0] == '+' ? BGP_METRIC_ADD : BGP_METRIC_SUB;
+      metric->value = larg;
     }
 
-  return XSTRDUP (MTYPE_ROUTE_MAP_COMPILED, arg);
+  return metric;
 }
 
 /* Free route map's compiled `set metric' value. */
