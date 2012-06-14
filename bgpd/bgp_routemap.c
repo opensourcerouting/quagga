@@ -804,11 +804,12 @@ static route_map_result_t
 route_match_probability (void *rule, struct prefix *prefix,
 		    route_map_object_t type, void *object)
 {
-  long r;
+  long unsigned r;
+  /* neither rand() nor random() return a negative */
 #if _SVID_SOURCE || _BSD_SOURCE || _XOPEN_SOURCE >= 500
-  r = random();
+  r = (long unsigned) random();
 #else
-  r = (long) rand();
+  r = (long unsigned) rand();
 #endif
 
   switch (*(unsigned *) rule)
