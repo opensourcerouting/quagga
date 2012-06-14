@@ -773,11 +773,11 @@ route_match_origin_compile (const char *arg)
   origin = XMALLOC (MTYPE_ROUTE_MAP_COMPILED, sizeof (u_char));
 
   if (strcmp (arg, "igp") == 0)
-    *origin = 0;
+    *origin = BGP_ORIGIN_IGP;
   else if (strcmp (arg, "egp") == 0)
-    *origin = 1;
+    *origin = BGP_ORIGIN_EGP;
   else
-    *origin = 2;
+    *origin = BGP_ORIGIN_INCOMPLETE;
 
   return origin;
 }
@@ -1676,11 +1676,11 @@ route_set_origin_compile (const char *arg)
   origin = XMALLOC (MTYPE_ROUTE_MAP_COMPILED, sizeof (u_char));
 
   if (strcmp (arg, "igp") == 0)
-    *origin = 0;
+    *origin = BGP_ORIGIN_IGP;
   else if (strcmp (arg, "egp") == 0)
-    *origin = 1;
+    *origin = BGP_ORIGIN_EGP;
   else
-    *origin = 2;
+    *origin = BGP_ORIGIN_INCOMPLETE;
 
   return origin;
 }
