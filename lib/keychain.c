@@ -26,7 +26,7 @@ Boston, MA 02111-1307, USA.  */
 #include "keychain.h"
 
 /* Master list of key chain. */
-struct list *keychain_list;
+static struct list *keychain_list;
 
 static struct keychain *
 keychain_new (void)
