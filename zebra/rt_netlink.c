@@ -1408,6 +1408,8 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
                 }
               else
                 {
+                  if (nexthop->type == NEXTHOP_TYPE_IPV4_IFINDEX_OL)
+                    SET_FLAG (req.r.rtm_flags, RTNH_F_ONLINK);
                   if (IS_ZEBRA_DEBUG_KERNEL)
                     {
                       zlog_debug
@@ -1423,6 +1425,7 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
                     }
 
                   if (nexthop->type == NEXTHOP_TYPE_IPV4
+                      || nexthop->type == NEXTHOP_TYPE_IPV4_IFINDEX_OL
                       || nexthop->type == NEXTHOP_TYPE_IPV4_IFINDEX)
 		    {
 		      addattr_l (&req.n, sizeof req, RTA_GATEWAY,
@@ -1454,6 +1457,7 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
 #endif /* HAVE_IPV6 */
                   if (nexthop->type == NEXTHOP_TYPE_IFINDEX
                       || nexthop->type == NEXTHOP_TYPE_IFNAME
+                      || nexthop->type == NEXTHOP_TYPE_IPV4_IFINDEX_OL
                       || nexthop->type == NEXTHOP_TYPE_IPV4_IFINDEX)
 		    {
 		      addattr32 (&req.n, sizeof req, RTA_OIF, nexthop->ifindex);
@@ -1509,7 +1513,7 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
               nexthop_num++;
 
               rtnh->rtnh_len = sizeof (*rtnh);
-              rtnh->rtnh_flags = 0;
+              rtnh->rtnh_flags = nexthop->type == NEXTHOP_TYPE_IPV4_IFINDEX_OL ? RTNH_F_ONLINK : 0;
               rtnh->rtnh_hops = 0;
               rta->rta_len += rtnh->rtnh_len;
 
@@ -1603,6 +1607,7 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
 			 p->prefixlen, LOOKUP (nexthop_types_desc, nexthop->type));
                     }
                   if (nexthop->type == NEXTHOP_TYPE_IPV4
+                      || nexthop->type == NEXTHOP_TYPE_IPV4_IFINDEX_OL
                       || nexthop->type == NEXTHOP_TYPE_IPV4_IFINDEX)
                     {
 		      rta_addattr_l (rta, 4096, RTA_GATEWAY,
@@ -1635,6 +1640,7 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
 #endif /* HAVE_IPV6 */
                   /* ifindex */
                   if (nexthop->type == NEXTHOP_TYPE_IPV4_IFINDEX
+		      || nexthop->type == NEXTHOP_TYPE_IPV4_IFINDEX_OL
 		      || nexthop->type == NEXTHOP_TYPE_IFINDEX
                       || nexthop->type == NEXTHOP_TYPE_IFNAME)
                     {

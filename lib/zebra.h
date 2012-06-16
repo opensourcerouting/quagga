@@ -481,6 +481,7 @@ extern const char *zserv_command_string (unsigned int command);
 #define ZEBRA_NEXTHOP_IPV6_IFINDEX       7
 #define ZEBRA_NEXTHOP_IPV6_IFNAME        8
 #define ZEBRA_NEXTHOP_BLACKHOLE          9
+#define ZEBRA_NEXTHOP_IPV4_ONLINK       10
 
 /* Return values of functions involved in packet verification. */
 #define MSG_OK                           0

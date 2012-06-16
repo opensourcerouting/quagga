@@ -599,6 +599,7 @@ vty_show_ip_route_detail (struct vty *vty, struct route_node *rn)
 	    {
 	    case NEXTHOP_TYPE_IPV4:
 	    case NEXTHOP_TYPE_IPV4_IFINDEX:
+	    case NEXTHOP_TYPE_IPV4_IFINDEX_OL:
 	      vty_out (vty, " %s", inet_ntoa (nexthop->gate.ipv4));
 	      if (nexthop->ifindex)
 		vty_out (vty, ", via %s", ifindex2ifname (nexthop->ifindex));
@@ -618,6 +619,8 @@ vty_show_ip_route_detail (struct vty *vty, struct route_node *rn)
 	    }
 	  if (! CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_ACTIVE))
 	    vty_out (vty, " inactive");
+	  if (nexthop->type == NEXTHOP_TYPE_IPV4_IFINDEX_OL)
+	    vty_out (vty, " onlink");
 
 	  if (CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_RECURSIVE))
 	    {
@@ -643,6 +646,7 @@ vty_show_ip_route_detail (struct vty *vty, struct route_node *rn)
             case NEXTHOP_TYPE_IPV4:
             case NEXTHOP_TYPE_IPV4_IFINDEX:
             case NEXTHOP_TYPE_IPV4_IFNAME:
+            case NEXTHOP_TYPE_IPV4_IFINDEX_OL:
               if (nexthop->src.ipv4.s_addr)
                 {
 		  if (inet_ntop(AF_INET, &nexthop->src.ipv4, addrstr,
@@ -709,6 +713,7 @@ vty_show_ip_route (struct vty *vty, struct route_node *rn, struct rib *rib)
 	{
 	case NEXTHOP_TYPE_IPV4:
 	case NEXTHOP_TYPE_IPV4_IFINDEX:
+	case NEXTHOP_TYPE_IPV4_IFINDEX_OL:
 	  vty_out (vty, " via %s", inet_ntoa (nexthop->gate.ipv4));
 	  if (nexthop->ifindex)
 	    vty_out (vty, ", %s", ifindex2ifname (nexthop->ifindex));
@@ -753,6 +758,7 @@ vty_show_ip_route (struct vty *vty, struct route_node *rn, struct rib *rib)
           case NEXTHOP_TYPE_IPV4:
           case NEXTHOP_TYPE_IPV4_IFINDEX:
           case NEXTHOP_TYPE_IPV4_IFNAME:
+          case NEXTHOP_TYPE_IPV4_IFINDEX_OL:
             if (nexthop->src.ipv4.s_addr)
               {
 		if (inet_ntop(AF_INET, &nexthop->src.ipv4, buf, sizeof buf))
@@ -778,6 +784,8 @@ vty_show_ip_route (struct vty *vty, struct route_node *rn, struct rib *rib)
                vty_out (vty, ", bh");
       if (CHECK_FLAG (rib->flags, ZEBRA_FLAG_REJECT))
                vty_out (vty, ", rej");
+      if (nexthop->type == NEXTHOP_TYPE_IPV4_IFINDEX_OL)
+               vty_out (vty, ", onlink");
 
       if (rib->type == ZEBRA_ROUTE_RIP
 	  || rib->type == ZEBRA_ROUTE_OSPF

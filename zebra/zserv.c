@@ -751,6 +751,7 @@ zread_ipv4_add (struct zserv *client, u_short length)
   unsigned int ifindex;
   u_char ifname_len;
   safi_t safi;	
+  u_char onlink = 0;
 
 
   /* Get input stream.  */
@@ -785,22 +786,34 @@ zread_ipv4_add (struct zserv *client, u_short length)
 	    {
 	    case ZEBRA_NEXTHOP_IFINDEX:
 	      ifindex = stream_getl (s);
-	      nexthop_ifindex_add (rib, ifindex);
+	      if (onlink)
+	        nexthop_ipv4_ifindex_ol_add (rib, &nexthop, NULL, ifindex);
+	      else
+	        nexthop_ifindex_add (rib, ifindex);
+	      onlink = 0;
 	      break;
 	    case ZEBRA_NEXTHOP_IFNAME:
 	      ifname_len = stream_getc (s);
 	      stream_forward_getp (s, ifname_len);
+	      onlink = 0;
 	      break;
 	    case ZEBRA_NEXTHOP_IPV4:
 	      nexthop.s_addr = stream_get_ipv4 (s);
 	      nexthop_ipv4_add (rib, &nexthop, NULL);
+	      onlink = 0;
 	      break;
 	    case ZEBRA_NEXTHOP_IPV6:
 	      stream_forward_getp (s, IPV6_MAX_BYTELEN);
+	      onlink = 0;
 	      break;
       case ZEBRA_NEXTHOP_BLACKHOLE:
         nexthop_blackhole_add (rib);
+	      onlink = 0;
         break;
+	    case ZEBRA_NEXTHOP_IPV4_ONLINK:
+	      nexthop.s_addr = stream_get_ipv4 (s);
+	      onlink = 1;
+	      break;
 	    }
 	}
     }

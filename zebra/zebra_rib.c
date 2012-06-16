@@ -62,6 +62,7 @@ const struct message nexthop_types_desc[] =
   { NEXTHOP_TYPE_IPV6_IFINDEX,    "IPv6 nexthop with ifindex"        },
   { NEXTHOP_TYPE_IPV6_IFNAME,     "IPv6 nexthop with ifname"         },
   { NEXTHOP_TYPE_BLACKHOLE,       "Null0 nexthop"                    },
+  { NEXTHOP_TYPE_IPV4_IFINDEX_OL, "IPv4 onlink nexthop with ifindex" },
 };
 const size_t nexthop_types_desc_max = sizeof (nexthop_types_desc) / sizeof (struct message);
 
@@ -262,6 +263,21 @@ nexthop_ipv4_ifindex_add (struct rib *rib, struct in_addr *ipv4,
 
   nexthop_add (rib, nexthop);
 
+  return nexthop;
+}
+
+struct nexthop *
+nexthop_ipv4_ifindex_ol_add (struct rib *rib, const struct in_addr *ipv4,
+                             const struct in_addr *src, const unsigned int ifindex)
+{
+  struct nexthop *nexthop = XCALLOC (MTYPE_NEXTHOP, sizeof (struct nexthop));
+
+  nexthop->type = NEXTHOP_TYPE_IPV4_IFINDEX_OL;
+  IPV4_ADDR_COPY (&nexthop->gate.ipv4, ipv4);
+  if (src)
+    IPV4_ADDR_COPY (&nexthop->src.ipv4, src);
+  nexthop->ifindex = ifindex;
+  nexthop_add (rib, nexthop);
   return nexthop;
 }
 
@@ -803,6 +819,7 @@ nexthop_active_check (struct route_node *rn, struct rib *rib,
   switch (nexthop->type)
     {
     case NEXTHOP_TYPE_IFINDEX:
+    case NEXTHOP_TYPE_IPV4_IFINDEX_OL:
       ifp = if_lookup_by_index (nexthop->ifindex);
       if (ifp && if_is_operative(ifp))
 	SET_FLAG (nexthop->flags, NEXTHOP_FLAG_ACTIVE);

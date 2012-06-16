@@ -172,6 +172,10 @@ enum nexthop_types_t
   NEXTHOP_TYPE_BLACKHOLE,
   /* Null0 nexthop is typically seen in a RIB structure flagged
    * ZEBRA_FLAG_REJECT or ZEBRA_FLAG_BLACKHOLE */
+  NEXTHOP_TYPE_IPV4_IFINDEX_OL,
+  /* IPv4 nexthop with ifindex, which does not require the gate address
+   * to belong to a connected network of the given interface. Used for
+   * mesh routing. */
 };
 extern const struct message nexthop_types_desc[];
 extern const size_t nexthop_types_desc_max;
@@ -230,6 +234,8 @@ extern struct nexthop *nexthop_ifname_add (struct rib *, char *);
 extern struct nexthop *nexthop_blackhole_add (struct rib *);
 extern struct nexthop *nexthop_ipv4_add (struct rib *, struct in_addr *,
 					 struct in_addr *);
+extern struct nexthop * nexthop_ipv4_ifindex_ol_add (struct rib *, const struct in_addr *,
+						     const struct in_addr *, const unsigned);
 extern void rib_lookup_and_dump (struct prefix_ipv4 *);
 extern void rib_lookup_and_pushup (struct prefix_ipv4 *);
 extern void rib_dump (const char *, const struct prefix_ipv4 *, const struct rib *);
