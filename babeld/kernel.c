@@ -142,6 +142,7 @@ kernel_route_v4(int add,
                 const unsigned char *pref, unsigned short plen,
                 const unsigned char *gate, int ifindex, unsigned int metric)
 {
+    unsigned int tmp_ifindex = ifindex; /* (for typing) */
     struct zapi_ipv4 api;               /* quagga's communication system */
     struct prefix_ipv4 quagga_prefix;   /* quagga's prefix */
     struct in_addr babel_prefix_addr;   /* babeld's prefix addr */
@@ -164,20 +165,17 @@ kernel_route_v4(int add,
     api.flags = 0;
     api.message = 0;
     api.safi = SAFI_UNICAST;
-
-    /* Unlike the native Linux and BSD interfaces, Quagga doesn't like
-       there to be both and IPv4 nexthop and an ifindex.  Omit the
-       ifindex, and assume that the connected prefixes be set up
-       correctly. */
-
     SET_FLAG(api.message, ZAPI_MESSAGE_NEXTHOP);
-    api.ifindex_num = 0;
     if(metric >= KERNEL_INFINITY) {
         api.flags = ZEBRA_FLAG_REJECT;
         api.nexthop_num = 0;
+        api.ifindex_num = 0;
     } else {
+        SET_FLAG (api.message, ZAPI_MESSAGE_ONLINK);
         api.nexthop_num = 1;
         api.nexthop = &nexthop_pointer;
+        api.ifindex_num = 1;
+        api.ifindex = &tmp_ifindex;
         SET_FLAG(api.message, ZAPI_MESSAGE_METRIC);
         api.metric = metric;
     }
