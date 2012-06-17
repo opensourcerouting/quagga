@@ -24,6 +24,7 @@
 #define _ZEBRA_RIB_H
 
 #include "prefix.h"
+#include "log.h"
 
 #define DISTANCE_INFINITY  255
 
@@ -172,6 +173,8 @@ enum nexthop_types_t
   /* Null0 nexthop is typically seen in a RIB structure flagged
    * ZEBRA_FLAG_REJECT or ZEBRA_FLAG_BLACKHOLE */
 };
+extern const struct message nexthop_types_desc[];
+extern const size_t nexthop_types_desc_max;
 
 /* Nexthop structure. */
 struct nexthop

@@ -66,20 +66,6 @@ static const struct message nlmsg_str[] = {
   {0, NULL}
 };
 
-static const char *nexthop_types_desc[] =
-{
-  "none",
-  "Directly connected",
-  "Interface route",
-  "IPv4 nexthop",
-  "IPv4 nexthop with ifindex",
-  "IPv4 nexthop with ifname",
-  "IPv6 nexthop",
-  "IPv6 nexthop with ifindex",
-  "IPv6 nexthop with ifname",
-  "Null0 nexthop",
-};
-
 extern struct zebra_t zebrad;
 
 extern struct zebra_privs_t zserv_privs;
@@ -1368,7 +1354,7 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
 			 inet_ntoa (p->u.prefix4),
 #endif /* HAVE_IPV6 */
 			 
-			 p->prefixlen, nexthop_types_desc[nexthop->rtype]);
+			 p->prefixlen, LOOKUP (nexthop_types_desc, nexthop->rtype));
                     }
 
                   if (nexthop->rtype == NEXTHOP_TYPE_IPV4
@@ -1433,7 +1419,7 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
 #else
 			 inet_ntoa (p->u.prefix4),
 #endif /* HAVE_IPV6 */
-			 p->prefixlen, nexthop_types_desc[nexthop->type]);
+			 p->prefixlen, LOOKUP (nexthop_types_desc, nexthop->type));
                     }
 
                   if (nexthop->type == NEXTHOP_TYPE_IPV4
@@ -1540,7 +1526,7 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
 #else
 			 inet_ntoa (p->u.prefix4),
 #endif /* HAVE_IPV6 */
-                         p->prefixlen, nexthop_types_desc[nexthop->rtype]);
+                         p->prefixlen, LOOKUP (nexthop_types_desc, nexthop->rtype));
                     }
                   if (nexthop->rtype == NEXTHOP_TYPE_IPV4
                       || nexthop->rtype == NEXTHOP_TYPE_IPV4_IFINDEX)
@@ -1614,7 +1600,7 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
 #else
 			 inet_ntoa (p->u.prefix4),
 #endif /* HAVE_IPV6 */
-			 p->prefixlen, nexthop_types_desc[nexthop->type]);
+			 p->prefixlen, LOOKUP (nexthop_types_desc, nexthop->type));
                     }
                   if (nexthop->type == NEXTHOP_TYPE_IPV4
                       || nexthop->type == NEXTHOP_TYPE_IPV4_IFINDEX)

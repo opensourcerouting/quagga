@@ -50,6 +50,21 @@ extern struct zebra_t zebrad;
  */
 int rib_process_hold_time = 10;
 
+const struct message nexthop_types_desc[] =
+{
+  { 0,                            "none"                             },
+  { NEXTHOP_TYPE_IFINDEX,         "Directly connected"               },
+  { NEXTHOP_TYPE_IFNAME,          "Interface route"                  },
+  { NEXTHOP_TYPE_IPV4,            "IPv4 nexthop"                     },
+  { NEXTHOP_TYPE_IPV4_IFINDEX,    "IPv4 nexthop with ifindex"        },
+  { NEXTHOP_TYPE_IPV4_IFNAME,     "IPv4 nexthop with ifname"         },
+  { NEXTHOP_TYPE_IPV6,            "IPv6 nexthop"                     },
+  { NEXTHOP_TYPE_IPV6_IFINDEX,    "IPv6 nexthop with ifindex"        },
+  { NEXTHOP_TYPE_IPV6_IFNAME,     "IPv6 nexthop with ifname"         },
+  { NEXTHOP_TYPE_BLACKHOLE,       "Null0 nexthop"                    },
+};
+const size_t nexthop_types_desc_max = sizeof (nexthop_types_desc) / sizeof (struct message);
+
 /* Each route type's string and default distance value. */
 static const struct
 {  
