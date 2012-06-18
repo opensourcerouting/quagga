@@ -864,7 +864,7 @@ static void
 show_babel_neighbour_sub (struct vty *vty, struct neighbour *neigh)
 {
     vty_out (vty,
-             "Neighbour %s dev %s reach %04x rxcost %d txcost %d %s.%s",
+             "Neighbour %s dev %s reach %04x rxcost %d txcost %d%s.%s",
              format_address(neigh->address),
              neigh->ifp->name,
              neigh->reach,

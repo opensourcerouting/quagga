@@ -501,7 +501,7 @@ show_babel_main_configuration (struct vty *vty)
             "vty address             = %s%s"
             "vty port                = %d%s"
             "id                      = %s%s"
-            "allow_duplicates        = %s%s"
+            "allow_duplicates        = %d%s"
             "kernel_metric           = %d%s",
             pidfile, VTY_NEWLINE,
             state_file, VTY_NEWLINE,
@@ -514,6 +514,6 @@ show_babel_main_configuration (struct vty *vty)
             VTY_NEWLINE,
             babel_vty_port, VTY_NEWLINE,
             format_eui64(myid), VTY_NEWLINE,
-            format_bool(allow_duplicates), VTY_NEWLINE,
+            allow_duplicates, VTY_NEWLINE,
             kernel_metric, VTY_NEWLINE);
 }
