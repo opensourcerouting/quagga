@@ -40,7 +40,6 @@ static void consider_route(struct babel_route *route);
 struct babel_route **routes = NULL;
 static int route_slots = 0, max_route_slots = 0;
 int kernel_metric = 0;
-int allow_duplicates = -1;
 int diversity_kind = DIVERSITY_NONE;
 int diversity_factor = 256;     /* in units of 1/256 */
 int keep_unfeasible = 0;
@@ -815,7 +814,7 @@ consider_route(struct babel_route *route)
         return;
 
     xroute = find_xroute(route->src->prefix, route->src->plen);
-    if(xroute && (allow_duplicates < 0 || xroute->metric >= allow_duplicates))
+    if(xroute)
         return;
 
     installed = find_installed_route(route->src->prefix, route->src->plen);

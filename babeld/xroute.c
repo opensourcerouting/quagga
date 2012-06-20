@@ -207,11 +207,8 @@ xroute_add_new_route(unsigned char prefix[16], unsigned char plen,
         if(rc > 0) {
             struct babel_route *route;
             route = find_installed_route(prefix, plen);
-            if(route) {
-                if(allow_duplicates < 0 ||
-                   metric < allow_duplicates)
-                    uninstall_route(route);
-            }
+            if(route)
+                uninstall_route(route);
             if(send_updates)
                 send_update(NULL, 0, prefix, plen);
             return 1;
