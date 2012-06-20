@@ -845,8 +845,8 @@ rtadv_dns_lifetime_fits (unsigned long lifetime_msec, int MaxRAI_msec)
 DEFUN (ipv6_nd_suppress_ra,
        ipv6_nd_suppress_ra_cmd,
        "ipv6 nd suppress-ra",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Suppress Router Advertisement\n")
 {
   struct interface *ifp;
@@ -880,8 +880,8 @@ DEFUN (no_ipv6_nd_suppress_ra,
        no_ipv6_nd_suppress_ra_cmd,
        "no ipv6 nd suppress-ra",
        NO_STR
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Suppress Router Advertisement\n")
 {
   struct interface *ifp;
@@ -914,8 +914,8 @@ DEFUN (no_ipv6_nd_suppress_ra,
 DEFUN (ipv6_nd_ra_interval_msec,
        ipv6_nd_ra_interval_msec_cmd,
        "ipv6 nd ra-interval msec <70-1800000>",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Router Advertisement interval\n"
        "Router Advertisement interval in milliseconds\n")
 {
@@ -973,8 +973,8 @@ DEFUN (ipv6_nd_ra_interval_msec,
 DEFUN (ipv6_nd_ra_interval,
        ipv6_nd_ra_interval_cmd,
        "ipv6 nd ra-interval <1-1800>",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Router Advertisement interval\n"
        "Router Advertisement interval in seconds\n")
 {
@@ -1033,8 +1033,8 @@ DEFUN (no_ipv6_nd_ra_interval,
        no_ipv6_nd_ra_interval_cmd,
        "no ipv6 nd ra-interval",
        NO_STR
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Router Advertisement interval\n")
 {
   struct interface *ifp;
@@ -1057,24 +1057,24 @@ ALIAS (no_ipv6_nd_ra_interval,
        no_ipv6_nd_ra_interval_val_cmd,
        "no ipv6 nd ra-interval <1-1800>",
        NO_STR
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Router Advertisement interval\n")
 
 ALIAS (no_ipv6_nd_ra_interval,
        no_ipv6_nd_ra_interval_msec_val_cmd,
        "no ipv6 nd ra-interval msec <1-1800000>",
        NO_STR
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Router Advertisement interval\n"
        "Router Advertisement interval in milliseconds\n")
 
 DEFUN (ipv6_nd_ra_lifetime,
        ipv6_nd_ra_lifetime_cmd,
        "ipv6 nd ra-lifetime <0-9000>",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Router lifetime\n"
        "Router lifetime in seconds (0 stands for a non-default gw)\n")
 {
@@ -1108,8 +1108,8 @@ DEFUN (no_ipv6_nd_ra_lifetime,
        no_ipv6_nd_ra_lifetime_cmd,
        "no ipv6 nd ra-lifetime",
        NO_STR
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Router lifetime\n")
 {
   struct interface *ifp;
@@ -1128,16 +1128,16 @@ ALIAS (no_ipv6_nd_ra_lifetime,
        no_ipv6_nd_ra_lifetime_val_cmd,
        "no ipv6 nd ra-lifetime <0-9000>",
        NO_STR
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Router lifetime\n"
        "Router lifetime in seconds (0 stands for a non-default gw)\n")
 
 DEFUN (ipv6_nd_reachable_time,
        ipv6_nd_reachable_time_cmd,
        "ipv6 nd reachable-time <1-3600000>",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Reachable time\n"
        "Reachable time in milliseconds\n")
 {
@@ -1152,8 +1152,8 @@ DEFUN (no_ipv6_nd_reachable_time,
        no_ipv6_nd_reachable_time_cmd,
        "no ipv6 nd reachable-time",
        NO_STR
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Reachable time\n")
 {
   struct interface *ifp;
@@ -1172,16 +1172,16 @@ ALIAS (no_ipv6_nd_reachable_time,
        no_ipv6_nd_reachable_time_val_cmd,
        "no ipv6 nd reachable-time <1-3600000>",
        NO_STR
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Reachable time\n"
        "Reachable time in milliseconds\n")
 
 DEFUN (ipv6_nd_homeagent_preference,
        ipv6_nd_homeagent_preference_cmd,
        "ipv6 nd home-agent-preference <0-65535>",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Home Agent preference\n"
        "preference value (default is 0, least preferred)\n")
 {
@@ -1196,8 +1196,8 @@ DEFUN (no_ipv6_nd_homeagent_preference,
        no_ipv6_nd_homeagent_preference_cmd,
        "no ipv6 nd home-agent-preference",
        NO_STR
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Home Agent preference\n")
 {
   struct interface *ifp;
@@ -1216,16 +1216,16 @@ ALIAS (no_ipv6_nd_homeagent_preference,
        no_ipv6_nd_homeagent_preference_val_cmd,
        "no ipv6 nd home-agent-preference <0-65535>",
        NO_STR
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Home Agent preference\n"
        "preference value (default is 0, least preferred)\n")
 
 DEFUN (ipv6_nd_homeagent_lifetime,
        ipv6_nd_homeagent_lifetime_cmd,
        "ipv6 nd home-agent-lifetime <0-65520>",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Home Agent lifetime\n"
        "Home Agent lifetime in seconds (0 to track ra-lifetime)\n")
 {
@@ -1240,8 +1240,8 @@ DEFUN (no_ipv6_nd_homeagent_lifetime,
        no_ipv6_nd_homeagent_lifetime_cmd,
        "no ipv6 nd home-agent-lifetime",
        NO_STR
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Home Agent lifetime\n")
 {
   struct interface *ifp;
@@ -1260,16 +1260,16 @@ ALIAS (no_ipv6_nd_homeagent_lifetime,
        no_ipv6_nd_homeagent_lifetime_val_cmd,
        "no ipv6 nd home-agent-lifetime <0-65520>",
        NO_STR
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Home Agent lifetime\n"
        "Home Agent lifetime in seconds (0 to track ra-lifetime)\n")
 
 DEFUN (ipv6_nd_managed_config_flag,
        ipv6_nd_managed_config_flag_cmd,
        "ipv6 nd managed-config-flag",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Managed address configuration flag\n")
 {
   struct interface *ifp;
@@ -1288,8 +1288,8 @@ DEFUN (no_ipv6_nd_managed_config_flag,
        no_ipv6_nd_managed_config_flag_cmd,
        "no ipv6 nd managed-config-flag",
        NO_STR
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Managed address configuration flag\n")
 {
   struct interface *ifp;
@@ -1307,8 +1307,8 @@ DEFUN (no_ipv6_nd_managed_config_flag,
 DEFUN (ipv6_nd_homeagent_config_flag,
        ipv6_nd_homeagent_config_flag_cmd,
        "ipv6 nd home-agent-config-flag",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Home Agent configuration flag\n")
 {
   struct interface *ifp;
@@ -1327,8 +1327,8 @@ DEFUN (no_ipv6_nd_homeagent_config_flag,
        no_ipv6_nd_homeagent_config_flag_cmd,
        "no ipv6 nd home-agent-config-flag",
        NO_STR
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Home Agent configuration flag\n")
 {
   struct interface *ifp;
@@ -1346,8 +1346,8 @@ DEFUN (no_ipv6_nd_homeagent_config_flag,
 DEFUN (ipv6_nd_adv_interval_config_option,
        ipv6_nd_adv_interval_config_option_cmd,
        "ipv6 nd adv-interval-option",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Advertisement Interval Option\n")
 {
   struct interface *ifp;
@@ -1365,8 +1365,8 @@ DEFUN (no_ipv6_nd_adv_interval_config_option,
        no_ipv6_nd_adv_interval_config_option_cmd,
        "no ipv6 nd adv-interval-option",
        NO_STR
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Advertisement Interval Option\n")
 {
   struct interface *ifp;
@@ -1383,8 +1383,8 @@ DEFUN (no_ipv6_nd_adv_interval_config_option,
 DEFUN (ipv6_nd_other_config_flag,
        ipv6_nd_other_config_flag_cmd,
        "ipv6 nd other-config-flag",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Other statefull configuration flag\n")
 {
   struct interface *ifp;
@@ -1403,8 +1403,8 @@ DEFUN (no_ipv6_nd_other_config_flag,
        no_ipv6_nd_other_config_flag_cmd,
        "no ipv6 nd other-config-flag",
        NO_STR
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Other statefull configuration flag\n")
 {
   struct interface *ifp;
@@ -1423,8 +1423,8 @@ DEFUN (ipv6_nd_prefix,
        ipv6_nd_prefix_cmd,
        "ipv6 nd prefix X:X::X:X/M (<0-4294967295>|infinite) "
        "(<0-4294967295>|infinite) (off-link|) (no-autoconfig|) (router-address|)",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Prefix information\n"
        "IPv6 prefix\n"
        "Valid lifetime in seconds\n"
@@ -1505,8 +1505,8 @@ ALIAS (ipv6_nd_prefix,
        ipv6_nd_prefix_val_nortaddr_cmd,
        "ipv6 nd prefix X:X::X:X/M (<0-4294967295>|infinite) "
        "(<0-4294967295>|infinite) (off-link|) (no-autoconfig|)",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Prefix information\n"
        "IPv6 prefix\n"
        "Valid lifetime in seconds\n"
@@ -1520,8 +1520,8 @@ ALIAS (ipv6_nd_prefix,
        ipv6_nd_prefix_val_rev_cmd,
        "ipv6 nd prefix X:X::X:X/M (<0-4294967295>|infinite) "
        "(<0-4294967295>|infinite) (no-autoconfig|) (off-link|)",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Prefix information\n"
        "IPv6 prefix\n"
        "Valid lifetime in seconds\n"
@@ -1535,8 +1535,8 @@ ALIAS (ipv6_nd_prefix,
        ipv6_nd_prefix_val_rev_rtaddr_cmd,
        "ipv6 nd prefix X:X::X:X/M (<0-4294967295>|infinite) "
        "(<0-4294967295>|infinite) (no-autoconfig|) (off-link|) (router-address|)",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Prefix information\n"
        "IPv6 prefix\n"
        "Valid lifetime in seconds\n"
@@ -1551,8 +1551,8 @@ ALIAS (ipv6_nd_prefix,
        ipv6_nd_prefix_val_noauto_cmd,
        "ipv6 nd prefix X:X::X:X/M (<0-4294967295>|infinite) "
        "(<0-4294967295>|infinite) (no-autoconfig|)",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Prefix information\n"
        "IPv6 prefix\n"
        "Valid lifetime in seconds\n"
@@ -1565,8 +1565,8 @@ ALIAS (ipv6_nd_prefix,
        ipv6_nd_prefix_val_offlink_cmd,
        "ipv6 nd prefix X:X::X:X/M (<0-4294967295>|infinite) "
        "(<0-4294967295>|infinite) (off-link|)",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Prefix information\n"
        "IPv6 prefix\n"
        "Valid lifetime in seconds\n"
@@ -1579,8 +1579,8 @@ ALIAS (ipv6_nd_prefix,
        ipv6_nd_prefix_val_rtaddr_cmd,
        "ipv6 nd prefix X:X::X:X/M (<0-4294967295>|infinite) "
        "(<0-4294967295>|infinite) (router-address|)",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Prefix information\n"
        "IPv6 prefix\n"
        "Valid lifetime in seconds\n"
@@ -1593,8 +1593,8 @@ ALIAS (ipv6_nd_prefix,
        ipv6_nd_prefix_val_cmd,
        "ipv6 nd prefix X:X::X:X/M (<0-4294967295>|infinite) "
        "(<0-4294967295>|infinite)",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Prefix information\n"
        "IPv6 prefix\n"
        "Valid lifetime in seconds\n"
@@ -1605,8 +1605,8 @@ ALIAS (ipv6_nd_prefix,
 ALIAS (ipv6_nd_prefix,
        ipv6_nd_prefix_noval_cmd,
        "ipv6 nd prefix X:X::X:X/M (no-autoconfig|) (off-link|)",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Prefix information\n"
        "IPv6 prefix\n"
        "Do not use prefix for autoconfiguration\n"
@@ -1615,8 +1615,8 @@ ALIAS (ipv6_nd_prefix,
 ALIAS (ipv6_nd_prefix,
        ipv6_nd_prefix_noval_rev_cmd,
        "ipv6 nd prefix X:X::X:X/M (off-link|) (no-autoconfig|)",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Prefix information\n"
        "IPv6 prefix\n"
        "Do not use prefix for onlink determination\n"
@@ -1625,8 +1625,8 @@ ALIAS (ipv6_nd_prefix,
 ALIAS (ipv6_nd_prefix,
        ipv6_nd_prefix_noval_noauto_cmd,
        "ipv6 nd prefix X:X::X:X/M (no-autoconfig|)",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Prefix information\n"
        "IPv6 prefix\n"
        "Do not use prefix for autoconfiguration\n")
@@ -1634,8 +1634,8 @@ ALIAS (ipv6_nd_prefix,
 ALIAS (ipv6_nd_prefix,
        ipv6_nd_prefix_noval_offlink_cmd,
        "ipv6 nd prefix X:X::X:X/M (off-link|)",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Prefix information\n"
        "IPv6 prefix\n"
        "Do not use prefix for onlink determination\n")
@@ -1643,8 +1643,8 @@ ALIAS (ipv6_nd_prefix,
 ALIAS (ipv6_nd_prefix,
        ipv6_nd_prefix_noval_rtaddr_cmd,
        "ipv6 nd prefix X:X::X:X/M (router-address|)",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Prefix information\n"
        "IPv6 prefix\n"
        "Set Router Address flag\n")
@@ -1652,8 +1652,8 @@ ALIAS (ipv6_nd_prefix,
 ALIAS (ipv6_nd_prefix,
        ipv6_nd_prefix_prefix_cmd,
        "ipv6 nd prefix X:X::X:X/M",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Prefix information\n"
        "IPv6 prefix\n")
 
@@ -1661,8 +1661,8 @@ DEFUN (no_ipv6_nd_prefix,
        no_ipv6_nd_prefix_cmd,
        "no ipv6 nd prefix IPV6PREFIX",
        NO_STR
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Prefix information\n"
        "IPv6 prefix\n")
 {
@@ -1696,8 +1696,8 @@ DEFUN (no_ipv6_nd_prefix,
 DEFUN (ipv6_nd_router_preference,
        ipv6_nd_router_preference_cmd,
        "ipv6 nd router-preference (high|medium|low)",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Default router preference\n"
        "High default router preference\n"
        "Low default router preference\n"
@@ -1728,8 +1728,8 @@ DEFUN (no_ipv6_nd_router_preference,
        no_ipv6_nd_router_preference_cmd,
        "no ipv6 nd router-preference",
        NO_STR
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Default router preference\n")
 {
   struct interface *ifp;
@@ -1748,8 +1748,8 @@ ALIAS (no_ipv6_nd_router_preference,
        no_ipv6_nd_router_preference_val_cmd,
        "no ipv6 nd router-preference (high|medium|low",
        NO_STR
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Default router preference\n"
        "High default router preference\n"
        "Low default router preference\n"
@@ -1758,8 +1758,8 @@ ALIAS (no_ipv6_nd_router_preference,
 DEFUN (ipv6_nd_mtu,
        ipv6_nd_mtu_cmd,
        "ipv6 nd mtu <1-65535>",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Advertised MTU\n"
        "MTU in bytes\n")
 {
@@ -1774,8 +1774,8 @@ DEFUN (no_ipv6_nd_mtu,
        no_ipv6_nd_mtu_cmd,
        "no ipv6 nd mtu",
        NO_STR
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Advertised MTU\n")
 {
   struct interface *ifp = (struct interface *) vty->index;
@@ -1789,8 +1789,8 @@ ALIAS (no_ipv6_nd_mtu,
        no_ipv6_nd_mtu_val_cmd,
        "no ipv6 nd mtu <1-65535>",
        NO_STR
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Advertised MTU\n"
        "MTU in bytes\n")
 
@@ -1813,8 +1813,8 @@ rtadv_rdnss_lookup (struct list *list, struct in6_addr *v6addr)
 DEFUN (ipv6_nd_rdnss_addr,
        ipv6_nd_rdnss_addr_cmd,
        "ipv6 nd rdnss X:X::X:X",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Recursive DNS Server\n"
        "IPv6 address of the server\n")
 {
@@ -1861,8 +1861,8 @@ DEFUN (ipv6_nd_rdnss_addr,
 ALIAS (ipv6_nd_rdnss_addr,
        ipv6_nd_rdnss_addr_lft_cmd,
        "ipv6 nd rdnss X:X::X:X (<1-4294967294>|infinite|obsolete)",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Recursive DNS Server\n"
        "IPv6 address of the server\n"
        "Lifetime in seconds (track ra-interval, if not set)")
@@ -1871,8 +1871,8 @@ DEFUN (no_ipv6_nd_rdnss_addr,
        no_ipv6_nd_rdnss_addr_cmd,
        "no ipv6 nd rdnss X:X::X:X",
        NO_STR
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Recursive DNS Server\n"
        "IPv6 address of the server\n")
 {
@@ -1898,8 +1898,8 @@ ALIAS (no_ipv6_nd_rdnss_addr,
        no_ipv6_nd_rdnss_addr_lft_cmd,
        "no ipv6 nd rdnss X:X::X:X (<1-4294967294>|infinite|obsolete)",
        NO_STR
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "Recursive DNS Server\n"
        "IPv6 address of the server\n"
        "Lifetime in seconds (track ra-interval, if not set)")
@@ -2020,8 +2020,8 @@ rtadv_dnssl_lookup (struct list *list, const char * subdomain)
 DEFUN (ipv6_nd_dnssl_domain,
        ipv6_nd_dnssl_domain_cmd,
        "ipv6 nd dnssl DNS.DOMA.IN",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "DNS search list\n"
        "DNS domain\n")
 {
@@ -2075,8 +2075,8 @@ DEFUN (ipv6_nd_dnssl_domain,
 ALIAS (ipv6_nd_dnssl_domain,
        ipv6_nd_dnssl_domain_lft_cmd,
        "ipv6 nd dnssl DNS.DOMA.IN (<1-4294967294>|infinite|obsolete)",
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "DNS search list\n"
        "DNS domain\n"
        "Lifetime in seconds (track ra-interval, if not set)")
@@ -2085,8 +2085,8 @@ DEFUN (no_ipv6_nd_dnssl_domain,
        no_ipv6_nd_dnssl_domain_cmd,
        "no ipv6 nd dnssl DNS.DOMA.IN",
        NO_STR
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "DNS search list\n"
        "DNS domain\n")
 {
@@ -2109,8 +2109,8 @@ ALIAS (no_ipv6_nd_dnssl_domain,
        no_ipv6_nd_dnssl_domain_lft_cmd,
        "no ipv6 nd dnssl DNS.DOMA.IN (<1-4294967294>|infinite|obsolete)",
        NO_STR
-       "Interface IPv6 config commands\n"
-       "Neighbor discovery\n"
+       IF_IPV6_STR
+       ND_STR
        "DNS search list\n"
        "DNS domain\n"
        "Lifetime in seconds (track ra-interval, if not set)")
