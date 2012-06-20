@@ -28,6 +28,7 @@
 #define _IRDP_H
 
 #include "lib/vty.h"
+#include "stream.h"
 
 #define TRUE 1
 #define FALSE 0
