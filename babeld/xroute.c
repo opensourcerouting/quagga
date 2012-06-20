@@ -49,7 +49,7 @@ babel_ipv4_route_add (struct zapi_ipv4 *api, struct prefix_ipv4 *prefix,
     unsigned char uchar_prefix[16];
 
     inaddr_to_uchar(uchar_prefix, &prefix->prefix);
-    debugf(BABEL_DEBUG_ROUTE, "Adding new ipv4 route comming from Zebra.");
+    debugf(BABEL_DEBUG_ROUTE, "Adding new ipv4 route coming from Zebra.");
     xroute_add_new_route(uchar_prefix, prefix->prefixlen + 96,
                          api->metric, ifindex, 0, 1);
     return 0;
@@ -80,7 +80,7 @@ babel_ipv6_route_add (struct zapi_ipv6 *api, struct prefix_ipv6 *prefix,
     unsigned char uchar_prefix[16];
 
     in6addr_to_uchar(uchar_prefix, &prefix->prefix);
-    debugf(BABEL_DEBUG_ROUTE, "Adding new route comming from Zebra.");
+    debugf(BABEL_DEBUG_ROUTE, "Adding new route coming from Zebra.");
     xroute_add_new_route(uchar_prefix, prefix->prefixlen, api->metric, ifindex,
                          0, 1);
     return 0;
