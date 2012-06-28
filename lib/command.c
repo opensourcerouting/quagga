@@ -2700,7 +2700,7 @@ DEFUN (show_startup_config,
        show_startup_config_cmd,
        "show startup-config",
        SHOW_STR
-       "Contentes of startup configuration\n")
+       "Contents of startup configuration\n")
 {
   char buf[BUFSIZ];
   FILE *confp;

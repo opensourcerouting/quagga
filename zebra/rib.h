@@ -50,7 +50,7 @@ struct rib
   /* Nexthop structure */
   struct nexthop *nexthop;
   
-  /* Refrence count. */
+  /* Reference count. */
   unsigned long refcnt;
   
   /* Uptime. */

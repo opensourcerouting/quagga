@@ -166,7 +166,7 @@ rip2Globals (struct variable *v, oid name[], size_t *length,
       == MATCH_FAILED)
     return NULL;
 
-  /* Retrun global counter. */
+  /* Return global counter. */
   switch (v->magic)
     {
     case RIP2GLOBALROUTECHANGES:

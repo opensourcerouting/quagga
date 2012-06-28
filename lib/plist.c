@@ -622,7 +622,7 @@ prefix_list_print (struct prefix_list *plist)
     }
 }
 
-/* Retrun 1 when plist already include pentry policy. */
+/* Return 1 when plist already includes pentry policy. */
 static struct prefix_list_entry *
 prefix_entry_dup_check (struct prefix_list *plist,
 			struct prefix_list_entry *new)

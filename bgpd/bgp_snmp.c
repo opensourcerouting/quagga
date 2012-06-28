@@ -258,7 +258,7 @@ bgpVersion (struct variable *v, oid name[], size_t *length, int exact,
       == MATCH_FAILED)
     return NULL;
 
-  /* Retrun BGP version.  Zebra bgpd only support version 4. */
+  /* Return BGP version.  Zebra bgpd only supports version 4. */
   version = (0x80 >> (BGP_VERSION_4 - 1));
 
   /* Return octet string length 1. */

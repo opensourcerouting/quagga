@@ -1268,8 +1268,8 @@ bgp_open_receive (struct peer *peer, bgp_size_t size)
 	}
     }
 
-  /* When collision is detected and this peer is closed.  Retrun
-     immidiately. */
+  /* When collision is detected and this peer is closed.  Return
+     immediately. */
   ret = bgp_collision_detect (peer, remote_id);
   if (ret < 0)
     return ret;

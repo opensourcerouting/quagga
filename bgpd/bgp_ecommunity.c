@@ -159,7 +159,7 @@ ecommunity_dup (struct ecommunity *ecom)
   return new;
 }
 
-/* Retrun string representation of communities attribute. */
+/* Return string representation of communities attribute. */
 char *
 ecommunity_str (struct ecommunity *ecom)
 {

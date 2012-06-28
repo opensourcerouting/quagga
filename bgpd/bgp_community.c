@@ -304,12 +304,12 @@ community_intern (struct community *com)
   /* Lookup community hash. */
   find = (struct community *) hash_get (comhash, com, hash_alloc_intern);
 
-  /* Arguemnt com is allocated temporary.  So when it is not used in
+  /* Argument com is allocated temporary.  So when it is not used in
      hash, it should be freed.  */
   if (find != com)
     community_free (com);
 
-  /* Increment refrence counter.  */
+  /* Increment reference counter.  */
   find->refcnt++;
 
   /* Make string.  */
@@ -376,7 +376,7 @@ community_dup (struct community *com)
   return new;
 }
 
-/* Retrun string representation of communities attribute. */
+/* Return string representation of communities attribute. */
 char *
 community_str (struct community *com)
 {
