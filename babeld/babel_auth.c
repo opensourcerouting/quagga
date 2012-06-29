@@ -306,7 +306,7 @@ static struct stream *
 babel_auth_pad_packet (struct stream *packet, const unsigned char *addr6)
 {
   struct stream *padded;
-  u_int8_t tlv_type, tlv_length;
+  u_int8_t tlv_type, tlv_length, tlv_dlen;
 
   padded = stream_dup (packet);
   stream_reset (padded);
@@ -322,16 +322,32 @@ babel_auth_pad_packet (struct stream *packet, const unsigned char *addr6)
     tlv_length = stream_getc (packet);
     stream_forward_endp (padded, 1);
     if (tlv_type != MESSAGE_HD)
-      stream_forward_endp (padded, tlv_length);
-    else
     {
-      stream_forward_endp (padded, 2);
-      debugf (BABEL_DEBUG_AUTH, "%s: padding %uB of digest at offset %zu", __func__,
-              tlv_length - 2, stream_get_endp (padded));
-      stream_put (padded, addr6, IPV6_MAX_BYTELEN);
-      stream_put (padded, NULL, tlv_length - IPV6_MAX_BYTELEN - 2);
+      stream_forward_getp (packet, tlv_length);
+      stream_forward_endp (padded, tlv_length);
+      continue;
     }
-    stream_forward_getp (packet, tlv_length);
+    /* skip Key ID */
+    stream_forward_getp (packet, 2);
+    stream_forward_endp (padded, 2);
+    /* DLen is required to properly locate the padding space inside the Digest field */
+    tlv_dlen = stream_getc (packet);
+    stream_forward_endp (padded, 1);
+    if (tlv_dlen < 16 || tlv_dlen > tlv_length - 3)
+    {
+      debugf (BABEL_DEBUG_AUTH, "%s: malformed HD TLV (DLen == %u)", __func__, tlv_dlen);
+      stream_forward_getp (packet, tlv_length - 3);
+      stream_forward_endp (padded, tlv_length - 3);
+      continue;
+    }
+    debugf (BABEL_DEBUG_AUTH, "%s: padding %uB of digest at offset %zu", __func__,
+            tlv_dlen, stream_get_endp (padded));
+    stream_put (padded, addr6, IPV6_MAX_BYTELEN);
+    /* zeroes up to DLen inside the Digest */
+    stream_put (padded, NULL, tlv_dlen - IPV6_MAX_BYTELEN);
+    /* leave optional trailing bytes of Digest intact */
+    stream_forward_endp (padded, tlv_length - 3 - tlv_dlen);
+    stream_forward_getp (packet, tlv_length - 3);
   }
   assert (stream_get_endp (packet) == stream_get_endp (padded));
   return padded;
@@ -353,6 +369,7 @@ babel_auth_try_hd_tlvs
   u_int8_t tlv_type;
   u_int8_t tlv_length;
   u_int16_t tlv_key_id;
+  u_int8_t tlv_dlen;
   u_int8_t local_digest[HASH_SIZE_MAX];
   unsigned got_local_digest = 0;
   char printbuf[2 * HASH_SIZE_MAX + 1];
@@ -367,7 +384,7 @@ babel_auth_try_hd_tlvs
     if (tlv_type == MESSAGE_PAD1)
       continue;
     tlv_length = stream_getc (packet);
-    if (tlv_type != MESSAGE_HD || tlv_length != hash_digest_length[esa->hash_algo] + 2)
+    if (tlv_type != MESSAGE_HD)
     {
       stream_forward_getp (packet, tlv_length);
       continue;
@@ -376,6 +393,12 @@ babel_auth_try_hd_tlvs
     if (tlv_key_id != esa->key_id)
     {
       stream_forward_getp (packet, tlv_length - 2);
+      continue;
+    }
+    tlv_dlen = stream_getc (packet);
+    if (tlv_dlen < 16 || tlv_dlen > tlv_length - 3 || tlv_dlen != hash_digest_length[esa->hash_algo])
+    {
+      stream_forward_getp (packet, tlv_length - 3);
       continue;
     }
     /* fits scan criterias */
@@ -400,7 +423,7 @@ babel_auth_try_hd_tlvs
       got_local_digest = 1;
       if (UNLIKELY (debug & BABEL_DEBUG_AUTH))
       {
-        for (i = 0; i + 2 < tlv_length; i++)
+        for (i = 0; i < tlv_dlen; i++)
           snprintf (printbuf + i * 2, 3, "%02X", local_digest[i]);
         zlog_debug ("%s: local %s digest result #%u%s: %s", __func__,
                     LOOKUP (hash_algo_str, esa->hash_algo), *done,
@@ -408,20 +431,20 @@ babel_auth_try_hd_tlvs
       }
     }
     debugf (BABEL_DEBUG_AUTH, "%s: HD TLV with key ID %u, digest size %u",
-            __func__, tlv_key_id, tlv_length - 2);
+            __func__, tlv_key_id, tlv_dlen);
     /* OK to compare Digest field */
-    if (! memcmp (stream_get_data (packet) + stream_get_getp (packet), local_digest, tlv_length - 2))
+    if (! memcmp (stream_get_data (packet) + stream_get_getp (packet), local_digest, tlv_dlen))
     {
       debugf (BABEL_DEBUG_AUTH, "%s: TLV digest matches", __func__);
       return MSG_OK;
     }
     if (UNLIKELY (debug & BABEL_DEBUG_AUTH))
     {
-      for (i = 0; i + 2 < tlv_length; i++)
+      for (i = 0; i < tlv_dlen; i++)
         snprintf (printbuf + i * 2, 3, "%02X", stream_get_data (packet)[stream_get_getp (packet) + i]);
       zlog_debug ("%s: TLV digest differs: %s", __func__, printbuf);
     }
-    stream_forward_getp (packet, tlv_length - 2);
+    stream_forward_getp (packet, tlv_length - 3);
   }
   return MSG_NG;
 }
@@ -619,8 +642,9 @@ int babel_auth_make_packet (struct interface *ifp, unsigned char * body, const u
     debugf (BABEL_DEBUG_AUTH, "%s: padded HD TLV #%u (%s, ID %u) at offset %zu", __func__, hd_done,
             LOOKUP (hash_algo_str, esa->hash_algo), esa->key_id, stream_get_endp (packet));
     stream_putc (packet, MESSAGE_HD); /* type */
-    stream_putc (packet, 2 + hash_digest_length[esa->hash_algo]); /* length */
+    stream_putc (packet, 3 + hash_digest_length[esa->hash_algo]); /* length */
     stream_putw (packet, esa->key_id); /* key ID */
+    stream_putc (packet, hash_digest_length[esa->hash_algo]); /* digest length */
     digest_offset[hd_done] = stream_get_endp (packet);
     stream_put (packet, &sourceaddr.s6_addr, IPV6_MAX_BYTELEN);
     stream_put (packet, NULL, hash_digest_length[esa->hash_algo] - IPV6_MAX_BYTELEN);
