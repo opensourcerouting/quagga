@@ -80,6 +80,18 @@ to fairly high values on links with little packet loss.  The default
 is 20000@dmn{ms}.
 @end deffn
 
+@deffn {Interface Command} {babel rxcost <1-65534>}
+Specifies the base receive cost for this interface.  For wireless
+interfaces, it specifies the multiplier used for computing the ETX
+reception cost (default 256); for wired interfaces, it specifies the
+cost that will be advertised to neighbours.  This value is reset when
+the wired/wireless attribute of the interface is changed.
+
+Do not use this command unless you know what you are doing; in most
+networks, acting directly on the cost using route maps is a better
+technique.
+@end deffn
+
 @deffn {Interface Command} {babel authentication mode @var{authmode} key-chain @var{keychain}} {}
 @deffnx {Interface Command} {no babel authentication mode @var{authmode} key-chain @var{keychain}} {}
 Manage (add or remove) configured security associations (CSAs) for the current
