@@ -989,12 +989,12 @@ show_babel_xroutes_sub (struct xroute *xroute, void *closure)
             VTY_NEWLINE);
 }
 
-DEFUN (show_babel_database,
-       show_babel_database_cmd,
-       "show babel database",
+DEFUN (show_babel_route,
+       show_babel_route_cmd,
+       "show babel route",
        SHOW_STR
        "Babel information\n"
-       "Database information\n")
+       "Babel internal routing table\n")
 {
     for_all_routes(show_babel_routes_sub, vty);
     for_all_xroutes(show_babel_xroutes_sub, vty);
@@ -1059,8 +1059,8 @@ babel_if_init ()
     install_element(ENABLE_NODE, &show_babel_neighbour_cmd);
     install_element(VIEW_NODE, &show_babel_neighbour_ifname_cmd);
     install_element(ENABLE_NODE, &show_babel_neighbour_ifname_cmd);
-    install_element(VIEW_NODE, &show_babel_database_cmd);
-    install_element(ENABLE_NODE, &show_babel_database_cmd);
+    install_element(VIEW_NODE, &show_babel_route_cmd);
+    install_element(ENABLE_NODE, &show_babel_route_cmd);
     install_element(VIEW_NODE, &show_babel_parameters_cmd);
     install_element(ENABLE_NODE, &show_babel_parameters_cmd);
 }

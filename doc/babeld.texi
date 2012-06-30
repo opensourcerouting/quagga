@@ -164,12 +164,11 @@ Specify which kind of routes should be redistributed into Babel.
 @node Show Babel information, Babel debugging commands, Babel redistribution, Babel
 @section Show Babel information
 
-@deffn {Command} {show babel database} {}
+@deffn {Command} {show babel route} {}
 @deffnx {Command} {show babel interface} {}
 @deffnx {Command} {show babel neighbor} {}
 @deffnx {Command} {show babel parameters} {}
-These commands dump various parts of @command{babeld}'s internal
-state.  They are mostly useful for troubleshooting.
+These commands dump various parts of @command{babeld}'s internal state.
 @end deffn
 
 @deffn {Command} {show babel authentication stats} {}
