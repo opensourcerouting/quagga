@@ -57,7 +57,7 @@ static struct {
 };
 
 /* Zebra node structure. */
-struct cmd_node zebra_node =
+static struct cmd_node zebra_node =
 {
     ZEBRA_NODE,
     "%s(config-router)# ",

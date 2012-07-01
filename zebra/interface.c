@@ -782,7 +782,7 @@ DEFUN_NOSH (zebra_interface,
   return ret;
 }
 
-struct cmd_node interface_node =
+static struct cmd_node interface_node =
 {
   INTERFACE_NODE,
   "%s(config-if)# ",

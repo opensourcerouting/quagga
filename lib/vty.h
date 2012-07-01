@@ -203,6 +203,7 @@ do {                                                                            
 
 /* Exported variables */
 extern char integrate_default[];
+extern struct cmd_node vty_node;
 
 /* Prototypes. */
 extern void vty_init (struct thread_master *);

@@ -32,6 +32,7 @@
 
 #include "command.h"
 #include "memory.h"
+#include "vty.h"
 #include "vtysh/vtysh.h"
 #include "log.h"
 #include "bgpd/bgp_vty.h"
@@ -815,9 +816,6 @@ static struct cmd_node keychain_key_node =
   KEYCHAIN_KEY_NODE,
   "%s(config-keychain-key)# "
 };
-
-/* Defined in lib/vty.c */
-extern struct cmd_node vty_node;
 
 /* When '^Z' is received from vty, move down to the enable mode. */
 static int
