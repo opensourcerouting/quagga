@@ -338,11 +338,11 @@ babel_set_wired_internal(babel_interface_nfo *babel_ifp, int wired)
 {
     if(wired) {
         babel_ifp->flags |= BABEL_IF_WIRED;
-        babel_ifp->cost = 96;
+        babel_ifp->cost = BABEL_DEFAULT_RXCOST_WIRED;
         babel_ifp->flags &= ~BABEL_IF_LQ;
     } else {
         babel_ifp->flags &= ~BABEL_IF_WIRED;
-        babel_ifp->cost = 256;
+        babel_ifp->cost = BABEL_DEFAULT_RXCOST_WIRELESS;
         babel_ifp->flags |= BABEL_IF_LQ;
     }
 
