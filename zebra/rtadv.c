@@ -1316,7 +1316,7 @@ DEFUN (no_ipv6_nd_ra_interval,
   zif = ifp->info;
   zif->rtadv.MaxRtrAdvInterval = RTADV_MAX_RTR_ADV_INTERVAL;
   zif->rtadv.MinRtrAdvInterval = RTADV_MIN_RTR_ADV_INTERVAL;
-  zif->rtadv.AdvIntervalTimer = zif->rtadv.MaxRtrAdvInterval;
+  zif->rtadv.AdvIntervalTimer = 0;
   rtadv_update_counters();
   return CMD_SUCCESS;
 }
