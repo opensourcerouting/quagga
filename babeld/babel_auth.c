@@ -713,28 +713,12 @@ void
 show_babel_auth_parameters (struct vty *vty)
 {
     vty_out(vty,
-            "libgcrypt enabled       = %s%s"
-            "HMAC-SHA256 enabled     = %s%s"
-            "HMAC-SHA384 enabled     = %s%s"
-            "HMAC-SHA512 enabled     = %s%s"
-            "HMAC-RMD160 enabled     = %s%s"
-            "HMAC-Whirlpool enabled  = %s%s"
             "MaxDigestsIn            = %u%s"
             "MaxDigestsOut           = %u%s"
             "Timestamp               = %u%s"
             "Packet counter          = %u%s"
             "Timestamp base          = %s%s"
             "Memory timeout          = %u%s",
-#ifdef HAVE_LIBGCRYPT
-            "yes", VTY_NEWLINE,
-#else
-            "no", VTY_NEWLINE,
-#endif /* HAVE_LIBGCRYPT */
-            hash_algo_enabled (HASH_HMAC_SHA256) ? "yes" : "no", VTY_NEWLINE,
-            hash_algo_enabled (HASH_HMAC_SHA384) ? "yes" : "no", VTY_NEWLINE,
-            hash_algo_enabled (HASH_HMAC_SHA512) ? "yes" : "no", VTY_NEWLINE,
-            hash_algo_enabled (HASH_HMAC_RMD160) ? "yes" : "no", VTY_NEWLINE,
-            hash_algo_enabled (HASH_HMAC_WHIRLPOOL) ? "yes" : "no", VTY_NEWLINE,
             BABEL_MAXDIGESTSIN, VTY_NEWLINE,
             BABEL_MAXDIGESTSOUT, VTY_NEWLINE,
             auth_timestamp, VTY_NEWLINE,

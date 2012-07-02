@@ -21,6 +21,7 @@
 #include <zebra.h>
 #include "cryptohash.h"
 #include "md5.h"
+#include "command.h"
 
 #ifdef HAVE_LIBGCRYPT
 #define GCRYPT_NO_DEPRECATED
@@ -90,6 +91,27 @@ static const int hash_gcrypt_algo_map[] =
 };
 #endif /* HAVE_LIBGCRYPT */
 
+/* available only in processes with a call to hash_library_init() */
+DEFUN (show_crypto,
+       show_crypto_cmd,
+       "show crypto",
+       SHOW_STR
+       "Crypto module information\n")
+{
+#ifdef HAVE_LIBGCRYPT
+  unsigned i;
+  vty_out (vty, "Compiled with libgcrypt version %s%s", GCRYPT_VERSION, VTY_NEWLINE);
+  vty_out (vty, "Running with libgcrypt version %s%s", gcry_check_version (NULL), VTY_NEWLINE);
+  for (i = 0; i < sizeof (hash_gcrypt_algo_map) / sizeof (hash_gcrypt_algo_map[0]); i++)
+    if (hash_gcrypt_algo_map[i])
+      vty_out (vty, "%-017s: %s%s", LOOKUP (hash_algo_str, i),
+               hash_algo_enabled (i) ? "enabled" : "disabled", VTY_NEWLINE);
+#else
+  vty_out (vty, "Compiled without libgcrypt%s", VTY_NEWLINE);
+#endif /* HAVE_LIBGCRYPT */
+  return CMD_SUCCESS;
+}
+
 extern unsigned
 hash_library_init (void)
 {
@@ -101,6 +123,8 @@ hash_library_init (void)
   }
   gcry_control (GCRYCTL_DISABLE_SECMEM, 0);
   gcry_control (GCRYCTL_INITIALIZATION_FINISHED, 0);
+  install_element (VIEW_NODE, &show_crypto_cmd);
+  install_element (ENABLE_NODE, &show_crypto_cmd);
 #endif /* HAVE_LIBGCRYPT */
   return 0;
 }
