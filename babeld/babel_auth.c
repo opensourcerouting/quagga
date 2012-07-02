@@ -35,7 +35,11 @@ THE SOFTWARE.
 
 #define BABEL_TS_BASE_ZERO        0
 #define BABEL_TS_BASE_UNIX        1
+/* Using "UNIX timestamp" as default TS base in this implementation will remain
+ * reliable as long as return value of quagga_time() remains non-decreasing. */
 #define BABEL_DEFAULT_TS_BASE     BABEL_TS_BASE_UNIX
+/* Low default timeout allows for naive neighbors with "zero" TS base to reboot
+ * without getting locked out for a long time. */
 #define BABEL_DEFAULT_ANM_TIMEOUT 300
 
 /* authentic neighbors memory */
