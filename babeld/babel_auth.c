@@ -129,7 +129,7 @@ babel_anm_get (const struct in6_addr *address, struct interface *ifp)
     IPV6_ADDR_COPY (&anm->address, address);
     anm->ifp = ifp;
     listnode_add (anmlist, anm);
-    if (UNLIKELY (BABEL_DEBUG_AUTH))
+    if (UNLIKELY (debug & BABEL_DEBUG_AUTH))
     {
       inet_ntop (AF_INET6, &anm->address, buffer, INET6_ADDRSTRLEN);
       zlog_debug ("%s: adding memory record for %s", __func__, buffer);
@@ -150,7 +150,7 @@ babel_auth_do_housekeeping (struct thread *thread)
   for (ALL_LIST_ELEMENTS (anmlist, node, nextnode, anm))
     if (anm->last_recv + anm_timeout < now)
     {
-      if (UNLIKELY (BABEL_DEBUG_AUTH))
+      if (UNLIKELY (debug & BABEL_DEBUG_AUTH))
       {
         inet_ntop (AF_INET6, &anm->address, buffer, INET6_ADDRSTRLEN);
         zlog_debug ("%s: memory record for %s has expired", __func__, buffer);
