@@ -296,6 +296,11 @@ List all available commands.
 Show the current version of @value{PACKAGE_NAME} and its build host information.
 @end deffn
 
+@deffn Command {show crypto} {}
+Show compile-time and run-time information about the library implementing hash
+functions for HMAC authentication purposes (currently libgcrypt only).
+@end deffn
+
 @deffn Command {show logging} {}
 Shows the current configuration of the logging system.  This includes
 the status of all logging destinations.
