@@ -1,13 +1,14 @@
 @node Basic commands
 @chapter Basic commands
 
-There are five routing daemons in use, and there is one manager daemon.
+There are multiple protocol-specific routing daemons in use, and there is one manager daemon.
 These daemons may be located on separate machines from the manager
 daemon.  Each of these daemons will listen on a particular port for
 incoming VTY connections.  The routing daemons are:
 
 @itemize @bullet
-@item @command{ripd}, @command{ripngd}, @command{ospfd}, @command{ospf6d}, @command{bgpd}
+@item @command{ripd}, @command{ripngd}, @command{ospfd}, @command{ospf6d},
+@command{bgpd}, @command{babeld}
 @item @command{zebra}
 @end itemize
 
