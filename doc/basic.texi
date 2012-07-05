@@ -15,8 +15,8 @@ The following sections discuss commands common to all the routing
 daemons.
 
 @menu
-* Terminal Mode Commands::      Common commands used in a VTY
 * Config Commands::             Commands used in config files
+* Terminal Mode Commands::      Common commands used in a VTY
 * Common Invocation Options::   Starting the daemons
 * Virtual Terminal Interfaces:: Interacting with the daemons
 @end menu
