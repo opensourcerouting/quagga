@@ -1096,7 +1096,77 @@ ALIAS (show_babel_route_prefix,
        SHOW_STR
        "Babel information\n"
        "IPv6 prefix <network>/<length>\n")
-       
+
+DEFUN (show_babel_route_addr,
+       show_babel_route_addr_cmd,
+       "show babel route A.B.C.D",
+       SHOW_STR
+       "Babel information\n"
+       "IPv4 address <network>/<length>\n")
+{
+    struct show_babel_routes_closure c = {vty, NULL};
+    struct in_addr addr;
+    char buf[INET_ADDRSTRLEN + 8];
+    struct prefix prefix;
+    int ret;
+
+    ret = inet_aton (argv[0], &addr);
+    if (ret <= 0) {
+        vty_out (vty, "%% Malformed address%s", VTY_NEWLINE);
+        return CMD_WARNING;
+    }
+
+    /* Quagga has no convenient prefix constructors. */
+    snprintf(buf, sizeof(buf), "%s/%d", inet_ntoa(addr), 32);
+
+    ret = str2prefix(buf, &prefix);
+    if (ret == 0) {
+        vty_out (vty, "%% Parse error -- this shouldn't happen%s", VTY_NEWLINE);
+        return CMD_WARNING;
+    }
+
+    c.prefix = &prefix;
+    for_all_routes(show_babel_routes_sub, &c);
+    for_all_xroutes(show_babel_xroutes_sub, &c);
+    return CMD_SUCCESS;
+}
+
+DEFUN (show_babel_route_addr6,
+       show_babel_route_addr6_cmd,
+       "show babel route X:X::X:X",
+       SHOW_STR
+       "Babel information\n"
+       "IPv6 address <network>/<length>\n")
+{
+    struct show_babel_routes_closure c = {vty, NULL};
+    struct in6_addr addr;
+    char buf1[INET6_ADDRSTRLEN];
+    char buf[INET6_ADDRSTRLEN + 8];
+    struct prefix prefix;
+    int ret;
+
+    ret = inet_pton (AF_INET6, argv[0], &addr);
+    if (ret <= 0) {
+        vty_out (vty, "%% Malformed address%s", VTY_NEWLINE);
+        return CMD_WARNING;
+    }
+
+    /* Quagga has no convenient prefix constructors. */
+    snprintf(buf, sizeof(buf), "%s/%d",
+             inet_ntop(AF_INET6, &addr, buf1, sizeof(buf1)), 128);
+
+    ret = str2prefix(buf, &prefix);
+    if (ret == 0) {
+        vty_out (vty, "%% Parse error -- this shouldn't happen%s", VTY_NEWLINE);
+        return CMD_WARNING;
+    }
+
+    c.prefix = &prefix;
+    for_all_routes(show_babel_routes_sub, &c);
+    for_all_xroutes(show_babel_xroutes_sub, &c);
+    return CMD_SUCCESS;
+}
+
 DEFUN (show_babel_parameters,
        show_babel_parameters_cmd,
        "show babel parameters",
@@ -1163,6 +1233,10 @@ babel_if_init ()
     install_element(ENABLE_NODE, &show_babel_route_prefix_cmd);
     install_element(VIEW_NODE, &show_babel_route_prefix6_cmd);
     install_element(ENABLE_NODE, &show_babel_route_prefix6_cmd);
+    install_element(VIEW_NODE, &show_babel_route_addr_cmd);
+    install_element(ENABLE_NODE, &show_babel_route_addr_cmd);
+    install_element(VIEW_NODE, &show_babel_route_addr6_cmd);
+    install_element(ENABLE_NODE, &show_babel_route_addr6_cmd);
     install_element(VIEW_NODE, &show_babel_parameters_cmd);
     install_element(ENABLE_NODE, &show_babel_parameters_cmd);
 }
