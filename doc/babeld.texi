@@ -219,6 +219,8 @@ Specify which kind of routes should be redistributed into Babel.
 @section Show Babel information
 
 @deffn {Command} {show babel route} {}
+@deffnx {Command} {show babel route A.B.C.D/M}
+@deffnx {Command} {show babel route X:X::X:X/M}
 @deffnx {Command} {show babel interface} {}
 @deffnx {Command} {show babel neighbor} {}
 @deffnx {Command} {show babel parameters} {}

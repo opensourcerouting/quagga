@@ -963,14 +963,43 @@ ALIAS (show_babel_neighbour,
        "Print neighbors\n"
        "Interface name\n")
 
+struct show_babel_routes_closure {
+    struct vty *vty;
+    struct prefix *prefix;
+};
+
+static int
+babel_prefix_eq(struct prefix *prefix, unsigned char *p, int plen)
+{
+    if(prefix->family == AF_INET6) {
+        if(prefix->prefixlen != plen ||
+           memcmp(&prefix->u.prefix6, p, 16) != 0)
+            return 0;
+    } else if(prefix->family == AF_INET) {
+        if(plen < 96 || !v4mapped(p) ||
+           memcmp(&prefix->u.prefix4, p + 12, 4) != 0)
+            return 0;
+    } else {
+        return 0;
+    }
+
+    return 1;
+}
+
 static void
 show_babel_routes_sub (struct babel_route *route, void *closure)
 {
-    struct vty *vty = (struct vty*) closure;
+    struct show_babel_routes_closure *c =
+        (struct show_babel_routes_closure*)closure;
+    struct vty *vty = c->vty;
+    struct prefix *prefix = c->prefix;
     const unsigned char *nexthop =
         memcmp(route->nexthop, route->neigh->address, 16) == 0 ?
         NULL : route->nexthop;
     char channels[100];
+
+    if(prefix && !babel_prefix_eq(prefix, route->src->prefix, route->src->plen))
+        return;
 
     if(route->channels[0] == 0)
         channels[0] = '\0';
@@ -1012,7 +1041,13 @@ show_babel_routes_sub (struct babel_route *route, void *closure)
 static void
 show_babel_xroutes_sub (struct xroute *xroute, void *closure)
 {
-    struct vty *vty = (struct vty *) closure;
+    struct show_babel_routes_closure *c =
+        (struct show_babel_routes_closure*)closure;
+    struct vty *vty = c->vty;
+
+    if(c->prefix && !babel_prefix_eq(c->prefix, xroute->prefix, xroute->plen))
+        return;
+
     vty_out(vty, "%s metric %d (exported)%s",
             format_prefix(xroute->prefix, xroute->plen),
             xroute->metric,
@@ -1026,11 +1061,42 @@ DEFUN (show_babel_route,
        "Babel information\n"
        "Babel internal routing table\n")
 {
-    for_all_routes(show_babel_routes_sub, vty);
-    for_all_xroutes(show_babel_xroutes_sub, vty);
+    struct show_babel_routes_closure c = {vty, NULL};
+    for_all_routes(show_babel_routes_sub, &c);
+    for_all_xroutes(show_babel_xroutes_sub, &c);
     return CMD_SUCCESS;
 }
 
+DEFUN (show_babel_route_prefix,
+       show_babel_route_prefix_cmd,
+       "show babel route A.B.C.D/M",
+       SHOW_STR
+       "Babel information\n"
+       "IPv4 prefix <network>/<length>\n")
+{
+    struct show_babel_routes_closure c = {vty, NULL};
+    struct prefix prefix;
+    int ret;
+
+    ret = str2prefix(argv[0], &prefix);
+    if(ret == 0) {
+      vty_out (vty, "%% Malformed address%s", VTY_NEWLINE);
+      return CMD_WARNING;
+    }
+    c.prefix = &prefix;
+        
+    for_all_routes(show_babel_routes_sub, &c);
+    for_all_xroutes(show_babel_xroutes_sub, &c);
+    return CMD_SUCCESS;
+}
+
+ALIAS (show_babel_route_prefix,
+       show_babel_route_prefix6_cmd,
+       "show babel route X:X::X:X/M",
+       SHOW_STR
+       "Babel information\n"
+       "IPv6 prefix <network>/<length>\n")
+       
 DEFUN (show_babel_parameters,
        show_babel_parameters_cmd,
        "show babel parameters",
@@ -1093,6 +1159,10 @@ babel_if_init ()
     install_element(ENABLE_NODE, &show_babel_neighbour_ifname_cmd);
     install_element(VIEW_NODE, &show_babel_route_cmd);
     install_element(ENABLE_NODE, &show_babel_route_cmd);
+    install_element(VIEW_NODE, &show_babel_route_prefix_cmd);
+    install_element(ENABLE_NODE, &show_babel_route_prefix_cmd);
+    install_element(VIEW_NODE, &show_babel_route_prefix6_cmd);
+    install_element(ENABLE_NODE, &show_babel_route_prefix6_cmd);
     install_element(VIEW_NODE, &show_babel_parameters_cmd);
     install_element(ENABLE_NODE, &show_babel_parameters_cmd);
 }
