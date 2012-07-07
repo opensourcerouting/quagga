@@ -102,6 +102,8 @@ babel_config_write (struct vty *vty)
             lines++;
         }
 
+    lines += config_write_distribute (vty);
+
     return lines;
 }
 
