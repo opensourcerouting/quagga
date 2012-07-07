@@ -923,8 +923,19 @@ cmd_ipv6_match (const char *str)
 	      nums++;
 	      state = STATE_COLON;
 	    }
-	  if (*(str + 1) == '.')
+	  if (*(str + 1) == '.') {
+	    /* In order to avoid mistaking IPv4 addresses for IPv6 ones,
+	       only allow dots after we've seen a colon. */
+	    const char *p;
+	    for (p = str; p <= str; p++) {
+	      if (*p == ':')
+		break;
+	    }
+	    if(p >= str)
+	      return no_match;
+
 	    state = STATE_DOT;
+	  }
 	  break;
 	case STATE_DOT:
 	  state = STATE_ADDR;
@@ -1032,9 +1043,19 @@ cmd_ipv6_prefix_match (const char *str)
 
 	      if (*(str + 1) == ':')
 		state = STATE_COLON;
-	      else if (*(str + 1) == '.')
+	      else if (*(str + 1) == '.') {
+		/* In order to avoid mistaking IPv4 addresses for IPv6 ones,
+		   only allow dots after we've seen a colon. */
+		const char *p;
+		for (p = str; p <= str; p++) {
+		  if (*p == ':')
+		    break;
+		}
+		if(p >= str)
+		  return no_match;
+
 		state = STATE_DOT;
-	      else if (*(str + 1) == '/')
+	      } else if (*(str + 1) == '/')
 		state = STATE_SLASH;
 	    }
 	  break;
