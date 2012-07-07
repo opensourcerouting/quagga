@@ -976,7 +976,7 @@ babel_prefix_eq(struct prefix *prefix, unsigned char *p, int plen)
            memcmp(&prefix->u.prefix6, p, 16) != 0)
             return 0;
     } else if(prefix->family == AF_INET) {
-        if(plen < 96 || !v4mapped(p) ||
+        if(plen < 96 || !v4mapped(p) || prefix->prefixlen != plen - 96 ||
            memcmp(&prefix->u.prefix4, p + 12, 4) != 0)
             return 0;
     } else {
