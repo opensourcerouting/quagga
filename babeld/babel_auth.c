@@ -70,13 +70,18 @@ static u_int32_t anm_timeout;
 static struct list *anmlist;
 
 /* statistics */
-static unsigned long stats_plain_sent;
-static unsigned long stats_plain_recv;
-static unsigned long stats_auth_sent;
-static unsigned long stats_auth_recv_ng_pcts;
-static unsigned long stats_auth_recv_ng_hd;
-static unsigned long stats_auth_recv_ok;
-static unsigned long stats_internal_err;
+struct babel_auth_stats
+{
+  unsigned long plain_sent;
+  unsigned long plain_recv;
+  unsigned long auth_sent;
+  unsigned long auth_recv_ng_pcts;
+  unsigned long auth_recv_ng_hd;
+  unsigned long auth_recv_ok;
+  unsigned long internal_err;
+};
+
+static struct babel_auth_stats stats;
 
 static const struct message ts_base_cli_str[] =
 {
@@ -397,7 +402,7 @@ babel_auth_try_hd_tlvs
       if (hash_err)
       {
         zlog_err ("%s: hash function error %u", __func__, hash_err);
-        stats_internal_err++;
+        stats.internal_err++;
         return MSG_NG;
       }
       (*done)++;
@@ -458,7 +463,7 @@ int babel_auth_check_packet
   /* no CSAs => do nothing */
   if (! listcount (babel_ifp->csalist))
   {
-    stats_plain_recv++;
+    stats.plain_recv++;
     return MSG_OK;
   }
   debugf (BABEL_DEBUG_AUTH, "%s: packet length is %uB", __func__, packetlen);
@@ -474,7 +479,7 @@ int babel_auth_check_packet
   if (-1 == (pcts_getp = babel_auth_check_pcts (packet, neigh_pc, neigh_ts)))
   {
     stream_free (packet);
-    stats_auth_recv_ng_pcts++;
+    stats.auth_recv_ng_pcts++;
     return MSG_NG;
   }
   /* Pin' := Pin; pad Pin' */
@@ -493,14 +498,14 @@ int babel_auth_check_packet
   stream_free (padded);
   debugf (BABEL_DEBUG_AUTH, "%s: authentication %s", __func__, result == MSG_OK ? "OK" : "failed");
   if (result != MSG_OK)
-    stats_auth_recv_ng_hd++;
+    stats.auth_recv_ng_hd++;
   else
   {
     anm = babel_anm_get ((const struct in6_addr *)from, ifp); /* may create new */
     anm->last_pc = stream_getw_from (packet, pcts_getp);
     anm->last_ts = stream_getl_from (packet, pcts_getp + 2);
     anm->last_recv = now;
-    stats_auth_recv_ok++;
+    stats.auth_recv_ok++;
     debugf (BABEL_DEBUG_AUTH, "%s: updated neighbor PC/TS to (%u/%u)", __func__,
             anm->last_pc, anm->last_ts);
   }
@@ -587,12 +592,12 @@ int babel_auth_make_packet (struct interface *ifp, unsigned char * body, const u
   /* no CSAs or no IPv6 addresses => do nothing */
   if (! listcount (babel_ifp->csalist))
   {
-    stats_plain_sent++;
+    stats.plain_sent++;
     return body_len;
   }
   if (! babel_auth_got_source_address (ifp, sourceaddr.s6_addr))
   {
-    stats_internal_err++;
+    stats.internal_err++;
     return body_len;
   }
   /* build ESA list */
@@ -654,7 +659,7 @@ int babel_auth_make_packet (struct interface *ifp, unsigned char * body, const u
       list_delete (esalist);
       stream_free (padded);
       stream_free (packet);
-      stats_internal_err++;
+      stats.internal_err++;
       return body_len;
     }
     if (UNLIKELY (debug & BABEL_DEBUG_AUTH))
@@ -672,22 +677,10 @@ int babel_auth_make_packet (struct interface *ifp, unsigned char * body, const u
   /* append new TLVs to the original body */
   memcpy (body + body_len, stream_get_data (packet) + 4 + body_len, new_body_len - body_len);
   stream_free (packet);
-  stats_auth_sent++;
+  stats.auth_sent++;
   return new_body_len;
 }
 #endif /* HAVE_LIBGCRYPT */
-
-static void
-babel_auth_stats_reset()
-{
-  stats_plain_sent = 0;
-  stats_plain_recv = 0;
-  stats_auth_sent = 0;
-  stats_auth_recv_ng_pcts = 0;
-  stats_auth_recv_ng_hd = 0;
-  stats_auth_recv_ok = 0;
-  stats_internal_err = 0;
-}
 
 void
 show_babel_auth_parameters (struct vty *vty)
@@ -778,13 +771,13 @@ DEFUN (show_babel_authentication_stats,
   const char *format_lu = "%-27s: %lu%s";
 
   vty_out (vty, "== Packet authentication statistics ==%s", VTY_NEWLINE);
-  vty_out (vty, format_lu, "Plain Rx", stats_plain_recv, VTY_NEWLINE);
-  vty_out (vty, format_lu, "Plain Tx", stats_plain_sent, VTY_NEWLINE);
-  vty_out (vty, format_lu, "Authenticated Tx", stats_auth_sent, VTY_NEWLINE);
-  vty_out (vty, format_lu, "Authenticated Rx OK", stats_auth_recv_ok, VTY_NEWLINE);
-  vty_out (vty, format_lu, "Authenticated Rx bad PC/TS", stats_auth_recv_ng_pcts, VTY_NEWLINE);
-  vty_out (vty, format_lu, "Authenticated Rx bad HD", stats_auth_recv_ng_hd, VTY_NEWLINE);
-  vty_out (vty, format_lu, "Internal errors", stats_internal_err, VTY_NEWLINE);
+  vty_out (vty, format_lu, "Plain Rx", stats.plain_recv, VTY_NEWLINE);
+  vty_out (vty, format_lu, "Plain Tx", stats.plain_sent, VTY_NEWLINE);
+  vty_out (vty, format_lu, "Authenticated Tx", stats.auth_sent, VTY_NEWLINE);
+  vty_out (vty, format_lu, "Authenticated Rx OK", stats.auth_recv_ok, VTY_NEWLINE);
+  vty_out (vty, format_lu, "Authenticated Rx bad PC/TS", stats.auth_recv_ng_pcts, VTY_NEWLINE);
+  vty_out (vty, format_lu, "Authenticated Rx bad HD", stats.auth_recv_ng_hd, VTY_NEWLINE);
+  vty_out (vty, format_lu, "Internal errors", stats.internal_err, VTY_NEWLINE);
   vty_out (vty, format_lu, "ANM records", listcount (anmlist), VTY_NEWLINE);
   return CMD_SUCCESS;
 }
@@ -797,7 +790,7 @@ DEFUN (clear_babel_authentication_stats,
        "Packet authentication\n"
        "Authentication statistics")
 {
-  babel_auth_stats_reset();
+  memset (&stats, 0, sizeof (stats));
   return CMD_SUCCESS;
 }
 
@@ -865,7 +858,7 @@ babel_auth_init()
     exit (1);
   anmlist = list_new();
   anmlist->del = babel_anm_free;
-  babel_auth_stats_reset();
+  memset (&stats, 0, sizeof (stats));
   auth_packetcounter = 0;
   auth_timestamp = 0;
   anm_timeout = BABEL_DEFAULT_ANM_TIMEOUT;
