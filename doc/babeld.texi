@@ -99,9 +99,12 @@ cause slower convergence and extra routing traffic.
 @deffn {Interface Command} {babel split-horizon}
 @deffnx {Interface Command} {no babel split-horizon}
 Specifies whether to perform split-horizon on the interface.
-Specifying @code{no babel split-horizon} (the default) is always
-correct, while @code{babel split-horizon} is an optimisation that
-should only be used on symmetric and transitive (wired) networks.
+Specifying @code{no babel split-horizon} is always correct, while
+@code{babel split-horizon} is an optimisation that should only be used
+on symmetric and transitive (wired) networks.  The default is
+@code{babel split-horizon} on wired interfaces, and @code{no babel
+split-horizon} on wireless interfaces.  This flag is reset when the
+wired/wireless status of an interface is changed.
 @end deffn
 
 @deffn {Interface Command} {babel hello-interval <20-655340>}

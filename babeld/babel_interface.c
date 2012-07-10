@@ -336,10 +336,12 @@ babel_set_wired_internal(babel_interface_nfo *babel_ifp, int wired)
 {
     if(wired) {
         babel_ifp->flags |= BABEL_IF_WIRED;
+        babel_ifp->flags |= BABEL_IF_SPLIT_HORIZON;
         babel_ifp->cost = BABEL_DEFAULT_RXCOST_WIRED;
         babel_ifp->flags &= ~BABEL_IF_LQ;
     } else {
         babel_ifp->flags &= ~BABEL_IF_WIRED;
+        babel_ifp->flags &= ~BABEL_IF_SPLIT_HORIZON;
         babel_ifp->cost = BABEL_DEFAULT_RXCOST_WIRELESS;
         babel_ifp->flags |= BABEL_IF_LQ;
     }
@@ -1276,15 +1278,10 @@ interface_config_write (struct vty *vty)
             vty_out (vty, " description %s%s", ifp->desc,
                      VTY_NEWLINE);
         babel_interface_nfo *babel_ifp = babel_get_if_nfo (ifp);
-        /* wireless/no split-horizon is the default */
+        /* wireless is the default*/
         if (CHECK_FLAG (babel_ifp->flags, BABEL_IF_WIRED))
         {
             vty_out (vty, " babel wired%s", VTY_NEWLINE);
-            write++;
-        }
-        if (CHECK_FLAG (babel_ifp->flags, BABEL_IF_SPLIT_HORIZON))
-        {
-            vty_out (vty, " babel split-horizon%s", VTY_NEWLINE);
             write++;
         }
         if (babel_ifp->hello_interval != BABEL_DEFAULT_HELLO_INTERVAL)
@@ -1297,12 +1294,21 @@ interface_config_write (struct vty *vty)
             vty_out (vty, " babel update-interval %u%s", babel_ifp->update_interval, VTY_NEWLINE);
             write++;
         }
+        /* Some parameters have different defaults for wired/wireless. */
         if (CHECK_FLAG (babel_ifp->flags, BABEL_IF_WIRED)) {
+            if (!CHECK_FLAG (babel_ifp->flags, BABEL_IF_SPLIT_HORIZON)) {
+                vty_out (vty, " no babel split-horizon%s", VTY_NEWLINE);
+                write++;
+            }
             if (babel_ifp->cost != BABEL_DEFAULT_RXCOST_WIRED) {
                 vty_out (vty, " babel rxcost %u%s", babel_ifp->cost, VTY_NEWLINE);
                 write++;
             }
         } else {
+            if (CHECK_FLAG (babel_ifp->flags, BABEL_IF_SPLIT_HORIZON)) {
+                vty_out (vty, " babel split-horizon%s", VTY_NEWLINE);
+                write++;
+            }
             if (babel_ifp->cost != BABEL_DEFAULT_RXCOST_WIRELESS) {
                 vty_out (vty, " babel rxcost %u%s", babel_ifp->cost, VTY_NEWLINE);
                 write++;
