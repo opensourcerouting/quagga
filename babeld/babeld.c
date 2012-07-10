@@ -86,6 +86,17 @@ babel_config_write (struct vty *vty)
     if (!babel_routing_process)
         return lines;
     vty_out (vty, "router babel%s", VTY_NEWLINE);
+    if (diversity_kind != DIVERSITY_NONE)
+    {
+        vty_out (vty, " babel diversity%s", VTY_NEWLINE);
+        lines++;
+    }
+    if (diversity_factor != BABEL_DEFAULT_DIVERSITY_FACTOR)
+    {
+        vty_out (vty, " babel diversity-factor %d%s", diversity_factor,
+                 VTY_NEWLINE);
+        lines++;
+    }
     if (resend_delay != BABEL_DEFAULT_RESEND_DELAY)
     {
         vty_out (vty, " babel resend-delay %u%s", resend_delay, VTY_NEWLINE);
@@ -657,6 +668,45 @@ DEFUN (no_router_babel,
 }
 
 /* [Babel Command] */
+DEFUN (babel_diversity,
+       babel_diversity_cmd,
+       "babel diversity",
+       "Babel commands\n"
+       "Enable diversity-aware routing.\n")
+{
+    diversity_kind = DIVERSITY_CHANNEL;
+    return CMD_SUCCESS;
+}
+
+/* [Babel Command] */
+DEFUN (no_babel_diversity,
+       no_babel_diversity_cmd,
+       "no babel diversity",
+       NO_STR
+       "Babel commands\n"
+       "Disable diversity-aware routing.\n")
+{
+    diversity_kind = DIVERSITY_NONE;
+    return CMD_SUCCESS;
+}
+
+/* [Babel Command] */
+DEFUN (babel_diversity_factor,
+       babel_diversity_factor_cmd,
+       "babel diversity-factor <1-256>",
+       "Babel commands\n"
+       "Set the diversity factor.\n"
+       "Factor in units of 1/256.\n")
+{
+    int factor;
+
+    VTY_GET_INTEGER_RANGE("factor", factor, argv[0], 1, 256);
+
+    diversity_factor = factor;
+    return CMD_SUCCESS;
+}
+
+/* [Babel Command] */
 DEFUN (babel_set_resend_delay,
        babel_set_resend_delay_cmd,
        "babel resend-delay <20-655340>",
@@ -682,6 +732,9 @@ babeld_quagga_init(void)
     install_element(CONFIG_NODE, &no_router_babel_cmd);
 
     install_default(BABEL_NODE);
+    install_element(BABEL_NODE, &babel_diversity_cmd);
+    install_element(BABEL_NODE, &no_babel_diversity_cmd);
+    install_element(BABEL_NODE, &babel_diversity_factor_cmd);
     install_element(BABEL_NODE, &babel_set_resend_delay_cmd);
 
     babel_if_init();

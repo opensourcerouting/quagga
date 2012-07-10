@@ -338,11 +338,13 @@ babel_set_wired_internal(babel_interface_nfo *babel_ifp, int wired)
         babel_ifp->flags |= BABEL_IF_WIRED;
         babel_ifp->flags |= BABEL_IF_SPLIT_HORIZON;
         babel_ifp->cost = BABEL_DEFAULT_RXCOST_WIRED;
+        babel_ifp->channel = BABEL_IF_CHANNEL_NONINTERFERING;
         babel_ifp->flags &= ~BABEL_IF_LQ;
     } else {
         babel_ifp->flags &= ~BABEL_IF_WIRED;
         babel_ifp->flags &= ~BABEL_IF_SPLIT_HORIZON;
         babel_ifp->cost = BABEL_DEFAULT_RXCOST_WIRELESS;
+        babel_ifp->channel = BABEL_IF_CHANNEL_INTERFERING;
         babel_ifp->flags |= BABEL_IF_LQ;
     }
 
@@ -483,6 +485,63 @@ DEFUN (babel_set_rxcost,
     assert (babel_ifp != NULL);
 
     babel_ifp->cost = rxcost;
+    return CMD_SUCCESS;
+}
+
+DEFUN (babel_set_channel,
+       babel_set_channel_cmd,
+       "babel channel <1-254>",
+       "Babel interface commands\n"
+       "Channel number for diversity routing\n"
+       "Number")
+{
+    struct interface *ifp;
+    babel_interface_nfo *babel_ifp;
+    int channel;
+
+    VTY_GET_INTEGER_RANGE("channel", channel, argv[0], 1, 254);
+
+    ifp = vty->index;
+    babel_ifp = babel_get_if_nfo(ifp);
+    assert (babel_ifp != NULL);
+
+    babel_ifp->channel = channel;
+    return CMD_SUCCESS;
+}
+
+DEFUN (babel_set_channel_interfering,
+       babel_set_channel_interfering_cmd,
+       "babel channel interfering",
+       "Babel interface commands\n"
+       "Channel number for diversity routing\n"
+       "Mark channel as interfering")
+{
+    struct interface *ifp;
+    babel_interface_nfo *babel_ifp;
+
+    ifp = vty->index;
+    babel_ifp = babel_get_if_nfo(ifp);
+    assert (babel_ifp != NULL);
+
+    babel_ifp->channel = BABEL_IF_CHANNEL_INTERFERING;
+    return CMD_SUCCESS;
+}
+
+DEFUN (babel_set_channel_noninterfering,
+       babel_set_channel_noninterfering_cmd,
+       "babel channel noninterfering",
+       "Babel interface commands\n"
+       "Channel number for diversity routing\n"
+       "Mark channel as noninterfering")
+{
+    struct interface *ifp;
+    babel_interface_nfo *babel_ifp;
+
+    ifp = vty->index;
+    babel_ifp = babel_get_if_nfo(ifp);
+    assert (babel_ifp != NULL);
+
+    babel_ifp->channel = BABEL_IF_CHANNEL_NONINTERFERING;
     return CMD_SUCCESS;
 }
 
@@ -1213,6 +1272,9 @@ babel_if_init ()
     install_element(INTERFACE_NODE, &babel_set_hello_interval_cmd);
     install_element(INTERFACE_NODE, &babel_set_update_interval_cmd);
     install_element(INTERFACE_NODE, &babel_set_rxcost_cmd);
+    install_element(INTERFACE_NODE, &babel_set_channel_cmd);
+    install_element(INTERFACE_NODE, &babel_set_channel_interfering_cmd);
+    install_element(INTERFACE_NODE, &babel_set_channel_noninterfering_cmd);
 
     install_element(INTERFACE_NODE, &babel_authentication_mode_keychain_cmd);
     install_element(INTERFACE_NODE, &no_babel_authentication_mode_keychain_cmd);
@@ -1304,6 +1366,14 @@ interface_config_write (struct vty *vty)
                 vty_out (vty, " babel rxcost %u%s", babel_ifp->cost, VTY_NEWLINE);
                 write++;
             }
+            if (babel_ifp->channel == BABEL_IF_CHANNEL_INTERFERING) {
+                vty_out (vty, " babel channel interfering%s", VTY_NEWLINE);
+                write++;
+            } else if(babel_ifp->channel != BABEL_IF_CHANNEL_NONINTERFERING) {
+                vty_out (vty, " babel channel %d%s", babel_ifp->channel,
+                         VTY_NEWLINE);
+                write++;
+            }
         } else {
             if (CHECK_FLAG (babel_ifp->flags, BABEL_IF_SPLIT_HORIZON)) {
                 vty_out (vty, " babel split-horizon%s", VTY_NEWLINE);
@@ -1311,6 +1381,14 @@ interface_config_write (struct vty *vty)
             }
             if (babel_ifp->cost != BABEL_DEFAULT_RXCOST_WIRELESS) {
                 vty_out (vty, " babel rxcost %u%s", babel_ifp->cost, VTY_NEWLINE);
+                write++;
+            }
+            if (babel_ifp->channel == BABEL_IF_CHANNEL_NONINTERFERING) {
+                vty_out (vty, " babel channel noninterfering%s", VTY_NEWLINE);
+                write++;
+            } else if(babel_ifp->channel != BABEL_IF_CHANNEL_INTERFERING) {
+                vty_out (vty, " babel channel %d%s", babel_ifp->channel,
+                         VTY_NEWLINE);
                 write++;
             }
         }

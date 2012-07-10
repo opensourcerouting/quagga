@@ -88,6 +88,23 @@ Specifies the time after which important messages are resent when
 avoiding a black-hole.  The default is 2000@dmn{ms}.
 @end deffn
 
+@deffn Command {babel diversity} {}
+@deffnx Command {no babel diversity} {}
+Enable or disable routing using radio frequency diversity.  This is
+highly recommended in networks with many wireless nodes.
+
+If you enable this, you will probably want to set @code{babel
+diversity-factor} and @code{babel channel} below.
+@end deffn
+
+@deffn Command {babel diversity-factor <1-256>} {}
+Sets the multiplicative factor used for diversity routing, in units of
+1/256; lower values cause diversity to play a more important role in
+route selection.  The default it 256, which means that diversity plays
+no role in route selection; you will probably want to set that to 128
+or less on nodes with multiple independent radios.
+@end deffn
+
 @deffn {Babel Command} {network @var{ifname}} {}
 @deffnx {Babel Command} {no network @var{ifname}} {}
 Enable or disable Babel on the given interface.
@@ -124,6 +141,21 @@ Specifies the time in milliseconds between two scheduled updates.
 Since Babel makes extensive use of triggered updates, this can be set
 to fairly high values on links with little packet loss.  The default
 is 20000@dmn{ms}.
+@end deffn
+
+@deffn {Interface Command} {babel channel <1-254>}
+@deffnx {Interface Command} {babel channel interfering}
+@deffnx {Interface Command} {babel channel noninterfering}
+Set the channel number that diversity routing uses for this interface
+(see @code{babel diversity} above).  Noninterfering interfaces are
+assumed to only interfere with themselves, interfering interfaces are
+assumed to interfere with all other channels except noninterfering
+channels, and interfaces with a channel number interfere with
+interfering interfaces and interfaces with the same channel number.
+The default is @samp{babel channel interfering} for wireless
+interfaces, and @samp{babel channel noninterfering} for wired
+interfaces.  This is reset when the wired/wireless status of an
+interface is changed.
 @end deffn
 
 @deffn {Interface Command} {babel rxcost <1-65534>}

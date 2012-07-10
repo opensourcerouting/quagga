@@ -41,7 +41,7 @@ struct babel_route **routes = NULL;
 static int route_slots = 0, max_route_slots = 0;
 int kernel_metric = 0;
 int diversity_kind = DIVERSITY_NONE;
-int diversity_factor = 256;     /* in units of 1/256 */
+int diversity_factor = BABEL_DEFAULT_DIVERSITY_FACTOR;
 int keep_unfeasible = 0;
 
 /* We maintain a list of "slots", ordered by prefix.  Every slot
