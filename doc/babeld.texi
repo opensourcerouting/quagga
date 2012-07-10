@@ -83,6 +83,11 @@ counting outgoing packets as long as babeld keeps running.
 Enable or disable Babel routing.
 @end deffn
 
+@deffn Command {babel resend-delay <20-655340>} {}
+Specifies the time after which important messages are resent when
+avoiding a black-hole.  The default is 2000@dmn{ms}.
+@end deffn
+
 @deffn {Babel Command} {network @var{ifname}} {}
 @deffnx {Babel Command} {no network @var{ifname}} {}
 Enable or disable Babel on the given interface.
