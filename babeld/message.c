@@ -439,7 +439,7 @@ parse_packet(const unsigned char *from, struct interface *ifp,
                     goto done;
             }
 
-            if((ifp->flags & BABEL_IF_FARAWAY)) {
+            if((babel_get_if_nfo(ifp)->flags & BABEL_IF_FARAWAY)) {
                 channels[0] = 0;
             } else {
                 /* This will be overwritten by parse_route_attributes below. */
