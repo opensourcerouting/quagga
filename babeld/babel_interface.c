@@ -588,6 +588,35 @@ DEFUN (no_babel_authentication,
     return CMD_SUCCESS;
 }
 
+DEFUN (babel_authentication_rxrequired,
+       babel_authentication_rxrequired_cmd,
+       "babel authentication rx-required",
+       "Babel interface commands\n"
+       "Packet authentication\n"
+       "Require successful Rx authentication\n")
+{
+    struct interface *ifp = vty->index;
+    babel_interface_nfo *babel_ifp = babel_get_if_nfo (ifp);
+
+    babel_ifp->authrxreq = 1;
+    return CMD_SUCCESS;
+}
+
+DEFUN (no_babel_authentication_rxrequired,
+       no_babel_authentication_rxrequired_cmd,
+       "no babel authentication rx-required",
+       NO_STR
+       "Babel interface commands\n"
+       "Packet authentication\n"
+       "Require successful Rx authentication\n")
+{
+    struct interface *ifp = vty->index;
+    babel_interface_nfo *babel_ifp = babel_get_if_nfo (ifp);
+
+    babel_ifp->authrxreq = 0;
+    return CMD_SUCCESS;
+}
+
 /* This should be no more than half the hello interval, so that hellos
    aren't sent late.  The result is in milliseconds. */
 unsigned
@@ -1049,6 +1078,8 @@ babel_if_init ()
     install_element(INTERFACE_NODE, &babel_authentication_mode_keychain_cmd);
     install_element(INTERFACE_NODE, &no_babel_authentication_mode_keychain_cmd);
     install_element(INTERFACE_NODE, &no_babel_authentication_cmd);
+    install_element(INTERFACE_NODE, &babel_authentication_rxrequired_cmd);
+    install_element(INTERFACE_NODE, &no_babel_authentication_rxrequired_cmd);
 
     /* "show babel ..." commands */
     install_element(VIEW_NODE, &show_babel_interface_cmd);
@@ -1134,6 +1165,12 @@ interface_config_write (struct vty *vty)
                      LOOKUP (hash_algo_cli_str, csa->hash_algo), csa->keychain_name, VTY_NEWLINE);
             write++;
         }
+        /* suppress the default "babel authentication rx-required" */
+        if (! babel_ifp->authrxreq)
+        {
+            vty_out (vty, " no babel authentication rx-required%s", VTY_NEWLINE);
+            write++;
+        }
         vty_out (vty, "!%s", VTY_NEWLINE);
         write++;
     }
@@ -1178,6 +1215,7 @@ babel_interface_allocate (void)
     babel_set_wired_internal(babel_ifp, 0);
     babel_ifp->csalist = list_new();
     babel_ifp->csalist->del = babel_csa_item_free;
+    babel_ifp->authrxreq = 1;
 
     return babel_ifp;
 }

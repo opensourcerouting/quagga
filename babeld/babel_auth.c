@@ -480,7 +480,7 @@ int babel_auth_check_packet
   {
     stream_free (packet);
     stats.auth_recv_ng_pcts++;
-    return MSG_NG;
+    return babel_ifp->authrxreq ? MSG_NG : MSG_OK;
   }
   /* Pin' := Pin; pad Pin' */
   padded = babel_auth_pad_packet (packet, from);
@@ -510,7 +510,7 @@ int babel_auth_check_packet
             anm->last_pc, anm->last_ts);
   }
   stream_free (packet);
-  return result;
+  return babel_ifp->authrxreq ? result : MSG_OK;
 }
 
 /* Return one of link-local IPv6 addresses belonging to the given interface or

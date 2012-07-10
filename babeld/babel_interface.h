@@ -68,6 +68,7 @@ struct babel_interface {
     struct access_list *list[BABEL_FILTER_MAX];               /* Access-list. */
     struct prefix_list *prefix[BABEL_FILTER_MAX];             /* Prefix-list. */
     struct list *csalist;                                     /* list of CSAs */
+    unsigned char authrxreq;    /* require authentication of received packets */
 };
 
 typedef struct babel_interface babel_interface_nfo;

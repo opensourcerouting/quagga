@@ -122,6 +122,22 @@ time of this writing and require Quagga to be built with gcrypt library.
 Remove all configured security associations (CSAs) from the current interface.
 @end deffn
 
+@deffn {Interface Command} {babel authentication rx-required} {}
+Configure an authenticated (with CSAs) Babel interface so, that an incoming
+packet must pass all usual authentication checks before being processed at Babel
+protocol level. If the packet does not pass any of the normally required checks,
+it is discarded. This setting is the default.
+@end deffn
+
+@deffn {Interface Command} {no babel authentication rx-required} {}
+Configure an authenticated (with CSAs) Babel interface so, that an incoming
+packet is tried against usual authentication checks, but then anyway processed
+at Babel protocol level regardless of checks results. This mode is mainly
+purposed for debugging and migration cases. It effectively cancels packet
+authentication, but keeps statistics and logging reflecting live results of
+authentication checks.
+@end deffn
+
 @deffn {Babel Command} {babel resend-delay <20-655340>}
 Specifies the time in milliseconds after which an ``important''
 request or update will be resent.  The default is 2000@dmn{ms}.  You
