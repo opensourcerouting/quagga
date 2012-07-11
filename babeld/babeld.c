@@ -547,8 +547,8 @@ babel_distribute_update (struct distribute *dist)
 {
     struct interface *ifp;
     babel_interface_nfo *babel_ifp;
-    struct access_list *alist;
-    struct prefix_list *plist;
+    int type;
+    int family = AFI_IP6;
 
     if (! dist->ifname)
         return;
@@ -559,44 +559,17 @@ babel_distribute_update (struct distribute *dist)
 
     babel_ifp = babel_get_if_nfo(ifp);
 
-    if (dist->list[DISTRIBUTE_IN]) {
-        alist = access_list_lookup (AFI_IP6, dist->list[DISTRIBUTE_IN]);
-        if (alist)
-            babel_ifp->list[BABEL_FILTER_IN] = alist;
+    for (type = 0; type < DISTRIBUTE_MAX; type++) {
+        if (dist->list[type])
+            babel_ifp->list[type] = access_list_lookup (family,
+                                                        dist->list[type]);
         else
-            babel_ifp->list[BABEL_FILTER_IN] = NULL;
-    } else {
-        babel_ifp->list[BABEL_FILTER_IN] = NULL;
-    }
-
-    if (dist->list[DISTRIBUTE_OUT]) {
-        alist = access_list_lookup (AFI_IP6, dist->list[DISTRIBUTE_OUT]);
-        if (alist)
-            babel_ifp->list[BABEL_FILTER_OUT] = alist;
+            babel_ifp->list[type] = NULL;
+        if (dist->prefix[type])
+            babel_ifp->prefix[type] = prefix_list_lookup (family,
+                                                          dist->prefix[type]);
         else
-            babel_ifp->list[BABEL_FILTER_OUT] = NULL;
-    } else {
-        babel_ifp->list[BABEL_FILTER_OUT] = NULL;
-    }
-
-    if (dist->prefix[DISTRIBUTE_IN]) {
-        plist = prefix_list_lookup (AFI_IP6, dist->prefix[DISTRIBUTE_IN]);
-        if (plist)
-            babel_ifp->prefix[BABEL_FILTER_IN] = plist;
-        else
-            babel_ifp->prefix[BABEL_FILTER_IN] = NULL;
-    } else {
-        babel_ifp->prefix[BABEL_FILTER_IN] = NULL;
-    }
-
-    if (dist->prefix[DISTRIBUTE_OUT]) {
-        plist = prefix_list_lookup (AFI_IP6, dist->prefix[DISTRIBUTE_OUT]);
-        if (plist)
-            babel_ifp->prefix[BABEL_FILTER_OUT] = plist;
-        else
-            babel_ifp->prefix[BABEL_FILTER_OUT] = NULL;
-    } else {
-        babel_ifp->prefix[BABEL_FILTER_OUT] = NULL;
+            babel_ifp->prefix[type] = NULL;
     }
 }
 
