@@ -548,7 +548,7 @@ babel_distribute_update (struct distribute *dist)
     struct interface *ifp;
     babel_interface_nfo *babel_ifp;
     int type;
-    int family = AFI_IP6;
+    int family;
 
     if (! dist->ifname)
         return;
@@ -560,6 +560,8 @@ babel_distribute_update (struct distribute *dist)
     babel_ifp = babel_get_if_nfo(ifp);
 
     for (type = 0; type < DISTRIBUTE_MAX; type++) {
+        family = type == DISTRIBUTE_V4_IN || type == DISTRIBUTE_V4_OUT ?
+                  AFI_IP : AFI_IP6;
         if (dist->list[type])
             babel_ifp->list[type] = access_list_lookup (family,
                                                         dist->list[type]);

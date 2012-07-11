@@ -38,14 +38,17 @@ babel_filter(int output, const unsigned char *prefix, unsigned short plen,
     struct distribute *dist;
     struct access_list *alist;
     struct prefix_list *plist;
-    int distribute = output ? DISTRIBUTE_OUT : DISTRIBUTE_IN;
+    int distribute;
 
     p.family = v4mapped(prefix) ? AF_INET : AF_INET6;
     p.prefixlen = v4mapped(prefix) ? plen - 96 : plen;
-    if (p.family == AF_INET)
+    if (p.family == AF_INET) {
         uchar_to_inaddr(&p.u.prefix4, prefix);
-    else
+        distribute = output ? DISTRIBUTE_V4_OUT : DISTRIBUTE_V4_IN;
+    } else {
         uchar_to_in6addr(&p.u.prefix6, prefix);
+        distribute = output ? DISTRIBUTE_V6_OUT : DISTRIBUTE_V6_IN;
+    }
 
     if (babel_ifp != NULL && babel_ifp->list[distribute]) {
         if (access_list_apply (babel_ifp->list[distribute], &p)

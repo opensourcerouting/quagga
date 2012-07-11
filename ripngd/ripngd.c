@@ -482,7 +482,7 @@ ripng_filter (int ripng_distribute, struct prefix_ipv6 *p,
   struct access_list *alist;
   struct prefix_list *plist;
   int distribute = ripng_distribute == RIPNG_FILTER_OUT ?
-      DISTRIBUTE_OUT : DISTRIBUTE_IN;
+      DISTRIBUTE_V6_OUT : DISTRIBUTE_V6_IN;
   const char *inout = ripng_distribute == RIPNG_FILTER_OUT ? "out" : "in";
 
   /* Input distribute-list filtering. */
@@ -2626,9 +2626,9 @@ ripng_distribute_update (struct distribute *dist)
 
   ri = ifp->info;
 
-  if (dist->list[DISTRIBUTE_IN])
+  if (dist->list[DISTRIBUTE_V6_IN])
     {
-      alist = access_list_lookup (AFI_IP6, dist->list[DISTRIBUTE_IN]);
+      alist = access_list_lookup (AFI_IP6, dist->list[DISTRIBUTE_V6_IN]);
       if (alist)
 	ri->list[RIPNG_FILTER_IN] = alist;
       else
@@ -2637,9 +2637,9 @@ ripng_distribute_update (struct distribute *dist)
   else
     ri->list[RIPNG_FILTER_IN] = NULL;
 
-  if (dist->list[DISTRIBUTE_OUT])
+  if (dist->list[DISTRIBUTE_V6_OUT])
     {
-      alist = access_list_lookup (AFI_IP6, dist->list[DISTRIBUTE_OUT]);
+      alist = access_list_lookup (AFI_IP6, dist->list[DISTRIBUTE_V6_OUT]);
       if (alist)
 	ri->list[RIPNG_FILTER_OUT] = alist;
       else
@@ -2648,9 +2648,9 @@ ripng_distribute_update (struct distribute *dist)
   else
     ri->list[RIPNG_FILTER_OUT] = NULL;
 
-  if (dist->prefix[DISTRIBUTE_IN])
+  if (dist->prefix[DISTRIBUTE_V6_IN])
     {
-      plist = prefix_list_lookup (AFI_IP6, dist->prefix[DISTRIBUTE_IN]);
+      plist = prefix_list_lookup (AFI_IP6, dist->prefix[DISTRIBUTE_V6_IN]);
       if (plist)
 	ri->prefix[RIPNG_FILTER_IN] = plist;
       else
@@ -2659,9 +2659,9 @@ ripng_distribute_update (struct distribute *dist)
   else
     ri->prefix[RIPNG_FILTER_IN] = NULL;
 
-  if (dist->prefix[DISTRIBUTE_OUT])
+  if (dist->prefix[DISTRIBUTE_V6_OUT])
     {
-      plist = prefix_list_lookup (AFI_IP6, dist->prefix[DISTRIBUTE_OUT]);
+      plist = prefix_list_lookup (AFI_IP6, dist->prefix[DISTRIBUTE_V6_OUT]);
       if (plist)
 	ri->prefix[RIPNG_FILTER_OUT] = plist;
       else
