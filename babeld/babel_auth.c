@@ -63,8 +63,6 @@ struct babel_esa_item
 };
 
 /* local routing process variables */
-static u_int16_t auth_packetcounter;
-static u_int32_t auth_timestamp;
 static unsigned char ts_base;
 static u_int32_t anm_timeout;
 static struct list *anmlist;
@@ -552,21 +550,21 @@ babel_auth_got_source_address (const struct interface *ifp, unsigned char * addr
 
 /* Bump local routing process PC/TS variables before authenticating next packet. */
 static void
-babel_auth_bump_pcts (const time_t now)
+babel_auth_bump_pcts (struct babel_interface *babel_ifp, const time_t now)
 {
   switch (ts_base)
   {
   case BABEL_TS_BASE_UNIX:
-    if (now > auth_timestamp)
+    if (now > babel_ifp->auth_timestamp)
     {
-      auth_timestamp = now;
-      auth_packetcounter = 0;
+      babel_ifp->auth_timestamp = now;
+      babel_ifp->auth_packetcounter = 0;
       return;
     }
     /* otherwise keep counting */
   case BABEL_TS_BASE_ZERO:
-    if (++auth_packetcounter == 0)
-      ++auth_timestamp;
+    if (++babel_ifp->auth_packetcounter == 0)
+      ++babel_ifp->auth_timestamp;
     return;
   }
 }
@@ -614,13 +612,13 @@ int babel_auth_make_packet (struct interface *ifp, unsigned char * body, const u
   stream_putw (packet, 0); /* body length placeholder */
   stream_put (packet, body, body_len);
   /* append PC/TS TLV */
-  babel_auth_bump_pcts (now);
+  babel_auth_bump_pcts (babel_ifp, now);
   stream_putc (packet, MESSAGE_PCTS);
   stream_putc (packet, 6);
-  stream_putw (packet, auth_packetcounter);
-  stream_putl (packet, auth_timestamp);
+  stream_putw (packet, babel_ifp->auth_packetcounter);
+  stream_putl (packet, babel_ifp->auth_timestamp);
   debugf (BABEL_DEBUG_AUTH, "%s: appended PC/TS TLV (%u/%u)", __func__,
-          auth_packetcounter, auth_timestamp);
+          babel_ifp->auth_packetcounter, babel_ifp->auth_timestamp);
   /* HD: append up to MaxDigestsOut placeholder TLVs */
   hd_done = 0;
   for (ALL_LIST_ELEMENTS_RO (esalist, node, esa))
@@ -688,14 +686,10 @@ show_babel_auth_parameters (struct vty *vty)
     vty_out(vty,
             "MaxDigestsIn            = %u%s"
             "MaxDigestsOut           = %u%s"
-            "Timestamp               = %u%s"
-            "Packet counter          = %u%s"
             "Timestamp base          = %s%s"
             "Memory timeout          = %u%s",
             BABEL_MAXDIGESTSIN, VTY_NEWLINE,
             BABEL_MAXDIGESTSOUT, VTY_NEWLINE,
-            auth_timestamp, VTY_NEWLINE,
-            auth_packetcounter, VTY_NEWLINE,
             LOOKUP (ts_base_str, ts_base), VTY_NEWLINE,
             anm_timeout, VTY_NEWLINE);
 }
@@ -859,8 +853,6 @@ babel_auth_init()
   anmlist = list_new();
   anmlist->del = babel_anm_free;
   memset (&stats, 0, sizeof (stats));
-  auth_packetcounter = 0;
-  auth_timestamp = 0;
   anm_timeout = BABEL_DEFAULT_ANM_TIMEOUT;
   ts_base = BABEL_DEFAULT_TS_BASE;
   install_element (BABEL_NODE, &anm_timeout_val_cmd);

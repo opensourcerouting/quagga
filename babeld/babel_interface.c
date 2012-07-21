@@ -876,6 +876,9 @@ show_babel_interface_sub (struct vty *vty, struct interface *ifp)
     vty_out (vty, "%u/%u OK for Rx)%s", listcount (eligible), listcount (keychain->key), VTY_NEWLINE);
     list_delete (eligible);
   }
+  if (listcount (babel_ifp->csalist))
+    vty_out (vty, "    Current TS: %u, current PC: %u%s", babel_ifp->auth_timestamp,
+             babel_ifp->auth_packetcounter, VTY_NEWLINE);
 }
 
 DEFUN (show_babel_interface,
