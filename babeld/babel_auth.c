@@ -260,9 +260,11 @@ babel_esalist_new
 
 /* Return "stream getp" coordinate of PC followed by TS, if the first PC/TS TLV
  * of the given packet exists and passes a constraint check against stored PC/TS
- * values for the address of packet sender. Return -1 otherwise. */
+ * values for the address of packet sender. Return -1 otherwise and update two
+ * pools of stats counters. */
 static int
-babel_auth_check_pcts (struct stream *packet, const u_int16_t stor_pc, const u_int32_t stor_ts)
+babel_auth_check_pcts (struct babel_auth_stats *if_stats, struct stream *packet,
+                       const u_int16_t stor_pc, const u_int32_t stor_ts)
 {
   int ret = -1;
   u_int8_t tlv_type, tlv_length;
@@ -286,11 +288,18 @@ babel_auth_check_pcts (struct stream *packet, const u_int16_t stor_pc, const u_i
     tlv_ts = stream_getl (packet);
     if (tlv_ts > stor_ts || (tlv_ts == stor_ts && tlv_pc > stor_pc))
       ret = stream_get_getp (packet) - 6;
+    else
+    {
+      stats.auth_recv_ng_pcts++;
+      if_stats->auth_recv_ng_pcts++;
+    }
     debugf (BABEL_DEBUG_AUTH, "%s: received PC/TS is (%u/%u), stored is (%u/%u), check %s", __func__,
             tlv_pc, tlv_ts, stor_pc, stor_ts, ret == -1 ? "failed" : "OK");
     /* only the 1st TLV matters */
     return ret;
   }
+  stats.auth_recv_ng_no_pcts++;
+  if_stats->auth_recv_ng_no_pcts++;
   debugf (BABEL_DEBUG_AUTH, "%s: no PC/TS TLV in the packet, check failed", __func__);
   return -1;
 }
@@ -464,11 +473,9 @@ int babel_auth_check_packet
     neigh_pc = anm->last_pc;
     neigh_ts = anm->last_ts;
   }
-  if (-1 == (pcts_getp = babel_auth_check_pcts (packet, neigh_pc, neigh_ts)))
+  if (-1 == (pcts_getp = babel_auth_check_pcts (&babel_ifp->auth_stats, packet, neigh_pc, neigh_ts)))
   {
     stream_free (packet);
-    stats.auth_recv_ng_pcts++;
-    babel_ifp->auth_stats.auth_recv_ng_pcts++;
     return babel_ifp->authrxreq ? MSG_NG : MSG_OK;
   }
   /* Pin' := Pin; pad Pin' */
@@ -478,7 +485,11 @@ int babel_auth_check_packet
   esalist = babel_esalist_new (babel_ifp->csalist, now, keys_valid_for_accept);
   debugf (BABEL_DEBUG_AUTH, "%s: %u ESAs available", __func__, listcount (esalist));
   if (! listcount (esalist))
+  {
+    stats.auth_recv_ng_nokeys++;
+    babel_ifp->auth_stats.auth_recv_ng_nokeys++;
     zlog_warn ("interface %s has no valid keys", ifp->name);
+  }
   /* try Pin HD TLVs against ESA list and Pin' */
   for (ALL_LIST_ELEMENTS_RO (esalist, node, esa))
     if (MSG_OK == (result = babel_auth_try_hd_tlvs (&babel_ifp->auth_stats, packet,
@@ -601,7 +612,11 @@ int babel_auth_make_packet (struct interface *ifp, unsigned char * body, const u
   esalist = babel_esalist_new (babel_ifp->csalist, now, keys_valid_for_send);
   debugf (BABEL_DEBUG_AUTH, "%s: %u ESAs available", __func__, listcount (esalist));
   if (! listcount (esalist))
+  {
+    stats.auth_sent_ng_nokeys++;
+    babel_ifp->auth_stats.auth_sent_ng_nokeys++;
     zlog_warn ("interface %s has no valid keys", ifp->name);
+  }
   debugf (BABEL_DEBUG_AUTH, "%s: original body length is %uB", __func__, body_len);
   /* packet header, original body, authentication TLVs */
   packet = stream_new (4 + body_len + BABEL_MAXAUTHSPACE);
@@ -757,12 +772,15 @@ ALIAS (no_ts_base,
 static void
 show_auth_stats_sub (struct vty *vty, const struct babel_auth_stats stats)
 {
-  const char *format_lu = "%-27s: %lu%s";
+  const char *format_lu = "%-32s: %lu%s";
 
   vty_out (vty, format_lu, "Plain Rx", stats.plain_recv, VTY_NEWLINE);
   vty_out (vty, format_lu, "Plain Tx", stats.plain_sent, VTY_NEWLINE);
-  vty_out (vty, format_lu, "Authenticated Tx", stats.auth_sent, VTY_NEWLINE);
+  vty_out (vty, format_lu, "Authenticated Tx OK", stats.auth_sent, VTY_NEWLINE);
+  vty_out (vty, format_lu, "Authenticated Tx out of keys", stats.auth_sent_ng_nokeys, VTY_NEWLINE);
   vty_out (vty, format_lu, "Authenticated Rx OK", stats.auth_recv_ok, VTY_NEWLINE);
+  vty_out (vty, format_lu, "Authenticated Rx out of keys", stats.auth_recv_ng_nokeys, VTY_NEWLINE);
+  vty_out (vty, format_lu, "Authenticated Rx missing PC/TS", stats.auth_recv_ng_no_pcts, VTY_NEWLINE);
   vty_out (vty, format_lu, "Authenticated Rx bad PC/TS", stats.auth_recv_ng_pcts, VTY_NEWLINE);
   vty_out (vty, format_lu, "Authenticated Rx bad HD", stats.auth_recv_ng_hd, VTY_NEWLINE);
   vty_out (vty, format_lu, "Internal errors", stats.internal_err, VTY_NEWLINE);
