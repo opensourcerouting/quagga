@@ -30,6 +30,18 @@ struct babel_csa_item
   char * keychain_name;
 };
 
+/* authentication statistics */
+struct babel_auth_stats
+{
+  unsigned long plain_sent;
+  unsigned long plain_recv;
+  unsigned long auth_sent;
+  unsigned long auth_recv_ng_pcts;       /* 1st PS/TS TLV fails ANM check     */
+  unsigned long auth_recv_ng_hd;         /* no HD TLV passes ESA check        */
+  unsigned long auth_recv_ok;
+  unsigned long internal_err;
+};
+
 #include "command.h"
 
 #ifdef HAVE_LIBGCRYPT

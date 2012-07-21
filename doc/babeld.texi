@@ -188,9 +188,17 @@ These commands dump various parts of @command{babeld}'s internal state.
 @end deffn
 
 @deffn {Command} {show babel authentication stats} {}
-@deffnx {Command} {clear babel authentication stats} {}
-There are some statistics built during operation of packet authentication
-extension. These commands display and reset those statistics.
+@deffnx {Command} {show babel authentication stats interface} {}
+@deffnx {Command} {show babel authentication stats interface @var{ifname}} {}
+Display authentication statistics counters of the Babel protocol instance, of
+every Babel-enabled interface or the specified Babel interface respectively.
+@end deffn
+
+@deffn {Command} {clear babel authentication stats} {}
+@deffnx {Command} {clear babel authentication stats interface} {}
+@deffnx {Command} {clear babel authentication stats interface @var{ifname}} {}
+Reset authentication statistics counters of the Babel protocol instance, of
+every Babel-enabled interface or the specified Babel interface respectively.
 @end deffn
 
 @deffn {Command} {show babel authentication memory} {}

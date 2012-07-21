@@ -66,19 +66,6 @@ struct babel_esa_item
 static unsigned char ts_base;
 static u_int32_t anm_timeout;
 static struct list *anmlist;
-
-/* statistics */
-struct babel_auth_stats
-{
-  unsigned long plain_sent;
-  unsigned long plain_recv;
-  unsigned long auth_sent;
-  unsigned long auth_recv_ng_pcts;
-  unsigned long auth_recv_ng_hd;
-  unsigned long auth_recv_ok;
-  unsigned long internal_err;
-};
-
 static struct babel_auth_stats stats;
 
 static const struct message ts_base_cli_str[] =
@@ -351,6 +338,7 @@ babel_auth_pad_packet (struct stream *packet, const unsigned char *addr6)
 static int
 babel_auth_try_hd_tlvs
 (
+  struct babel_auth_stats *if_stats,
   struct stream *packet,      /* original packet                  */
   struct stream *padded,      /* padded copy                      */
   struct babel_esa_item *esa, /* current ESA                      */
@@ -401,6 +389,7 @@ babel_auth_try_hd_tlvs
       {
         zlog_err ("%s: hash function error %u", __func__, hash_err);
         stats.internal_err++;
+        if_stats->internal_err++;
         return MSG_NG;
       }
       (*done)++;
@@ -462,6 +451,7 @@ int babel_auth_check_packet
   if (! listcount (babel_ifp->csalist))
   {
     stats.plain_recv++;
+    babel_ifp->auth_stats.plain_recv++;
     return MSG_OK;
   }
   debugf (BABEL_DEBUG_AUTH, "%s: packet length is %uB", __func__, packetlen);
@@ -478,6 +468,7 @@ int babel_auth_check_packet
   {
     stream_free (packet);
     stats.auth_recv_ng_pcts++;
+    babel_ifp->auth_stats.auth_recv_ng_pcts++;
     return babel_ifp->authrxreq ? MSG_NG : MSG_OK;
   }
   /* Pin' := Pin; pad Pin' */
@@ -490,13 +481,17 @@ int babel_auth_check_packet
     zlog_warn ("interface %s has no valid keys", ifp->name);
   /* try Pin HD TLVs against ESA list and Pin' */
   for (ALL_LIST_ELEMENTS_RO (esalist, node, esa))
-    if (MSG_OK == (result = babel_auth_try_hd_tlvs (packet, padded, esa, &digests_done)))
+    if (MSG_OK == (result = babel_auth_try_hd_tlvs (&babel_ifp->auth_stats, packet,
+                                                    padded, esa, &digests_done)))
       break;
   list_delete (esalist);
   stream_free (padded);
   debugf (BABEL_DEBUG_AUTH, "%s: authentication %s", __func__, result == MSG_OK ? "OK" : "failed");
   if (result != MSG_OK)
+  {
     stats.auth_recv_ng_hd++;
+    babel_ifp->auth_stats.auth_recv_ng_hd++;
+  }
   else
   {
     anm = babel_anm_get ((const struct in6_addr *)from, ifp); /* may create new */
@@ -504,6 +499,7 @@ int babel_auth_check_packet
     anm->last_ts = stream_getl_from (packet, pcts_getp + 2);
     anm->last_recv = now;
     stats.auth_recv_ok++;
+    babel_ifp->auth_stats.auth_recv_ok++;
     debugf (BABEL_DEBUG_AUTH, "%s: updated neighbor PC/TS to (%u/%u)", __func__,
             anm->last_pc, anm->last_ts);
   }
@@ -591,11 +587,13 @@ int babel_auth_make_packet (struct interface *ifp, unsigned char * body, const u
   if (! listcount (babel_ifp->csalist))
   {
     stats.plain_sent++;
+    babel_ifp->auth_stats.plain_sent++;
     return body_len;
   }
   if (! babel_auth_got_source_address (ifp, sourceaddr.s6_addr))
   {
     stats.internal_err++;
+    babel_ifp->auth_stats.internal_err++;
     return body_len;
   }
   /* build ESA list */
@@ -658,6 +656,7 @@ int babel_auth_make_packet (struct interface *ifp, unsigned char * body, const u
       stream_free (padded);
       stream_free (packet);
       stats.internal_err++;
+      babel_ifp->auth_stats.internal_err++;
       return body_len;
     }
     if (UNLIKELY (debug & BABEL_DEBUG_AUTH))
@@ -676,6 +675,7 @@ int babel_auth_make_packet (struct interface *ifp, unsigned char * body, const u
   memcpy (body + body_len, stream_get_data (packet) + 4 + body_len, new_body_len - body_len);
   stream_free (packet);
   stats.auth_sent++;
+  babel_ifp->auth_stats.auth_sent++;
   return new_body_len;
 }
 #endif /* HAVE_LIBGCRYPT */
@@ -754,17 +754,11 @@ ALIAS (no_ts_base,
        NO_STR
        "Packet timestamp base")
 
-DEFUN (show_babel_authentication_stats,
-       show_babel_authentication_stats_cmd,
-       "show babel authentication stats",
-       SHOW_STR
-       "Babel information\n"
-       "Packet authentication\n"
-       "Authentication statistics")
+static void
+show_auth_stats_sub (struct vty *vty, const struct babel_auth_stats stats)
 {
   const char *format_lu = "%-27s: %lu%s";
 
-  vty_out (vty, "== Packet authentication statistics ==%s", VTY_NEWLINE);
   vty_out (vty, format_lu, "Plain Rx", stats.plain_recv, VTY_NEWLINE);
   vty_out (vty, format_lu, "Plain Tx", stats.plain_sent, VTY_NEWLINE);
   vty_out (vty, format_lu, "Authenticated Tx", stats.auth_sent, VTY_NEWLINE);
@@ -772,8 +766,72 @@ DEFUN (show_babel_authentication_stats,
   vty_out (vty, format_lu, "Authenticated Rx bad PC/TS", stats.auth_recv_ng_pcts, VTY_NEWLINE);
   vty_out (vty, format_lu, "Authenticated Rx bad HD", stats.auth_recv_ng_hd, VTY_NEWLINE);
   vty_out (vty, format_lu, "Internal errors", stats.internal_err, VTY_NEWLINE);
-  vty_out (vty, format_lu, "ANM records", listcount (anmlist), VTY_NEWLINE);
+}
+
+DEFUN (show_babel_authentication_stats,
+       show_babel_authentication_stats_cmd,
+       "show babel authentication stats",
+       SHOW_STR
+       "Babel information\n"
+       "Packet authentication\n"
+       "Authentication statistics\n")
+{
+  vty_out (vty, "== Authentication statistics for this Babel speaker ==%s", VTY_NEWLINE);
+  show_auth_stats_sub (vty, stats);
   return CMD_SUCCESS;
+}
+
+DEFUN (show_babel_authentication_stats_interface,
+       show_babel_authentication_stats_interface_cmd,
+       "show babel authentication stats interface",
+       SHOW_STR
+       "Babel information\n"
+       "Packet authentication\n"
+       "Authentication statistics\n"
+       "Per-interface statistics\n")
+{
+  struct listnode *node;
+  struct interface *ifp;
+
+  for (ALL_LIST_ELEMENTS_RO (iflist, node, ifp))
+    if (babel_enable_if_lookup (ifp->name) >= 0)
+    {
+      struct babel_interface *babel_ifp = ifp->info;
+      vty_out (vty, "== Authentication statistics for interface %s ==%s", ifp->name, VTY_NEWLINE);
+      show_auth_stats_sub (vty, babel_ifp->auth_stats);
+    }
+  return CMD_SUCCESS;
+}
+
+DEFUN (show_babel_authentication_stats_interface_val,
+       show_babel_authentication_stats_interface_val_cmd,
+       "show babel authentication stats interface IFNAME",
+       SHOW_STR
+       "Babel information\n"
+       "Packet authentication\n"
+       "Authentication statistics\n"
+       "Per-interface statistics\n"
+       "Interface name\n")
+{
+  struct listnode *node;
+  struct interface *ifp;
+
+  for (ALL_LIST_ELEMENTS_RO (iflist, node, ifp))
+    if (! strcmp (argv[0], ifp->name))
+    {
+      struct babel_interface *babel_ifp = ifp->info;
+
+      if (babel_enable_if_lookup (ifp->name) < 0)
+      {
+        vty_out (vty, "Interface %s is not a Babel interface%s", argv[0], VTY_NEWLINE);
+        return CMD_WARNING;
+      }
+      vty_out (vty, "== Authentication statistics for interface %s ==%s", argv[0], VTY_NEWLINE);
+      show_auth_stats_sub (vty, babel_ifp->auth_stats);
+      return CMD_SUCCESS;
+    }
+  vty_out (vty, "Interface %s not found%s", argv[0], VTY_NEWLINE);
+  return CMD_WARNING;
 }
 
 DEFUN (clear_babel_authentication_stats,
@@ -785,6 +843,57 @@ DEFUN (clear_babel_authentication_stats,
        "Authentication statistics")
 {
   memset (&stats, 0, sizeof (stats));
+  return CMD_SUCCESS;
+}
+
+DEFUN (clear_babel_authentication_stats_interface_val,
+       clear_babel_authentication_stats_interface_val_cmd,
+       "clear babel authentication stats interface IFNAME",
+       CLEAR_STR
+       "Babel information\n"
+       "Packet authentication\n"
+       "Authentication statistics\n"
+       "Per-interface statistics\n"
+       "Interface name\n")
+{
+  struct listnode *node;
+  struct interface *ifp;
+
+  for (ALL_LIST_ELEMENTS_RO (iflist, node, ifp))
+    if (! strcmp (argv[0], ifp->name))
+    {
+      struct babel_interface *babel_ifp = ifp->info;
+
+      if (babel_enable_if_lookup (ifp->name) < 0)
+      {
+        vty_out (vty, "Interface %s is not a Babel interface%s", argv[0], VTY_NEWLINE);
+        return CMD_WARNING;
+      }
+      memset (&babel_ifp->auth_stats, 0, sizeof (struct babel_auth_stats));
+      return CMD_SUCCESS;
+    }
+  vty_out (vty, "Interface %s not found%s", argv[0], VTY_NEWLINE);
+  return CMD_WARNING;
+}
+
+DEFUN (clear_babel_authentication_stats_interface,
+       clear_babel_authentication_stats_interface_cmd,
+       "clear babel authentication stats interface",
+       CLEAR_STR
+       "Babel information\n"
+       "Packet authentication\n"
+       "Authentication statistics\n"
+       "Per-interface statistics\n")
+{
+  struct listnode *node;
+  struct interface *ifp;
+
+  for (ALL_LIST_ELEMENTS_RO (iflist, node, ifp))
+    if (babel_enable_if_lookup (ifp->name) >= 0)
+    {
+      struct babel_interface *babel_ifp = ifp->info;
+      memset (&babel_ifp->auth_stats, 0, sizeof (struct babel_auth_stats));
+    }
   return CMD_SUCCESS;
 }
 
@@ -862,9 +971,15 @@ babel_auth_init()
   install_element (BABEL_NODE, &no_ts_base_val_cmd);
   install_element (BABEL_NODE, &no_ts_base_cmd);
   install_element (VIEW_NODE, &show_babel_authentication_stats_cmd);
+  install_element (VIEW_NODE, &show_babel_authentication_stats_interface_cmd);
+  install_element (VIEW_NODE, &show_babel_authentication_stats_interface_val_cmd);
   install_element (VIEW_NODE, &show_babel_authentication_memory_cmd);
   install_element (ENABLE_NODE, &show_babel_authentication_stats_cmd);
+  install_element (ENABLE_NODE, &show_babel_authentication_stats_interface_cmd);
+  install_element (ENABLE_NODE, &show_babel_authentication_stats_interface_val_cmd);
   install_element (ENABLE_NODE, &show_babel_authentication_memory_cmd);
   install_element (ENABLE_NODE, &clear_babel_authentication_stats_cmd);
+  install_element (ENABLE_NODE, &clear_babel_authentication_stats_interface_cmd);
+  install_element (ENABLE_NODE, &clear_babel_authentication_stats_interface_val_cmd);
   install_element (ENABLE_NODE, &clear_babel_authentication_memory_cmd);
 }

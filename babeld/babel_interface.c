@@ -40,12 +40,10 @@ THE SOFTWARE.
 #include "neighbour.h"
 #include "route.h"
 #include "xroute.h"
-#include "babel_auth.h"
 
 
 #define IS_ENABLE(ifp) (babel_enable_if_lookup(ifp->name) >= 0)
 
-static int babel_enable_if_lookup (const char *ifname);
 static int babel_enable_if_add (const char *ifname);
 static int babel_enable_if_delete (const char *ifname);
 static int interface_recalculate(struct interface *ifp);
@@ -218,7 +216,7 @@ babel_interface_address_delete (int cmd, struct zclient *client,
 }
 
 /* Lookup function. */
-static int
+int
 babel_enable_if_lookup (const char *ifname)
 {
     unsigned int i;

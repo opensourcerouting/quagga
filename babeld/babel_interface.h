@@ -26,6 +26,7 @@ THE SOFTWARE.
 #include <zebra.h>
 #include "zclient.h"
 #include "vty.h"
+#include "babel_auth.h"
 
 #define CONFIG_DEFAULT 0
 #define CONFIG_NO 1
@@ -71,6 +72,7 @@ struct babel_interface {
     unsigned char authrxreq;    /* require authentication of received packets */
     u_int16_t auth_packetcounter;
     u_int32_t auth_timestamp;
+    struct babel_auth_stats auth_stats;
 };
 
 typedef struct babel_interface babel_interface_nfo;
@@ -135,6 +137,7 @@ int is_interface_ll_address(struct interface *ifp, const unsigned char *address)
 /* Send retraction to all, and reset all interfaces statistics. */
 void babel_interface_close_all(void);
 extern int babel_enable_if_config_write (struct vty *);
+extern int babel_enable_if_lookup (const char *);
 
 
 #endif
