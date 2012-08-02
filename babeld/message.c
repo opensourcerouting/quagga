@@ -67,7 +67,7 @@ static const unsigned char tlv_min_length[MESSAGE_MAX + 1] =
     [ MESSAGE_REQUEST    ] =  2,
     [ MESSAGE_MH_REQUEST ] = 14,
     [ MESSAGE_PCTS       ] =  6,
-    [ MESSAGE_HD         ] = 19,
+    [ MESSAGE_HD         ] = 18,
 };
 
 /* Parse a network prefix, encoded in the somewhat baroque compressed
