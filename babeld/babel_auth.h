@@ -51,7 +51,10 @@ struct babel_auth_stats
 #include "cryptohash.h"
 #include "if.h"
 #include "thread.h"
-#define BABEL_MAXDIGESTSOUT 8
+/* As long as MaxDigestsOut is fixed in this implementation, it is set to 4.
+ * This value is safe even for 512-byte packets and leaves enough space for
+ * both multi-domain authentication and key rollover. */
+#define BABEL_MAXDIGESTSOUT 4
 #define BABEL_MAXDIGESTSIN 4
 /* 1 PC/TS, maximum size/amount of HD TLVs, all including Type and Length fields */
 #define BABEL_MAXAUTHSPACE (8 + BABEL_MAXDIGESTSOUT * (4 + HASH_SIZE_MAX))
