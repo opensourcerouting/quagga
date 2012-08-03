@@ -55,7 +55,8 @@ struct babel_anm_item
 /* effective security association */
 struct babel_esa_item
 {
-  unsigned sort_order;
+  unsigned sort_order_major;
+  unsigned sort_order_minor;
   unsigned hash_algo;
   u_int16_t key_id;
   size_t key_len;
@@ -162,11 +163,15 @@ babel_esa_item_free (void * esa_key)
 
 /* List hook function to compare two ESA record. */
 static int
-babel_esa_item_cmp (void *val1, void *val2)
+babel_esa_item_cmp (struct babel_esa_item *val1, struct babel_esa_item *val2)
 {
-  if (((struct babel_esa_item *)val1)->sort_order < ((struct babel_esa_item *)val2)->sort_order)
+  if (val1->sort_order_major < val2->sort_order_major)
     return -1;
-  if (((struct babel_esa_item *)val1)->sort_order > ((struct babel_esa_item *)val2)->sort_order)
+  if (val1->sort_order_major > val2->sort_order_major)
+    return 1;
+  if (val1->sort_order_minor < val2->sort_order_minor)
+    return -1;
+  if (val1->sort_order_minor > val2->sort_order_minor)
     return 1;
   return 0;
 }
@@ -215,13 +220,14 @@ babel_esalist_new
   struct babel_csa_item *csa;
   struct keychain *keychain;
   struct key *key;
+  unsigned csa_counter = 0;
 
   esalist = list_new();
   esalist->del = babel_esa_item_free;
-  esalist->cmp = babel_esa_item_cmp;
+  esalist->cmp = (int (*) (void *, void *)) babel_esa_item_cmp;
   for (ALL_LIST_ELEMENTS_RO (csalist, node1, csa))
   {
-    unsigned sort_order = 0;
+    unsigned key_counter = 0;
     keychain = keychain_lookup (csa->keychain_name);
     if (! keychain)
     {
@@ -247,13 +253,17 @@ babel_esalist_new
       esa->hash_algo = csa->hash_algo;
       esa->key_id = key->index % (UINT16_MAX + 1);
       esa->key_len = strlen (key->string);
-      esa->sort_order = sort_order;
+      /* The output list will have first keys of all CSAs in the order of CSAs,
+       * then all second keys in the same order and so on. */
+      esa->sort_order_major = key_counter;
+      esa->sort_order_minor = csa_counter;
       listnode_add_sort (esalist, esa);
-      debugf (BABEL_DEBUG_AUTH, "%s: using key ID %d with sort order %u", __func__,
-              esa->key_id, sort_order);
-      sort_order++;
+      debugf (BABEL_DEBUG_AUTH, "%s: using key ID %d with sort order %u major %u minor", __func__,
+              esa->key_id, key_counter, csa_counter);
+      key_counter++;
     }
     list_delete (eligible);
+    csa_counter++;
   }
   return esalist;
 }
