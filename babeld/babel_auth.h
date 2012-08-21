@@ -38,9 +38,9 @@ struct babel_auth_stats
   unsigned long auth_sent;
   unsigned long auth_sent_ng_nokeys;     /* ESA list empty in Tx              */
   unsigned long auth_recv_ng_nokeys;     /* ESA list empty on Rx              */
-  unsigned long auth_recv_ng_no_pcts;    /* no PC/TS TLVs in the packet       */
-  unsigned long auth_recv_ng_pcts;       /* 1st PS/TS TLV fails ANM check     */
-  unsigned long auth_recv_ng_hd;         /* no HD TLV passes ESA check        */
+  unsigned long auth_recv_ng_no_tspc;    /* no TS/PC TLVs in the packet       */
+  unsigned long auth_recv_ng_tspc;       /* 1st TS/PC TLV fails ANM check     */
+  unsigned long auth_recv_ng_hmac;       /* no HMAC TLV passes ESA check      */
   unsigned long auth_recv_ok;
   unsigned long internal_err;
 };
@@ -56,7 +56,7 @@ struct babel_auth_stats
  * both multi-domain authentication and key rollover. */
 #define BABEL_MAXDIGESTSOUT 4
 #define BABEL_MAXDIGESTSIN 4
-/* 1 PC/TS, maximum size/amount of HD TLVs, all including Type and Length fields */
+/* 1 TS/PC, maximum size/amount of HMAC TLVs, all including Type and Length fields */
 #define BABEL_MAXAUTHSPACE (8 + BABEL_MAXDIGESTSOUT * (4 + HASH_SIZE_MAX))
 extern int babel_auth_check_packet (struct interface *, const unsigned char *,
                                     const unsigned char *, const u_int16_t);

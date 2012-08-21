@@ -66,8 +66,8 @@ static const unsigned char tlv_min_length[MESSAGE_MAX + 1] =
     [ MESSAGE_UPDATE     ] = 10,
     [ MESSAGE_REQUEST    ] =  2,
     [ MESSAGE_MH_REQUEST ] = 14,
-    [ MESSAGE_PCTS       ] =  6,
-    [ MESSAGE_HD         ] = 18,
+    [ MESSAGE_TSPC       ] =  6,
+    [ MESSAGE_HMAC       ] = 18,
 };
 
 /* Parse a network prefix, encoded in the somewhat baroque compressed
@@ -502,8 +502,8 @@ parse_packet(const unsigned char *from, struct interface *ifp,
                    format_eui64(message + 8), seqno);
             handle_request(neigh, prefix, plen, message[6],
                            seqno, message + 8);
-        } else if(type == MESSAGE_PCTS) {
-        } else if(type == MESSAGE_HD) {
+        } else if(type == MESSAGE_TSPC) {
+        } else if(type == MESSAGE_HMAC) {
         } else {
             debugf(BABEL_DEBUG_COMMON,"Received unknown packet type %d from %s on %s.",
                    type, format_address(from), ifp->name);

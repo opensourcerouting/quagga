@@ -268,12 +268,12 @@ babel_esalist_new
   return esalist;
 }
 
-/* Return "stream getp" coordinate of PC followed by TS, if the first PC/TS TLV
- * of the given packet exists and passes a constraint check against stored PC/TS
+/* Return "stream getp" coordinate of PC followed by TS, if the first TS/PC TLV
+ * of the given packet exists and passes a constraint check against stored TS/PC
  * values for the address of packet sender. Return -1 otherwise and update two
  * pools of stats counters. */
 static int
-babel_auth_check_pcts (struct babel_auth_stats *if_stats, struct stream *packet,
+babel_auth_check_tspc (struct babel_auth_stats *if_stats, struct stream *packet,
                        const u_int16_t stor_pc, const u_int32_t stor_ts)
 {
   int ret = -1;
@@ -288,33 +288,33 @@ babel_auth_check_pcts (struct babel_auth_stats *if_stats, struct stream *packet,
     if (tlv_type == MESSAGE_PAD1)
       continue;
     tlv_length = stream_getc (packet);
-    if (tlv_type != MESSAGE_PCTS)
+    if (tlv_type != MESSAGE_TSPC)
     {
       stream_forward_getp (packet, tlv_length);
       continue;
     }
-    /* PC/TS TLV */
+    /* TS/PC TLV */
     tlv_pc = stream_getw (packet);
     tlv_ts = stream_getl (packet);
     if (tlv_ts > stor_ts || (tlv_ts == stor_ts && tlv_pc > stor_pc))
       ret = stream_get_getp (packet) - 6;
     else
     {
-      stats.auth_recv_ng_pcts++;
-      if_stats->auth_recv_ng_pcts++;
+      stats.auth_recv_ng_tspc++;
+      if_stats->auth_recv_ng_tspc++;
     }
-    debugf (BABEL_DEBUG_AUTH, "%s: received PC/TS is (%u/%u), stored is (%u/%u), check %s", __func__,
-            tlv_pc, tlv_ts, stor_pc, stor_ts, ret == -1 ? "failed" : "OK");
+    debugf (BABEL_DEBUG_AUTH, "%s: received TS/PC is (%u/%u), stored is (%u/%u), check %s", __func__,
+            tlv_ts, tlv_pc, stor_ts, stor_pc, ret == -1 ? "failed" : "OK");
     /* only the 1st TLV matters */
     return ret;
   }
-  stats.auth_recv_ng_no_pcts++;
-  if_stats->auth_recv_ng_no_pcts++;
-  debugf (BABEL_DEBUG_AUTH, "%s: no PC/TS TLV in the packet, check failed", __func__);
+  stats.auth_recv_ng_no_tspc++;
+  if_stats->auth_recv_ng_no_tspc++;
+  debugf (BABEL_DEBUG_AUTH, "%s: no TS/PC TLV in the packet, check failed", __func__);
   return -1;
 }
 
-/* Make a copy of input packet, pad its HD TLVs and return the padded copy. */
+/* Make a copy of input packet, pad its HMAC TLVs and return the padded copy. */
 static struct stream *
 babel_auth_pad_packet (struct stream *packet, const unsigned char *addr6)
 {
@@ -334,7 +334,7 @@ babel_auth_pad_packet (struct stream *packet, const unsigned char *addr6)
       continue;
     tlv_length = stream_getc (packet);
     stream_forward_endp (padded, 1);
-    if (tlv_type != MESSAGE_HD)
+    if (tlv_type != MESSAGE_HMAC)
       stream_forward_endp (padded, tlv_length);
     else
     {
@@ -350,12 +350,12 @@ babel_auth_pad_packet (struct stream *packet, const unsigned char *addr6)
   return padded;
 }
 
-/* Scan the given packet for HD TLVs having Key ID and Length fields fitting
+/* Scan the given packet for HMAC TLVs having Key ID and Length fields fitting
  * the provided ESA. Return 1 if such TLVs exist and at least one has its Digest
  * field matching a locally-computed HMAC digest of the padded version of the
  * packet. Return 0 otherwise. */
 static int
-babel_auth_try_hd_tlvs
+babel_auth_try_hmac_tlvs
 (
   struct babel_auth_stats *if_stats,
   struct stream *packet,      /* original packet                  */
@@ -381,7 +381,7 @@ babel_auth_try_hd_tlvs
     if (tlv_type == MESSAGE_PAD1)
       continue;
     tlv_length = stream_getc (packet);
-    if (tlv_type != MESSAGE_HD || tlv_length != hash_digest_length[esa->hash_algo] + 2)
+    if (tlv_type != MESSAGE_HMAC || tlv_length != hash_digest_length[esa->hash_algo] + 2)
     {
       stream_forward_getp (packet, tlv_length);
       continue;
@@ -422,7 +422,7 @@ babel_auth_try_hd_tlvs
                     (*done == BABEL_MAXDIGESTSIN ? " (last)" : ""), printbuf);
       }
     }
-    debugf (BABEL_DEBUG_AUTH, "%s: HD TLV with key ID %u, digest size %u",
+    debugf (BABEL_DEBUG_AUTH, "%s: HMAC TLV with key ID %u, digest size %u",
             __func__, tlv_key_id, tlv_length - 2);
     /* OK to compare Digest field */
     if (! memcmp (stream_get_data (packet) + stream_get_getp (packet), local_digest, tlv_length - 2))
@@ -441,9 +441,9 @@ babel_auth_try_hd_tlvs
   return MSG_NG;
 }
 
-/* Check given packet to be authentic, that is, to bear at least one PC/TS TLV,
- * to have the first PC/TS TLV passed ANM check, to bear at least one HD TLV,
- * to have at least one HD TLV passed HMAC check (done against the original
+/* Check given packet to be authentic, that is, to bear at least one TS/PC TLV,
+ * to have the first TS/PC TLV passed ANM check, to bear at least one HMAC TLV,
+ * to have at least one HMAC TLV passed HMAC check (done against the original
  * packet after a padding procedure involving the IPv6 address of the sender).
  * Take care of performing a HMAC procedure at most MaxDigestsIn times. */
 int babel_auth_check_packet
@@ -460,7 +460,7 @@ int babel_auth_check_packet
   struct babel_esa_item *esa;
   struct babel_anm_item *anm;
   struct listnode *node;
-  int pcts_getp, result = MSG_NG;
+  int tspc_getp, result = MSG_NG;
   u_int16_t neigh_pc = 0;
   u_int32_t neigh_ts = 0;
   unsigned digests_done = 0;
@@ -477,13 +477,13 @@ int babel_auth_check_packet
   /* original packet */
   packet = stream_new (packetlen);
   stream_put (packet, input, packetlen);
-  /* verify PC/TS before proceeding to expensive checks */
+  /* verify TS/PC before proceeding to expensive checks */
   if (NULL != (anm = babel_anm_lookup ((const struct in6_addr *)from, ifp)))
   {
     neigh_pc = anm->last_pc;
     neigh_ts = anm->last_ts;
   }
-  if (-1 == (pcts_getp = babel_auth_check_pcts (&babel_ifp->auth_stats, packet, neigh_pc, neigh_ts)))
+  if (-1 == (tspc_getp = babel_auth_check_tspc (&babel_ifp->auth_stats, packet, neigh_pc, neigh_ts)))
   {
     stream_free (packet);
     return babel_ifp->authrxreq ? MSG_NG : MSG_OK;
@@ -500,29 +500,29 @@ int babel_auth_check_packet
     babel_ifp->auth_stats.auth_recv_ng_nokeys++;
     zlog_warn ("interface %s has no valid keys", ifp->name);
   }
-  /* try Pin HD TLVs against ESA list and Pin' */
+  /* try Pin HMAC TLVs against ESA list and Pin' */
   for (ALL_LIST_ELEMENTS_RO (esalist, node, esa))
-    if (MSG_OK == (result = babel_auth_try_hd_tlvs (&babel_ifp->auth_stats, packet,
-                                                    padded, esa, &digests_done)))
+    if (MSG_OK == (result = babel_auth_try_hmac_tlvs (&babel_ifp->auth_stats, packet,
+                                                      padded, esa, &digests_done)))
       break;
   list_delete (esalist);
   stream_free (padded);
   debugf (BABEL_DEBUG_AUTH, "%s: authentication %s", __func__, result == MSG_OK ? "OK" : "failed");
   if (result != MSG_OK)
   {
-    stats.auth_recv_ng_hd++;
-    babel_ifp->auth_stats.auth_recv_ng_hd++;
+    stats.auth_recv_ng_hmac++;
+    babel_ifp->auth_stats.auth_recv_ng_hmac++;
   }
   else
   {
     anm = babel_anm_get ((const struct in6_addr *)from, ifp); /* may create new */
-    anm->last_pc = stream_getw_from (packet, pcts_getp);
-    anm->last_ts = stream_getl_from (packet, pcts_getp + 2);
+    anm->last_pc = stream_getw_from (packet, tspc_getp);
+    anm->last_ts = stream_getl_from (packet, tspc_getp + 2);
     anm->last_recv = now;
     stats.auth_recv_ok++;
     babel_ifp->auth_stats.auth_recv_ok++;
-    debugf (BABEL_DEBUG_AUTH, "%s: updated neighbor PC/TS to (%u/%u)", __func__,
-            anm->last_pc, anm->last_ts);
+    debugf (BABEL_DEBUG_AUTH, "%s: updated neighbor TS/PC to (%u/%u)", __func__,
+            anm->last_ts, anm->last_pc);
   }
   stream_free (packet);
   return babel_ifp->authrxreq ? result : MSG_OK;
@@ -530,7 +530,7 @@ int babel_auth_check_packet
 
 /* Return one of link-local IPv6 addresses belonging to the given interface or
  * fail when there is none. The address will be used to pad first 16 bytes of
- * Digest field of HD TLVs.
+ * Digest field of HMAC TLVs.
  *
  * FIXME: In this implementation having more than 1 link-local IPv6 address per
  * Babel interface can cause producing "authenticated" packets, which will never
@@ -565,9 +565,9 @@ babel_auth_got_source_address (const struct interface *ifp, unsigned char * addr
   return 0;
 }
 
-/* Bump local routing process PC/TS variables before authenticating next packet. */
+/* Bump local routing process TS/PC variables before authenticating next packet. */
 static void
-babel_auth_bump_pcts (struct babel_interface *babel_ifp, const time_t now)
+babel_auth_bump_tspc (struct babel_interface *babel_ifp, const time_t now)
 {
   switch (ts_base)
   {
@@ -586,7 +586,7 @@ babel_auth_bump_pcts (struct babel_interface *babel_ifp, const time_t now)
   }
 }
 /* Compute and append authentication TLVs to the given packet and return new
- * packet length. New TLVs are one PC/TS TLV per packet and one HD TLV for each
+ * packet length. New TLVs are one TS/PC TLV per packet and one HMAC TLV for each
  * (but not more than MaxDigestsOut) ESA. HMAC procedure is performed on a copy
  * of the packet after a padding procedure involving the IPv6 address of the
  * sender. */
@@ -597,7 +597,7 @@ int babel_auth_make_packet (struct interface *ifp, unsigned char * body, const u
   struct list *esalist;
   struct babel_esa_item *esa;
   struct listnode *node;
-  unsigned i, hd_done;
+  unsigned i, hmacs_done;
   size_t digest_offset[BABEL_MAXDIGESTSOUT];
   int new_body_len;
   char printbuf[2 * HASH_SIZE_MAX + 1];
@@ -634,27 +634,28 @@ int babel_auth_make_packet (struct interface *ifp, unsigned char * body, const u
   stream_putc (packet, 2);
   stream_putw (packet, 0); /* body length placeholder */
   stream_put (packet, body, body_len);
-  /* append PC/TS TLV */
-  babel_auth_bump_pcts (babel_ifp, now);
-  stream_putc (packet, MESSAGE_PCTS);
+  /* append TS/PC TLV */
+  babel_auth_bump_tspc (babel_ifp, now);
+  stream_putc (packet, MESSAGE_TSPC);
   stream_putc (packet, 6);
   stream_putw (packet, babel_ifp->auth_packetcounter);
   stream_putl (packet, babel_ifp->auth_timestamp);
-  debugf (BABEL_DEBUG_AUTH, "%s: appended PC/TS TLV (%u/%u)", __func__,
-          babel_ifp->auth_packetcounter, babel_ifp->auth_timestamp);
-  /* HD: append up to MaxDigestsOut placeholder TLVs */
-  hd_done = 0;
+  debugf (BABEL_DEBUG_AUTH, "%s: appended TS/PC TLV (%u/%u)", __func__,
+          babel_ifp->auth_timestamp, babel_ifp->auth_packetcounter);
+  /* HMAC: append up to MaxDigestsOut placeholder TLVs */
+  hmacs_done = 0;
   for (ALL_LIST_ELEMENTS_RO (esalist, node, esa))
   {
-    debugf (BABEL_DEBUG_AUTH, "%s: padded HD TLV #%u (%s, ID %u) at offset %zu", __func__, hd_done,
-            LOOKUP (hash_algo_str, esa->hash_algo), esa->key_id, stream_get_endp (packet));
-    stream_putc (packet, MESSAGE_HD); /* type */
+    debugf (BABEL_DEBUG_AUTH, "%s: padded HMAC TLV #%u (%s, ID %u) at offset %zu",
+            __func__, hmacs_done, LOOKUP (hash_algo_str, esa->hash_algo),
+            esa->key_id, stream_get_endp (packet));
+    stream_putc (packet, MESSAGE_HMAC); /* type */
     stream_putc (packet, 2 + hash_digest_length[esa->hash_algo]); /* length */
     stream_putw (packet, esa->key_id); /* key ID */
-    digest_offset[hd_done] = stream_get_endp (packet);
+    digest_offset[hmacs_done] = stream_get_endp (packet);
     stream_put (packet, &sourceaddr.s6_addr, IPV6_MAX_BYTELEN);
     stream_put (packet, NULL, hash_digest_length[esa->hash_algo] - IPV6_MAX_BYTELEN);
-    if (++hd_done == BABEL_MAXDIGESTSOUT)
+    if (++hmacs_done == BABEL_MAXDIGESTSOUT)
       break;
   }
   /* time to fill in new body length */
@@ -664,15 +665,15 @@ int babel_auth_make_packet (struct interface *ifp, unsigned char * body, const u
   /* Pin' := Pin */
   padded = stream_dup (packet);
   /* fill in pending digests */
-  hd_done = 0;
+  hmacs_done = 0;
   for (ALL_LIST_ELEMENTS_RO (esalist, node, esa))
   {
     unsigned hash_err = hash_make_hmac
     (
       esa->hash_algo,
-      stream_get_data (padded), stream_get_endp (padded), /* message */
-      esa->key_secret, esa->key_len,                      /* key     */
-      stream_get_data (packet) + digest_offset[hd_done]   /* result  */
+      stream_get_data (padded), stream_get_endp (padded),  /* message */
+      esa->key_secret, esa->key_len,                       /* key     */
+      stream_get_data (packet) + digest_offset[hmacs_done] /* result  */
     );
     if (hash_err)
     {
@@ -687,11 +688,12 @@ int babel_auth_make_packet (struct interface *ifp, unsigned char * body, const u
     if (UNLIKELY (debug & BABEL_DEBUG_AUTH))
     {
       for (i = 0; i < hash_digest_length[esa->hash_algo]; i++)
-        snprintf (printbuf + i * 2, 3, "%02X", stream_get_data (packet)[digest_offset[hd_done] + i]);
+        snprintf (printbuf + i * 2, 3, "%02X",
+                  stream_get_data (packet)[digest_offset[hmacs_done] + i]);
       zlog_debug ("%s: digest #%u at offset %zu: %s", __func__,
-                  hd_done, digest_offset[hd_done], printbuf);
+                  hmacs_done, digest_offset[hmacs_done], printbuf);
     }
-    if (++hd_done == BABEL_MAXDIGESTSOUT)
+    if (++hmacs_done == BABEL_MAXDIGESTSOUT)
       break;
   }
   list_delete (esalist);
@@ -790,9 +792,9 @@ show_auth_stats_sub (struct vty *vty, const struct babel_auth_stats stats)
   vty_out (vty, format_lu, "Authenticated Tx out of keys", stats.auth_sent_ng_nokeys, VTY_NEWLINE);
   vty_out (vty, format_lu, "Authenticated Rx OK", stats.auth_recv_ok, VTY_NEWLINE);
   vty_out (vty, format_lu, "Authenticated Rx out of keys", stats.auth_recv_ng_nokeys, VTY_NEWLINE);
-  vty_out (vty, format_lu, "Authenticated Rx missing PC/TS", stats.auth_recv_ng_no_pcts, VTY_NEWLINE);
-  vty_out (vty, format_lu, "Authenticated Rx bad PC/TS", stats.auth_recv_ng_pcts, VTY_NEWLINE);
-  vty_out (vty, format_lu, "Authenticated Rx bad HD", stats.auth_recv_ng_hd, VTY_NEWLINE);
+  vty_out (vty, format_lu, "Authenticated Rx missing TS/PC", stats.auth_recv_ng_no_tspc, VTY_NEWLINE);
+  vty_out (vty, format_lu, "Authenticated Rx bad TS/PC", stats.auth_recv_ng_tspc, VTY_NEWLINE);
+  vty_out (vty, format_lu, "Authenticated Rx bad HMAC", stats.auth_recv_ng_hmac, VTY_NEWLINE);
   vty_out (vty, format_lu, "Internal errors", stats.internal_err, VTY_NEWLINE);
 }
 

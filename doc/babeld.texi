@@ -98,7 +98,7 @@ Manage (add or remove) configured security associations (CSAs) for the current
 interface. There may be multiple CSAs configured for an interface.
 @var{keychain} stands for a name of a standard key chain. @var{authmode} stands
 for a HMAC algorithm based on one of the following hash functions of choice.
-A HMAC algorithm uses a secret key and a compound PC/TS number to produce one
+A HMAC algorithm uses a secret key and a compound TS/PC number to produce one
 or more digests for each protocol packet.
 @itemize @bullet
 @item
@@ -154,13 +154,13 @@ The default is 300@dmn{s}.
 @deffn {Babel Command} {ts-base (zero|unixtime)} {}
 @deffnx {Babel Command} {no ts-base [(zero|unixtime)]} {}
 Controls setting of TS (Timestamp) variable of local routing process. TS is
-put into a PC/TS TLV of every packet being authenticated to prevent replay
+put into a TS/PC TLV of every packet being authenticated to prevent replay
 attacks.
 @itemize @bullet
 @item
 @code{unixtime}:
 Configures UNIX time as TS base: makes TS be greater or equal to the current
-UNIX time, which allows for unique PC/TS pairs for the deployed lifetime of
+UNIX time, which allows for unique TS/PC pairs for the deployed lifetime of
 a Babel router. This is the default mode in Quagga.
 @item
 @code{zero}
@@ -205,7 +205,7 @@ every Babel-enabled interface or the specified Babel interface respectively.
 @deffnx {Command} {clear babel authentication memory} {}
 Babel packet authentication extension maintains an internal table known as
 "authentic neighbors memory" (ANM), which is used to protect against packet
-replay attacks. ANM retains PC/TS values of authentic Babel neighbors, both
+replay attacks. ANM retains TS/PC values of authentic Babel neighbors, both
 current and formerly active, for "ANM timeout" period of time.
 
 The commands display and reset ANM records. Resetting ANM records may be
