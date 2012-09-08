@@ -80,7 +80,7 @@ babel_filter(int output, const unsigned char *prefix, unsigned short plen,
     dist = distribute_lookup (NULL);
     if (dist) {
         if (dist->list[distribute]) {
-            alist = access_list_lookup (AFI_IP6, dist->list[distribute]);
+            alist = access_list_lookup (p.family, dist->list[distribute]);
 
             if (alist) {
                 if (access_list_apply (alist, &p) == FILTER_DENY) {
@@ -95,7 +95,7 @@ babel_filter(int output, const unsigned char *prefix, unsigned short plen,
 	    }
 	}
         if (dist->prefix[distribute]) {
-            plist = prefix_list_lookup (AFI_IP6, dist->prefix[distribute]);
+            plist = prefix_list_lookup (p.family, dist->prefix[distribute]);
             if (plist) {
                 if (prefix_list_apply (plist, &p) == PREFIX_DENY) {
                     debugf(BABEL_DEBUG_FILTER,"%s/%d filtered by distribute %s",
