@@ -484,15 +484,9 @@ rip_interface_reset (void)
       ri->auth_type = RIP_NO_AUTH;
 
       if (ri->auth_str)
-	{
-	  free (ri->auth_str);
-	  ri->auth_str = NULL;
-	}
+	  XFREE (MTYPE_RIP_INTERFACE, ri->auth_str);
       if (ri->key_chain)
-	{
-	  free (ri->key_chain);
-	  ri->key_chain = NULL;
-	}
+	  XFREE (MTYPE_RIP_INTERFACE, ri->key_chain);
 
       ri->split_horizon = RIP_NO_SPLIT_HORIZON;
       ri->split_horizon_default = RIP_NO_SPLIT_HORIZON;
@@ -1621,9 +1615,9 @@ DEFUN (ip_rip_authentication_string,
     }
 
   if (ri->auth_str)
-    free (ri->auth_str);
+    XFREE (MTYPE_RIP_INTERFACE, ri->auth_str);
 
-  ri->auth_str = strdup (argv[0]);
+  ri->auth_str = XSTRDUP (MTYPE_RIP_INTERFACE, argv[0]);
 
   return CMD_SUCCESS;
 }
@@ -1644,9 +1638,7 @@ DEFUN (no_ip_rip_authentication_string,
   ri = ifp->info;
 
   if (ri->auth_str)
-    free (ri->auth_str);
-
-  ri->auth_str = NULL;
+    XFREE (MTYPE_RIP_INTERFACE, ri->auth_str);
 
   return CMD_SUCCESS;
 }
@@ -1684,9 +1676,9 @@ DEFUN (ip_rip_authentication_key_chain,
     }
 
   if (ri->key_chain)
-    free (ri->key_chain);
+    XFREE (MTYPE_RIP_INTERFACE, ri->key_chain);
 
-  ri->key_chain = strdup (argv[0]);
+  ri->key_chain = XSTRDUP (MTYPE_RIP_INTERFACE, argv[0]);
 
   return CMD_SUCCESS;
 }
@@ -1707,9 +1699,7 @@ DEFUN (no_ip_rip_authentication_key_chain,
   ri = ifp->info;
 
   if (ri->key_chain)
-    free (ri->key_chain);
-
-  ri->key_chain = NULL;
+    XFREE (MTYPE_RIP_INTERFACE, ri->key_chain);
 
   return CMD_SUCCESS;
 }
@@ -2018,7 +2008,6 @@ static int
 rip_interface_delete_hook (struct interface *ifp)
 {
   XFREE (MTYPE_RIP_INTERFACE, ifp->info);
-  ifp->info = NULL;
   return 0;
 }
 
