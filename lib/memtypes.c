@@ -75,6 +75,7 @@ struct memory_list memory_list_lib[] =
 
 struct memory_list memory_list_zebra[] = 
 {
+  { MTYPE_RTADV,		"Router Advertisement"		},
   { MTYPE_RTADV_PREFIX,		"Router Advertisement Prefix"	},
   { MTYPE_VRF,			"VRF"				},
   { MTYPE_VRF_NAME,		"VRF name"			},
