@@ -188,16 +188,14 @@ struct rtadvconf
   struct rtadv_connprefix ConnpfxConfig;
 };
 
+/* Router advertisement feature. */
+#if defined(HAVE_IPV6) && defined(HAVE_RTADV)
+#define RTADV
 extern void rtadv_config_write (struct vty *, struct interface *);
 extern void rtadv_init (void);
-/* Router advertisement feature. */
-#if (defined(LINUX_IPV6) && (defined(__GLIBC__) && __GLIBC__ >= 2 && __GLIBC_MINOR__ >= 1)) || defined(KAME)
-  #ifdef HAVE_RTADV
-    #define RTADV
 extern void rtadv_if_dump_vty (struct vty *, struct interface *);
 extern void rtadv_if_new_hook (struct rtadvconf *);
 extern void rtadv_refresh_connected (struct interface *);
-  #endif
-#endif
+#endif /* HAVE_IPV6 && HAVE_RTADV */
 
 #endif /* _ZEBRA_RTADV_H */

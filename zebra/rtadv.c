@@ -39,7 +39,7 @@
 
 extern struct zebra_privs_t zserv_privs;
 
-#if defined (HAVE_IPV6) && defined (RTADV)
+#ifdef RTADV
 
 #ifdef OPEN_BSD
 #include <netinet/icmp6.h>
@@ -3349,16 +3349,4 @@ rtadv_if_new_hook (struct rtadvconf *conf)
   rtadv_update_counters();
 }
 
-#else
-void
-rtadv_init (void)
-{
-  /* Empty.*/;
-}
-
-void
-rtadv_config_write (struct vty *vty, struct interface *ifp)
-{
-  /* Empty.*/;
-}
-#endif /* RTADV && HAVE_IPV6 */
+#endif /* RTADV */
