@@ -91,6 +91,7 @@ struct ospf6_prefix
 #define OSPF6_PREFIX_OPTION_LA (1 << 1)  /* Local Address */
 #define OSPF6_PREFIX_OPTION_x  (1 << 2)  /* deprecated, former MultiCast */
 #define OSPF6_PREFIX_OPTION_P  (1 << 3)  /* Propagate (NSSA) */
+#define OSPF6_PREFIX_OPTION_DN (1 << 4)  /* VPN re-advertisement */
 
 /* caddr_t OSPF6_PREFIX_BODY (struct ospf6_prefix *); */
 #define OSPF6_PREFIX_BODY(x) ((caddr_t)(x) + sizeof (struct ospf6_prefix))

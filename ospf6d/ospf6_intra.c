@@ -470,7 +470,7 @@ ospf6_link_lsa_show (struct vty *vty, struct ospf6_lsa *lsa)
   int prefixnum;
   char buf[128], options[32];
   struct ospf6_prefix *prefix;
-  const char *p, *x, *la, *nu;
+  const char *p, *x, *la, *nu, *dn;
   struct in6_addr in6;
 
   link_lsa = (struct ospf6_link_lsa *)
@@ -494,6 +494,8 @@ ospf6_link_lsa_show (struct vty *vty, struct ospf6_lsa *lsa)
           current + OSPF6_PREFIX_SIZE (prefix) > end)
         break;
 
+      dn = (CHECK_FLAG (prefix->prefix_options, OSPF6_PREFIX_OPTION_DN) ?
+           "DN" : "--");
       p = (CHECK_FLAG (prefix->prefix_options, OSPF6_PREFIX_OPTION_P) ?
            "P" : "--");
       x = (CHECK_FLAG (prefix->prefix_options, OSPF6_PREFIX_OPTION_x) ?
@@ -502,8 +504,8 @@ ospf6_link_lsa_show (struct vty *vty, struct ospf6_lsa *lsa)
            "LA" : "--");
       nu = (CHECK_FLAG (prefix->prefix_options, OSPF6_PREFIX_OPTION_NU) ?
            "NU" : "--");
-      vty_out (vty, "     Prefix Options: %s|%s|%s|%s%s",
-               p, x, la, nu, VNL);
+      vty_out (vty, "     Prefix Options: %s|%s|%s|%s|%s%s",
+               dn, p, x, la, nu, VNL);
 
       memset (&in6, 0, sizeof (in6));
       memcpy (&in6, OSPF6_PREFIX_BODY (prefix),
@@ -624,7 +626,7 @@ ospf6_intra_prefix_lsa_show (struct vty *vty, struct ospf6_lsa *lsa)
   char buf[128];
   struct ospf6_prefix *prefix;
   char id[16], adv_router[16];
-  const char *p, *x, *la, *nu;
+  const char *p, *x, *la, *nu, *dn;
   struct in6_addr in6;
 
   intra_prefix_lsa = (struct ospf6_intra_prefix_lsa *)
@@ -650,6 +652,8 @@ ospf6_intra_prefix_lsa_show (struct vty *vty, struct ospf6_lsa *lsa)
           current + OSPF6_PREFIX_SIZE (prefix) > end)
         break;
 
+      dn = (CHECK_FLAG (prefix->prefix_options, OSPF6_PREFIX_OPTION_DN) ?
+           "DN" : "--");
       p = (CHECK_FLAG (prefix->prefix_options, OSPF6_PREFIX_OPTION_P) ?
            "P" : "--");
       x = (CHECK_FLAG (prefix->prefix_options, OSPF6_PREFIX_OPTION_x) ?
@@ -658,8 +662,8 @@ ospf6_intra_prefix_lsa_show (struct vty *vty, struct ospf6_lsa *lsa)
            "LA" : "--");
       nu = (CHECK_FLAG (prefix->prefix_options, OSPF6_PREFIX_OPTION_NU) ?
            "NU" : "--");
-      vty_out (vty, "     Prefix Options: %s|%s|%s|%s%s",
-               p, x, la, nu, VNL);
+      vty_out (vty, "     Prefix Options: %s|%s|%s|%s|%s%s",
+               dn, p, x, la, nu, VNL);
 
       memset (&in6, 0, sizeof (in6));
       memcpy (&in6, OSPF6_PREFIX_BODY (prefix),
