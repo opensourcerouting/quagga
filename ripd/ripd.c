@@ -705,11 +705,6 @@ rip_response_process (struct rip_packet *packet, int size,
       return;
     }
 
-  /* It is also worth checking to see whether the response is from one
-     of the router's own addresses. */
-
-  ; /* Alredy done in rip_read () */
-
   /* Update RIP peer. */
   rip_peer_update (from, packet->version);
 
