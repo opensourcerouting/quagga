@@ -2159,8 +2159,8 @@ ospf_recv_packet (int fd, struct interface **ifp, struct stream *ibuf)
   if ((unsigned int)ret < sizeof(iph)) /* ret must be > 0 now */
     {
       zlog_warn("ospf_recv_packet: discarding runt packet of length %d "
-		"(ip header size is %u)",
-		ret, (u_int)sizeof(iph));
+		"(ip header size is %zu)",
+		ret, sizeof(iph));
       return NULL;
     }
   
