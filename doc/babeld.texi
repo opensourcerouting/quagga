@@ -18,13 +18,14 @@ Quagga implements Babel as described in RFC6126.
 
 @menu
 * Configuring babeld::          
+* Babel authentication::        
 * Babel configuration::         
 * Babel redistribution::        
 * Show Babel information::      
 * Babel debugging commands::    
 @end menu
 
-@node Configuring babeld, Babel configuration, Babel, Babel
+@node Configuring babeld, Babel authentication, Babel, Babel
 @section Configuring babeld
 
 The @command{babeld} daemon can be invoked with any of the common
@@ -37,7 +38,44 @@ must be too.
 Configuration of @command{babeld} is done in its configuration file
 @file{babeld.conf}.
 
-@node Babel configuration, Babel redistribution, Configuring babeld, Babel
+@node Babel authentication, Babel configuration, Configuring babeld, Babel
+@section Babel authentication
+Quagga babeld implements protocol packet authentication mechanism as defined in
+draft-ovsienko-babel-hmac-authentication (work in progress). This mechanism is
+implemented with the following set of parameters:
+@itemize @bullet
+@item
+Supported hash algorithms: RIPEMD-160, SHA-256, SHA-384, SHA-512 and Whirlpool.
+@item
+MaxDigestsIn: fixed to 4 at compile-time.
+@item
+MaxDigestsOut: fixed to 4 at compile-time.
+@item
+RxAuthRequired: is specific to each interface and can be changed through CLI or
+configuration file.
+@item
+ANM Table: not retained across speaker restarts, can be retrieved and reset (all
+entries at once) in runtime.
+@item
+ANM Timeout: is specific to the whole protocol instance, has a default value of
+300 and can be changed through CLI or configuration file.
+@item
+Ordering of items within each interface's list of CSAs: arbitrary as set by
+operator.
+@item
+Ordering of items within each KeyChain list: fixed to the sort order of
+LocalKeyID. LocalKeyID must be unique within each KeyChain list.
+@item
+Multiple link-local IPv6 addresses per an interface: not supported.
+@item
+TS/PC number updates method: configured for the whole protocol instance through
+CLI or configuration file to one of two following methods. The default method
+is based on monotonic UNIX time and provides a TS/PC number strictly increasing
+across UNIX epoch. Another, optional, method stands for the TS/PC number
+counting outgoing packets as long as babeld keeps running.
+@end itemize
+
+@node Babel configuration, Babel redistribution, Babel authentication, Babel
 @section Babel configuration
 
 @deffn Command {router babel} {}
