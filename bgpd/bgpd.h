@@ -59,6 +59,7 @@ struct bgp_master
 #define BGP_OPT_NO_FIB                   (1 << 0)
 #define BGP_OPT_MULTIPLE_INSTANCE        (1 << 1)
 #define BGP_OPT_CONFIG_CISCO             (1 << 2)
+#define BGP_OPT_NO_LISTEN                (1 << 3)
 };
 
 /* BGP instance structure.  */
@@ -846,7 +847,6 @@ extern void bgp_config_write_family_header (struct vty *, afi_t, safi_t, int *);
 extern void bgp_master_init (void);
 
 extern void bgp_init (void);
-extern int bgp_socket_init (void);
 extern void bgp_route_map_init (void);
 
 extern int bgp_option_set (int);

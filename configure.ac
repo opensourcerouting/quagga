@@ -189,6 +189,9 @@ AC_PROG_LIBTOOL
 dnl ----------------------
 dnl Packages configuration
 dnl ----------------------
+AC_ARG_WITH(pkg-extra-version,
+	AS_HELP_STRING([--with-pkg-extra-version=VER], [add extra version field, for packagers/distributions]),
+	[EXTRAVERSION=$withval],)
 AC_ARG_ENABLE(vtysh,
 [  --enable-vtysh          include integrated vty shell for Quagga])
 AC_ARG_ENABLE(ipv6,
@@ -221,10 +224,8 @@ AC_ARG_ENABLE(netlink,
 [  --enable-netlink        force to use Linux netlink interface])
 AC_ARG_ENABLE(broken-aliases,
 [  --enable-broken-aliases enable aliases as distinct interfaces for Linux 2.2.X])
-AC_ARG_WITH(crypto,
-[  --without-crypto        do not use libcrypto in SNMP])
 AC_ARG_ENABLE(snmp,
-[  --enable-snmp           enable SNMP support])
+[  --enable-snmp=ARG       enable SNMP support (smux or agentx)])
 AC_ARG_WITH(libpam,
 [  --with-libpam           use libpam for PAM support in vtysh])
 AC_ARG_ENABLE(tcp-zebra,
@@ -329,7 +330,7 @@ fi
 
 if test "${enable_isisd}" = "yes" && test "${enable_isis_topology}" = yes; then
   AC_DEFINE(TOPOLOGY_GENERATE,,Enable IS-IS topology generator code)
-  ISIS_TOPOLOGY_INCLUDES="-I./topology"
+  ISIS_TOPOLOGY_INCLUDES="-I\$(srcdir)/topology"
   ISIS_TOPOLOGY_DIR="topology"
   ISIS_TOPOLOGY_LIB="./topology/libtopology.a"
 fi
@@ -383,6 +384,16 @@ case "${enable_multipath}" in
 esac
 
 AC_SUBST(MULTIPATH_NUM)
+
+dnl -----------------------------------
+dnl Add extra version string to package
+dnl name, string and version fields.
+dnl -----------------------------------
+if test "x${EXTRAVERSION}" != "x" ; then
+  VERSION=${VERSION}${EXTRAVERSION}
+  PACKAGE_VERSION=${PACKAGE_VERSION}${EXTRAVERSION}
+  PACKAGE_STRING=${PACKAGE_STRING}${EXTRAVERSION}
+fi
 
 dnl ------------------------------------
 dnl Check C keywords and standard  types
@@ -946,7 +957,7 @@ AC_CHECK_MEMBERS([struct ip_mreqn.imr_ifindex], [], [], QUAGGA_INCLUDES)
 AC_MSG_CHECKING([for BSD struct ip_mreq hack])
 AC_TRY_COMPILE([#ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
-#endif],[#if (defined(__FreeBSD__) && ((__FreeBSD_version >= 500022 && __FreeBSD_version < 700000) || (__FreeBSD_version < 500000 && __FreeBSD_version >= 440000))) || (defined(__NetBSD__) && defined(__NetBSD_Version__) && __NetBSD_Version__ >= 106010000)
+#endif],[#if (defined(__FreeBSD__) && ((__FreeBSD_version >= 500022 && __FreeBSD_version < 700000) || (__FreeBSD_version < 500000 && __FreeBSD_version >= 440000))) || (defined(__NetBSD__) && defined(__NetBSD_Version__) && __NetBSD_Version__ >= 106010000) || defined(__OpenBSD__)
   return (0);
 #else
   #error No support for BSD struct ip_mreq hack detected
@@ -1365,21 +1376,39 @@ AC_SUBST(LIB_REGEX)
 dnl ------------------
 dnl check Net-SNMP library
 dnl ------------------
-if test "${enable_snmp}" = "yes"; then
-    if test "$with_crypto" != "no"; then
-        LIBS="${LIBS} -lcrypto";
-    fi
-    AC_CHECK_LIB(netsnmp, asn_parse_int,
-    	[AC_DEFINE(HAVE_NETSNMP,,Net SNMP) 
-    	 AC_DEFINE(HAVE_SNMP,,SNMP)
-    	 LIBS="${LIBS} -lnetsnmp"],
-    	[AC_MSG_ERROR([--enable-snmp given, but cannot find support for SNMP])])
-
-    AC_CHECK_HEADER([net-snmp/net-snmp-config.h],
-        [],
-        [AC_MSG_ERROR([--enable-snmp given, but cannot find net-snmp-config.h])],
-	QUAGGA_INCLUDES)
-    AC_SUBST(SNMP_INCLUDES)
+if test "${enable_snmp}" != ""; then
+   AC_PATH_TOOL([NETSNMP_CONFIG], [net-snmp-config], [no])
+   if test x"$NETSNMP_CONFIG" = x"no"; then
+      AC_MSG_ERROR([--enable-snmp given but unable to find net-snmp-config])
+   fi
+   LIBS="$LIBS `${NETSNMP_CONFIG} --agent-libs`"
+   CFLAGS="`${NETSNMP_CONFIG} --base-cflags` $CFLAGS"
+   AC_MSG_CHECKING([whether we can link to Net-SNMP])
+   AC_LINK_IFELSE([AC_LANG_PROGRAM([
+int main(void);
+],
+[
+{
+  return 0;
+}
+])],[AC_MSG_RESULT(yes)],[
+     AC_MSG_RESULT(no)
+     AC_MSG_ERROR([--enable-snmp given but not usable])])
+   AC_DEFINE(HAVE_SNMP,,SNMP)
+   case "${enable_snmp}" in
+     yes)
+      SNMP_METHOD=agentx
+      ;;
+     smux|agentx)
+      SNMP_METHOD="${enable_snmp}"
+      ;;
+     *)
+      AC_MSG_ERROR([--enable-snmp given with an unknown method (${enable_snmp}). Use smux or agentx])
+      ;;
+   esac
+   AH_TEMPLATE([SNMP_SMUX], [Use SNMP SMUX to interface with snmpd])
+   AH_TEMPLATE([SNMP_AGENTX], [Use SNMP AgentX to interface with snmpd])
+   AC_DEFINE_UNQUOTED(AS_TR_CPP(SNMP_${SNMP_METHOD}),,SNMP method to interface with snmpd)
 fi
 
 dnl ---------------------------
@@ -1620,12 +1649,12 @@ echo "
 Quagga configuration
 --------------------
 quagga version          : ${PACKAGE_VERSION}
-host operating system  : ${host_os}
+host operating system   : ${host_os}
 source code location    : ${srcdir}
 compiler                : ${CC}
 compiler flags          : ${CFLAGS}
 make                    : ${MAKE-make}
-includes                : ${INCLUDES} ${SNMP_INCLUDES}
+includes                : ${INCLUDES}
 linker flags            : ${LDFLAGS} ${LIBS} ${LIBCAP} ${LIBREADLINE} ${LIBM}
 state file directory    : ${quagga_statedir}
 config file directory   : `eval echo \`echo ${sysconfdir}\``
