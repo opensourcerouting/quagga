@@ -359,7 +359,7 @@ ospf_check_md5_digest (struct ospf_interface *oi, struct ospf_header *ospfh)
     }
       
   /* Generate a digest for the ospf packet - their digest + our digest. */
-  hash_make_keyed_md5 (ospfh, length, ck->auth_key, digest);
+  hash_make_keyed_md5 (ospfh, length, ck->auth_key, strlen (ck->auth_key), digest);
 
   /* compare the two */
   if (memcmp ((caddr_t)ospfh + length, digest, OSPF_AUTH_MD5_SIZE))
@@ -382,7 +382,7 @@ static int
 ospf_make_md5_digest (struct ospf_interface *oi, struct ospf_packet *op)
 {
   struct ospf_header *ospfh;
-  unsigned char digest[OSPF_AUTH_MD5_SIZE]= {0};
+  unsigned char digest[OSPF_AUTH_MD5_SIZE];
   void *ibuf;
   u_int32_t t;
   struct crypt_key *ck;
@@ -408,7 +408,7 @@ ospf_make_md5_digest (struct ospf_interface *oi, struct ospf_packet *op)
 
   /* Get MD5 Authentication key from auth_key list. */
   if (list_isempty (OSPF_IF_PARAM (oi, auth_crypt)))
-    auth_key = (const u_int8_t *) digest;
+    auth_key = (const u_int8_t *) "";
   else
     {
       ck = listgetdata (listtail(OSPF_IF_PARAM (oi, auth_crypt)));
@@ -416,7 +416,7 @@ ospf_make_md5_digest (struct ospf_interface *oi, struct ospf_packet *op)
     }
 
   /* Generate a digest for the entire packet + our secret key. */
-  hash_make_keyed_md5 (ibuf, ntohs (ospfh->length), auth_key, digest);
+  hash_make_keyed_md5 (ibuf, ntohs (ospfh->length), auth_key, strlen (auth_key), digest);
 
   /* Append md5 digest to the end of the stream. */
   stream_put (op->s, digest, OSPF_AUTH_MD5_SIZE);
