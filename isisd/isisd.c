@@ -155,8 +155,8 @@ isis_area_create (const char *area_tag)
   area->min_spf_interval[0] = MINIMUM_SPF_INTERVAL;
   area->min_spf_interval[1] = MINIMUM_SPF_INTERVAL;
   area->dynhostname = 1;
-  area->oldmetric = 0;
-  area->newmetric = 1;
+  area->oldmetric = 1;
+  area->newmetric = 0;
   area->lsp_frag_threshold = 90;
 #ifdef TOPOLOGY_GENERATE
   memcpy (area->topology_baseis, DEFAULT_TOPOLOGY_BASEIS, ISIS_SYS_ID_LEN);
