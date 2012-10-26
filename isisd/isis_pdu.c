@@ -550,10 +550,9 @@ process_p2p_hello (struct isis_circuit *circuit)
   tlvs_to_adj_area_addrs (&tlvs, adj);
 
   /* which protocol are spoken ??? */
-  if (!(found & TLVFLAG_NLPID))
-    return ISIS_ERROR;
-  if (tlvs_to_adj_nlpids (&tlvs, adj))
-    return ISIS_ERROR;
+  if (found & TLVFLAG_NLPID)
+    if (tlvs_to_adj_nlpids (&tlvs, adj))
+      return ISIS_ERROR;
 
   /* we need to copy addresses to the adj */
   if (found & TLVFLAG_IPV4_ADDR)
