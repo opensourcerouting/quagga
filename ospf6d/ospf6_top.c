@@ -202,7 +202,7 @@ ospf6_disable (struct ospf6 *o)
     }
 }
 
-static int
+int
 ospf6_maxage_remover (struct thread *thread)
 {
   struct ospf6 *o = (struct ospf6 *) THREAD_ARG (thread);
@@ -210,6 +210,7 @@ ospf6_maxage_remover (struct thread *thread)
   struct ospf6_interface *oi;
   struct ospf6_neighbor *on;
   struct listnode *i, *j, *k;
+  int reschedule = 0;
 
   o->maxage_remover = (struct thread *) NULL;
 
@@ -221,8 +222,9 @@ ospf6_maxage_remover (struct thread *thread)
             {
               if (on->state != OSPF6_NEIGHBOR_EXCHANGE &&
                   on->state != OSPF6_NEIGHBOR_LOADING)
-                continue;
+		  continue;
 
+	      ospf6_maxage_remove (o);
               return 0;
             }
         }
@@ -231,11 +233,28 @@ ospf6_maxage_remover (struct thread *thread)
   for (ALL_LIST_ELEMENTS_RO (o->area_list, i, oa))
     {
       for (ALL_LIST_ELEMENTS_RO (oa->if_list, j, oi))
-        OSPF6_LSDB_MAXAGE_REMOVER (oi->lsdb);
+	{
+	  if (ospf6_lsdb_maxage_remover (oi->lsdb))
+	    {
+	      reschedule = 1;
+	    }
+	}
       
-      OSPF6_LSDB_MAXAGE_REMOVER (oa->lsdb);
+      if (ospf6_lsdb_maxage_remover (oa->lsdb))
+	{
+	    reschedule = 1;
+	}
     }
-  OSPF6_LSDB_MAXAGE_REMOVER (o->lsdb);
+
+  if (ospf6_lsdb_maxage_remover (o->lsdb))
+    {
+      reschedule = 1;
+    }
+
+  if (reschedule)
+    {
+      ospf6_maxage_remove (o);
+    }
 
   return 0;
 }
@@ -244,7 +263,8 @@ void
 ospf6_maxage_remove (struct ospf6 *o)
 {
   if (o && ! o->maxage_remover)
-    o->maxage_remover = thread_add_event (master, ospf6_maxage_remover, o, 0);
+    o->maxage_remover = thread_add_timer (master, ospf6_maxage_remover, o,
+					  OSPF_LSA_MAXAGE_REMOVE_DELAY_DEFAULT);
 }
 
 /* start ospf6 */
