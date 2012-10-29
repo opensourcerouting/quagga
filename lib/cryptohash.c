@@ -104,7 +104,7 @@ DEFUN (show_crypto,
   vty_out (vty, "Running with libgcrypt version %s%s", gcry_check_version (NULL), VTY_NEWLINE);
   for (i = 0; i < sizeof (hash_gcrypt_algo_map) / sizeof (hash_gcrypt_algo_map[0]); i++)
     if (hash_gcrypt_algo_map[i])
-      vty_out (vty, "%-017s: %s%s", LOOKUP (hash_algo_str, i),
+      vty_out (vty, "%-17s: %s%s", LOOKUP (hash_algo_str, i),
                hash_algo_enabled (i) ? "enabled" : "disabled", VTY_NEWLINE);
 #else
   vty_out (vty, "Compiled without libgcrypt%s", VTY_NEWLINE);
