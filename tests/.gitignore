@@ -17,4 +17,15 @@ testmemory
 testsig
 *~
 *.loT
-
+.*.swp
+aspathtest
+ecommtest
+heavy
+heavythread
+heavywq
+testbgpcap
+testbgpmpath
+testbgpmpattr
+testchecksum
+testprivs
+teststream
