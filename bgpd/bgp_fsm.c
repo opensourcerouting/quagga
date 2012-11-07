@@ -140,15 +140,8 @@ bgp_timer_set (struct peer *peer)
       /* OpenSent status. */
       BGP_TIMER_OFF (peer->t_start);
       BGP_TIMER_OFF (peer->t_connect);
-      if (peer->v_holdtime != 0)
-	{
-	  BGP_TIMER_ON (peer->t_holdtime, bgp_holdtime_timer, 
-			peer->v_holdtime);
-	}
-      else
-	{
-	  BGP_TIMER_OFF (peer->t_holdtime);
-	}
+      /* In OpenSent, HoldTimer is mandatory, not configurable or negotiated */
+      BGP_TIMER_ON (peer->t_holdtime, bgp_holdtime_timer, BGP_OPENSENT_HOLDTIME );
       BGP_TIMER_OFF (peer->t_keepalive);
       BGP_TIMER_OFF (peer->t_asorig);
       BGP_TIMER_OFF (peer->t_routeadv);
@@ -548,18 +541,6 @@ bgp_stop (struct peer *peer)
         prefix_bgp_orf_remove_all (orf_name);
       }
 
-  /* Reset keepalive and holdtime */
-  if (CHECK_FLAG (peer->config, PEER_CONFIG_TIMER))
-    {
-      peer->v_keepalive = peer->keepalive;
-      peer->v_holdtime = peer->holdtime;
-    }
-  else
-    {
-      peer->v_keepalive = peer->bgp->default_keepalive;
-      peer->v_holdtime = peer->bgp->default_holdtime;
-    }
-
   peer->update_time = 0;
 
   /* Until we are sure that there is no problem about prefix count
@@ -621,6 +602,18 @@ bgp_connect_success (struct peer *peer)
 
   if (! CHECK_FLAG (peer->sflags, PEER_STATUS_ACCEPT_PEER))
     bgp_open_send (peer);
+
+  /* Reset keepalive and holdtime */
+  if (CHECK_FLAG (peer->config, PEER_CONFIG_TIMER))
+    {
+      peer->v_keepalive = peer->keepalive;
+      peer->v_holdtime = peer->holdtime;
+    }
+  else
+    {
+      peer->v_keepalive = peer->bgp->default_keepalive;
+      peer->v_holdtime = peer->bgp->default_holdtime;
+    }
 
   return 0;
 }

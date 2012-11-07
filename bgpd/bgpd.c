@@ -856,7 +856,9 @@ peer_create (union sockunion *su, struct bgp *bgp, as_t local_as,
   peer->local_as = local_as;
   peer->as = remote_as;
   peer->local_id = bgp->router_id;
+  peer->holdtime = 
   peer->v_holdtime = bgp->default_holdtime;
+  peer->keepalive = 
   peer->v_keepalive = bgp->default_keepalive;
   if (peer_sort (peer) == BGP_PEER_IBGP)
     peer->v_routeadv = BGP_DEFAULT_IBGP_ROUTEADV;
@@ -5293,7 +5295,7 @@ bgp_config_write (struct vty *vty)
 
       /* BGP timers configuration. */
       if (bgp->default_keepalive != BGP_DEFAULT_KEEPALIVE
-	  && bgp->default_holdtime != BGP_DEFAULT_HOLDTIME)
+	  || bgp->default_holdtime != BGP_DEFAULT_HOLDTIME)
 	vty_out (vty, " timers bgp %d %d%s", bgp->default_keepalive, 
 		 bgp->default_holdtime, VTY_NEWLINE);
 
