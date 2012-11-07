@@ -140,15 +140,8 @@ bgp_timer_set (struct peer *peer)
       /* OpenSent status. */
       BGP_TIMER_OFF (peer->t_start);
       BGP_TIMER_OFF (peer->t_connect);
-      if (peer->v_holdtime != 0)
-	{
-	  BGP_TIMER_ON (peer->t_holdtime, bgp_holdtime_timer, 
-			peer->v_holdtime);
-	}
-      else
-	{
-	  BGP_TIMER_OFF (peer->t_holdtime);
-	}
+      /* In OpenSent, HoldTimer is mandatory, not configurable or negotiated */
+      BGP_TIMER_ON (peer->t_holdtime, bgp_holdtime_timer, BGP_OPENSENT_HOLDTIME );
       BGP_TIMER_OFF (peer->t_keepalive);
       BGP_TIMER_OFF (peer->t_asorig);
       BGP_TIMER_OFF (peer->t_routeadv);
@@ -210,6 +203,10 @@ bgp_timer_set (struct peer *peer)
       BGP_TIMER_OFF (peer->t_keepalive);
       BGP_TIMER_OFF (peer->t_asorig);
       BGP_TIMER_OFF (peer->t_routeadv);
+
+      /* Revert negotiated timer values back to configured timer values */
+      peer->v_holdtime = peer->bgp->default_holdtime;
+      peer->v_keepalive = peer->bgp->default_keepalive;
     }
 }
 
