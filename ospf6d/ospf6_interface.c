@@ -1303,7 +1303,7 @@ DEFUN (ipv6_ospf6_priority,
 
   oi->priority = strtol (argv[0], NULL, 10);
 
-  if (oi->area)
+  if (oi->area && oi->state > OSPF6_INTERFACE_DOWN)
     ospf6_interface_state_change (dr_election (oi), oi);
 
   return CMD_SUCCESS;
