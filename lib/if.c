@@ -378,6 +378,20 @@ if_is_multicast (struct interface *ifp)
   return ifp->flags & IFF_MULTICAST;
 }
 
+#ifdef HAVE_IPV6
+int
+if_has_linklocal (struct interface *ifp)
+{
+  struct listnode *node;
+  struct connected *c;
+
+  for (ALL_LIST_ELEMENTS_RO (ifp->connected, node, c))
+    if (IN6_IS_ADDR_LINKLOCAL (&c->address->u.prefix6))
+      return 1;
+  return 0;
+}
+#endif
+
 /* Printout flag information into log */
 const char *
 if_flag_dump (unsigned long flag)

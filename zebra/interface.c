@@ -1441,6 +1441,8 @@ ipv6_address_install (struct vty *vty, struct interface *ifp,
 	  return CMD_WARNING;
 	}
 
+#ifndef HAVE_NETLINK    /* MOOOOOO. tentative breaks shit. */
+
       /* IP address propery set. */
       SET_FLAG (ifc->conf, ZEBRA_IFC_REAL);
 
@@ -1450,6 +1452,7 @@ ipv6_address_install (struct vty *vty, struct interface *ifp,
       /* If interface is up register connected route. */
       if (if_is_operative(ifp))
 	connected_up_ipv6 (ifp, ifc);
+#endif
     }
 
   return CMD_SUCCESS;

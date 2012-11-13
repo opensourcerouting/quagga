@@ -362,16 +362,35 @@ connected_add_ipv6 (struct interface *ifp, int flags, struct in6_addr *addr,
   struct prefix_ipv6 *p;
   struct connected *ifc;
 
-  /* Make connected structure. */
-  ifc = connected_new ();
-  ifc->ifp = ifp;
-  ifc->flags = flags;
-
   /* Allocate new connected address. */
   p = prefix_ipv6_new ();
   p->family = AF_INET6;
   IPV6_ADDR_COPY (&p->prefix, addr);
   p->prefixlen = prefixlen;
+
+#ifdef HAVE_NETLINK    /* MOOOOOO. tentative breaks shit. */
+  ifc = connected_check (ifp, (struct prefix *) p);
+  if (ifc)
+    {
+      /* IP address propery set. */
+      SET_FLAG (ifc->conf, ZEBRA_IFC_REAL);
+
+      /* Update interface address information to protocol daemon. */
+      zebra_interface_address_add_update (ifp, ifc);
+
+      /* If interface is up register connected route. */
+      if (if_is_operative(ifp))
+	connected_up_ipv6 (ifp, ifc);
+
+      prefix_ipv6_free (p);
+      return;
+    }
+#endif
+
+  /* Make connected structure. */
+  ifc = connected_new ();
+  ifc->ifp = ifp;
+  ifc->flags = flags;
   ifc->address = (struct prefix *) p;
 
   /* If there is broadcast or peer address. */

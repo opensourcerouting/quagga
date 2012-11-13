@@ -261,6 +261,7 @@ ospf6_interface_if_add (struct interface *ifp)
 
   /* interface start */
   if (oi->area)
+    /* Note: this will usually fail since no addresses have been added yet */
     thread_add_event (master, interface_up, oi, 0);
 }
 
@@ -298,7 +299,7 @@ ospf6_interface_state_update (struct interface *ifp)
   if (oi->area == NULL)
     return;
 
-  if (if_is_up (ifp))
+  if (if_is_up (ifp) && if_has_linklocal (ifp))
     thread_add_event (master, interface_up, oi, 0);
   else
     thread_add_event (master, interface_down, oi, 0);
@@ -601,6 +602,10 @@ interface_up (struct thread *thread)
   oi = (struct ospf6_interface *) THREAD_ARG (thread);
   assert (oi && oi->interface);
 
+  /* if already enabled, do nothing */
+  if (oi->state > OSPF6_INTERFACE_DOWN)
+    return 0;
+
   if (IS_OSPF6_DEBUG_INTERFACE)
     zlog_debug ("Interface Event %s: [InterfaceUp]",
 		oi->interface->name);
@@ -614,12 +619,14 @@ interface_up (struct thread *thread)
       return 0;
     }
 
-  /* if already enabled, do nothing */
-  if (oi->state > OSPF6_INTERFACE_DOWN)
+  /* check for link-local address */
+  if (! if_has_linklocal (oi->interface))
     {
       if (IS_OSPF6_DEBUG_INTERFACE)
-        zlog_debug ("Interface %s already enabled",
+        zlog_warn ("Interface %s has no link-local address (yet),"
+		    " can't execute [InterfaceUp]",
 		    oi->interface->name);
+
       return 0;
     }
 
@@ -712,6 +719,10 @@ interface_down (struct thread *thread)
 
   oi = (struct ospf6_interface *) THREAD_ARG (thread);
   assert (oi && oi->interface);
+
+  /* if already enabled, do nothing */
+  if (oi->state == OSPF6_INTERFACE_DOWN)
+    return 0;
 
   if (IS_OSPF6_DEBUG_INTERFACE)
     zlog_debug ("Interface Event %s: [InterfaceDown]",

@@ -162,6 +162,8 @@ ospf6_zebra_if_address_update_add (int command, struct zclient *zclient,
 		inet_ntop (c->address->family, &c->address->u.prefix,
 			   buf, sizeof (buf)), c->address->prefixlen);
 
+  ospf6_interface_state_update (c->ifp);
+
   if (c->address->family == AF_INET6)
     ospf6_interface_connected_route_update (c->ifp);
 
@@ -187,6 +189,8 @@ ospf6_zebra_if_address_update_delete (int command, struct zclient *zclient,
 
   if (c->address->family == AF_INET6)
     ospf6_interface_connected_route_update (c->ifp);
+
+  ospf6_interface_state_update (c->ifp);
 
   return 0;
 }

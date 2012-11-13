@@ -126,6 +126,7 @@ ospf6_sso (u_int ifindex, struct in6_addr *group, int option)
 {
   struct ipv6_mreq mreq6;
   int ret;
+  char buf[256];
 
   assert (ifindex);
   mreq6.ipv6mr_interface = ifindex;
@@ -134,8 +135,13 @@ ospf6_sso (u_int ifindex, struct in6_addr *group, int option)
   ret = setsockopt (ospf6_sock, IPPROTO_IPV6, option,
                     &mreq6, sizeof (mreq6));
   if (ret < 0)
-    zlog_err ("Network: setsockopt (%d) on ifindex %d failed: %s",
-              option, ifindex, safe_strerror (errno));
+    zlog_err ("Network: setsockopt (%s, %d) on ifindex %d failed: %s",
+              inet_ntop (AF_INET6, group, buf, sizeof (buf)),
+	      option, ifindex, safe_strerror (errno));
+  else
+    zlog_info("Network: setsockopt (%s, %d) on ifindex %d ok",
+              inet_ntop (AF_INET6, group, buf, sizeof (buf)),
+	      option, ifindex);
 }
 
 static int
