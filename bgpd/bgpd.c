@@ -5293,7 +5293,7 @@ bgp_config_write (struct vty *vty)
 
       /* BGP timers configuration. */
       if (bgp->default_keepalive != BGP_DEFAULT_KEEPALIVE
-	  || bgp->default_holdtime != BGP_DEFAULT_HOLDTIME)
+	  && bgp->default_holdtime != BGP_DEFAULT_HOLDTIME)
 	vty_out (vty, " timers bgp %d %d%s", bgp->default_keepalive, 
 		 bgp->default_holdtime, VTY_NEWLINE);
 
