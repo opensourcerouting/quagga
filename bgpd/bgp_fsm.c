@@ -203,6 +203,10 @@ bgp_timer_set (struct peer *peer)
       BGP_TIMER_OFF (peer->t_keepalive);
       BGP_TIMER_OFF (peer->t_asorig);
       BGP_TIMER_OFF (peer->t_routeadv);
+
+      /* Revert negotiated timer values back to configured timer values */
+      peer->v_holdtime = peer->bgp->default_holdtime;
+      peer->v_keepalive = peer->bgp->default_keepalive;
     }
 }
 
@@ -541,6 +545,18 @@ bgp_stop (struct peer *peer)
         prefix_bgp_orf_remove_all (orf_name);
       }
 
+  /* Reset keepalive and holdtime */
+  if (CHECK_FLAG (peer->config, PEER_CONFIG_TIMER))
+    {
+      peer->v_keepalive = peer->keepalive;
+      peer->v_holdtime = peer->holdtime;
+    }
+  else
+    {
+      peer->v_keepalive = peer->bgp->default_keepalive;
+      peer->v_holdtime = peer->bgp->default_holdtime;
+    }
+
   peer->update_time = 0;
 
   /* Until we are sure that there is no problem about prefix count
@@ -602,18 +618,6 @@ bgp_connect_success (struct peer *peer)
 
   if (! CHECK_FLAG (peer->sflags, PEER_STATUS_ACCEPT_PEER))
     bgp_open_send (peer);
-
-  /* Reset keepalive and holdtime */
-  if (CHECK_FLAG (peer->config, PEER_CONFIG_TIMER))
-    {
-      peer->v_keepalive = peer->keepalive;
-      peer->v_holdtime = peer->holdtime;
-    }
-  else
-    {
-      peer->v_keepalive = peer->bgp->default_keepalive;
-      peer->v_holdtime = peer->bgp->default_holdtime;
-    }
 
   return 0;
 }

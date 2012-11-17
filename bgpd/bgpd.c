@@ -856,9 +856,7 @@ peer_create (union sockunion *su, struct bgp *bgp, as_t local_as,
   peer->local_as = local_as;
   peer->as = remote_as;
   peer->local_id = bgp->router_id;
-  peer->holdtime = 
   peer->v_holdtime = bgp->default_holdtime;
-  peer->keepalive = 
   peer->v_keepalive = bgp->default_keepalive;
   if (peer_sort (peer) == BGP_PEER_IBGP)
     peer->v_routeadv = BGP_DEFAULT_IBGP_ROUTEADV;
