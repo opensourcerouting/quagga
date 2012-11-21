@@ -43,7 +43,7 @@
 #include "zebra/interface.h"
 #include "zebra/debug.h"
 
-#define NL_PKT_BUF_SIZE 4096
+#define NL_PKT_BUF_SIZE 8192UL
 
 /* Socket interface to kernel */
 struct nlsock
