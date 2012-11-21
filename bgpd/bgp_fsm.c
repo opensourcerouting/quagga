@@ -758,6 +758,37 @@ bgp_fsm_holdtime_expire (struct peer *peer)
   return 0;
 }
 
+
+/* FSM error, unexpected event.  This is error of BGP connection. So cut the
+   peer and change to Idle status. */
+static int
+bgp_fsm_event_error (struct peer *peer)
+{
+  /* Log error */
+  plog_err (peer->log,
+    "%s [Error] unexpected packet received in state %s",
+    peer->host, LOOKUP (bgp_status_msg, peer->status));
+
+  /* Send notify to remote peer */
+  bgp_notify_send (peer, BGP_NOTIFY_FSM_ERR, 0);
+
+  /* Sweep if it is temporary peer. */
+  if (CHECK_FLAG (peer->sflags, PEER_STATUS_ACCEPT_PEER))
+    {
+      zlog_info ("%s [Event] Accepting BGP peer is deleted", peer->host);
+      peer_delete (peer);
+      return -1;
+    }
+
+  /* Clear start timer value to default. */
+  peer->v_start = BGP_INIT_START_TIMER;
+
+  /* bgp_stop needs to be invoked while in Established state */
+  bgp_stop(peer);
+
+  return 0;
+}
+
 /* Status goes to Established.  Send keepalive packet then make first
    update information. */
 static int
@@ -970,7 +1001,7 @@ static const struct {
     {bgp_fsm_holdtime_expire, Idle},	/* Hold_Timer_expired           */
     {bgp_ignore,  Idle},	/* KeepAlive_timer_expired      */
     {bgp_fsm_open,    OpenConfirm},	/* Receive_OPEN_message         */
-    {bgp_ignore,  Idle},	/* Receive_KEEPALIVE_message    */
+    {bgp_fsm_event_error, Idle},/* Receive_KEEPALIVE_message    */
     {bgp_ignore,  Idle},	/* Receive_UPDATE_message       */
     {bgp_stop_with_error, Idle}, /* Receive_NOTIFICATION_message */
     {bgp_ignore, Idle},         /* Clearing_Completed           */

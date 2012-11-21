@@ -2401,7 +2401,7 @@ bgp_read (struct thread *thread)
   if (peer->status == Connect)
     {
       bgp_connect_check (peer);
-      goto done;
+      return 0;
     }
   else
     {
@@ -2423,7 +2423,7 @@ bgp_read (struct thread *thread)
 
       /* Header read error or partial read packet. */
       if (ret < 0) 
-	goto done;
+	return 0;
 
       /* Get size and type. */
       stream_forward_getp (peer->ibuf, BGP_MARKER_SIZE);
@@ -2491,8 +2491,9 @@ bgp_read (struct thread *thread)
     }
 
   ret = bgp_read_packet (peer);
+  /* return if partial read or read error */
   if (ret < 0) 
-    goto done;
+    return 0;
 
   /* Get size and type again. */
   size = stream_getw_from (peer->ibuf, BGP_MARKER_SIZE);
@@ -2508,7 +2509,9 @@ bgp_read (struct thread *thread)
     {
     case BGP_MSG_OPEN:
       peer->open_in++;
-      bgp_open_receive (peer, size); /* XXX return value ignored! */
+      ret = bgp_open_receive (peer, size); 
+      if( ret < 0 || peer->fd < 0 )
+	goto done;
       break;
     case BGP_MSG_UPDATE:
       peer->readtime = time(NULL);    /* Last read timer reset */
@@ -2532,12 +2535,24 @@ bgp_read (struct thread *thread)
       break;
     }
 
+  //XXX- for some packet types, the packet is still in the buffer, not cunsumed
+
   /* Clear input buffer. */
   peer->packet_size = 0;
   if (peer->ibuf)
     stream_reset (peer->ibuf);
 
+  /* Normal packet processing done */
+  return 0;
+
+  /* Exit on receiving malformed packet, or if temp peer swept to real */
  done:
+
+  /* Clear input buffer. */
+  peer->packet_size = 0;
+  if (peer->ibuf)
+    stream_reset (peer->ibuf);
+
   if (CHECK_FLAG (peer->sflags, PEER_STATUS_ACCEPT_PEER))
     {
       if (BGP_DEBUG (events, EVENTS))
