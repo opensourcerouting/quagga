@@ -756,6 +756,9 @@ struct bgp_nlri
 /* BGP uptime string length.  */
 #define BGP_UPTIME_LEN 25
 
+/* Number of file descriptors to reserve */
+#define	BGP_FD_RESERVE				4
+
 /* Default configuration settings for bgpd.  */
 #define BGP_VTY_PORT                          2605
 #define BGP_DEFAULT_CONFIG             "bgpd.conf"

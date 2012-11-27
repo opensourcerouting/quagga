@@ -133,13 +133,14 @@ bgp_accept (struct thread *thread)
   struct bgp_listener *listener = THREAD_ARG(thread);
   struct peer *peer;
   struct peer *peer1;
+  unsigned int fdsetsize = FD_SETSIZE;
   char buf[SU_ADDRSTRLEN];
 
   /* Register accept thread. */
   accept_sock = THREAD_FD (thread);
   if (accept_sock < 0)
     {
-      zlog_err ("accept_sock is nevative value %d", accept_sock);
+      zlog_err ("accept_sock is negative value %d", accept_sock);
       return -1;
     }
   listener->thread = thread_add_read (master, bgp_accept, listener, accept_sock);
@@ -151,6 +152,15 @@ bgp_accept (struct thread *thread)
       zlog_err ("[Error] BGP socket accept failed (%s)", safe_strerror (errno));
       return -1;
     }
+
+  /* Protect against running out of file descriptors */
+  if( bgp_sock >= (fdsetsize - BGP_FD_RESERVE) )
+    {
+      close( bgp_sock );
+      zlog_err ("[Error] BGP incoming connection rejected, limit exceeded " );
+      return -1;
+    }
+
   set_nonblocking (bgp_sock);
 
   if (BGP_DEBUG (events, EVENTS))
