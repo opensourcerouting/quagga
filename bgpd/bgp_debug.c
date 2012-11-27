@@ -243,46 +243,60 @@ bgp_notify_print(struct peer *peer, struct bgp_notify *bgp_notify,
                  const char *direct)
 {
   const char *subcode_str;
-
-  subcode_str = "";
+  const char *code_str;
 
   switch (bgp_notify->code) 
     {
     case BGP_NOTIFY_HEADER_ERR:
+      code_str = LOOKUP (bgp_notify_msg, bgp_notify->code),
       subcode_str = LOOKUP (bgp_notify_head_msg, bgp_notify->subcode);
       break;
     case BGP_NOTIFY_OPEN_ERR:
+      code_str = LOOKUP (bgp_notify_msg, bgp_notify->code),
       subcode_str = LOOKUP (bgp_notify_open_msg, bgp_notify->subcode);
       break;
     case BGP_NOTIFY_UPDATE_ERR:
+      code_str = LOOKUP (bgp_notify_msg, bgp_notify->code),
       subcode_str = LOOKUP (bgp_notify_update_msg, bgp_notify->subcode);
       break;
     case BGP_NOTIFY_HOLD_ERR:
+      code_str = LOOKUP (bgp_notify_msg, bgp_notify->code),
       subcode_str = "";
       break;
     case BGP_NOTIFY_FSM_ERR:
+      code_str = LOOKUP (bgp_notify_msg, bgp_notify->code),
       subcode_str = "";
       break;
     case BGP_NOTIFY_CEASE:
+      code_str = LOOKUP (bgp_notify_msg, bgp_notify->code),
       subcode_str = LOOKUP (bgp_notify_cease_msg, bgp_notify->subcode);
       break;
     case BGP_NOTIFY_CAPABILITY_ERR:
+      code_str = LOOKUP (bgp_notify_msg, bgp_notify->code),
       subcode_str = LOOKUP (bgp_notify_capability_msg, bgp_notify->subcode);
       break;
+    default:
+      code_str = "Unrecognized Error Code";
+      subcode_str = "";
+      break;
     }
+
+  /* Prettify subcode string if out of range */
+  if( 0 == strcmp(subcode_str, "(no item found)") )
+    subcode_str = "Unrecognized Error Subcode";
 
   if (bgp_flag_check (peer->bgp, BGP_FLAG_LOG_NEIGHBOR_CHANGES))
     zlog_info ("%%NOTIFICATION: %s neighbor %s %d/%d (%s%s) %d bytes %s",
               strcmp (direct, "received") == 0 ? "received from" : "sent to",
               peer->host, bgp_notify->code, bgp_notify->subcode,
-               LOOKUP (bgp_notify_msg, bgp_notify->code),
+              code_str,
               subcode_str, bgp_notify->length,
               bgp_notify->data ? bgp_notify->data : "");
   else if (BGP_DEBUG (normal, NORMAL))
     plog_debug (peer->log, "%s %s NOTIFICATION %d/%d (%s%s) %d bytes %s",
 	       peer ? peer->host : "",
 	       direct, bgp_notify->code, bgp_notify->subcode,
-	       LOOKUP (bgp_notify_msg, bgp_notify->code),
+	       code_str,
 	       subcode_str, bgp_notify->length,
 	       bgp_notify->data ? bgp_notify->data : "");
 }
