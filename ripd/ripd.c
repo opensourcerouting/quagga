@@ -1340,7 +1340,7 @@ rip_packet_examin
       zlog_warn ("%s: unsupported version %u", __func__, packet->version);
     return MSG_NG;
   }
-  if (packet->command != RIP_REQUEST && packet->version != RIP_RESPONSE)
+  if (packet->command != RIP_REQUEST && packet->command != RIP_RESPONSE)
   {
     if (IS_RIP_DEBUG_RECV)
       zlog_warn ("%s: unsupported command %u", __func__, packet->command);
