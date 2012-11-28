@@ -1420,7 +1420,7 @@ bgp_open_receive (struct peer *peer, bgp_size_t size)
       bgp_notify_send_with_data (peer, 
 				 BGP_NOTIFY_OPEN_ERR, 
 				 BGP_NOTIFY_OPEN_UNSUP_VERSION,
-				 (void *) &maxver, 2);
+				 (u_int8_t *) &maxver, 2);
       return -1;
     }
 
