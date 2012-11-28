@@ -2321,7 +2321,7 @@ bgp_read_packet (struct peer *peer)
     {
       /* Transient error should retry */
       if (nbytes == -2)
-	return -1;
+	return -2;
 
       plog_err (peer->log, "%s [Error] bgp_read_packet error: %s",
 		 peer->host, safe_strerror (errno));
@@ -2365,7 +2365,7 @@ bgp_read_packet (struct peer *peer)
 
   /* We read partial packet. */
   if (stream_get_endp (peer->ibuf) != peer->packet_size)
-    return -1;
+    return -2;
 
   return 0;
 }
@@ -2421,9 +2421,13 @@ bgp_read (struct thread *thread)
     {
       ret = bgp_read_packet (peer);
 
-      /* Header read error or partial read packet. */
-      if (ret < 0) 
+      /* partial read packet */
+      if (ret == -2)
 	return 0;
+
+      /* Header read error */
+      if( ret < 0 )
+        goto done;
 
       /* Get size and type. */
       stream_forward_getp (peer->ibuf, BGP_MARKER_SIZE);
@@ -2491,9 +2495,13 @@ bgp_read (struct thread *thread)
     }
 
   ret = bgp_read_packet (peer);
-  /* return if partial read or read error */
-  if (ret < 0) 
+  /* return if partial read */
+  if( ret == -1)
     return 0;
+
+  /* terminate on read error */
+  if (ret < 0) 
+    goto done;
 
   /* Get size and type again. */
   size = stream_getw_from (peer->ibuf, BGP_MARKER_SIZE);
