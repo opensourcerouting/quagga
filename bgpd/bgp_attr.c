@@ -325,7 +325,9 @@ bgp_attr_dup (struct attr *new, struct attr *orig)
   if (orig->extra)
     {
       /* if caller provided attr_extra space use it */
-      if (! extra)
+      if (extra)
+        new->extra = extra;
+      else /* else, allocate new attr_extra space */
         new->extra = bgp_attr_extra_new();
       *new->extra = *orig->extra;
     }
