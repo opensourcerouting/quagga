@@ -30,7 +30,7 @@
 
 #include "zebra/zserv.h"
 
-/* General fucntion for static route. */
+/* General function for static route. */
 static int
 zebra_static_ipv4 (struct vty *vty, int add_cmd, const char *dest_str,
 		   const char *mask_str, const char *gate_str,
@@ -1251,7 +1251,7 @@ DEFUN (show_ip_mroute,
 
 
 #ifdef HAVE_IPV6
-/* General fucntion for IPv6 static route. */
+/* General function for IPv6 static route. */
 static int
 static_ipv6_func (struct vty *vty, int add_cmd, const char *dest_str,
 		  const char *gate_str, const char *ifname,
