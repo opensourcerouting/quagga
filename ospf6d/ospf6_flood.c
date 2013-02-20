@@ -122,10 +122,8 @@ ospf6_lsa_originate (struct ospf6_lsa *lsa)
       ospf6_lsa_header_print (lsa);
     }
 
-  if (old)
-    ospf6_flood_clear (old);
-  ospf6_flood (NULL, lsa);
   ospf6_install_lsa (lsa);
+  ospf6_flood (NULL, lsa);
 }
 
 void
@@ -849,7 +847,26 @@ ospf6_receive_lsa (struct ospf6_neighbor *from,
       quagga_gettime (QUAGGA_CLK_MONOTONIC, &new->received);
 
       if (is_debug)
-        zlog_debug ("Flood, Install, Possibly acknowledge the received LSA");
+        zlog_debug ("Install, Flood, Possibly acknowledge the received LSA");
+
+      /*
+	According to RFC 2328 (section 13), an implementation SHOULD
+	flood the received LSA before installing it. An older LSA MUST
+	be removed from any retransmission list during flooding and/or
+	during install. OSPFv2 removes older LSAs during flooding. OSPFv3's
+	implementation required me to duplicate code to follow that model or
+	reimplement many of the data structures to duplicate OSPFv2. Instead
+	we chose to install before flood and remove the older entries from
+	retx lists during install. Install only schedules an SPF instead of
+	actually running an SPF algorithm and also runs the incremental update
+	of external routes in case the received LSA is an external LSA. In
+	either case, I've found no noticeable delay in convergence using this
+	scheme (including in stress tests involving many external LSAs).
+      */
+
+      /* (d), installing lsdb, which may cause routing
+              table calculation (replacing database copy) */
+      ospf6_install_lsa (new);
 
       /* (b) immediately flood and (c) remove from all retrans-list */
       /* Prevent self-originated LSA to be flooded. this is to make
@@ -858,13 +875,8 @@ ospf6_receive_lsa (struct ospf6_neighbor *from,
       if (new->header->adv_router != from->ospf6_if->area->ospf6->router_id)
         ospf6_flood (from, new);
 
-      /* (c) Remove the current database copy from all neighbors' Link
-             state retransmission lists. */
-      /* XXX, flood_clear ? */
-
-      /* (d), installing lsdb, which may cause routing
-              table calculation (replacing database copy) */
-      ospf6_install_lsa (new);
+      if (OSPF6_LSA_IS_MAXAGE (new))
+	ospf6_maxage_remove (from->ospf6_if->area->ospf6);
 
       /* (e) possibly acknowledge */
       ospf6_acknowledge_lsa (new, ismore_recent, from);
