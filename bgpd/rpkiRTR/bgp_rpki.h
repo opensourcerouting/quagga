@@ -8,6 +8,8 @@
 #ifndef BGP_RPKI_H_
 #define BGP_RPKI_H_
 
+void test_rpki(void);
 
+void rpki_init(void);
 
 #endif /* BGP_RPKI_H_ */
