@@ -52,7 +52,7 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 
 #define include_rpki
 #ifdef include_rpki
-#include "bgpd/rpkiRTR/bgp_rpki.h"
+#include "bgpd/bgp_rpki.h"
 #endif
 
 /* bgpd options, we use GNU getopt library. */
@@ -280,6 +280,11 @@ bgp_exit (int status)
   /* reverse bgp_scan_init */
   bgp_scan_finish ();
 
+  /* reverse bgp_rpki_init  */
+#ifdef include_rpki
+  rpki_finish();
+#endif
+
   /* reverse access_list_init */
   access_list_add_hook (NULL);
   access_list_delete_hook (NULL);
@@ -335,7 +340,7 @@ main (int argc, char **argv)
 
   /* Set umask before anything for security */
   umask (0027);
-  rpki_init();
+
   /* Preserve name of myself. */
   progname = ((p = strrchr (argv[0], '/')) ? ++p : argv[0]);
 
@@ -440,7 +445,7 @@ main (int argc, char **argv)
   vty_read_config (config_file, config_default);
 
   #ifdef include_rpki
-  test_rpki();
+//  test_rpki();
   rpki_init();
   #endif
 

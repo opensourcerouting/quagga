@@ -12,4 +12,6 @@ void test_rpki(void);
 
 void rpki_init(void);
 
+void rpki_finish(void);
+
 #endif /* BGP_RPKI_H_ */
