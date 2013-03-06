@@ -1341,7 +1341,7 @@ ospf_spf_calculate_schedule (struct ospf *ospf)
     }
   
   /* XXX Monotic timers: we only care about relative time here. */
-  result = tv_sub (recent_relative_time (), ospf->ts_spf);
+  result = timeval_subtract (recent_relative_time (), ospf->ts_spf);
   
   elapsed = (result.tv_sec * 1000) + (result.tv_usec / 1000);
   ht = ospf->spf_holdtime * ospf->spf_hold_multiplier;

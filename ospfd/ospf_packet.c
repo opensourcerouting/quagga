@@ -508,7 +508,7 @@ ospf_ls_upd_timer (struct thread *thread)
 		  fired.  This is a small tweak to what is in the RFC,
 		  but it will cut out out a lot of retransmit traffic
 		  - MAG */
-		if (tv_cmp (tv_sub (recent_relative_time (), lsa->tv_recv), 
+		if (timeval_cmp (timeval_subtract (recent_relative_time (), lsa->tv_recv),
 			    int2tv (retransmit_interval)) >= 0)
 		  listnode_add (update, rn->info);
 	    }
@@ -1428,8 +1428,8 @@ ospf_db_desc (struct ip *iph, struct ospf_header *ospfh,
 	    {
 	      struct timeval t, now;
 	      quagga_gettime (QUAGGA_CLK_MONOTONIC, &now);
-	      t = tv_sub (now, nbr->last_send_ts);
-	      if (tv_cmp (t, int2tv (nbr->v_inactivity)) < 0)
+	      t = timeval_subtract (now, nbr->last_send_ts);
+	      if (timeval_cmp (t, int2tv (nbr->v_inactivity)) < 0)
 		{
 		  /* In states Loading and Full the slave must resend
 		     its last Database Description packet in response to
@@ -2034,7 +2034,7 @@ ospf_ls_upd (struct ip *iph, struct ospf_header *ospfh,
 	      
 	      quagga_gettime (QUAGGA_CLK_MONOTONIC, &now);
 	      
-	      if (tv_cmp (tv_sub (now, current->tv_orig), 
+	      if (timeval_cmp (timeval_subtract (now, current->tv_orig),
 			  int2tv (OSPF_MIN_LS_ARRIVAL)) >= 0)
 		/* Trap NSSA type later.*/
 		ospf_ls_upd_send_lsa (nbr, current, OSPF_SEND_PACKET_DIRECT);

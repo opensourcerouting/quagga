@@ -61,7 +61,7 @@ static struct hash *cpu_record = NULL;
 
 /* Adjust so that tv_usec is in the range [0,TIMER_SECOND_MICRO).
    And change negative values to 0. */
-static struct timeval
+struct timeval
 timeval_adjust (struct timeval a)
 {
   while (a.tv_usec >= TIMER_SECOND_MICRO)
@@ -83,7 +83,18 @@ timeval_adjust (struct timeval a)
   return a;
 }
 
-static struct timeval
+struct timeval
+timeval_add (struct timeval a, struct timeval b)
+{
+  struct timeval ret;
+
+  ret.tv_sec = a.tv_sec + b.tv_sec;
+  ret.tv_usec = a.tv_usec + b.tv_usec;
+
+  return timeval_adjust (ret);
+}
+
+struct timeval
 timeval_subtract (struct timeval a, struct timeval b)
 {
   struct timeval ret;
@@ -94,18 +105,45 @@ timeval_subtract (struct timeval a, struct timeval b)
   return timeval_adjust (ret);
 }
 
-static long
+long
 timeval_cmp (struct timeval a, struct timeval b)
 {
   return (a.tv_sec == b.tv_sec
 	  ? a.tv_usec - b.tv_usec : a.tv_sec - b.tv_sec);
 }
 
-static unsigned long
+unsigned long
 timeval_elapsed (struct timeval a, struct timeval b)
 {
   return (((a.tv_sec - b.tv_sec) * TIMER_SECOND_MICRO)
 	  + (a.tv_usec - b.tv_usec));
+}
+
+int
+timeval_ceil (struct timeval a)
+{
+  a = timeval_adjust (a);
+
+  return (a.tv_usec ? a.tv_sec + 1 : a.tv_sec);
+}
+
+int
+timeval_floor (struct timeval a)
+{
+  a = timeval_adjust (a);
+
+  return a.tv_sec;
+}
+
+struct timeval
+int2tv (int a)
+{
+  struct timeval ret;
+
+  ret.tv_sec = a;
+  ret.tv_usec = 0;
+
+  return ret;
 }
 
 #if !defined(HAVE_CLOCK_MONOTONIC) && !defined(__APPLE__)

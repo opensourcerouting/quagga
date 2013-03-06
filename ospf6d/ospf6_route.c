@@ -791,7 +791,7 @@ ospf6_route_show (struct vty *vty, struct ospf6_route *route)
   struct timeval now, res;
 
   quagga_gettime (QUAGGA_CLK_MONOTONIC, &now);
-  timersub (&now, &route->changed, &res);
+  res = timeval_subtract (now, route->changed);
   timerstring (&res, duration, sizeof (duration));
 
   /* destination */
@@ -858,11 +858,11 @@ ospf6_route_show_detail (struct vty *vty, struct ospf6_route *route)
            VNL);
 
   /* Time */
-  timersub (&now, &route->installed, &res);
+  res = timeval_subtract (now, route->installed);
   timerstring (&res, duration, sizeof (duration));
   vty_out (vty, "Installed Time: %s ago%s", duration, VNL);
 
-  timersub (&now, &route->changed, &res);
+  res = timeval_subtract (now, route->changed);
   timerstring (&res, duration, sizeof (duration));
   vty_out (vty, "  Changed Time: %s ago%s", duration, VNL);
 

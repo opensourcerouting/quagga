@@ -222,6 +222,15 @@ extern time_t quagga_time (time_t *);
 extern unsigned long thread_consumed_time(RUSAGE_T *after, RUSAGE_T *before,
 					  unsigned long *cpu_time_elapsed);
 
+/* timeval operations */
+extern struct timeval timeval_adjust (struct timeval a);
+extern struct timeval timeval_add (struct timeval a, struct timeval b);
+extern struct timeval timeval_subtract (struct timeval a, struct timeval b);
+extern long timeval_cmp (struct timeval a, struct timeval b);
+extern int timeval_ceil (struct timeval a);
+extern int timeval_floor (struct timeval a);
+extern struct timeval int2tv (int a);
+
 /* Global variable containing a recent result from gettimeofday.  This can
    be used instead of calling gettimeofday if a recent value is sufficient.
    This is guaranteed to be refreshed before a thread is called. */

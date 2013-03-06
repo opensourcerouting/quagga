@@ -607,7 +607,7 @@ ospf6_neighbor_show (struct vty *vty, struct ospf6_neighbor *on)
     }
 
   /* Duration */
-  timersub (&now, &on->last_changed, &res);
+  res = timeval_subtract (now, on->last_changed);
   timerstring (&res, duration, sizeof (duration));
 
   /*
@@ -642,7 +642,7 @@ ospf6_neighbor_show_drchoice (struct vty *vty, struct ospf6_neighbor *on)
   inet_ntop (AF_INET, &on->bdrouter, bdrouter, sizeof (bdrouter));
 
   quagga_gettime (QUAGGA_CLK_MONOTONIC, &now);
-  timersub (&now, &on->last_changed, &res);
+  res = timeval_subtract (now, on->last_changed);
   timerstring (&res, duration, sizeof (duration));
 
   vty_out (vty, "%-15s %6s/%-11s %-15s %-15s %s[%s]%s",
@@ -666,7 +666,7 @@ ospf6_neighbor_show_detail (struct vty *vty, struct ospf6_neighbor *on)
   inet_ntop (AF_INET, &on->bdrouter, bdrouter, sizeof (bdrouter));
 
   quagga_gettime (QUAGGA_CLK_MONOTONIC, &now);
-  timersub (&now, &on->last_changed, &res);
+  res = timeval_subtract (now, on->last_changed);
   timerstring (&res, duration, sizeof (duration));
 
   vty_out (vty, " Neighbor %s%s", on->name,
@@ -712,7 +712,7 @@ ospf6_neighbor_show_detail (struct vty *vty, struct ospf6_neighbor *on)
 
   timerclear (&res);
   if (on->thread_send_dbdesc)
-    timersub (&on->thread_send_dbdesc->u.sands, &now, &res);
+    res = timeval_subtract (on->thread_send_dbdesc->u.sands, now);
   timerstring (&res, duration, sizeof (duration));
   vty_out (vty, "    %d Pending LSAs for DbDesc in Time %s [thread %s]%s",
            on->dbdesc_list->count, duration,
@@ -724,7 +724,7 @@ ospf6_neighbor_show_detail (struct vty *vty, struct ospf6_neighbor *on)
 
   timerclear (&res);
   if (on->thread_send_lsreq)
-    timersub (&on->thread_send_lsreq->u.sands, &now, &res);
+    res = timeval_subtract (on->thread_send_lsreq->u.sands, now);
   timerstring (&res, duration, sizeof (duration));
   vty_out (vty, "    %d Pending LSAs for LSReq in Time %s [thread %s]%s",
            on->lsreq_list->count, duration,
@@ -736,7 +736,7 @@ ospf6_neighbor_show_detail (struct vty *vty, struct ospf6_neighbor *on)
 
   timerclear (&res);
   if (on->thread_send_lsupdate)
-    timersub (&on->thread_send_lsupdate->u.sands, &now, &res);
+    res = timeval_subtract (on->thread_send_lsupdate->u.sands, now);
   timerstring (&res, duration, sizeof (duration));
   vty_out (vty, "    %d Pending LSAs for LSUpdate in Time %s [thread %s]%s",
            on->lsupdate_list->count, duration,
@@ -748,7 +748,7 @@ ospf6_neighbor_show_detail (struct vty *vty, struct ospf6_neighbor *on)
 
   timerclear (&res);
   if (on->thread_send_lsack)
-    timersub (&on->thread_send_lsack->u.sands, &now, &res);
+    res = timeval_subtract (on->thread_send_lsack->u.sands, now);
   timerstring (&res, duration, sizeof (duration));
   vty_out (vty, "    %d Pending LSAs for LSAck in Time %s [thread %s]%s",
            on->lsack_list->count, duration,

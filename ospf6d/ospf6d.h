@@ -24,6 +24,9 @@
 
 #define OSPF6_DAEMON_VERSION    "0.9.7r"
 
+#include "libospf.h"
+#include "thread.h"
+
 /* global variables */
 extern struct thread_master *master;
 
@@ -62,18 +65,6 @@ extern struct thread_master *master;
 #ifndef timerclear
 #define timerclear(a) (a)->tv_sec = (tvp)->tv_usec = 0
 #endif /*timerclear*/
-#ifndef timersub
-#define timersub(a, b, res)                           \
-  do {                                                \
-    (res)->tv_sec = (a)->tv_sec - (b)->tv_sec;        \
-    (res)->tv_usec = (a)->tv_usec - (b)->tv_usec;     \
-    if ((res)->tv_usec < 0)                           \
-      {                                               \
-        (res)->tv_sec--;                              \
-        (res)->tv_usec += 1000000;                    \
-      }                                               \
-  } while (0)
-#endif /*timersub*/
 #define timerstring(tv, buf, size)                    \
   do {                                                \
     if ((tv)->tv_sec / 60 / 60 / 24)                  \

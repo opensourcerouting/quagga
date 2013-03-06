@@ -62,79 +62,6 @@ get_metric (u_char *metric)
 }
 
 
-struct timeval
-tv_adjust (struct timeval a)
-{
-  while (a.tv_usec >= 1000000)
-    {
-      a.tv_usec -= 1000000;
-      a.tv_sec++;
-    }
-
-  while (a.tv_usec < 0)
-    {
-      a.tv_usec += 1000000;
-      a.tv_sec--;
-    }
-
-  return a;
-}
-
-int
-tv_ceil (struct timeval a)
-{
-  a = tv_adjust (a);
-
-  return (a.tv_usec ? a.tv_sec + 1 : a.tv_sec);
-}
-
-int
-tv_floor (struct timeval a)
-{
-  a = tv_adjust (a);
-
-  return a.tv_sec;
-}
-
-struct timeval
-int2tv (int a)
-{
-  struct timeval ret;
-
-  ret.tv_sec = a;
-  ret.tv_usec = 0;
-
-  return ret;
-}
-
-struct timeval
-tv_add (struct timeval a, struct timeval b)
-{
-  struct timeval ret;
-
-  ret.tv_sec = a.tv_sec + b.tv_sec;
-  ret.tv_usec = a.tv_usec + b.tv_usec;
-
-  return tv_adjust (ret);
-}
-
-struct timeval
-tv_sub (struct timeval a, struct timeval b)
-{
-  struct timeval ret;
-
-  ret.tv_sec = a.tv_sec - b.tv_sec;
-  ret.tv_usec = a.tv_usec - b.tv_usec;
-
-  return tv_adjust (ret);
-}
-
-int
-tv_cmp (struct timeval a, struct timeval b)
-{
-  return (a.tv_sec == b.tv_sec ?
-	  a.tv_usec - b.tv_usec : a.tv_sec - b.tv_sec);
-}
 
 int
 ospf_lsa_refresh_delay (struct ospf_lsa *lsa)
@@ -143,11 +70,11 @@ ospf_lsa_refresh_delay (struct ospf_lsa *lsa)
   int delay = 0;
 
   quagga_gettime (QUAGGA_CLK_MONOTONIC, &now);
-  delta = tv_sub (now, lsa->tv_orig);
+  delta = timeval_subtract (now, lsa->tv_orig);
 
-  if (tv_cmp (delta, int2tv (OSPF_MIN_LS_INTERVAL)) < 0)
+  if (timeval_cmp (delta, int2tv (OSPF_MIN_LS_INTERVAL)) < 0)
     {
-      delay = tv_ceil (tv_sub (int2tv (OSPF_MIN_LS_INTERVAL), delta));
+      delay = timeval_ceil (timeval_subtract (int2tv (OSPF_MIN_LS_INTERVAL), delta));
 
       if (IS_DEBUG_OSPF (lsa, LSA_GENERATE))
         zlog_debug ("LSA[Type%d:%s]: Refresh timer delay %d seconds",
@@ -166,7 +93,7 @@ get_age (struct ospf_lsa *lsa)
   int age;
 
   age = ntohs (lsa->data->ls_age) 
-        + tv_floor (tv_sub (recent_relative_time (), lsa->tv_recv));
+        + timeval_floor (timeval_subtract (recent_relative_time (), lsa->tv_recv));
 
   return age;
 }

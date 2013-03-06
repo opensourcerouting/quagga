@@ -310,7 +310,7 @@ ospf_timer_dump (struct thread *t, char *buf, size_t size)
   if (!t)
     return "inactive";
   
-  result = tv_sub (t->u.sands, recent_relative_time());
+  result = timeval_subtract (t->u.sands, recent_relative_time());
   return ospf_timeval_dump (&result, buf, size);
 }
 

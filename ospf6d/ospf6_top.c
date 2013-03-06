@@ -453,7 +453,7 @@ ospf6_show (struct vty *vty, struct ospf6 *o)
 
   /* running time */
   quagga_gettime (QUAGGA_CLK_MONOTONIC, &now);
-  timersub (&now, &o->starttime, &running);
+  running = timeval_subtract (now, o->starttime);
   timerstring (&running, duration, sizeof (duration));
   vty_out (vty, " Running %s%s", duration, VNL);
 

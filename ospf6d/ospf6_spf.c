@@ -520,7 +520,7 @@ ospf6_spf_calculation_thread (struct thread *t)
   quagga_gettime (QUAGGA_CLK_MONOTONIC, &start);
   ospf6_spf_calculation (oa->ospf6->router_id, oa->spf_table, oa);
   quagga_gettime (QUAGGA_CLK_MONOTONIC, &end);
-  timersub (&end, &start, &runtime);
+  runtime = timeval_subtract (end, start);
 
   if (IS_OSPF6_DEBUG_SPF (PROCESS) || IS_OSPF6_DEBUG_SPF (TIME))
     zlog_debug ("SPF runtime: %ld sec %ld usec",

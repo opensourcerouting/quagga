@@ -112,9 +112,9 @@ ospf6_interface_create (struct interface *ifp)
   oi->transdelay = OSPF6_INTERFACE_TRANSDELAY;
   oi->priority = OSPF6_INTERFACE_PRIORITY;
 
-  oi->hello_interval = OSPF6_INTERFACE_HELLO_INTERVAL;
-  oi->dead_interval = OSPF6_INTERFACE_DEAD_INTERVAL;
-  oi->rxmt_interval = OSPF6_INTERFACE_RXMT_INTERVAL;
+  oi->hello_interval = OSPF_HELLO_INTERVAL_DEFAULT;
+  oi->dead_interval = OSPF_ROUTER_DEAD_INTERVAL_DEFAULT;
+  oi->rxmt_interval = OSPF_RETRANSMIT_INTERVAL_DEFAULT;
   oi->cost = OSPF6_INTERFACE_COST;
   oi->state = OSPF6_INTERFACE_DOWN;
   oi->flag = 0;
@@ -827,7 +827,7 @@ ospf6_interface_show (struct vty *vty, struct interface *ifp)
 
   timerclear (&res);
   if (oi->thread_send_lsupdate)
-    timersub (&oi->thread_send_lsupdate->u.sands, &now, &res);
+    res = timeval_subtract (oi->thread_send_lsupdate->u.sands, now);
   timerstring (&res, duration, sizeof (duration));
   vty_out (vty, "    %d Pending LSAs for LSUpdate in Time %s [thread %s]%s",
            oi->lsupdate_list->count, duration,
@@ -839,7 +839,7 @@ ospf6_interface_show (struct vty *vty, struct interface *ifp)
 
   timerclear (&res);
   if (oi->thread_send_lsack)
-    timersub (&oi->thread_send_lsack->u.sands, &now, &res);
+    res = timeval_subtract (oi->thread_send_lsack->u.sands, now);
   timerstring (&res, duration, sizeof (duration));
   vty_out (vty, "    %d Pending LSAs for LSAck in Time %s [thread %s]%s",
            oi->lsack_list->count, duration,

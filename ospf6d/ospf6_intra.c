@@ -1259,11 +1259,11 @@ ospf6_brouter_debug_print (struct ospf6_route *brouter)
                               sizeof (destination));
 
   quagga_gettime (QUAGGA_CLK_MONOTONIC, &now);
-  timersub (&now, &brouter->installed, &res);
+  res = timeval_subtract (now, brouter->installed);
   timerstring (&res, installed, sizeof (installed));
 
   quagga_gettime (QUAGGA_CLK_MONOTONIC, &now);
-  timersub (&now, &brouter->changed, &res);
+  res = timeval_subtract (now, brouter->changed);
   timerstring (&res, changed, sizeof (changed));
 
   inet_ntop (AF_INET, &brouter->path.origin.id, id, sizeof (id));
