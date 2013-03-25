@@ -5,7 +5,7 @@ DEFS = @DEFS@ -DSYSCONFDIR=\"$(sysconfdir)/\"
 INSTALL_SDATA=@INSTALL@ -m 600
 
 AM_CFLAGS = $(PICFLAGS) -pthread
-AM_LDFLAGS = $(PILDFLAGS) -lrtr 
+AM_LDFLAGS = $(PILDFLAGS) -lrtr
 
 noinst_LIBRARIES = libbgp.a
 sbin_PROGRAMS = bgpd
@@ -16,18 +16,15 @@ libbgp_a_SOURCES = \
 	bgp_packet.c bgp_network.c bgp_filter.c bgp_regex.c bgp_clist.c \
 	bgp_dump.c bgp_snmp.c bgp_ecommunity.c bgp_mplsvpn.c bgp_nexthop.c \
 	bgp_damp.c bgp_table.c bgp_advertise.c bgp_vty.c bgp_mpath.c \
-	bgp_rpki.c
+	rpki/bgp_rpki.c rpki/rpki_commands.c
 
 noinst_HEADERS = \
 	bgp_aspath.h bgp_attr.h bgp_community.h bgp_debug.h bgp_fsm.h \
 	bgp_network.h bgp_open.h bgp_packet.h bgp_regex.h bgp_route.h \
 	bgpd.h bgp_filter.h bgp_clist.h bgp_dump.h bgp_zebra.h \
 	bgp_ecommunity.h bgp_mplsvpn.h bgp_nexthop.h bgp_damp.h bgp_table.h \
-	bgp_advertise.h bgp_snmp.h bgp_vty.h bgp_mpath.h bgp_rpki.h
-
-## librpkiRTR_a_SOURCES = rpkiRTR/bgp_rpki.c
-## librpkiRTR_a_CFLAGS = -O0 -g -Wall
-## librpkiRTR_a_LDFLAGS = -lrtr
+	bgp_advertise.h bgp_snmp.h bgp_vty.h bgp_mpath.h rpki/bgp_rpki.h \
+	rpki/rpki_commands.h
 
 bgpd_SOURCES = bgp_main.c
 bgpd_LDADD = libbgp.a ../lib/libzebra.la @LIBCAP@ @LIBM@

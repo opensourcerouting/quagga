@@ -52,7 +52,7 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 
 #define include_rpki
 #ifdef include_rpki
-#include "bgpd/bgp_rpki.h"
+#include "bgpd/rpki/bgp_rpki.h"
 #endif
 
 /* bgpd options, we use GNU getopt library. */
@@ -438,16 +438,15 @@ main (int argc, char **argv)
   vty_init (master);
   memory_init ();
 
+  #ifdef include_rpki
+  rpki_init();
+  #endif
+
   /* BGP related initialization.  */
   bgp_init ();
 
   /* Parse config file. */
   vty_read_config (config_file, config_default);
-
-  #ifdef include_rpki
-//  test_rpki();
-  rpki_init();
-  #endif
 
   /* Start execution only if not in dry-run mode */
   if(dryrun)
@@ -465,6 +464,11 @@ main (int argc, char **argv)
 
   /* Make bgp vty socket. */
   vty_serv_sock (vty_addr, vty_port, BGP_VTYSH_PATH);
+
+  /* Start rpki protocol to get validated prefix data */
+  #ifdef include_rpki
+  rpki_start();
+  #endif
 
   /* Print banner. */
   zlog_notice ("BGPd %s starting: vty@%d, bgp@%s:%d", QUAGGA_VERSION,
