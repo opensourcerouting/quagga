@@ -2145,8 +2145,7 @@ bgp_update_main (struct peer *peer, struct prefix *p, struct attr *attr,
 
   #ifdef include_rpki
   /* Apply validation filter.  */
-  int validation_result = validate_prefix(peer, p, attr);
-  if (!validation_policy_check(validation_result))
+  if (rpki_validation_filter(peer, p, attr, afi, safi))
     {
       reason = "origin of address prefix not validated by rpki;";
       goto filtered;

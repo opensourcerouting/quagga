@@ -8,7 +8,6 @@
 #ifndef BGP_RPKI_H_
 #define BGP_RPKI_H_
 //#include "rtrlib/rtrlib.h"
-#include <stdbool.h>
 #include "prefix.h"
 #include "bgpd/bgp_attr.h"
 #include "bgpd/bgpd.h"
@@ -28,6 +27,7 @@
 #define CMD_TIMEOUT_RANGE "<1-4294967295>"
 #define POLLING_PERIOD_DEFAULT 1000
 #define TIMEOUT_DEFAULT 1000
+#define APPLY_RPKI_FILTER_DEFAULT 1
 #define RPKI_VALID      1
 #define RPKI_UNKNOWN    2
 #define RPKI_INVALID    3
@@ -37,6 +37,7 @@
 struct list* cache_group_list;
 unsigned int polling_period;
 unsigned int timeout;
+unsigned int apply_rpki_filter;
 
 /**********************************/
 /** Declaration of functions     **/
@@ -47,6 +48,6 @@ void rpki_init(void);
 void rpki_finish(void);
 //static void update_cb(struct pfx_table* p, const pfx_record rec, const bool added);
 int validate_prefix(struct peer *peer, struct prefix *p, struct attr *attr);
-bool validation_policy_check(int validation_result);
-
+int validation_policy_check(int validation_result);
+int rpki_validation_filter(struct peer *peer, struct prefix *p, struct attr *attr, afi_t afi, safi_t safi);
 #endif /* BGP_RPKI_H_ */

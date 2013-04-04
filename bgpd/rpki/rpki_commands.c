@@ -323,7 +323,7 @@ DEFUN (show_bgp_rpki,
        "show bgp rpki",
        SHOW_STR
        BGP_STR
-       "Show RPKI/RTR info XXXXX TEST XXXX\n")
+       "Show RPKI/RTR info\n")
 {
   vty_out (vty, "RPKI/RTR Information %s", VTY_NEWLINE);
 

@@ -28,6 +28,7 @@ void rpki_init(void){
   install_cli_commands();
   polling_period = POLLING_PERIOD_DEFAULT;
   timeout = TIMEOUT_DEFAULT;
+  apply_rpki_filter = APPLY_RPKI_FILTER_DEFAULT;
 }
 
 
@@ -59,10 +60,38 @@ void rpki_test(void){
   RPKI_DEBUG("XXX RPKI include works!!!!");
 }
 
-bool validation_policy_check(int validation_result){
+int validation_policy_check(int validation_result){
+
   return validation_result == RPKI_VALID;
 }
 
+/*
+ * return 1 if route is filtered
+ * return 0 if route is not filtered
+ */
+int rpki_validation_filter(struct peer *peer, struct prefix *p, struct attr *attr,
+                  afi_t afi, safi_t safi){
+  // First check if filter has to be applied
+  if(!apply_rpki_filter){
+    return 0;
+  }
+  /*
+  Route Origin ASN: The origin AS number derived from a Route as
+      follows:
+
+      *  the rightmost AS in the final segment of the AS_PATH attribute
+         in the Route if that segment is of type AS_SEQUENCE, or
+
+      *  the BGP speaker's own AS number if that segment is of type
+         AS_CONFED_SEQUENCE or AS_CONFED_SET or if the AS_PATH is empty,
+         or
+
+      *  the distinguished value "NONE" if the final segment of the
+         AS_PATH attribute is of any other type.
+  */
+  int validation_result = validate_prefix(peer, p, attr);
+  return validation_policy_check(validation_result);
+}
 
 int validate_prefix(struct peer *peer, struct prefix *p, struct attr *attr){
 //  ip_addr prefix;
