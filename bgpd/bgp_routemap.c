@@ -2971,6 +2971,37 @@ ALIAS (no_match_origin,
        "local IGP\n"
        "unknown heritage\n")
 
+DEFUN (match_rpki,
+		   match_rpki_cmd,
+       "match rpki (valid|invalid|notfound)",
+       MATCH_STR
+       "Match rpki prefix status\n"
+       "prefix is valid \n"
+       "prefix is invalid \n"
+       "prefix is not found \n")
+{
+  if (strcmp (argv[0], "valid") == 0)
+    return bgp_route_match_add (vty, vty->index, "rpki", "valid");
+  if (strcmp (argv[0], "invalid") == 0)
+    return bgp_route_match_add (vty, vty->index, "rpki", "invalid");
+  if (strcmp (argv[0], "notfound") == 0)
+    return bgp_route_match_add (vty, vty->index, "rpki", "notfound");
+  return CMD_WARNING;
+}
+
+DEFUN (no_match_rpki,
+       no_match_rpki_cmd,
+       "no match rpki (valid|invalid|notfound)",
+       NO_STR
+       MATCH_STR
+       "Match rpki prefix status\n"
+       "prefix is valid \n"
+       "prefix is invalid \n"
+       "prefix is not found \n")
+{
+  return bgp_route_match_delete (vty, vty->index, "peer", argv[0]);
+}
+
 DEFUN (set_ip_nexthop,
        set_ip_nexthop_cmd,
        "set ip next-hop A.B.C.D",
@@ -4005,6 +4036,8 @@ bgp_route_map_init (void)
   install_element (RMAP_NODE, &match_probability_cmd);
   install_element (RMAP_NODE, &no_match_probability_cmd);
   install_element (RMAP_NODE, &no_match_probability_val_cmd);
+  install_element (RMAP_NODE, &match_rpki_cmd);
+  install_element (RMAP_NODE, &no_match_rpki_cmd);
 
   install_element (RMAP_NODE, &set_ip_nexthop_cmd);
   install_element (RMAP_NODE, &set_ip_nexthop_peer_cmd);

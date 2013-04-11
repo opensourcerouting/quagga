@@ -11,11 +11,17 @@
 #include "command.h"
 #include "linklist.h"
 #include "memory.h"
-#include "bgpd/rpki/bgp_rpki.h"
+#include "routemap.h"
+
 #include "rtrlib/rtrlib.h"
 #include "rtrlib/lib/ip.h"
 #include "rtrlib/transport/tcp/tcp_transport.h"
 #include "rtrlib/transport/ssh/ssh_transport.h"
+
+#include "bgpd/bgp_route.h"
+#include "bgpd/bgp_attr.h"
+#include "bgpd/bgp_aspath.h"
+#include "bgpd/rpki/bgp_rpki.h"
 
 /**************************************/
 /** Declaration of structs & enums   **/
@@ -331,6 +337,90 @@ DEFUN (show_bgp_rpki,
   return CMD_SUCCESS;
 }
 
+
+
+/**************************************************/
+/** Declaration of route-map match rpki command  **/
+/**************************************************/
+
+static route_map_result_t route_match_rpki (void *rule, struct prefix *prefix,
+			route_map_object_t type, void *object) {
+
+  int* rpki_status = rule;
+  struct bgp_info* bgp_info;
+  struct assegment* as_segment;
+  as_t as_number = 0;
+
+  if (type == RMAP_BGP) {
+    bgp_info = object;
+    /* No aspath means route comes from iBGP*/
+    if(!bgp_info->attr->aspath){
+      // Set own as number
+      as_number = bgp_info->peer->bgp->as;
+    }
+    else {
+      as_segment = bgp_info->attr->aspath->segments;
+      /* Find last AsSegment */
+      while (as_segment->next){
+        as_segment = as_segment->next;
+      }
+      if(as_segment->type == AS_SEQUENCE){
+        // Get rightmost asn
+        as_number = as_segment->as[as_segment->length - 1];
+      }
+      else if (as_segment->type == AS_CONFED_SEQUENCE
+            || as_segment->type == AS_CONFED_SET) {
+        // Set own as number
+        as_number = bgp_info->peer->bgp->as;
+      } else {
+        // Take distinguished value NONE as asn
+        // we just leave as_number as zero
+      }
+    }
+//    switch (prefix->family) {
+//      case :
+//
+//        break;
+//      default:
+//        break;
+//    }
+    char* prefix_string = prefix->u.val;
+    /* Lookup rpki status of prefix. */
+    if(validate_prefix(prefix, as_number, prefix->prefixlen) == *rpki_status){
+      return RMAP_MATCH;
+    }
+  }
+  return RMAP_NOMATCH;
+}
+
+
+static void* route_match_rpki_compile (const char *arg) {
+  int* rpki_status;
+
+  rpki_status = XMALLOC (MTYPE_ROUTE_MAP_COMPILED, sizeof (u_char));
+
+  if (strcmp (arg, "valid") == 0)
+    *rpki_status = RPKI_VALID;
+  else if (strcmp (arg, "invalid") == 0)
+    *rpki_status = RPKI_INVALID;
+  else
+    *rpki_status = RPKI_UNKNOWN;
+
+  return rpki_status;
+}
+
+static void route_match_rpki_free (void *rule) {
+  XFREE (MTYPE_ROUTE_MAP_COMPILED, rule);
+}
+
+struct route_map_rule_cmd route_match_rpki_cmd =
+{
+  "rpki",
+  route_match_rpki,
+  route_match_rpki_compile,
+  route_match_rpki_free
+};
+
 void install_cli_commands(){
   cache_group_list = list_new();
   cache_group_list->del = delete_cache_group;
@@ -340,5 +430,8 @@ void install_cli_commands(){
   install_element (CONFIG_NODE, &rpki_cache_cmd);
   install_element (BGP_NODE, &neighbor_rpki_off_cmd);
   install_element (VIEW_NODE, &show_bgp_rpki_cmd);
+
+  route_map_install_match (&route_match_rpki_cmd);
+
 }
 

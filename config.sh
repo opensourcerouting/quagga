@@ -2,7 +2,6 @@
 
 # make -k distclean 
 # /bin/sh ./config.status --recheck
-./configure  -C --prefix=/home/michael/Masterarbeit/Quagga/install/ \
---localstatedir=/home/michael/Masterarbeit/Quagga/install/var \
---enable-user=michael --enable-group=users
-
+./configure  -C --prefix=/home/mic/Masterarbeit/Quagga-install/ \
+--localstatedir=/home/mic/Masterarbeit/Quagga-install/var \
+--enable-user=mic --enable-group=users

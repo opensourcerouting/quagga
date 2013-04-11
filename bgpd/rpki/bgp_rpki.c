@@ -93,21 +93,26 @@ int rpki_validation_filter(struct peer *peer, struct prefix *p, struct attr *att
   return validation_policy_check(validation_result);
 }
 
-int validate_prefix(struct peer *peer, struct prefix *p, struct attr *attr){
-//  ip_addr prefix;
-//  ip_str_to_addr(address, &prefix);
-//  pfxv_state result;
-//  rtr_mgr_validate(&rtr_config, asn, &prefix, mask_len, &result);
-//  switch (result) {
-//    case BGP_PFXV_STATE_VALID:
-//      return RPKI_VALID;
-//    case BGP_PFXV_STATE_NOT_FOUND:
-//      return RPKI_UNKNOWN;
-//    case BGP_PFXV_STATE_INVALID:
-//      return RPKI_INVALID;
-//    default:
-//      break;
-//  }
+int validate_prefix(char *address, uint32_t asn, uint8_t mask_len){
+  ip_addr prefix;
+  if(ip_str_to_addr(address, &prefix) == 0){
+    RPKI_DEBUG("ERROR validate_prefix: Could not make ip address out of string.");
+    return -1;
+  }
+  pfxv_state result;
+
+  rtr_mgr_validate(&rtr_config, asn, &prefix, mask_len, &result);
+
+  switch (result) {
+    case BGP_PFXV_STATE_VALID:
+      return RPKI_VALID;
+    case BGP_PFXV_STATE_NOT_FOUND:
+      return RPKI_UNKNOWN;
+    case BGP_PFXV_STATE_INVALID:
+      return RPKI_INVALID;
+    default:
+      break;
+  }
   return -1;
 }
 
