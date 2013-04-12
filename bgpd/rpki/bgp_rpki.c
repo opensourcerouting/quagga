@@ -69,45 +69,60 @@ int validation_policy_check(int validation_result){
  * return 1 if route is filtered
  * return 0 if route is not filtered
  */
-int rpki_validation_filter(struct peer *peer, struct prefix *p, struct attr *attr,
-                  afi_t afi, safi_t safi){
+int rpki_validation_filter(struct peer *peer, struct prefix *p,
+    struct attr *attr, afi_t afi, safi_t safi) {
   // First check if filter has to be applied
-  if(!apply_rpki_filter){
+  if (!apply_rpki_filter) {
     return 0;
   }
   /*
-  Route Origin ASN: The origin AS number derived from a Route as
-      follows:
+   Route Origin ASN: The origin AS number derived from a Route as
+   follows:
 
-      *  the rightmost AS in the final segment of the AS_PATH attribute
-         in the Route if that segment is of type AS_SEQUENCE, or
+   *  the rightmost AS in the final segment of the AS_PATH attribute
+   in the Route if that segment is of type AS_SEQUENCE, or
 
-      *  the BGP speaker's own AS number if that segment is of type
-         AS_CONFED_SEQUENCE or AS_CONFED_SET or if the AS_PATH is empty,
-         or
+   *  the BGP speaker's own AS number if that segment is of type
+   AS_CONFED_SEQUENCE or AS_CONFED_SET or if the AS_PATH is empty,
+   or
 
-      *  the distinguished value "NONE" if the final segment of the
-         AS_PATH attribute is of any other type.
-  */
+   *  the distinguished value "NONE" if the final segment of the
+   AS_PATH attribute is of any other type.
+   */
   int validation_result = validate_prefix(peer, p, attr);
   return validation_policy_check(validation_result);
 }
 
-int validate_prefix(char *address, uint32_t asn, uint8_t mask_len){
-  ip_addr prefix;
-  if(ip_str_to_addr(address, &prefix) == 0){
-    RPKI_DEBUG("ERROR validate_prefix: Could not make ip address out of string.");
-    return -1;
-  }
+int validate_prefix(struct prefix *prefix, uint32_t asn, uint8_t mask_len) {
+  ip_addr ip_addr_prefix;
   pfxv_state result;
 
+//  if(ip_str_to_addr(address, &prefix) == 0){
+//    RPKI_DEBUG("ERROR validate_prefix: Could not make ip address out of string.");
+//    return -1;
+//  }
+
+  switch (prefix->family) {
+    case AF_INET:
+      ip_addr_prefix.ver = IPV4;
+      ip_addr_prefix.u.addr4.addr = (uint32_t)prefix->u.prefix4.s_addr;
+      break;
+    case AF_INET6:
+#ifdef HAVE_IPV6
+      ip_addr_prefix.ver = IPV6;
+//      ip_addr_prefix.u.addr6.addr = (uint32_t[4])prefix->u.prefix6.s6_addr32;
+#endif /* HAVE_IPV6 */
+      break;
+    default:
+      return -1;
+  }
   rtr_mgr_validate(&rtr_config, asn, &prefix, mask_len, &result);
 
   switch (result) {
     case BGP_PFXV_STATE_VALID:
       return RPKI_VALID;
     case BGP_PFXV_STATE_NOT_FOUND:
-      return RPKI_UNKNOWN;
+      return RPKI_NOTFOUND;
     case BGP_PFXV_STATE_INVALID:
       return RPKI_INVALID;
     default:

@@ -29,7 +29,7 @@
 #define TIMEOUT_DEFAULT 1000
 #define APPLY_RPKI_FILTER_DEFAULT 1
 #define RPKI_VALID      1
-#define RPKI_UNKNOWN    2
+#define RPKI_NOTFOUND   2
 #define RPKI_INVALID    3
 /**********************************/
 /** Declaration of variables     **/
@@ -47,7 +47,7 @@ void rpki_test(void);
 void rpki_init(void);
 void rpki_finish(void);
 //static void update_cb(struct pfx_table* p, const pfx_record rec, const bool added);
-int validate_prefix(char *address, uint32_t asn, uint8_t mask_len);
+int validate_prefix(struct prefix *prefix, uint32_t asn, uint8_t mask_len);
 int validation_policy_check(int validation_result);
 int rpki_validation_filter(struct peer *peer, struct prefix *p, struct attr *attr, afi_t afi, safi_t safi);
 #endif /* BGP_RPKI_H_ */
