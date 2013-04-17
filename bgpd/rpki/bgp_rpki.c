@@ -116,7 +116,7 @@ int validate_prefix(struct prefix *prefix, uint32_t asn, uint8_t mask_len) {
     default:
       return -1;
   }
-  rtr_mgr_validate(&rtr_config, asn, &prefix, mask_len, &result);
+  rtr_mgr_validate(&rtr_config, asn, &ip_addr_prefix, mask_len, &result);
 
   switch (result) {
     case BGP_PFXV_STATE_VALID:
