@@ -57,7 +57,17 @@ void rpki_finish(void){
 }
 
 void rpki_test(void){
-  RPKI_DEBUG("XXX RPKI include works!!!!");
+  struct prefix prefix = {
+      .family=AF_INET,
+      .prefixlen=8,
+      .u={1924}
+  };
+  char buf[BUFSIZ];
+
+  RPKI_DEBUG("Prefix Testoutput");
+
+  RPKI_DEBUG("Validating Prefix:%s ", inet_ntop (prefix.family, &prefix.u.prefix, buf, BUFSIZ));
+  exit(1);
 }
 
 int validation_policy_check(int validation_result){
@@ -96,13 +106,13 @@ int rpki_validation_filter(struct peer *peer, struct prefix *p,
 int validate_prefix(struct prefix *prefix, uint32_t asn, uint8_t mask_len) {
   ip_addr ip_addr_prefix;
   pfxv_state result;
-
+  char buf[BUFSIZ];
 //  if(ip_str_to_addr(address, &prefix) == 0){
 //    RPKI_DEBUG("ERROR validate_prefix: Could not make ip address out of string.");
 //    return -1;
 //  }
 
-  RPKI_DEBUG("Validating Prefix %s\%hhu from asn %u", prefix->u.prefix, prefix->prefixlen, asn);
+  RPKI_DEBUG("Validating Prefix %s from asn %u", inet_ntop (prefix->family, &prefix->u.prefix, buf, BUFSIZ), asn);
 
   switch (prefix->family) {
     case AF_INET:
