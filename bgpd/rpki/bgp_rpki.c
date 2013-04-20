@@ -102,7 +102,7 @@ int validate_prefix(struct prefix *prefix, uint32_t asn, uint8_t mask_len) {
 //    return -1;
 //  }
 
-  RPKI_DEBUG("Validating Prefix %s\%hhu from asn %u", (char*)prefix->u, prefix->prefixlen, asn);
+  RPKI_DEBUG("Validating Prefix %s\%hhu from asn %u", prefix->u.prefix, prefix->prefixlen, asn);
 
   switch (prefix->family) {
     case AF_INET:
