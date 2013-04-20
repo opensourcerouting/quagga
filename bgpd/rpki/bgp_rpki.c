@@ -102,10 +102,12 @@ int validate_prefix(struct prefix *prefix, uint32_t asn, uint8_t mask_len) {
 //    return -1;
 //  }
 
+  RPKI_DEBUG("Validating Prefix %s\%hhu from asn %u", (char*)prefix->u, prefix->prefixlen, asn);
+
   switch (prefix->family) {
     case AF_INET:
       ip_addr_prefix.ver = IPV4;
-      ip_addr_prefix.u.addr4.addr = (uint32_t)prefix->u.prefix4.s_addr;
+      ip_addr_prefix.u.addr4.addr = prefix->u.prefix4.s_addr;
       break;
     case AF_INET6:
 #ifdef HAVE_IPV6
