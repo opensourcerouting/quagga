@@ -107,16 +107,19 @@ int validate_prefix(struct prefix *prefix, uint32_t asn, uint8_t mask_len) {
   ip_addr ip_addr_prefix;
   pfxv_state result;
   char buf[BUFSIZ];
-  inet_ntop (prefix->family, &prefix->u.prefix, buf, BUFSIZ);
+  const char* prefix_string = inet_ntop (prefix->family, &prefix->u.prefix, buf, BUFSIZ);
 
-  RPKI_DEBUG("Validating Prefix %s from asn %u", &buf , asn);
-  if(ip_str_to_addr(&buf, &prefix) == 0){
-    RPKI_DEBUG("ERROR validate_prefix: Could not make ip address out of string.");
-    return -1;
-  }
+  RPKI_DEBUG("Validating Prefix %s from asn %u", prefix_string , asn);
+
   switch (prefix->family) {
     case AF_INET:
       ip_addr_prefix.ver = IPV4;
+      if(ip_str_to_addr(prefix_string, &ip_addr_prefix) == 0){
+        RPKI_DEBUG("ERROR validate_prefix: Could not make ip address out of string.");
+        return -1;
+      }
+      RPKI_DEBUG("Original Prefix is:    %u", prefix->u.prefix4.s_addr);
+      RPKI_DEBUG("Transformed Prefix is: %u", ip_addr_prefix.u.addr4.addr);
 //      ip_addr_prefix.u.addr4.addr = prefix->u.prefix4.s_addr;
       break;
     case AF_INET6:
