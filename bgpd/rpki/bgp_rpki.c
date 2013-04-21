@@ -79,12 +79,12 @@ int validation_policy_check(int validation_result){
  * return 1 if route is filtered
  * return 0 if route is not filtered
  */
-int rpki_validation_filter(struct peer *peer, struct prefix *p,
-    struct attr *attr, afi_t afi, safi_t safi) {
-  // First check if filter has to be applied
-  if (!apply_rpki_filter) {
-    return 0;
-  }
+//int rpki_validation_filter(struct peer *peer, struct prefix *p,
+//    struct attr *attr, afi_t afi, safi_t safi) {
+//  // First check if filter has to be applied
+//  if (!apply_rpki_filter) {
+//    return 0;
+//  }
   /*
    Route Origin ASN: The origin AS number derived from a Route as
    follows:
@@ -99,25 +99,25 @@ int rpki_validation_filter(struct peer *peer, struct prefix *p,
    *  the distinguished value "NONE" if the final segment of the
    AS_PATH attribute is of any other type.
    */
-  int validation_result = validate_prefix(peer, p, attr);
-  return validation_policy_check(validation_result);
-}
+//  int validation_result = validate_prefix(peer, p, attr);
+//  return validation_policy_check(validation_result);
+//}
 
 int validate_prefix(struct prefix *prefix, uint32_t asn, uint8_t mask_len) {
   ip_addr ip_addr_prefix;
   pfxv_state result;
   char buf[BUFSIZ];
-//  if(ip_str_to_addr(address, &prefix) == 0){
-//    RPKI_DEBUG("ERROR validate_prefix: Could not make ip address out of string.");
-//    return -1;
-//  }
+  inet_ntop (prefix->family, &prefix->u.prefix, buf, BUFSIZ);
 
-  RPKI_DEBUG("Validating Prefix %s from asn %u", inet_ntop (prefix->family, &prefix->u.prefix, buf, BUFSIZ), asn);
-
+  RPKI_DEBUG("Validating Prefix %s from asn %u", &buf , asn);
+  if(ip_str_to_addr(&buf, &prefix) == 0){
+    RPKI_DEBUG("ERROR validate_prefix: Could not make ip address out of string.");
+    return -1;
+  }
   switch (prefix->family) {
     case AF_INET:
       ip_addr_prefix.ver = IPV4;
-      ip_addr_prefix.u.addr4.addr = prefix->u.prefix4.s_addr;
+//      ip_addr_prefix.u.addr4.addr = prefix->u.prefix4.s_addr;
       break;
     case AF_INET6:
 #ifdef HAVE_IPV6

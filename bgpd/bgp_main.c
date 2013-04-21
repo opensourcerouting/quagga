@@ -277,7 +277,7 @@ bgp_exit (int status)
   /* reverse bgp_route_map_init/route_map_init */
   route_map_finish ();
 
-  /* reverse bgp_scan_init */
+  /* reverse bgp_scan_irpki_testnit */
   bgp_scan_finish ();
 
   /* reverse bgp_rpki_init  */
@@ -441,6 +441,7 @@ main (int argc, char **argv)
   /* BGP related initialization.  */
   bgp_init ();
   #ifdef include_rpki
+
   rpki_init();
   #endif
 
@@ -466,6 +467,7 @@ main (int argc, char **argv)
 
   /* Start rpki protocol to get validated prefix data */
   #ifdef include_rpki
+//  rpki_test();
   rpki_start();
   #endif
 

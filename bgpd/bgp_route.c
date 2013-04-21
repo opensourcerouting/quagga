@@ -2145,11 +2145,11 @@ bgp_update_main (struct peer *peer, struct prefix *p, struct attr *attr,
 
   #ifdef include_rpki
   /* Apply validation filter.  */
-  if (rpki_validation_filter(peer, p, attr, afi, safi))
-    {
-      reason = "origin of address prefix not validated by rpki;";
-      goto filtered;
-    }
+//  if (rpki_validation_filter(peer, p, attr, afi, safi))
+//    {
+//      reason = "origin of address prefix not validated by rpki;";
+//      goto filtered;
+//    }
   #endif
 
   new_attr.extra = &new_extra;
