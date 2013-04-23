@@ -11,6 +11,7 @@
 #include "prefix.h"
 #include "bgpd/bgp_attr.h"
 #include "bgpd/bgpd.h"
+
 /**********************************/
 /** Declaration of debug makros  **/
 /**********************************/
@@ -31,6 +32,7 @@
 #define RPKI_VALID      1
 #define RPKI_NOTFOUND   2
 #define RPKI_INVALID    3
+
 /**********************************/
 /** Declaration of variables     **/
 /**********************************/
@@ -38,6 +40,20 @@ struct list* cache_group_list;
 unsigned int polling_period;
 unsigned int timeout;
 unsigned int apply_rpki_filter;
+
+/**********************************/
+/** Declaration of structs       **/
+/**********************************/
+typedef struct data_elem_t{
+    uint32_t asn;
+    uint8_t max_len;
+    uintptr_t socket_id;
+} data_elem;
+
+typedef struct node_data_t{
+    unsigned int len;
+    data_elem* ary;
+} node_data;
 
 /**********************************/
 /** Declaration of functions     **/
@@ -50,4 +66,6 @@ void rpki_finish(void);
 int validate_prefix(struct prefix *prefix, uint32_t asn, uint8_t mask_len);
 int validation_policy_check(int validation_result);
 int rpki_validation_filter(struct peer *peer, struct prefix *p, struct attr *attr, afi_t afi, safi_t safi);
+void print_prefix_table(struct vty *vty);
+
 #endif /* BGP_RPKI_H_ */

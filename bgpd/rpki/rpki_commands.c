@@ -330,15 +330,13 @@ DEFUN (neighbor_rpki_off,
   return CMD_SUCCESS;
 }
 
-DEFUN (show_bgp_rpki,
-    show_bgp_rpki_cmd,
-    "show bgp rpki",
+DEFUN (show_rpki_prefix_table,
+    show_rpki_prefix_table_cmd,
+    "show rpki prefix-table",
     SHOW_STR
-    BGP_STR
-    "Show RPKI/RTR info\n") {
-  vty_out(vty, "RPKI/RTR Information %s", VTY_NEWLINE);
-
-//  return CMD_WARNING;
+    "Show RPKI/RTR info\n"
+    "Show validated prefixes which were received from RPKI Cache") {
+  print_prefix_table(vty);
   return CMD_SUCCESS;
 }
 
@@ -420,7 +418,7 @@ void install_cli_commands() {
   install_element(CONFIG_NODE, &rpki_group_cmd);
   install_element(CONFIG_NODE, &rpki_cache_cmd);
   install_element(BGP_NODE, &neighbor_rpki_off_cmd);
-  install_element(VIEW_NODE, &show_bgp_rpki_cmd);
+  install_element(VIEW_NODE, &show_rpki_prefix_table_cmd);
 
   route_map_install_match(&route_match_rpki_cmd);
 
