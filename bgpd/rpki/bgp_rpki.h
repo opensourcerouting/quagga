@@ -40,6 +40,7 @@ struct list* cache_group_list;
 unsigned int polling_period;
 unsigned int timeout;
 unsigned int apply_rpki_filter;
+int prefix_validation_is_on;
 
 /**********************************/
 /** Declaration of structs       **/
@@ -59,13 +60,14 @@ typedef struct node_data_t{
 /** Declaration of functions     **/
 /**********************************/
 void rpki_start(void);
+void rpki_restart(void);
 void rpki_test(void);
 void rpki_init(void);
 void rpki_finish(void);
+int is_synchronized(void);
 //static void update_cb(struct pfx_table* p, const pfx_record rec, const bool added);
-int validate_prefix(struct prefix *prefix, uint32_t asn, uint8_t mask_len);
-int validation_policy_check(int validation_result);
-int rpki_validation_filter(struct peer *peer, struct prefix *p, struct attr *attr, afi_t afi, safi_t safi);
+int rpki_validate_prefix(struct peer* peer, struct attr* attr, struct prefix *prefix);
+
 void print_prefix_table(struct vty *vty);
 
 #endif /* BGP_RPKI_H_ */

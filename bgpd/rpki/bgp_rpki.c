@@ -14,6 +14,7 @@
 #include "memory.h"
 #include "bgpd/bgpd.h"
 #include "bgpd/bgp_attr.h"
+#include "bgpd/bgp_aspath.h"
 #include "bgpd/rpki/bgp_rpki.h"
 #include "bgpd/rpki/rpki_commands.h"
 #include "rtrlib/rtrlib.h"
@@ -27,18 +28,31 @@ rtr_mgr_config rtr_config;
 
 static void list_all_nodes(struct vty *vty, const lpfst_node* node, unsigned int* count);
 static void print_record(struct vty *vty, const lpfst_node* node);
+static int validate_prefix(struct prefix *prefix, uint32_t asn, uint8_t mask_len);
 
 void rpki_init(void){
   install_cli_commands();
   polling_period = POLLING_PERIOD_DEFAULT;
   timeout = TIMEOUT_DEFAULT;
   apply_rpki_filter = APPLY_RPKI_FILTER_DEFAULT;
+  prefix_validation_is_on = 0;
 }
 
+int is_synchronized(void){
+  return rtr_mgr_conf_in_sync(&rtr_config);
+}
+
+void rpki_restart(void){
+  RPKI_DEBUG("Restarting RPKI Session");
+  rtr_mgr_stop(&rtr_config);
+  rtr_mgr_free(&rtr_config);
+  rpki_start();
+}
 
 void rpki_start(){
   if((rtr_config.groups = get_rtr_mgr_groups()) == NULL){
       RPKI_DEBUG("No caches were found in config. Prefix validation is off.");
+      prefix_validation_is_on = 0;
       return;
   }
   rtr_config.len = get_number_of_cache_groups();
@@ -50,6 +64,7 @@ void rpki_start(){
       sleep(1);
   }
   RPKI_DEBUG("Got it!");
+  prefix_validation_is_on = 1;
 }
 
 void rpki_finish(void){
@@ -62,6 +77,36 @@ void rpki_finish(void){
 
 void rpki_test(void){
   RPKI_DEBUG("Prefix Testoutput");
+}
+
+int rpki_validate_prefix(struct peer* peer, struct attr* attr, struct prefix *prefix){
+  struct assegment* as_segment;
+  as_t as_number = 0;
+  // No aspath means route comes from iBGP
+  if (!attr->aspath) {
+    // Set own as number
+    as_number = peer->bgp->as;
+  }
+  else {
+    as_segment = attr->aspath->segments;
+    // Find last AsSegment
+    while (as_segment->next) {
+      as_segment = as_segment->next;
+    }
+    if (as_segment->type == AS_SEQUENCE) {
+      // Get rightmost asn
+      as_number = as_segment->as[as_segment->length - 1];
+    } else if (as_segment->type == AS_CONFED_SEQUENCE
+        || as_segment->type == AS_CONFED_SET) {
+      // Set own as number
+      as_number = peer->bgp->as;
+    } else {
+      // RFC says: "Take distinguished value NONE as asn"
+      // we just leave as_number as zero
+    }
+  }
+
+  return validate_prefix(prefix, as_number, prefix->prefixlen);
 }
 
 int validate_prefix(struct prefix *prefix, uint32_t asn, uint8_t mask_len) {

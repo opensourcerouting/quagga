@@ -65,6 +65,8 @@ void delete_cache(void* node_value) {
         cache_p->tr_config.ssh_config->client_privkey_path);
     XFREE(MTYPE_BGP_RPKI_CACHE,
         cache_p->tr_config.ssh_config->client_pubkey_path);
+    XFREE(MTYPE_BGP_RPKI_CACHE,
+            cache_p->tr_config.ssh_config->server_hostkey_path);
     XFREE(MTYPE_BGP_RPKI_CACHE, cache_p->tr_config.ssh_config);
   }
   XFREE(MTYPE_BGP_RPKI_CACHE, cache_p->rtr_socket->tr_socket);
@@ -117,9 +119,9 @@ int add_tcp_cache(struct list* cache_list, char* host, char* port) {
   return SUCCESS;
 }
 
-int add_ssh_cache(struct list* cache_list, char* host, int port,
+int add_ssh_cache(struct list* cache_list, char* host, unsigned int port,
     const char* username, const char* client_privkey_path,
-    const char* client_pubkey_path) {
+    const char* client_pubkey_path, const char* server_pubkey_path) {
 
   tr_ssh_config* ssh_config_p;
   tr_socket* tr_socket_p;
@@ -132,14 +134,21 @@ int add_ssh_cache(struct list* cache_list, char* host, int port,
       == NULL ) {
     return ERROR;
   }
-  ssh_config_p->host = XSTRDUP(MTYPE_BGP_RPKI_CACHE, host);
+
   memcpy(&(ssh_config_p->port), &port, sizeof(int));
+  ssh_config_p->host = XSTRDUP(MTYPE_BGP_RPKI_CACHE, host);
+
   ssh_config_p->username = XSTRDUP(MTYPE_BGP_RPKI_CACHE, username);
-  ssh_config_p->client_privkey_path =
-      XSTRDUP(MTYPE_BGP_RPKI_CACHE, client_privkey_path);
-  ssh_config_p->client_pubkey_path =
-      XSTRDUP(MTYPE_BGP_RPKI_CACHE, client_pubkey_path);
-  ssh_config_p->server_hostkey_path = NULL;
+  ssh_config_p->client_privkey_path = XSTRDUP(MTYPE_BGP_RPKI_CACHE, client_privkey_path);
+  ssh_config_p->client_pubkey_path = XSTRDUP(MTYPE_BGP_RPKI_CACHE, client_pubkey_path);
+
+  if(server_pubkey_path != NULL){
+    ssh_config_p->server_hostkey_path = XSTRDUP(MTYPE_BGP_RPKI_CACHE, server_pubkey_path);;
+  }
+  else {
+    ssh_config_p->server_hostkey_path = NULL;
+  }
+
   tr_ssh_init(ssh_config_p, tr_socket_p);
   if ((cache_p = create_cache(tr_socket_p)) == NULL ) {
     return ERROR;
@@ -232,6 +241,66 @@ void free_rtr_mgr_groups(rtr_mgr_group* group, int length) {
 void delete_cache_group_list() {
   list_delete(cache_group_list);
 }
+/*******************************************/
+/** Declaration of static functions       **/
+/*******************************************/
+
+static void print_configuration(struct vty* vty){
+  struct listnode *cache_group_node;
+  cache_group* cache_group;
+
+  vty_out(vty, "Current RPKI configuration%s", VTY_NEWLINE);
+  vty_out(vty, "! %s", VTY_NEWLINE);
+  vty_out(vty, "rpki polling_period %d %s", polling_period, VTY_NEWLINE);
+  vty_out(vty, "rpki timeout %d %s", timeout, VTY_NEWLINE);
+  vty_out(vty, "! %s", VTY_NEWLINE);
+
+  if (listcount(cache_group_list) == 0) {
+    vty_out(vty, "end %s", VTY_NEWLINE);
+    return;
+  }
+
+  for (ALL_LIST_ELEMENTS_RO(cache_group_list, cache_group_node, cache_group)) {
+    struct list* cache_list = cache_group->cache_config_list;
+    struct listnode* cache_node;
+    cache* cache;
+
+    vty_out(vty, "rpki group %d %s", cache_group->preference_value, VTY_NEWLINE);
+
+    if (listcount(cache_list) == 0) {
+      vty_out(vty, "! %s", VTY_NEWLINE);
+      break;
+    }
+
+    for (ALL_LIST_ELEMENTS_RO(cache_list, cache_node, cache)) {
+      switch (cache->type) {
+        tr_tcp_config* tcp_config;
+        tr_ssh_config* ssh_config;
+        case TCP:
+          tcp_config = cache->tr_config.tcp_config;
+          vty_out(vty, "rpki cache %s %s %s",tcp_config->host, tcp_config->port , VTY_NEWLINE);
+          break;
+
+        case SSH:
+          ssh_config = cache->tr_config.ssh_config;
+          vty_out(vty, "  rpki cache %s %u %s %s %s %s %s",
+              ssh_config->host,
+              ssh_config->port,
+              ssh_config->username,
+              ssh_config->client_privkey_path,
+              ssh_config->client_pubkey_path,
+              ssh_config->server_hostkey_path != NULL ? ssh_config->server_hostkey_path : " ",
+              VTY_NEWLINE);
+          break;
+
+        default:
+          break;
+      }
+    }
+    vty_out(vty, "! %s", VTY_NEWLINE);
+  }
+  vty_out(vty, "end %s", VTY_NEWLINE);
+}
 
 /**********************************/
 /** Declaration of cli commands  **/
@@ -281,14 +350,15 @@ DEFUN (rpki_group,
 
 DEFUN (rpki_cache,
     rpki_cache_cmd,
-    "rpki cache (A.B.C.D|WORD) PORT [SSH_UNAME] [SSH_PRIVKEY] [SSH_PUBKEY]",
+    "rpki cache (A.B.C.D|WORD) PORT [SSH_UNAME] [SSH_PRIVKEY] [SSH_PUBKEY] [SERVER_PUBKEY]",
     "Enable rpki in this bgp deamon\n"
     "Install a cache server to current group\n"
     "IP address of cache server\n"
     "Tcp port number \n"
-    "SSH_UNAME \n"
-    "SSH_PRIVKEY \n"
-    "SSH_PUBKEY \n") {
+    "SSH user name \n"
+    "Path to own SSH private key \n"
+    "Path to own SSH public key \n"
+    "Path to Public key of cache server \n") {
   int return_value = SUCCESS;
   if (list_isempty(cache_group_list)) {
     vty_out(vty, "Could not create new rpki cache because "
@@ -302,7 +372,15 @@ DEFUN (rpki_cache,
     struct listnode* list_tail = listtail(cache_group_list);
     cache_group* current_group = listgetdata(list_tail);
     return_value = add_ssh_cache(current_group->cache_config_list, argv[0],
-        port, argv[2], argv[3], argv[4]);
+        port, argv[2], argv[3], argv[4], NULL);
+  }
+  else if (argc == 6) {
+    unsigned int port;
+    VTY_GET_INTEGER("rpki cache ssh port", port, argv[1]);
+    struct listnode* list_tail = listtail(cache_group_list);
+    cache_group* current_group = listgetdata(list_tail);
+    return_value = add_ssh_cache(current_group->cache_config_list, argv[0],
+        port, argv[2], argv[3], argv[4], argv[5]);
   }
   // use tcp connection
   else {
@@ -340,6 +418,28 @@ DEFUN (show_rpki_prefix_table,
   return CMD_SUCCESS;
 }
 
+DEFUN (show_rpki_cache_connection,
+    show_rpki_cache_connection_cmd,
+    "show rpki cache-connection",
+    SHOW_STR
+    "Show RPKI/RTR info\n"
+    "Show to which RPKI Cache Servers we have a connection") {
+  vty_out(vty, "Not yet implemented.%s", VTY_NEWLINE);
+  return CMD_SUCCESS;
+}
+
+DEFUN (show_rpki_configuration,
+    show_rpki_configuration_cmd,
+    "show rpki configuration",
+    SHOW_STR
+    "Show RPKI/RTR info\n"
+    "Show the current RPKI configuration settings") {
+  print_configuration(vty);
+  return CMD_SUCCESS;
+}
+
+
+
 /**************************************************/
 /** Declaration of route-map match rpki command  **/
 /**************************************************/
@@ -349,36 +449,11 @@ static route_map_result_t route_match_rpki(void *rule, struct prefix *prefix,
 
   int* rpki_status = rule;
   struct bgp_info* bgp_info;
-  struct assegment* as_segment;
-  as_t as_number = 0;
 
   if (type == RMAP_BGP) {
     bgp_info = object;
-    /* No aspath means route comes from iBGP*/
-    if (!bgp_info->attr->aspath) {
-      // Set own as number
-      as_number = bgp_info->peer->bgp->as;
-    } else {
-      as_segment = bgp_info->attr->aspath->segments;
-      /* Find last AsSegment */
-      while (as_segment->next) {
-        as_segment = as_segment->next;
-      }
-      if (as_segment->type == AS_SEQUENCE) {
-        // Get rightmost asn
-        as_number = as_segment->as[as_segment->length - 1];
-      } else if (as_segment->type == AS_CONFED_SEQUENCE
-          || as_segment->type == AS_CONFED_SET) {
-        // Set own as number
-        as_number = bgp_info->peer->bgp->as;
-      } else {
-        // Take distinguished value NONE as asn
-        // we just leave as_number as zero
-      }
-    }
 
-    /* Lookup rpki status of prefix. */
-    if (validate_prefix(prefix, as_number, prefix->prefixlen) == *rpki_status) {
+    if (rpki_validate_prefix(bgp_info->peer, bgp_info->attr, prefix) == *rpki_status) {
       return RMAP_MATCH;
     }
   }
@@ -419,6 +494,8 @@ void install_cli_commands() {
   install_element(CONFIG_NODE, &rpki_cache_cmd);
   install_element(BGP_NODE, &neighbor_rpki_off_cmd);
   install_element(VIEW_NODE, &show_rpki_prefix_table_cmd);
+  install_element(VIEW_NODE, &show_rpki_cache_connection_cmd);
+  install_element(VIEW_NODE, &show_rpki_configuration_cmd);
 
   route_map_install_match(&route_match_rpki_cmd);
 

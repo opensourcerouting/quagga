@@ -2999,7 +2999,13 @@ DEFUN (no_match_rpki,
        "prefix is invalid \n"
        "prefix is not found \n")
 {
-  return bgp_route_match_delete (vty, vty->index, "peer", argv[0]);
+  if (strcmp (argv[0], "valid") == 0)
+    return bgp_route_match_delete (vty, vty->index, "rpki", "valid");
+  if (strcmp (argv[0], "invalid") == 0)
+    return bgp_route_match_delete (vty, vty->index, "rpki", "invalid");
+  if (strcmp (argv[0], "notfound") == 0)
+    return bgp_route_match_delete (vty, vty->index, "rpki", "notfound");
+  return CMD_WARNING;
 }
 
 DEFUN (set_ip_nexthop,

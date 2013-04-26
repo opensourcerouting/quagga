@@ -2083,6 +2083,7 @@ bgp_update_main (struct peer *peer, struct prefix *p, struct attr *attr,
   struct bgp_info *new;
   const char *reason;
   char buf[SU_ADDRSTRLEN];
+  u_char rpki_validation_status = 0;
 
   bgp = peer->bgp;
   rn = bgp_afi_node_get (bgp->rib[afi][safi], afi, safi, p, prd);
@@ -2144,12 +2145,13 @@ bgp_update_main (struct peer *peer, struct prefix *p, struct attr *attr,
     }
 
   #ifdef include_rpki
-  /* Apply validation filter.  */
-//  if (rpki_validation_filter(peer, p, attr, afi, safi))
-//    {
-//      reason = "origin of address prefix not validated by rpki;";
-//      goto filtered;
-//    }
+  /* Apply rpki origin validation.  */
+  rpki_validation_status = rpki_validate_prefix (peer, attr, p);
+  if (rpki_validation_status == RPKI_INVALID)
+    {
+      reason = "origin of address prefix not validated by rpki;";
+      goto filtered;
+    }
   #endif
 
   new_attr.extra = &new_extra;
@@ -2346,6 +2348,7 @@ bgp_update_main (struct peer *peer, struct prefix *p, struct attr *attr,
   new->peer = peer;
   new->attr = attr_new;
   new->uptime = bgp_clock ();
+  new->rpki_validation_status = rpki_validation_status;
 
   /* Update MPLS tag. */
   if (safi == SAFI_MPLS_VPN)
@@ -5627,6 +5630,29 @@ enum bgp_display_type
 static void
 route_vty_short_status_out (struct vty *vty, struct bgp_info *binfo)
 {
+
+#ifdef include_rpki
+  /* RPKI Origin Validation code */
+  switch (binfo->rpki_validation_status)
+    {
+    case RPKI_VALID:
+      vty_out (vty, "V");
+      break;
+
+    case RPKI_INVALID:
+      vty_out (vty, "I");
+      break;
+
+    case RPKI_NOTFOUND:
+      vty_out (vty, "N");
+      break;
+
+    default:
+      vty_out (vty, " ");
+      break;
+    }
+#endif
+
  /* Route status display. */
   if (CHECK_FLAG (binfo->flags, BGP_INFO_REMOVED))
     vty_out (vty, "R");
@@ -6137,6 +6163,7 @@ route_vty_out_detail (struct vty *vty, struct bgp *bgp, struct prefix *p,
 			      "h history, * valid, > best, = multipath,%s"\
 		"              i internal, r RIB-failure, S Stale, R Removed%s"
 #define BGP_SHOW_OCODE_HEADER "Origin codes: i - IGP, e - EGP, ? - incomplete%s%s"
+#define BGP_SHOW_RPKI_HEADER "RPKI validation codes: V valid, I invalid, N not found%s"
 #define BGP_SHOW_HEADER "   Network          Next Hop            Metric LocPrf Weight Path%s"
 #define BGP_SHOW_DAMP_HEADER "   Network          From             Reuse    Path%s"
 #define BGP_SHOW_FLAP_HEADER "   Network          From            Flaps Duration Reuse    Path%s"
@@ -6339,6 +6366,7 @@ bgp_show_table (struct vty *vty, struct bgp_table *table, struct in_addr *router
 	      {
 		vty_out (vty, "BGP table version is 0, local router ID is %s%s", inet_ntoa (*router_id), VTY_NEWLINE);
 		vty_out (vty, BGP_SHOW_SCODE_HEADER, VTY_NEWLINE, VTY_NEWLINE);
+		vty_out (vty, BGP_SHOW_RPKI_HEADER, VTY_NEWLINE);
 		vty_out (vty, BGP_SHOW_OCODE_HEADER, VTY_NEWLINE, VTY_NEWLINE);
 		if (type == bgp_show_type_dampend_paths
 		    || type == bgp_show_type_damp_neighbor)
