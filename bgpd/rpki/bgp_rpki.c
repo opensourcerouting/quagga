@@ -22,7 +22,6 @@
 #include "rtrlib/lib/ip.h"
 #include "rtrlib/transport/tcp/tcp_transport.h"
 #include "rtrlib/transport/ssh/ssh_transport.h"
-//#include "rtrlib/pfx/lpfst/lpfst-pfx.h"
 
 rtr_mgr_config rtr_config;
 
@@ -34,8 +33,8 @@ void rpki_init(void){
   install_cli_commands();
   polling_period = POLLING_PERIOD_DEFAULT;
   timeout = TIMEOUT_DEFAULT;
-  apply_rpki_filter = APPLY_RPKI_FILTER_DEFAULT;
-  prefix_validation_is_on = 0;
+  enable_prefix_validation = ENABLE_PREFIX_VALIDATION;
+  allow_invalid = ALLOW_INVALID;
 }
 
 int is_synchronized(void){
@@ -52,7 +51,6 @@ void rpki_restart(void){
 void rpki_start(){
   if((rtr_config.groups = get_rtr_mgr_groups()) == NULL){
       RPKI_DEBUG("No caches were found in config. Prefix validation is off.");
-      prefix_validation_is_on = 0;
       return;
   }
   rtr_config.len = get_number_of_cache_groups();
@@ -64,7 +62,6 @@ void rpki_start(){
       sleep(1);
   }
   RPKI_DEBUG("Got it!");
-  prefix_validation_is_on = 1;
 }
 
 void rpki_finish(void){
@@ -82,6 +79,11 @@ void rpki_test(void){
 int rpki_validate_prefix(struct peer* peer, struct attr* attr, struct prefix *prefix){
   struct assegment* as_segment;
   as_t as_number = 0;
+
+  if(!is_synchronized() || !enable_prefix_validation){
+    return 0;
+  }
+
   // No aspath means route comes from iBGP
   if (!attr->aspath) {
     // Set own as number
@@ -109,13 +111,12 @@ int rpki_validate_prefix(struct peer* peer, struct attr* attr, struct prefix *pr
   return validate_prefix(prefix, as_number, prefix->prefixlen);
 }
 
-int validate_prefix(struct prefix *prefix, uint32_t asn, uint8_t mask_len) {
+static int validate_prefix(struct prefix *prefix, uint32_t asn, uint8_t mask_len) {
   ip_addr ip_addr_prefix;
   pfxv_state result;
   char buf[BUFSIZ];
   u_char* quagga_prefix = &(prefix->u.prefix);
   u_char* rtr_prefix;
-  int i, j;
   const char* prefix_string = inet_ntop (prefix->family, &prefix->u.prefix, buf, BUFSIZ);
   RPKI_DEBUG("Validating Prefix %s from asn %u", prefix_string , asn);
   switch (prefix->family) {
@@ -127,8 +128,9 @@ int validate_prefix(struct prefix *prefix, uint32_t asn, uint8_t mask_len) {
       rtr_prefix[2] = quagga_prefix[1];
       rtr_prefix[3] = quagga_prefix[0];
       break;
-    case AF_INET6:
+
 #ifdef HAVE_IPV6
+    case AF_INET6:
       ip_addr_prefix.ver = IPV6;
       rtr_prefix = (u_char*) &(ip_addr_prefix.u.addr6.addr);
 
@@ -151,8 +153,9 @@ int validate_prefix(struct prefix *prefix, uint32_t asn, uint8_t mask_len) {
       rtr_prefix[13] = quagga_prefix[14];
       rtr_prefix[14] = quagga_prefix[13];
       rtr_prefix[15] = quagga_prefix[12];
-#endif /* HAVE_IPV6 */
       break;
+#endif /* HAVE_IPV6 */
+
     default:
       return -1;
   }
@@ -168,7 +171,7 @@ int validate_prefix(struct prefix *prefix, uint32_t asn, uint8_t mask_len) {
     default:
       break;
   }
-  return -1;
+  return 0;
 }
 
 

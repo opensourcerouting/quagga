@@ -28,20 +28,20 @@
 #define CMD_TIMEOUT_RANGE "<1-4294967295>"
 #define POLLING_PERIOD_DEFAULT 1000
 #define TIMEOUT_DEFAULT 1000
-#define APPLY_RPKI_FILTER_DEFAULT 1
 #define RPKI_VALID      1
 #define RPKI_NOTFOUND   2
 #define RPKI_INVALID    3
 
+#define ENABLE_PREFIX_VALIDATION 1
+#define ALLOW_INVALID 0
 /**********************************/
 /** Declaration of variables     **/
 /**********************************/
 struct list* cache_group_list;
 unsigned int polling_period;
 unsigned int timeout;
-unsigned int apply_rpki_filter;
-int prefix_validation_is_on;
-
+char enable_prefix_validation;
+char allow_invalid;
 /**********************************/
 /** Declaration of structs       **/
 /**********************************/

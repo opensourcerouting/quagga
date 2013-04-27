@@ -2145,12 +2145,16 @@ bgp_update_main (struct peer *peer, struct prefix *p, struct attr *attr,
     }
 
   #ifdef include_rpki
-  /* Apply rpki origin validation.  */
+  /* Apply rpki origin validation.
+     Default behavior is to filter invalid prefixes. */
+  if (enable_prefix_validation)
+    {
   rpki_validation_status = rpki_validate_prefix (peer, attr, p);
-  if (rpki_validation_status == RPKI_INVALID)
+      if (rpki_validation_status == RPKI_INVALID && !allow_invalid)
     {
       reason = "origin of address prefix not validated by rpki;";
       goto filtered;
+    }
     }
   #endif
 
@@ -5633,6 +5637,8 @@ route_vty_short_status_out (struct vty *vty, struct bgp_info *binfo)
 
 #ifdef include_rpki
   /* RPKI Origin Validation code */
+  if (enable_prefix_validation)
+    {
   switch (binfo->rpki_validation_status)
     {
     case RPKI_VALID:
@@ -5650,6 +5656,7 @@ route_vty_short_status_out (struct vty *vty, struct bgp_info *binfo)
     default:
       vty_out (vty, " ");
       break;
+    }
     }
 #endif
 

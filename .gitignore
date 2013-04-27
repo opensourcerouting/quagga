@@ -38,3 +38,12 @@ build
 m4/*.m4
 !m4/ax_sys_weak_alias.m4
 
+/.autotools
+/.cproject
+/.directory
+/.project
+/.settings/org.eclipse.cdt.codan.core.prefs
+/.settings/org.eclipse.cdt.core.prefs
+/.settings/org.eclipse.cdt.ui.prefs
+/bgpd.log
+/bgpd/rpki/.directory

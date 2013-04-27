@@ -253,6 +253,12 @@ static void print_configuration(struct vty* vty){
   vty_out(vty, "! %s", VTY_NEWLINE);
   vty_out(vty, "rpki polling_period %d %s", polling_period, VTY_NEWLINE);
   vty_out(vty, "rpki timeout %d %s", timeout, VTY_NEWLINE);
+  if(!enable_prefix_validation){
+    vty_out(vty, "bgp bestpath prefix-validate disable %s", VTY_NEWLINE);
+  }
+  if(allow_invalid){
+    vty_out(vty, "bgp bestpath prefix-validate allow-invalid %s", VTY_NEWLINE);
+  }
   vty_out(vty, "! %s", VTY_NEWLINE);
 
   if (listcount(cache_group_list) == 0) {
@@ -398,13 +404,27 @@ DEFUN (rpki_cache,
   return CMD_SUCCESS;
 }
 
-DEFUN (neighbor_rpki_off,
-    neighbor_rpki_off_cmd,
-    NEIGHBOR_CMD2 "rpki-off",
-    NEIGHBOR_STR
-    NEIGHBOR_ADDR_STR2
-    "Don't validate prefixes coming from this neighbor\n") {
-//  return peer_flag_set_vty (vty, argv[0], PEER_FLAG_PASSIVE);
+DEFUN (bgp_bestpath_prefix_validate_disable,
+      bgp_bestpath_prefix_validate_disable_cmd,
+       "bgp bestpath prefix-validate disable",
+       "BGP specific commands\n"
+       "Change the default bestpath selection\n"
+       "Prefix validation attribute\n"
+       "Disable prefix validation\n")
+{
+  enable_prefix_validation = 0;
+  return CMD_SUCCESS;
+}
+
+DEFUN (bgp_bestpath_prefix_validate_allow_invalid,
+      bgp_bestpath_prefix_validate_allow_invalid_cmd,
+       "bgp bestpath prefix-validate allow-invalid",
+       "BGP specific commands\n"
+       "Change the default bestpath selection\n"
+       "Prefix validation attribute\n"
+       "Allow routes to be selected as bestpath even if their prefix validation status is invalid\n")
+{
+  allow_invalid = 1;
   return CMD_SUCCESS;
 }
 
@@ -450,6 +470,10 @@ static route_map_result_t route_match_rpki(void *rule, struct prefix *prefix,
   int* rpki_status = rule;
   struct bgp_info* bgp_info;
 
+  if(!enable_prefix_validation){
+    return RMAP_MATCH;
+  }
+
   if (type == RMAP_BGP) {
     bgp_info = object;
 
@@ -492,7 +516,8 @@ void install_cli_commands() {
   install_element(CONFIG_NODE, &rpki_timeout_cmd);
   install_element(CONFIG_NODE, &rpki_group_cmd);
   install_element(CONFIG_NODE, &rpki_cache_cmd);
-  install_element(BGP_NODE, &neighbor_rpki_off_cmd);
+  install_element(BGP_NODE, &bgp_bestpath_prefix_validate_disable_cmd);
+  install_element(BGP_NODE, &bgp_bestpath_prefix_validate_allow_invalid_cmd);
   install_element(VIEW_NODE, &show_rpki_prefix_table_cmd);
   install_element(VIEW_NODE, &show_rpki_cache_connection_cmd);
   install_element(VIEW_NODE, &show_rpki_configuration_cmd);
