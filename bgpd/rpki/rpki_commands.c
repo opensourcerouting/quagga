@@ -444,7 +444,48 @@ DEFUN (show_rpki_cache_connection,
     SHOW_STR
     "Show RPKI/RTR info\n"
     "Show to which RPKI Cache Servers we have a connection") {
-  vty_out(vty, "Not yet implemented.%s", VTY_NEWLINE);
+  if(!enable_prefix_validation){
+    vty_out(vty, "RPKI prefix validation is turned off. %s", VTY_NEWLINE);
+  }
+  else if(is_synchronized()){
+    struct listnode *cache_group_node;
+    cache_group* cache_group;
+    u_int8_t group = get_connected_group();
+    vty_out(vty, "Connected to group %d %s", group, VTY_NEWLINE);
+    for (ALL_LIST_ELEMENTS_RO(cache_group_list, cache_group_node, cache_group)) {
+      if(cache_group->preference_value == group){
+        struct list* cache_list = cache_group->cache_config_list;
+        struct listnode* cache_node;
+        cache* cache;
+
+        for (ALL_LIST_ELEMENTS_RO(cache_list, cache_node, cache)) {
+          switch (cache->type) {
+            tr_tcp_config* tcp_config;
+            tr_ssh_config* ssh_config;
+            case TCP:
+              tcp_config = cache->tr_config.tcp_config;
+              vty_out(vty, "rpki cache %s %s %s",tcp_config->host, tcp_config->port , VTY_NEWLINE);
+              break;
+
+            case SSH:
+              ssh_config = cache->tr_config.ssh_config;
+              vty_out(vty, "  rpki cache %s %u %s",
+                  ssh_config->host,
+                  ssh_config->port,
+                  VTY_NEWLINE);
+              break;
+
+            default:
+              break;
+          }
+        }
+      }
+    }
+  }
+  else {
+    vty_out(vty, "Currently no connection to an rpki cache exists. Prefix validation is off.%s", VTY_NEWLINE);
+  }
+
   return CMD_SUCCESS;
 }
 

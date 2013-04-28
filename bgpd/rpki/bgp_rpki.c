@@ -174,7 +174,14 @@ static int validate_prefix(struct prefix *prefix, uint32_t asn, uint8_t mask_len
   return 0;
 }
 
-
+u_int8_t get_connected_group(){
+  for(unsigned int i = 0; i < rtr_config.len; i++){
+    if(rtr_config.groups[i].status == RTR_MGR_ESTABLISHED){
+      return rtr_config.groups[i].preference;
+    }
+  }
+  return -1;
+}
 
 void print_prefix_table(struct vty *vty){
   unsigned int number_of_ipv4_prefixes = 0;

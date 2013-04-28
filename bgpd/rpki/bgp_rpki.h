@@ -69,5 +69,5 @@ int is_synchronized(void);
 int rpki_validate_prefix(struct peer* peer, struct attr* attr, struct prefix *prefix);
 
 void print_prefix_table(struct vty *vty);
-
+u_int8_t get_connected_group();
 #endif /* BGP_RPKI_H_ */
