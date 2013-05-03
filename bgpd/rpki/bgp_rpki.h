@@ -26,8 +26,8 @@
 /**********************************/
 #define CMD_POLLING_PERIOD_RANGE "<0-3600>"
 #define CMD_TIMEOUT_RANGE "<1-4294967295>"
-#define POLLING_PERIOD_DEFAULT 1000
-#define TIMEOUT_DEFAULT 1000
+#define POLLING_PERIOD_DEFAULT 300
+#define TIMEOUT_DEFAULT 650
 #define RPKI_VALID      1
 #define RPKI_NOTFOUND   2
 #define RPKI_INVALID    3
@@ -60,7 +60,7 @@ typedef struct node_data_t{
 /** Declaration of functions     **/
 /**********************************/
 void rpki_start(void);
-void rpki_restart(void);
+void rpki_reset_session(void);
 void rpki_test(void);
 void rpki_init(void);
 void rpki_finish(void);
@@ -69,5 +69,5 @@ int is_synchronized(void);
 int rpki_validate_prefix(struct peer* peer, struct attr* attr, struct prefix *prefix);
 
 void print_prefix_table(struct vty *vty);
-u_int8_t get_connected_group();
+int get_connected_group();
 #endif /* BGP_RPKI_H_ */

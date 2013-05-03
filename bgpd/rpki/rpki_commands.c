@@ -26,6 +26,7 @@
 #include "bgpd/bgp_route.h"
 #include "bgpd/rpki/bgp_rpki.h"
 
+#define RPKI_OUTPUT_STRING "Control rpki specific settings\n"
 /**************************************/
 /** Declaration of structs & enums   **/
 /**************************************/
@@ -49,11 +50,15 @@ typedef struct {
   rtr_socket* rtr_socket;
 } cache;
 
+/**********************************/
+/** Declaration of variables     **/
+/**********************************/
+cache_group* currently_selected_cache_group;
+
 /*******************************************/
 /** Declaration of list helper functions  **/
 /*******************************************/
-void delete_cache(void* node_value) {
-  cache* cache_p = node_value;
+void delete_cache(cache* cache_p) {
   if (cache_p->type == TCP) {
     XFREE(MTYPE_BGP_RPKI_CACHE, cache_p->tr_config.tcp_config->host);
     XFREE(MTYPE_BGP_RPKI_CACHE, cache_p->tr_config.tcp_config->port);
@@ -77,6 +82,7 @@ void delete_cache(void* node_value) {
 struct list* create_cache_list() {
   struct list* cache_list = list_new();
   cache_list->del = delete_cache;
+  cache_list->count = 0;
   return cache_list;
 }
 
@@ -95,7 +101,33 @@ cache* create_cache(tr_socket* tr_socket) {
   return cache_p;
 }
 
-int add_tcp_cache(struct list* cache_list, char* host, char* port) {
+cache* find_cache(struct list* cache_list, const char* host, const char* port_string, const unsigned int port) {
+  struct listnode* cache_node;
+  cache* cache;
+  for (ALL_LIST_ELEMENTS_RO(cache_list, cache_node, cache)) {
+    if(cache->type == TCP) {
+      if(strcmp(cache->tr_config.tcp_config->host, host) == 0){
+        if(port_string != NULL && strcmp(cache->tr_config.tcp_config->port, port_string) != 0) {
+          break;
+        }
+        return cache;
+      }
+    }
+    else {
+      if(strcmp(cache->tr_config.ssh_config->host, host) == 0){
+        if(port != 0){
+          if(cache->tr_config.ssh_config->port != port) {
+            break;
+          }
+        }
+        return cache;
+      }
+    }
+  }
+  return NULL;
+}
+
+int add_tcp_cache(struct list* cache_list, const char* host, const char* port) {
   tr_tcp_config* tcp_config_p;
   tr_socket* tr_socket_p;
   cache* cache_p;
@@ -119,7 +151,7 @@ int add_tcp_cache(struct list* cache_list, char* host, char* port) {
   return SUCCESS;
 }
 
-int add_ssh_cache(struct list* cache_list, char* host, unsigned int port,
+int add_ssh_cache(struct list* cache_list, const char* host, const unsigned int port,
     const char* username, const char* client_privkey_path,
     const char* client_pubkey_path, const char* server_pubkey_path) {
 
@@ -159,10 +191,33 @@ int add_ssh_cache(struct list* cache_list, char* host, unsigned int port,
   return SUCCESS;
 }
 
-void delete_cache_group(void* node_value) {
-  cache_group* group = node_value;
+void delete_cache_group(cache_group* group) {
   list_delete(group->cache_config_list);
   XFREE(MTYPE_BGP_RPKI_CACHE_GROUP, group);
+}
+
+void delete_empty_cache_groups(){
+  cache_group* cache_group;
+  struct listnode *cache_group_node;
+  struct listnode *next_node;
+  for (ALL_LIST_ELEMENTS(cache_group_list, cache_group_node, next_node, cache_group)) {
+    unsigned int number_of_caches = listcount(cache_group->cache_config_list);
+    if (number_of_caches == 0) {
+      delete_cache_group(cache_group);
+      list_delete_node(cache_group_list, cache_group_node);
+    }
+  }
+}
+
+cache_group* find_cache_group(int preference_value){
+  cache_group* cache_group;
+  struct listnode *cache_group_node;
+  for (ALL_LIST_ELEMENTS_RO(cache_group_list, cache_group_node, cache_group)) {
+    if(cache_group->preference_value == preference_value){
+      return cache_group;
+    }
+  }
+  return NULL;
 }
 
 cache_group* create_cache_group(int preference_value) {
@@ -176,7 +231,8 @@ cache_group* create_cache_group(int preference_value) {
   return group;
 }
 
-int get_number_of_cache_groups() {
+unsigned int get_number_of_cache_groups() {
+  delete_empty_cache_groups();
   return listcount(cache_group_list);
 }
 
@@ -185,8 +241,9 @@ rtr_mgr_group* get_rtr_mgr_groups() {
   cache_group* cache_group;
   rtr_mgr_group* rtr_mgr_groups;
   rtr_mgr_group* loop_group_pointer;
-  int number_of_groups = listcount(cache_group_list);
 
+  delete_empty_cache_groups();
+  int number_of_groups = listcount(cache_group_list);
   if (number_of_groups == 0) {
     return NULL ;
   }
@@ -315,51 +372,115 @@ static void print_configuration(struct vty* vty){
 DEFUN (rpki_polling_period,
     rpki_polling_period_cmd,
     "rpki polling_period " CMD_POLLING_PERIOD_RANGE,
-    "Enable rpki in this bgp deamon\n"
+    RPKI_OUTPUT_STRING
     "Set polling period\n"
     "Polling period value\n") {
-  RPKI_DEBUG("Setting Polling period to: %s", argv[0])
+  if (argc != 1) {
+    return CMD_ERR_INCOMPLETE;
+  }
   VTY_GET_INTEGER_RANGE("polling_period", polling_period, argv[0], 0, 3600);
+  return CMD_SUCCESS;
+}
+
+DEFUN (no_rpki_polling_period,
+    no_rpki_polling_period_cmd,
+    "no rpki polling_period ",
+    NO_STR
+    RPKI_OUTPUT_STRING
+    "Set polling period back to default\n") {
+  polling_period = POLLING_PERIOD_DEFAULT;
   return CMD_SUCCESS;
 }
 
 DEFUN (rpki_timeout,
     rpki_timeout_cmd,
     "rpki timeout TIMEOUT",
-    "Enable rpki in this bgp deamon\n"
+    RPKI_OUTPUT_STRING
     "Set timeout\n"
     "Timeout value\n") {
+  if (argc != 1) {
+    return CMD_ERR_INCOMPLETE;
+  }
   VTY_GET_INTEGER("timeout", timeout, argv[0]);
-  RPKI_DEBUG("Setting timeout to: %d", timeout)
+  return CMD_SUCCESS;
+}
+
+DEFUN (no_rpki_timeout,
+    no_rpki_timeout_cmd,
+    "no rpki timeout",
+    NO_STR
+    RPKI_OUTPUT_STRING
+    "Set timeout back to default\n") {
+  timeout = TIMEOUT_DEFAULT;
   return CMD_SUCCESS;
 }
 
 DEFUN (rpki_group,
     rpki_group_cmd,
     "rpki group PREFERENCE",
-    "Enable rpki in this bgp deamon\n"
+    RPKI_OUTPUT_STRING
     "Install a group of cache servers\n"
     "Preference Value for this group (lower value means higher preference)\n") {
   int group_preference;
   cache_group* new_cache_group;
+  if (argc != 1) {
+    return CMD_ERR_INCOMPLETE;
+  }
   VTY_GET_INTEGER("group preference", group_preference, argv[0]);
-  if ((new_cache_group = create_cache_group(group_preference)) == NULL ) {
-    vty_out(vty, "Could not create new rpki cache group because "
-        "of memory allocation error.%s", VTY_NEWLINE);
+  currently_selected_cache_group = find_cache_group(group_preference);
+  
+  // Group does not yet exist so create new one
+  if(currently_selected_cache_group == NULL){
+    if ((new_cache_group = create_cache_group(group_preference)) == NULL ) {
+      vty_out(vty, "Could not create new rpki cache group because "
+          "of memory allocation error%s", VTY_NEWLINE);
+      return CMD_WARNING;
+    }
+    listnode_add(cache_group_list, new_cache_group);
+    currently_selected_cache_group = new_cache_group;
+    RPKI_DEBUG("Created new rpki cache group with preference: %d",
+          group_preference)
+  }
+  // Select group for further configuration
+  else {
+    RPKI_DEBUG("Selected rpki cache group %d for configuration",
+              group_preference)
+  }
+
+  return CMD_SUCCESS;
+}
+
+DEFUN (no_rpki_group,
+    no_rpki_group_cmd,
+    "no rpki group PREFERENCE",
+    NO_STR
+    RPKI_OUTPUT_STRING
+    "Remove a group of cache servers\n"
+    "Preference Value for this group (lower value means higher preference)\n") {
+  int group_preference;
+  cache_group* cache_group;
+  if (argc != 1) {
+    return CMD_ERR_INCOMPLETE;
+  }
+  VTY_GET_INTEGER("group preference", group_preference, argv[0]);
+  cache_group = find_cache_group(group_preference);
+  if(cache_group == NULL){
+    vty_out(vty, "There is no cache group with preference value %d%s", group_preference, VTY_NEWLINE);
     return CMD_WARNING;
   }
-  listnode_add(cache_group_list, new_cache_group);
-  RPKI_DEBUG("Installing new rpki cache group with preference: %d",
-      group_preference)
+  listnode_delete(cache_group_list, cache_group);
+//  delete_cache_group(cache_group);
+  currently_selected_cache_group = NULL;
+  RPKI_DEBUG("Removed rpki cache group with preference: %d", group_preference)
   return CMD_SUCCESS;
 }
 
 DEFUN (rpki_cache,
     rpki_cache_cmd,
     "rpki cache (A.B.C.D|WORD) PORT [SSH_UNAME] [SSH_PRIVKEY] [SSH_PUBKEY] [SERVER_PUBKEY]",
-    "Enable rpki in this bgp deamon\n"
+    RPKI_OUTPUT_STRING
     "Install a cache server to current group\n"
-    "IP address of cache server\n"
+    "IP address of cache server\n Hostname of cache server\n"
     "Tcp port number \n"
     "SSH user name \n"
     "Path to own SSH private key \n"
@@ -367,40 +488,81 @@ DEFUN (rpki_cache,
     "Path to Public key of cache server \n") {
   int return_value = SUCCESS;
   if (list_isempty(cache_group_list)) {
-    vty_out(vty, "Could not create new rpki cache because "
+    vty_out(vty, "Cannot create new rpki cache because "
         "no cache group is defined.%s", VTY_NEWLINE);
+    return CMD_WARNING;
+  }
+  if (currently_selected_cache_group == NULL) {
+    vty_out(vty, "No cache group is selected%s", VTY_NEWLINE);
     return CMD_WARNING;
   }
   // use ssh connection
   if (argc == 5) {
     int port;
     VTY_GET_INTEGER("rpki cache ssh port", port, argv[1]);
-    struct listnode* list_tail = listtail(cache_group_list);
-    cache_group* current_group = listgetdata(list_tail);
-    return_value = add_ssh_cache(current_group->cache_config_list, argv[0],
+    return_value = add_ssh_cache(currently_selected_cache_group->cache_config_list, argv[0],
         port, argv[2], argv[3], argv[4], NULL);
   }
   else if (argc == 6) {
     unsigned int port;
     VTY_GET_INTEGER("rpki cache ssh port", port, argv[1]);
-    struct listnode* list_tail = listtail(cache_group_list);
-    cache_group* current_group = listgetdata(list_tail);
-    return_value = add_ssh_cache(current_group->cache_config_list, argv[0],
+    return_value = add_ssh_cache(currently_selected_cache_group->cache_config_list, argv[0],
         port, argv[2], argv[3], argv[4], argv[5]);
   }
   // use tcp connection
-  else {
-    struct listnode* list_tail = listtail(cache_group_list);
-    cache_group* current_group = listgetdata(list_tail);
-    return_value = add_tcp_cache(current_group->cache_config_list, argv[0],
+  else if (argc == 2) {
+    return_value = add_tcp_cache(currently_selected_cache_group->cache_config_list, argv[0],
         argv[1]);
+  }
+  else {
+    return CMD_ERR_INCOMPLETE;
   }
   if (return_value == ERROR) {
     vty_out(vty, "Could not create new rpki cache because "
-        "of memory allocation error.%s", VTY_NEWLINE);
+        "of memory allocation error%s", VTY_NEWLINE);
     return CMD_WARNING;
   }
-  RPKI_DEBUG("Adding new cache: %s:%s", argv[0], argv[1])
+  RPKI_DEBUG("Added new cache: %s:%s", argv[0], argv[1])
+  return CMD_SUCCESS;
+}
+
+DEFUN (no_rpki_cache,
+    no_rpki_cache_cmd,
+    "no rpki cache (A.B.C.D|WORD) [PORT]",
+    NO_STR
+    RPKI_OUTPUT_STRING
+    "Remove a cache server from current group\n"
+    "IP address of cache server\n Hostname of cache server\n"
+    "Tcp port number (optional) \n") {
+  cache* cache = NULL;
+  if (list_isempty(cache_group_list)) {
+    return CMD_SUCCESS;
+  }
+  if (currently_selected_cache_group == NULL) {
+      vty_out(vty, "No cache group is selected%s", VTY_NEWLINE);
+      return CMD_WARNING;
+    }
+  if (argc == 2) {
+    unsigned int port;
+    VTY_GET_INTEGER("rpki cache port", port, argv[1]);
+    const unsigned int const_port = port;
+    cache = find_cache(currently_selected_cache_group->cache_config_list, argv[0], argv[1], const_port);
+
+  }
+  else if (argc == 1) {
+    cache = find_cache(currently_selected_cache_group->cache_config_list, argv[0], NULL, 0);
+
+  }
+  else {
+    return CMD_ERR_INCOMPLETE;
+  }
+  if(cache == NULL){
+    vty_out(vty, "Cannot find cache %s%s", argv[0], VTY_NEWLINE);
+    return CMD_WARNING;
+  }
+  listnode_delete(currently_selected_cache_group->cache_config_list, cache);
+//  delete_cache(cache);
+  RPKI_DEBUG("Removed cache: %s", argv[0])
   return CMD_SUCCESS;
 }
 
@@ -416,6 +578,19 @@ DEFUN (bgp_bestpath_prefix_validate_disable,
   return CMD_SUCCESS;
 }
 
+DEFUN (no_bgp_bestpath_prefix_validate_disable,
+    no_bgp_bestpath_prefix_validate_disable_cmd,
+       "no bgp bestpath prefix-validate disable",
+       NO_STR
+       "BGP specific commands\n"
+       "Change the default bestpath selection\n"
+       "Prefix validation attribute\n"
+       "Disable prefix validation\n")
+{
+  enable_prefix_validation = 1;
+  return CMD_SUCCESS;
+}
+
 DEFUN (bgp_bestpath_prefix_validate_allow_invalid,
       bgp_bestpath_prefix_validate_allow_invalid_cmd,
        "bgp bestpath prefix-validate allow-invalid",
@@ -428,11 +603,24 @@ DEFUN (bgp_bestpath_prefix_validate_allow_invalid,
   return CMD_SUCCESS;
 }
 
+DEFUN (no_bgp_bestpath_prefix_validate_allow_invalid,
+    no_bgp_bestpath_prefix_validate_allow_invalid_cmd,
+       "no bgp bestpath prefix-validate allow-invalid",
+       NO_STR
+       "BGP specific commands\n"
+       "Change the default bestpath selection\n"
+       "Prefix validation attribute\n"
+       "Allow routes to be selected as bestpath even if their prefix validation status is invalid\n")
+{
+  allow_invalid = 0;
+  return CMD_SUCCESS;
+}
+
 DEFUN (show_rpki_prefix_table,
     show_rpki_prefix_table_cmd,
     "show rpki prefix-table",
     SHOW_STR
-    "Show RPKI/RTR info\n"
+    RPKI_OUTPUT_STRING
     "Show validated prefixes which were received from RPKI Cache") {
   print_prefix_table(vty);
   return CMD_SUCCESS;
@@ -442,7 +630,7 @@ DEFUN (show_rpki_cache_connection,
     show_rpki_cache_connection_cmd,
     "show rpki cache-connection",
     SHOW_STR
-    "Show RPKI/RTR info\n"
+    RPKI_OUTPUT_STRING
     "Show to which RPKI Cache Servers we have a connection") {
   if(!enable_prefix_validation){
     vty_out(vty, "RPKI prefix validation is turned off. %s", VTY_NEWLINE);
@@ -450,7 +638,11 @@ DEFUN (show_rpki_cache_connection,
   else if(is_synchronized()){
     struct listnode *cache_group_node;
     cache_group* cache_group;
-    u_int8_t group = get_connected_group();
+    int group = get_connected_group();
+    if(group == -1){
+      vty_out(vty, "Cannot find a connected group. %s", VTY_NEWLINE);
+      return CMD_SUCCESS;
+    }
     vty_out(vty, "Connected to group %d %s", group, VTY_NEWLINE);
     for (ALL_LIST_ELEMENTS_RO(cache_group_list, cache_group_node, cache_group)) {
       if(cache_group->preference_value == group){
@@ -493,13 +685,20 @@ DEFUN (show_rpki_configuration,
     show_rpki_configuration_cmd,
     "show rpki configuration",
     SHOW_STR
-    "Show RPKI/RTR info\n"
+    RPKI_OUTPUT_STRING
     "Show the current RPKI configuration settings") {
   print_configuration(vty);
   return CMD_SUCCESS;
 }
 
-
+DEFUN (rpki_reset,
+    rpki_reset_cmd,
+    "rpki reset",
+    RPKI_OUTPUT_STRING
+    "Reset the RPKI connection") {
+  rpki_reset_session();
+  return CMD_SUCCESS;
+}
 
 /**************************************************/
 /** Declaration of route-map match rpki command  **/
@@ -548,21 +747,53 @@ struct route_map_rule_cmd route_match_rpki_cmd = {
     "rpki",
     route_match_rpki,
     route_match_rpki_compile,
-    route_match_rpki_free };
+    route_match_rpki_free
+};
 
 void install_cli_commands() {
   cache_group_list = list_new();
   cache_group_list->del = delete_cache_group;
+  cache_group_list->count = 0;
+
+  /* Install rpki polling period commands */
   install_element(CONFIG_NODE, &rpki_polling_period_cmd);
+  install_element(CONFIG_NODE, &no_rpki_polling_period_cmd);
+
+  /* Install rpki timeout commands */
   install_element(CONFIG_NODE, &rpki_timeout_cmd);
+  install_element(CONFIG_NODE, &no_rpki_timeout_cmd);
+
+  /* Install rpki group commands */
   install_element(CONFIG_NODE, &rpki_group_cmd);
+  install_element(CONFIG_NODE, &no_rpki_group_cmd);
+
+  /* Install rpki cache commands */
   install_element(CONFIG_NODE, &rpki_cache_cmd);
+  install_element(CONFIG_NODE, &no_rpki_cache_cmd);
+
+  /* Install prefix_validate disable commands */
   install_element(BGP_NODE, &bgp_bestpath_prefix_validate_disable_cmd);
+  install_element(BGP_NODE, &no_bgp_bestpath_prefix_validate_disable_cmd);
+
+  /* Install prefix_validate allow_invalid commands */
   install_element(BGP_NODE, &bgp_bestpath_prefix_validate_allow_invalid_cmd);
+  install_element(BGP_NODE, &no_bgp_bestpath_prefix_validate_allow_invalid_cmd);
+
+  /* Install reset command */
+  install_element(ENABLE_NODE, &rpki_reset_cmd);
+
+  /* Install show commands */
   install_element(VIEW_NODE, &show_rpki_prefix_table_cmd);
   install_element(VIEW_NODE, &show_rpki_cache_connection_cmd);
   install_element(VIEW_NODE, &show_rpki_configuration_cmd);
+  install_element(RESTRICTED_NODE, &show_rpki_prefix_table_cmd);
+  install_element(RESTRICTED_NODE, &show_rpki_cache_connection_cmd);
+  install_element(RESTRICTED_NODE, &show_rpki_configuration_cmd);
+  install_element(ENABLE_NODE, &show_rpki_prefix_table_cmd);
+  install_element(ENABLE_NODE, &show_rpki_cache_connection_cmd);
+  install_element(ENABLE_NODE, &show_rpki_configuration_cmd);
 
+  /* Install route match */
   route_map_install_match(&route_match_rpki_cmd);
 
 }
