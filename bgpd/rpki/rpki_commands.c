@@ -635,7 +635,7 @@ DEFUN (show_rpki_cache_connection,
   if(!enable_prefix_validation){
     vty_out(vty, "RPKI prefix validation is turned off. %s", VTY_NEWLINE);
   }
-  else if(is_synchronized()){
+  else if(rpki_is_synchronized()){
     struct listnode *cache_group_node;
     cache_group* cache_group;
     int group = get_connected_group();

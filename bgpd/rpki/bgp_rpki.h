@@ -64,7 +64,7 @@ void rpki_reset_session(void);
 void rpki_test(void);
 void rpki_init(void);
 void rpki_finish(void);
-int is_synchronized(void);
+int rpki_is_synchronized(void);
 //static void update_cb(struct pfx_table* p, const pfx_record rec, const bool added);
 int rpki_validate_prefix(struct peer* peer, struct attr* attr, struct prefix *prefix);
 

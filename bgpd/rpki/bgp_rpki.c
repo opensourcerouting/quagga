@@ -39,7 +39,7 @@ void rpki_init(void){
   allow_invalid = ALLOW_INVALID;
 }
 
-int is_synchronized(void){
+int rpki_is_synchronized(void){
   return rtr_mgr_conf_in_sync(&rtr_config);
 }
 
@@ -88,7 +88,7 @@ int rpki_validate_prefix(struct peer* peer, struct attr* attr, struct prefix *pr
   struct assegment* as_segment;
   as_t as_number = 0;
 
-  if(!is_synchronized() || !enable_prefix_validation){
+  if(!rpki_is_synchronized() || !enable_prefix_validation){
     return 0;
   }
 
