@@ -59,6 +59,27 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #define include_rpki
 #ifdef include_rpki
 #include "bgpd/rpki/bgp_rpki.h"
+
+static void
+do_rpki_origin_validation (struct bgp *bgp, struct bgp_info *bgp_info,
+			   struct prefix *prefix)
+{
+  if (bgp_flag_check (bgp, BGP_FLAG_VALIDATE_DISABLE))
+    {
+      bgp_info->rpki_validation_status = 0;
+      return;
+    }
+  else
+    {
+      bgp_info->rpki_validation_status =
+	rpki_validate_prefix (bgp_info->peer, bgp_info->attr, prefix);
+    }
+}
+
+#define DO_RPKI_ORIGIN_VALIDATION(bgp, bgp_info, prefix) \
+		do_rpki_origin_validation(bgp, bgp_info, prefix);
+#else
+#define DO_RPKI_ORIGIN_VALIDATION(bgp, bgp_info)
 #endif
 
 /* Extern from bgp_dump.c */
@@ -1579,11 +1600,7 @@ bgp_process_main (struct work_queue *wq, void *data)
   struct peer *peer;
   u_char rpki_validation_status = 0;
 
-#ifdef include_rpki
-  /* Apply rpki origin validation.
-     Default behavior is to filter invalid prefixes. */
-//  rpki_validation_status = rpki_validate_prefix(peer, attr, p);
-#endif
+
 
   /* Best path selection. */
   bgp_best_selection (bgp, rn, &bgp->maxpaths[afi][safi], &old_and_new);
@@ -2006,7 +2023,7 @@ bgp_update_rsclient (struct peer *rsclient, afi_t afi, safi_t safi,
   new->peer = peer;
   new->attr = attr_new;
   new->uptime = bgp_clock ();
-
+  DO_RPKI_ORIGIN_VALIDATION (bgp, new, p)
   /* Update MPLS tag. */
   if (safi == SAFI_MPLS_VPN)
     memcpy ((bgp_info_extra_get (new))->tag, tag, 3);
@@ -2344,7 +2361,7 @@ bgp_update_main (struct peer *peer, struct prefix *p, struct attr *attr,
   new->peer = peer;
   new->attr = attr_new;
   new->uptime = bgp_clock ();
-
+  DO_RPKI_ORIGIN_VALIDATION (bgp, new, p)
   /* Update MPLS tag. */
   if (safi == SAFI_MPLS_VPN)
     memcpy ((bgp_info_extra_get (new))->tag, tag, 3);
@@ -3441,7 +3458,7 @@ bgp_static_update_rsclient (struct peer *rsclient, struct prefix *p,
   SET_FLAG (new->flags, BGP_INFO_VALID);
   new->attr = attr_new;
   new->uptime = bgp_clock ();
-
+  DO_RPKI_ORIGIN_VALIDATION (bgp, new, p)
   /* Register new BGP information. */
   bgp_info_add (rn, new);
 
@@ -3560,7 +3577,7 @@ bgp_static_update_main (struct bgp *bgp, struct prefix *p,
   SET_FLAG (new->flags, BGP_INFO_VALID);
   new->attr = attr_new;
   new->uptime = bgp_clock ();
-
+  DO_RPKI_ORIGIN_VALIDATION (bgp, new, p)
   /* Aggregate address increment. */
   bgp_aggregate_increment (bgp, p, new, afi, safi);
 
@@ -3614,6 +3631,7 @@ bgp_static_update_vpnv4 (struct bgp *bgp, struct prefix *p, afi_t afi,
   new->extra = bgp_info_extra_new();
   memcpy (new->extra->tag, tag, 3);
 
+  DO_RPKI_ORIGIN_VALIDATION (bgp, new, p)
   /* Aggregate address increment. */
   bgp_aggregate_increment (bgp, p, new, afi, safi);
 
@@ -4677,6 +4695,7 @@ bgp_aggregate_route (struct bgp *bgp, struct prefix *p, struct bgp_info *rinew,
       new->attr = bgp_attr_aggregate_intern (bgp, origin, aspath, community, aggregate->as_set);
       new->uptime = bgp_clock ();
 
+      DO_RPKI_ORIGIN_VALIDATION (bgp, new, p)
       bgp_info_add (rn, new);
       bgp_unlock_node (rn);
       bgp_process (bgp, rn, afi, safi);
@@ -4862,6 +4881,7 @@ bgp_aggregate_add (struct bgp *bgp, struct prefix *p, afi_t afi, safi_t safi,
       new->attr = bgp_attr_aggregate_intern (bgp, origin, aspath, community, aggregate->as_set);
       new->uptime = bgp_clock ();
 
+      DO_RPKI_ORIGIN_VALIDATION (bgp, new, p)
       bgp_info_add (rn, new);
       bgp_unlock_node (rn);
 
@@ -5510,8 +5530,10 @@ bgp_redistribute_add (struct prefix *p, const struct in_addr *nexthop,
 	  SET_FLAG (new->flags, BGP_INFO_VALID);
 	  new->attr = new_attr;
 	  new->uptime = bgp_clock ();
-
-	  bgp_aggregate_increment (bgp, p, new, afi, SAFI_UNICAST);
+	  DO_RPKI_ORIGIN_VALIDATION (bgp, new,
+				     p) bgp_aggregate_increment (bgp, p, new,
+								 afi,
+								 SAFI_UNICAST);
 	  bgp_info_add (bn, new);
 	  bgp_unlock_node (bn);
 	  bgp_process (bgp, bn, afi, SAFI_UNICAST);
