@@ -7,7 +7,7 @@
 
 #ifndef BGP_RPKI_H_
 #define BGP_RPKI_H_
-//#include "rtrlib/rtrlib.h"
+
 #include "prefix.h"
 #include "bgpd/bgp_attr.h"
 #include "bgpd/bgpd.h"
@@ -28,20 +28,17 @@
 #define CMD_TIMEOUT_RANGE "<1-4294967295>"
 #define POLLING_PERIOD_DEFAULT 300
 #define TIMEOUT_DEFAULT 650
+#define CALLBACK_TIMEOUT 10
 #define RPKI_VALID      1
 #define RPKI_NOTFOUND   2
 #define RPKI_INVALID    3
 
-#define ENABLE_PREFIX_VALIDATION 1
-#define ALLOW_INVALID 0
 /**********************************/
 /** Declaration of variables     **/
 /**********************************/
 struct list* cache_group_list;
 unsigned int polling_period;
 unsigned int timeout;
-char enable_prefix_validation;
-char allow_invalid;
 /**********************************/
 /** Declaration of structs       **/
 /**********************************/
@@ -65,7 +62,7 @@ void rpki_test(void);
 void rpki_init(void);
 void rpki_finish(void);
 int rpki_is_synchronized(void);
-//static void update_cb(struct pfx_table* p, const pfx_record rec, const bool added);
+
 int rpki_validate_prefix(struct peer* peer, struct attr* attr, struct prefix *prefix);
 
 void print_prefix_table(struct vty *vty);

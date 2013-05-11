@@ -1577,6 +1577,13 @@ bgp_process_main (struct work_queue *wq, void *data)
   struct bgp_info_pair old_and_new;
   struct listnode *node, *nnode;
   struct peer *peer;
+  u_char rpki_validation_status = 0;
+
+#ifdef include_rpki
+  /* Apply rpki origin validation.
+     Default behavior is to filter invalid prefixes. */
+//  rpki_validation_status = rpki_validate_prefix(peer, attr, p);
+#endif
 
   /* Best path selection. */
   bgp_best_selection (bgp, rn, &bgp->maxpaths[afi][safi], &old_and_new);
@@ -2083,7 +2090,6 @@ bgp_update_main (struct peer *peer, struct prefix *p, struct attr *attr,
   struct bgp_info *new;
   const char *reason;
   char buf[SU_ADDRSTRLEN];
-  u_char rpki_validation_status = 0;
 
   bgp = peer->bgp;
   rn = bgp_afi_node_get (bgp->rib[afi][safi], afi, safi, p, prd);
@@ -2143,20 +2149,6 @@ bgp_update_main (struct peer *peer, struct prefix *p, struct attr *attr,
       reason = "filter;";
       goto filtered;
     }
-
-  #ifdef include_rpki
-  /* Apply rpki origin validation.
-     Default behavior is to filter invalid prefixes. */
-  if (enable_prefix_validation)
-    {
-  rpki_validation_status = rpki_validate_prefix (peer, attr, p);
-      if (rpki_validation_status == RPKI_INVALID && !allow_invalid)
-    {
-      reason = "origin of address prefix not validated by rpki;";
-      goto filtered;
-    }
-    }
-  #endif
 
   new_attr.extra = &new_extra;
   bgp_attr_dup (&new_attr, attr);
@@ -2352,7 +2344,6 @@ bgp_update_main (struct peer *peer, struct prefix *p, struct attr *attr,
   new->peer = peer;
   new->attr = attr_new;
   new->uptime = bgp_clock ();
-  new->rpki_validation_status = rpki_validation_status;
 
   /* Update MPLS tag. */
   if (safi == SAFI_MPLS_VPN)
@@ -5637,8 +5628,6 @@ route_vty_short_status_out (struct vty *vty, struct bgp_info *binfo)
 
 #ifdef include_rpki
   /* RPKI Origin Validation code */
-  if (enable_prefix_validation && rpki_is_synchronized ())
-    {
   switch (binfo->rpki_validation_status)
     {
     case RPKI_VALID:
@@ -5657,7 +5646,7 @@ route_vty_short_status_out (struct vty *vty, struct bgp_info *binfo)
       vty_out (vty, " ");
       break;
     }
-    }
+
 #endif
 
  /* Route status display. */
@@ -6398,10 +6387,7 @@ bgp_show_table (struct vty *vty, struct bgp_table *table, struct in_addr *router
 		  vty_out (vty, BGP_SHOW_FLAP_HEADER, VTY_NEWLINE);
 		else
 #ifdef include_rpki
-		if (enable_prefix_validation && rpki_is_synchronized ())
-		  {
 		  vty_out (vty, " ");
-		  }
 #endif
 		  vty_out (vty, BGP_SHOW_HEADER, VTY_NEWLINE);
 		header = 0;

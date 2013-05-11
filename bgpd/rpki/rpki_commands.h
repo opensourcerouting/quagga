@@ -13,5 +13,6 @@ rtr_mgr_group* get_rtr_mgr_groups();
 void free_rtr_mgr_groups(rtr_mgr_group* group, int length);
 int get_number_of_cache_groups();
 void delete_cache_group_list();
+extern int rpki_config_write (struct vty *);
 
 #endif /* RPKI_COMMANDS_H_ */

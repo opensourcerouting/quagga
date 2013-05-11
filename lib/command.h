@@ -103,6 +103,7 @@ enum node_type
   FORWARDING_NODE,		/* IP forwarding node. */
   PROTOCOL_NODE,                /* protocol filtering node */
   VTY_NODE,			/* Vty node. */
+  RPKI_NODE,    /* RPKI node for configuration of RPKI cache server connections.*/
 };
 
 /* Node which has some commands and prompt string and configuration

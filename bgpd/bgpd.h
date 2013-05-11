@@ -107,7 +107,7 @@ struct bgp
   struct thread *t_startup;
 
   /* BGP flags. */
-  u_int16_t flags;
+  u_int32_t flags;
 #define BGP_FLAG_ALWAYS_COMPARE_MED       (1 << 0)
 #define BGP_FLAG_DETERMINISTIC_MED        (1 << 1)
 #define BGP_FLAG_MED_MISSING_AS_WORST     (1 << 2)
@@ -123,9 +123,11 @@ struct bgp
 #define BGP_FLAG_GRACEFUL_RESTART         (1 << 12)
 #define BGP_FLAG_ASPATH_CONFED            (1 << 13)
 #define BGP_FLAG_ASPATH_MULTIPATH_RELAX   (1 << 14)
+#define BGP_FLAG_VALIDATE_DISABLE         (1 << 15)
+#define BGP_FLAG_ALLOW_INVALID            (1 << 16)
 
   /* BGP Per AF flags */
-  u_int16_t af_flags[AFI_MAX][SAFI_MAX];
+  u_int32_t af_flags[AFI_MAX][SAFI_MAX];
 #define BGP_CONFIG_DAMPENING              (1 << 0)
 
   /* Static route configuration.  */

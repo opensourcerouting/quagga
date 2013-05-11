@@ -7,11 +7,14 @@
 
 #include <zebra.h>
 #include <pthread.h>
+#include <time.h>
+#include <stdbool.h>
 #include "prefix.h"
 #include "log.h"
 #include "command.h"
 #include "linklist.h"
 #include "memory.h"
+#include "thread.h"
 #include "bgpd/bgpd.h"
 #include "bgpd/bgp_attr.h"
 #include "bgpd/bgp_aspath.h"
@@ -29,18 +32,18 @@ int rtr_is_running;
 static void list_all_nodes(struct vty *vty, const lpfst_node* node, unsigned int* count);
 static void print_record(struct vty *vty, const lpfst_node* node);
 static int validate_prefix(struct prefix *prefix, uint32_t asn, uint8_t mask_len);
+static void update_cb(struct pfx_table* p, const pfx_record rec, const bool added);
 
 void rpki_init(void){
   install_cli_commands();
   rtr_is_running = 0;
   polling_period = POLLING_PERIOD_DEFAULT;
   timeout = TIMEOUT_DEFAULT;
-  enable_prefix_validation = ENABLE_PREFIX_VALIDATION;
-  allow_invalid = ALLOW_INVALID;
 }
 
-int rpki_is_synchronized(void){
-  return rtr_mgr_conf_in_sync(&rtr_config);
+inline int rpki_is_synchronized(void){
+  return rtr_is_running &&
+      rtr_mgr_conf_in_sync(&rtr_config);
 }
 
 void rpki_reset_session(void){
@@ -60,15 +63,15 @@ void rpki_start(){
       RPKI_DEBUG("No caches were found in config. Prefix validation is off.");
       return;
   }
-  rtr_mgr_init(&rtr_config, polling_period, timeout, NULL);
+  rtr_mgr_init(&rtr_config, polling_period, timeout, &update_cb);
   rtr_mgr_start(&rtr_config);
   rtr_is_running = 1;
-  RPKI_DEBUG("Waiting for rtr connection to synchronize.");
-  while(!rtr_mgr_conf_in_sync(&rtr_config)){
-      RPKI_DEBUG("Still waiting.");
-      sleep(1);
-  }
-  RPKI_DEBUG("Got it!");
+//  RPKI_DEBUG("Waiting for rtr connection to synchronize.");
+//  while(!rtr_mgr_conf_in_sync(&rtr_config)){
+//      RPKI_DEBUG("Still waiting.");
+//      sleep(1);
+//  }
+//  RPKI_DEBUG("Got it!");
 }
 
 void rpki_finish(void){
@@ -88,7 +91,8 @@ int rpki_validate_prefix(struct peer* peer, struct attr* attr, struct prefix *pr
   struct assegment* as_segment;
   as_t as_number = 0;
 
-  if(!rpki_is_synchronized() || !enable_prefix_validation){
+  if(!rpki_is_synchronized()
+      || bgp_flag_check(peer->bgp, BGP_FLAG_VALIDATE_DISABLE)){
     return 0;
   }
 
@@ -195,22 +199,17 @@ int get_connected_group(){
 void print_prefix_table(struct vty *vty){
   unsigned int number_of_ipv4_prefixes = 0;
   unsigned int number_of_ipv6_prefixes = 0;
-  if(rtr_mgr_conf_in_sync(&rtr_config)){
-    struct pfx_table* pfx_table = rtr_config.groups[0].sockets[0]->pfx_table;
-    vty_out(vty, "RPKI/RTR prefix table%s", VTY_NEWLINE);
-    vty_out(vty, "%-40s %s  %s %s", "Prefix", "Prefix Length", "Origin-AS", VTY_NEWLINE);
-    if(pfx_table->ipv4 != NULL){
-      list_all_nodes(vty, pfx_table->ipv4, &number_of_ipv4_prefixes);
-    }
-    if(pfx_table->ipv6 != NULL){
-      list_all_nodes(vty, pfx_table->ipv6, &number_of_ipv6_prefixes);
-    }
-    vty_out(vty, "Number of IPv4 Prefixes: %u %s", number_of_ipv4_prefixes, VTY_NEWLINE);
-    vty_out(vty, "Number of IPv6 Prefixes: %u %s", number_of_ipv6_prefixes, VTY_NEWLINE);
+  struct pfx_table* pfx_table = rtr_config.groups[0].sockets[0]->pfx_table;
+  vty_out(vty, "RPKI/RTR prefix table%s", VTY_NEWLINE);
+  vty_out(vty, "%-40s %s  %s %s", "Prefix", "Prefix Length", "Origin-AS", VTY_NEWLINE);
+  if(pfx_table->ipv4 != NULL){
+    list_all_nodes(vty, pfx_table->ipv4, &number_of_ipv4_prefixes);
   }
-  else {
-    vty_out(vty, "No connection to RPKI cache server.%s", VTY_NEWLINE);
+  if(pfx_table->ipv6 != NULL){
+    list_all_nodes(vty, pfx_table->ipv6, &number_of_ipv6_prefixes);
   }
+  vty_out(vty, "Number of IPv4 Prefixes: %u %s", number_of_ipv4_prefixes, VTY_NEWLINE);
+  vty_out(vty, "Number of IPv6 Prefixes: %u %s", number_of_ipv6_prefixes, VTY_NEWLINE);
 }
 
 void list_all_nodes(struct vty *vty, const lpfst_node* node, unsigned int* count){
@@ -238,13 +237,12 @@ void print_record(struct vty *vty, const lpfst_node* node){
   }
 }
 
-// TODO implement method
-//static void update_cb(struct pfx_table* p, const pfx_record rec, const bool added){
-//  char ip[INET6_ADDRSTRLEN];
-//  if(added)
-//      printf("+ ");
-//  else
-//      printf("- ");
-//  ip_addr_to_str(&(rec.prefix), ip, sizeof(ip));
-//  printf("%-18s %3u-%-3u %10u\n", ip, rec.min_len, rec.max_len, rec.asn);
-//}
+time_t last_time;
+
+static void update_cb(struct pfx_table* p, const pfx_record rec, const bool added){
+//  time_t new_time = quagga_time (NULL);
+//  static int i = 0;
+//  RPKI_DEBUG("Update %5d; time: %d; difference: %4d", i++, new_time, difftime(new_time,last_time));
+//  last_time = new_time;
+
+}

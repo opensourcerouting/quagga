@@ -2029,65 +2029,55 @@ bgp_lookup_by_name (const char *name)
 }
 
 /* Called from VTY commands. */
-int
-bgp_get (struct bgp **bgp_val, as_t *as, const char *name)
-{
+int bgp_get(struct bgp **bgp_val, as_t *as, const char *name) {
   struct bgp *bgp;
 
   /* Multiple instance check. */
-  if (bgp_option_check (BGP_OPT_MULTIPLE_INSTANCE))
-    {
-      if (name)
-	bgp = bgp_lookup_by_name (name);
-      else
-	bgp = bgp_get_default ();
+  if (bgp_option_check(BGP_OPT_MULTIPLE_INSTANCE)) {
+    if (name)
+      bgp = bgp_lookup_by_name(name);
+    else
+      bgp = bgp_get_default();
 
-      /* Already exists. */
-      if (bgp)
-	{
-          if (bgp->as != *as)
-	    {
-	      *as = bgp->as;
-	      return BGP_ERR_INSTANCE_MISMATCH;
-	    }
-	  *bgp_val = bgp;
-	  return 0;
-	}
+    /* Already exists. */
+    if (bgp) {
+      if (bgp->as != *as) {
+        *as = bgp->as;
+        return BGP_ERR_INSTANCE_MISMATCH;
+      }
+      *bgp_val = bgp;
+      return 0;
     }
-  else
-    {
-      /* BGP instance name can not be specified for single instance.  */
-      if (name)
-	return BGP_ERR_MULTIPLE_INSTANCE_NOT_SET;
+  }
+  else {
+    /* BGP instance name can not be specified for single instance.  */
+    if (name)
+      return BGP_ERR_MULTIPLE_INSTANCE_NOT_SET;
 
-      /* Get default BGP structure if exists. */
-      bgp = bgp_get_default ();
+    /* Get default BGP structure if exists. */
+    bgp = bgp_get_default();
 
-      if (bgp)
-	{
-	  if (bgp->as != *as)
-	    {
-	      *as = bgp->as;
-	      return BGP_ERR_AS_MISMATCH;
-	    }
-	  *bgp_val = bgp;
-	  return 0;
-	}
+    if (bgp) {
+      if (bgp->as != *as) {
+        *as = bgp->as;
+        return BGP_ERR_AS_MISMATCH;
+      }
+      *bgp_val = bgp;
+      return 0;
     }
+  }
 
-  bgp = bgp_create (as, name);
+  bgp = bgp_create(as, name);
   bgp_router_id_set(bgp, &router_id_zebra);
   *bgp_val = bgp;
 
   /* Create BGP server socket, if first instance.  */
-  if (list_isempty(bm->bgp)
-      && !bgp_option_check (BGP_OPT_NO_LISTEN))
-    {
-      if (bgp_socket (bm->port, bm->address) < 0)
-	return BGP_ERR_INVALID_VALUE;
-    }
+  if (list_isempty(bm->bgp) && !bgp_option_check(BGP_OPT_NO_LISTEN)) {
+    if (bgp_socket(bm->port, bm->address) < 0)
+      return BGP_ERR_INVALID_VALUE;
+  }
 
-  listnode_add (bm->bgp, bgp);
+  listnode_add(bm->bgp, bgp);
 
   return 0;
 }
@@ -5202,9 +5192,7 @@ bgp_config_write_family (struct vty *vty, struct bgp *bgp, afi_t afi,
   return write;
 }
 
-int
-bgp_config_write (struct vty *vty)
-{
+int bgp_config_write(struct vty *vty) {
   int write = 0;
   struct bgp *bgp;
   struct peer_group *group;
@@ -5213,189 +5201,186 @@ bgp_config_write (struct vty *vty)
   struct listnode *mnode, *mnnode;
 
   /* BGP Multiple instance. */
-  if (bgp_option_check (BGP_OPT_MULTIPLE_INSTANCE))
-    {    
-      vty_out (vty, "bgp multiple-instance%s", VTY_NEWLINE);
-      write++;
-    }
+  if (bgp_option_check(BGP_OPT_MULTIPLE_INSTANCE)) {
+    vty_out(vty, "bgp multiple-instance%s", VTY_NEWLINE);
+    write++;
+  }
 
   /* BGP Config type. */
-  if (bgp_option_check (BGP_OPT_CONFIG_CISCO))
-    {    
-      vty_out (vty, "bgp config-type cisco%s", VTY_NEWLINE);
-      write++;
-    }
+  if (bgp_option_check(BGP_OPT_CONFIG_CISCO)) {
+    vty_out(vty, "bgp config-type cisco%s", VTY_NEWLINE);
+    write++;
+  }
 
   /* BGP configuration. */
-  for (ALL_LIST_ELEMENTS (bm->bgp, mnode, mnnode, bgp))
-    {
-      if (write)
-	vty_out (vty, "!%s", VTY_NEWLINE);
+  for (ALL_LIST_ELEMENTS(bm->bgp, mnode, mnnode, bgp)) {
+    if (write)
+      vty_out(vty, "!%s", VTY_NEWLINE);
 
-      /* Router bgp ASN */
-      vty_out (vty, "router bgp %u", bgp->as);
+    /* Router bgp ASN */
+    vty_out(vty, "router bgp %u", bgp->as);
 
-      if (bgp_option_check (BGP_OPT_MULTIPLE_INSTANCE))
-	{
-	  if (bgp->name)
-	    vty_out (vty, " view %s", bgp->name);
-	}
-      vty_out (vty, "%s", VTY_NEWLINE);
-
-      /* No Synchronization */
-      if (bgp_option_check (BGP_OPT_CONFIG_CISCO))
-	vty_out (vty, " no synchronization%s", VTY_NEWLINE);
-
-      /* BGP fast-external-failover. */
-      if (CHECK_FLAG (bgp->flags, BGP_FLAG_NO_FAST_EXT_FAILOVER))
-	vty_out (vty, " no bgp fast-external-failover%s", VTY_NEWLINE); 
-
-      /* BGP router ID. */
-      if (CHECK_FLAG (bgp->config, BGP_CONFIG_ROUTER_ID))
-	vty_out (vty, " bgp router-id %s%s", inet_ntoa (bgp->router_id), 
-		 VTY_NEWLINE);
-
-      /* BGP log-neighbor-changes. */
-      if (bgp_flag_check (bgp, BGP_FLAG_LOG_NEIGHBOR_CHANGES))
-	vty_out (vty, " bgp log-neighbor-changes%s", VTY_NEWLINE);
-
-      /* BGP configuration. */
-      if (bgp_flag_check (bgp, BGP_FLAG_ALWAYS_COMPARE_MED))
-	vty_out (vty, " bgp always-compare-med%s", VTY_NEWLINE);
-
-      /* BGP default ipv4-unicast. */
-      if (bgp_flag_check (bgp, BGP_FLAG_NO_DEFAULT_IPV4))
-	vty_out (vty, " no bgp default ipv4-unicast%s", VTY_NEWLINE);
-
-      /* BGP default local-preference. */
-      if (bgp->default_local_pref != BGP_DEFAULT_LOCAL_PREF)
-	vty_out (vty, " bgp default local-preference %d%s",
-		 bgp->default_local_pref, VTY_NEWLINE);
-
-      /* BGP client-to-client reflection. */
-      if (bgp_flag_check (bgp, BGP_FLAG_NO_CLIENT_TO_CLIENT))
-	vty_out (vty, " no bgp client-to-client reflection%s", VTY_NEWLINE);
-      
-      /* BGP cluster ID. */
-      if (CHECK_FLAG (bgp->config, BGP_CONFIG_CLUSTER_ID))
-	vty_out (vty, " bgp cluster-id %s%s", inet_ntoa (bgp->cluster_id),
-		 VTY_NEWLINE);
-
-      /* Confederation identifier*/
-      if (CHECK_FLAG (bgp->config, BGP_CONFIG_CONFEDERATION))
-       vty_out (vty, " bgp confederation identifier %i%s", bgp->confed_id,
-                VTY_NEWLINE);
-
-      /* Confederation peer */
-      if (bgp->confed_peers_cnt > 0)
-	{
-	  int i;
-
-	  vty_out (vty, " bgp confederation peers");
-
-         for (i = 0; i < bgp->confed_peers_cnt; i++)
-           vty_out(vty, " %u", bgp->confed_peers[i]);
-
-          vty_out (vty, "%s", VTY_NEWLINE);
-	}
-
-      /* BGP enforce-first-as. */
-      if (bgp_flag_check (bgp, BGP_FLAG_ENFORCE_FIRST_AS))
-	vty_out (vty, " bgp enforce-first-as%s", VTY_NEWLINE);
-
-      /* BGP deterministic-med. */
-      if (bgp_flag_check (bgp, BGP_FLAG_DETERMINISTIC_MED))
-	vty_out (vty, " bgp deterministic-med%s", VTY_NEWLINE);
-
-      /* BGP graceful-restart. */
-      if (bgp->stalepath_time != BGP_DEFAULT_STALEPATH_TIME)
-	vty_out (vty, " bgp graceful-restart stalepath-time %d%s",
-		 bgp->stalepath_time, VTY_NEWLINE);
-      if (bgp_flag_check (bgp, BGP_FLAG_GRACEFUL_RESTART))
-       vty_out (vty, " bgp graceful-restart%s", VTY_NEWLINE);
-
-      /* BGP bestpath method. */
-      if (bgp_flag_check (bgp, BGP_FLAG_ASPATH_IGNORE))
-	vty_out (vty, " bgp bestpath as-path ignore%s", VTY_NEWLINE);
-      if (bgp_flag_check (bgp, BGP_FLAG_ASPATH_CONFED))
-	vty_out (vty, " bgp bestpath as-path confed%s", VTY_NEWLINE);
-      if (bgp_flag_check (bgp, BGP_FLAG_ASPATH_MULTIPATH_RELAX)) {
-	vty_out (vty, " bgp bestpath as-path multipath-relax%s", VTY_NEWLINE);
-      }
-      if (bgp_flag_check (bgp, BGP_FLAG_COMPARE_ROUTER_ID))
-	vty_out (vty, " bgp bestpath compare-routerid%s", VTY_NEWLINE);
-      if (bgp_flag_check (bgp, BGP_FLAG_MED_CONFED)
-	  || bgp_flag_check (bgp, BGP_FLAG_MED_MISSING_AS_WORST))
-	{
-	  vty_out (vty, " bgp bestpath med");
-	  if (bgp_flag_check (bgp, BGP_FLAG_MED_CONFED))
-	    vty_out (vty, " confed");
-	  if (bgp_flag_check (bgp, BGP_FLAG_MED_MISSING_AS_WORST))
-	    vty_out (vty, " missing-as-worst");
-	  vty_out (vty, "%s", VTY_NEWLINE);
-	}
-
-      /* BGP network import check. */
-      if (bgp_flag_check (bgp, BGP_FLAG_IMPORT_CHECK))
-	vty_out (vty, " bgp network import-check%s", VTY_NEWLINE);
-
-      /* BGP scan interval. */
-      bgp_config_write_scan_time (vty);
-
-      /* BGP flag dampening. */
-      if (CHECK_FLAG (bgp->af_flags[AFI_IP][SAFI_UNICAST],
-	  BGP_CONFIG_DAMPENING))
-	bgp_config_write_damp (vty);
-
-      /* BGP static route configuration. */
-      bgp_config_write_network (vty, bgp, AFI_IP, SAFI_UNICAST, &write);
-
-      /* BGP redistribute configuration. */
-      bgp_config_write_redistribute (vty, bgp, AFI_IP, SAFI_UNICAST, &write);
-
-      /* BGP timers configuration. */
-      if (bgp->default_keepalive != BGP_DEFAULT_KEEPALIVE
-	  && bgp->default_holdtime != BGP_DEFAULT_HOLDTIME)
-	vty_out (vty, " timers bgp %d %d%s", bgp->default_keepalive, 
-		 bgp->default_holdtime, VTY_NEWLINE);
-
-      /* peer-group */
-      for (ALL_LIST_ELEMENTS (bgp->group, node, nnode, group))
-	{
-	  bgp_config_write_peer (vty, bgp, group->conf, AFI_IP, SAFI_UNICAST);
-	}
-
-      /* Normal neighbor configuration. */
-      for (ALL_LIST_ELEMENTS (bgp->peer, node, nnode, peer))
-	{
-	  if (! CHECK_FLAG (peer->sflags, PEER_STATUS_ACCEPT_PEER))
-	    bgp_config_write_peer (vty, bgp, peer, AFI_IP, SAFI_UNICAST);
-	}
-
-      /* maximum-paths */
-      bgp_config_write_maxpaths (vty, bgp, AFI_IP, SAFI_UNICAST, &write);
-
-      /* Distance configuration. */
-      bgp_config_write_distance (vty, bgp);
-      
-      /* No auto-summary */
-      if (bgp_option_check (BGP_OPT_CONFIG_CISCO))
-	vty_out (vty, " no auto-summary%s", VTY_NEWLINE);
-
-      /* IPv4 multicast configuration.  */
-      write += bgp_config_write_family (vty, bgp, AFI_IP, SAFI_MULTICAST);
-
-      /* IPv4 VPN configuration.  */
-      write += bgp_config_write_family (vty, bgp, AFI_IP, SAFI_MPLS_VPN);
-
-      /* IPv6 unicast configuration.  */
-      write += bgp_config_write_family (vty, bgp, AFI_IP6, SAFI_UNICAST);
-
-      /* IPv6 multicast configuration.  */
-      write += bgp_config_write_family (vty, bgp, AFI_IP6, SAFI_MULTICAST);
-
-      write++;
+    if (bgp_option_check(BGP_OPT_MULTIPLE_INSTANCE)) {
+      if (bgp->name)
+        vty_out(vty, " view %s", bgp->name);
     }
+    vty_out(vty, "%s", VTY_NEWLINE);
+
+    /* No Synchronization */
+    if (bgp_option_check(BGP_OPT_CONFIG_CISCO))
+      vty_out(vty, " no synchronization%s", VTY_NEWLINE);
+
+    /* BGP fast-external-failover. */
+    if (CHECK_FLAG (bgp->flags, BGP_FLAG_NO_FAST_EXT_FAILOVER))
+      vty_out(vty, " no bgp fast-external-failover%s", VTY_NEWLINE);
+
+    /* BGP router ID. */
+    if (CHECK_FLAG (bgp->config, BGP_CONFIG_ROUTER_ID))
+      vty_out(vty, " bgp router-id %s%s", inet_ntoa(bgp->router_id),
+          VTY_NEWLINE);
+
+    /* BGP log-neighbor-changes. */
+    if (bgp_flag_check(bgp, BGP_FLAG_LOG_NEIGHBOR_CHANGES))
+      vty_out(vty, " bgp log-neighbor-changes%s", VTY_NEWLINE);
+
+    /* BGP configuration. */
+    if (bgp_flag_check(bgp, BGP_FLAG_ALWAYS_COMPARE_MED))
+      vty_out(vty, " bgp always-compare-med%s", VTY_NEWLINE);
+
+    /* BGP default ipv4-unicast. */
+    if (bgp_flag_check(bgp, BGP_FLAG_NO_DEFAULT_IPV4))
+      vty_out(vty, " no bgp default ipv4-unicast%s", VTY_NEWLINE);
+
+    /* BGP default local-preference. */
+    if (bgp->default_local_pref != BGP_DEFAULT_LOCAL_PREF)
+      vty_out(vty, " bgp default local-preference %d%s",
+          bgp->default_local_pref, VTY_NEWLINE);
+
+    /* BGP client-to-client reflection. */
+    if (bgp_flag_check(bgp, BGP_FLAG_NO_CLIENT_TO_CLIENT))
+      vty_out(vty, " no bgp client-to-client reflection%s", VTY_NEWLINE);
+
+    /* BGP cluster ID. */
+    if (CHECK_FLAG (bgp->config, BGP_CONFIG_CLUSTER_ID))
+      vty_out(vty, " bgp cluster-id %s%s", inet_ntoa(bgp->cluster_id),
+          VTY_NEWLINE);
+
+    /* Confederation identifier*/
+    if (CHECK_FLAG (bgp->config, BGP_CONFIG_CONFEDERATION))
+      vty_out(vty, " bgp confederation identifier %i%s", bgp->confed_id,
+          VTY_NEWLINE);
+
+    /* Confederation peer */
+    if (bgp->confed_peers_cnt > 0) {
+      int i;
+
+      vty_out(vty, " bgp confederation peers");
+
+      for (i = 0; i < bgp->confed_peers_cnt; i++)
+        vty_out(vty, " %u", bgp->confed_peers[i]);
+
+      vty_out(vty, "%s", VTY_NEWLINE);
+    }
+
+    /* BGP enforce-first-as. */
+    if (bgp_flag_check(bgp, BGP_FLAG_ENFORCE_FIRST_AS))
+      vty_out(vty, " bgp enforce-first-as%s", VTY_NEWLINE);
+
+    /* BGP deterministic-med. */
+    if (bgp_flag_check(bgp, BGP_FLAG_DETERMINISTIC_MED))
+      vty_out(vty, " bgp deterministic-med%s", VTY_NEWLINE);
+
+    /* BGP graceful-restart. */
+    if (bgp->stalepath_time != BGP_DEFAULT_STALEPATH_TIME)
+      vty_out(vty, " bgp graceful-restart stalepath-time %d%s",
+          bgp->stalepath_time, VTY_NEWLINE);
+    if (bgp_flag_check(bgp, BGP_FLAG_GRACEFUL_RESTART))
+      vty_out(vty, " bgp graceful-restart%s", VTY_NEWLINE);
+
+    /* BGP bestpath method. */
+    if (bgp_flag_check(bgp, BGP_FLAG_ASPATH_IGNORE))
+      vty_out(vty, " bgp bestpath as-path ignore%s", VTY_NEWLINE);
+    if (bgp_flag_check(bgp, BGP_FLAG_ASPATH_CONFED))
+      vty_out(vty, " bgp bestpath as-path confed%s", VTY_NEWLINE);
+    if (bgp_flag_check (bgp, BGP_FLAG_ASPATH_MULTIPATH_RELAX))
+      vty_out (vty, " bgp bestpath as-path multipath-relax%s", VTY_NEWLINE);
+    if (bgp_flag_check(bgp, BGP_FLAG_COMPARE_ROUTER_ID))
+      vty_out(vty, " bgp bestpath compare-routerid%s", VTY_NEWLINE);
+
+    if (bgp_flag_check(bgp, BGP_FLAG_MED_CONFED)
+        || bgp_flag_check(bgp, BGP_FLAG_MED_MISSING_AS_WORST)) {
+      vty_out(vty, " bgp bestpath med");
+      if (bgp_flag_check(bgp, BGP_FLAG_MED_CONFED))
+        vty_out(vty, " confed");
+      if (bgp_flag_check(bgp, BGP_FLAG_MED_MISSING_AS_WORST))
+        vty_out(vty, " missing-as-worst");
+      vty_out(vty, "%s", VTY_NEWLINE);
+    }
+    if (bgp_flag_check(bgp, BGP_FLAG_VALIDATE_DISABLE)) {
+      vty_out(vty, " bgp bestpath prefix-validate disable%s", VTY_NEWLINE);
+    }
+    if (bgp_flag_check(bgp, BGP_FLAG_ALLOW_INVALID)) {
+      vty_out(vty, " bgp bestpath prefix-validate allow-invalid%s", VTY_NEWLINE);
+    }
+    /* BGP network import check. */
+    if (bgp_flag_check(bgp, BGP_FLAG_IMPORT_CHECK))
+      vty_out(vty, " bgp network import-check%s", VTY_NEWLINE);
+
+    /* BGP scan interval. */
+    bgp_config_write_scan_time(vty);
+
+    /* BGP flag dampening. */
+    if (CHECK_FLAG (bgp->af_flags[AFI_IP][SAFI_UNICAST],
+        BGP_CONFIG_DAMPENING))
+      bgp_config_write_damp(vty);
+
+    /* BGP static route configuration. */
+    bgp_config_write_network(vty, bgp, AFI_IP, SAFI_UNICAST, &write);
+
+    /* BGP redistribute configuration. */
+    bgp_config_write_redistribute(vty, bgp, AFI_IP, SAFI_UNICAST, &write);
+
+    /* BGP timers configuration. */
+    if (bgp->default_keepalive != BGP_DEFAULT_KEEPALIVE
+        && bgp->default_holdtime != BGP_DEFAULT_HOLDTIME)
+      vty_out(vty, " timers bgp %d %d%s", bgp->default_keepalive,
+          bgp->default_holdtime, VTY_NEWLINE);
+
+    /* peer-group */
+    for (ALL_LIST_ELEMENTS(bgp->group, node, nnode, group)) {
+      bgp_config_write_peer(vty, bgp, group->conf, AFI_IP, SAFI_UNICAST);
+    }
+
+    /* Normal neighbor configuration. */
+    for (ALL_LIST_ELEMENTS(bgp->peer, node, nnode, peer)) {
+      if (!CHECK_FLAG (peer->sflags, PEER_STATUS_ACCEPT_PEER))
+        bgp_config_write_peer(vty, bgp, peer, AFI_IP, SAFI_UNICAST);
+    }
+
+    /* maximum-paths */
+    bgp_config_write_maxpaths(vty, bgp, AFI_IP, SAFI_UNICAST, &write);
+
+    /* Distance configuration. */
+    bgp_config_write_distance(vty, bgp);
+
+    /* No auto-summary */
+    if (bgp_option_check(BGP_OPT_CONFIG_CISCO))
+      vty_out(vty, " no auto-summary%s", VTY_NEWLINE);
+
+    /* IPv4 multicast configuration.  */
+    write += bgp_config_write_family(vty, bgp, AFI_IP, SAFI_MULTICAST);
+
+    /* IPv4 VPN configuration.  */
+    write += bgp_config_write_family(vty, bgp, AFI_IP, SAFI_MPLS_VPN);
+
+    /* IPv6 unicast configuration.  */
+    write += bgp_config_write_family(vty, bgp, AFI_IP6, SAFI_UNICAST);
+
+    /* IPv6 multicast configuration.  */
+    write += bgp_config_write_family(vty, bgp, AFI_IP6, SAFI_MULTICAST);
+
+    write++;
+  }
   return write;
 }
 
