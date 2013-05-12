@@ -60,26 +60,11 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #ifdef include_rpki
 #include "bgpd/rpki/bgp_rpki.h"
 
-static void
-do_rpki_origin_validation (struct bgp *bgp, struct bgp_info *bgp_info,
-			   struct prefix *prefix)
-{
-  if (bgp_flag_check (bgp, BGP_FLAG_VALIDATE_DISABLE))
-    {
-      bgp_info->rpki_validation_status = 0;
-      return;
-    }
-  else
-    {
-      bgp_info->rpki_validation_status =
-	rpki_validate_prefix (bgp_info->peer, bgp_info->attr, prefix);
-    }
-}
-
 #define DO_RPKI_ORIGIN_VALIDATION(bgp, bgp_info, prefix) \
 		do_rpki_origin_validation(bgp, bgp_info, prefix);
 #else
-#define DO_RPKI_ORIGIN_VALIDATION(bgp, bgp_info)
+#define DO_RPKI_ORIGIN_VALIDATION(bgp, bgp_info, prefix) \
+		bgp_info->rpki_validation_status = 0;
 #endif
 
 /* Extern from bgp_dump.c */
@@ -1598,9 +1583,6 @@ bgp_process_main (struct work_queue *wq, void *data)
   struct bgp_info_pair old_and_new;
   struct listnode *node, *nnode;
   struct peer *peer;
-  u_char rpki_validation_status = 0;
-
-
 
   /* Best path selection. */
   bgp_best_selection (bgp, rn, &bgp->maxpaths[afi][safi], &old_and_new);

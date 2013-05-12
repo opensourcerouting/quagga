@@ -15,6 +15,7 @@
 #include "linklist.h"
 #include "memory.h"
 #include "thread.h"
+#include "bgpd/bgp_table.h"
 #include "bgpd/bgpd.h"
 #include "bgpd/bgp_attr.h"
 #include "bgpd/bgp_aspath.h"
@@ -97,7 +98,7 @@ int rpki_validate_prefix(struct peer* peer, struct attr* attr, struct prefix *pr
   }
 
   // No aspath means route comes from iBGP
-  if (!attr->aspath) {
+  if (!attr->aspath || !attr->aspath->segments) {
     // Set own as number
     as_number = peer->bgp->as;
   }
@@ -231,18 +232,73 @@ void print_record(struct vty *vty, const lpfst_node* node){
   node_data* data = (node_data*) node->data;
   for(unsigned int i = 0; i < data->len; ++i){
     ip_addr_to_str(&(node->prefix), ip, sizeof(ip));
-    vty_out(vty, "%-40s   %3u - %3u   %10u %s", ip, node->len, data->ary[i].max_len, data->ary[i].asn, VTY_NEWLINE);
-    // TODO add cache socket_id to list
-//  data->ary[i].socket_id;
+//    rtr_socket* rtr_socket = (rtr_socket*) data->ary[i].socket_id;
+    vty_out(vty, "%-40s   %3u - %3u   %10u %s", ip, node->len,
+        data->ary[i].max_len, data->ary[i].asn, VTY_NEWLINE);
   }
 }
 
-time_t last_time;
+extern void bgp_process(struct bgp *bgp, struct bgp_node *rn, afi_t afi, safi_t safi);
+
+void do_rpki_origin_validation(struct bgp* bgp, struct bgp_info* bgp_info, struct prefix* prefix) {
+  if(bgp_flag_check(bgp, BGP_FLAG_VALIDATE_DISABLE)){
+    bgp_info->rpki_validation_status = 0;
+    return;
+  }
+  else {
+    bgp_info->rpki_validation_status = rpki_validate_prefix(bgp_info->peer, bgp_info->attr, prefix);
+  }
+}
+
+static void rpki_process(struct bgp* bgp, struct bgp_node* bgp_node, afi_t afi, safi_t safi){
+  struct bgp_info*  bgp_info = (struct bgp_info*) bgp_node->info;
+  if(bgp_info != NULL){
+    do_rpki_origin_validation(bgp, bgp_info, &(bgp_node->p));
+  }
+  bgp_process(bgp, bgp_node, afi, safi);
+}
 
 static void update_cb(struct pfx_table* p, const pfx_record rec, const bool added){
-//  time_t new_time = quagga_time (NULL);
-//  static int i = 0;
-//  RPKI_DEBUG("Update %5d; time: %d; difference: %4d", i++, new_time, difftime(new_time,last_time));
-//  last_time = new_time;
+  struct bgp* bgp;
+  struct bgp_info* bgp_info;
+  struct listnode* node;
+  struct bgp_node* bgp_node;
+  safi_t safi;
 
+  for (ALL_LIST_ELEMENTS_RO (bm->bgp, node, bgp)) {
+    for (safi = SAFI_UNICAST; safi < SAFI_MAX; safi++) {
+      switch (rec.prefix.ver) {
+        case IPV4:
+          bgp_node = bgp_node_from_rnode(bgp->rib[AFI_IP][safi]->route_table->top);
+          if(bgp_node != NULL){
+            rpki_process(bgp, bgp_node, AFI_IP, safi);
+          }
+          bgp_node = bgp_node_from_rnode(bgp->aggregate[AFI_IP][safi]->route_table->top);
+          if(bgp_node != NULL){
+            rpki_process(bgp, bgp_node, AFI_IP, safi);
+          }
+          bgp_node = bgp_node_from_rnode(bgp->route[AFI_IP][safi]->route_table->top);
+          if(bgp_node != NULL){
+            rpki_process(bgp, bgp_node, AFI_IP, safi);
+          }
+          break;
+        case IPV6:
+          bgp_node = bgp_node_from_rnode(bgp->rib[AFI_IP6][safi]->route_table->top);
+          if(bgp_node != NULL){
+            rpki_process(bgp, bgp_node, AFI_IP, safi);
+          }
+          bgp_node = bgp_node_from_rnode(bgp->aggregate[AFI_IP6][safi]->route_table->top);
+          if(bgp_node != NULL){
+            rpki_process(bgp, bgp_node, AFI_IP, safi);
+          }
+          bgp_node = bgp_node_from_rnode(bgp->route[AFI_IP6][safi]->route_table->top);
+          if(bgp_node != NULL){
+            rpki_process(bgp, bgp_node, AFI_IP, safi);
+          }
+          break;
+        default:
+          break;
+      }
+    }
+  }
 }
