@@ -1584,6 +1584,15 @@ bgp_process_main (struct work_queue *wq, void *data)
   struct listnode *node, *nnode;
   struct peer *peer;
 
+#ifdef include_rpki
+  if (rn->info != NULL) {
+    struct bgp_info * bgp_info = rn->info;
+    if(bgp_info->rpki_validation_status == 0){
+      DO_RPKI_ORIGIN_VALIDATION(bgp, bgp_info, p)
+    }
+  }
+#endif
+
   /* Best path selection. */
   bgp_best_selection (bgp, rn, &bgp->maxpaths[afi][safi], &old_and_new);
   old_select = old_and_new.old;

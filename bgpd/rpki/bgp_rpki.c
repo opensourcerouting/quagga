@@ -30,6 +30,8 @@
 rtr_mgr_config rtr_config;
 int rtr_is_running;
 
+extern void bgp_process(struct bgp *bgp, struct bgp_node *rn, afi_t afi, safi_t safi);
+
 static void list_all_nodes(struct vty *vty, const lpfst_node* node, unsigned int* count);
 static void print_record(struct vty *vty, const lpfst_node* node);
 static int validate_prefix(struct prefix *prefix, uint32_t asn, uint8_t mask_len);
@@ -82,10 +84,6 @@ void rpki_finish(void){
   rtr_is_running = 0;
   free_rtr_mgr_groups(rtr_config.groups, rtr_config.len);
   delete_cache_group_list();
-}
-
-void rpki_test(void){
-  RPKI_DEBUG("Testoutput");
 }
 
 int rpki_validate_prefix(struct peer* peer, struct attr* attr, struct prefix *prefix){
@@ -238,8 +236,6 @@ void print_record(struct vty *vty, const lpfst_node* node){
   }
 }
 
-extern void bgp_process(struct bgp *bgp, struct bgp_node *rn, afi_t afi, safi_t safi);
-
 void do_rpki_origin_validation(struct bgp* bgp, struct bgp_info* bgp_info, struct prefix* prefix) {
   if(bgp_flag_check(bgp, BGP_FLAG_VALIDATE_DISABLE)){
     bgp_info->rpki_validation_status = 0;
@@ -250,54 +246,71 @@ void do_rpki_origin_validation(struct bgp* bgp, struct bgp_info* bgp_info, struc
   }
 }
 
-static void rpki_process(struct bgp* bgp, struct bgp_node* bgp_node, afi_t afi, safi_t safi){
-  struct bgp_info*  bgp_info = (struct bgp_info*) bgp_node->info;
-  if(bgp_info != NULL){
-    do_rpki_origin_validation(bgp, bgp_info, &(bgp_node->p));
-  }
-  bgp_process(bgp, bgp_node, afi, safi);
-}
-
-static void update_cb(struct pfx_table* p, const pfx_record rec, const bool added){
+static void update_cb(struct pfx_table* p __attribute__ ((unused)),
+    const pfx_record rec __attribute__ ((unused)), const bool added __attribute__ ((unused))){
   struct bgp* bgp;
+  struct bgp_table *table;
   struct bgp_info* bgp_info;
   struct listnode* node;
   struct bgp_node* bgp_node;
   safi_t safi;
 
+  if(!rpki_is_synchronized()){
+    return;
+  }
+
   for (ALL_LIST_ELEMENTS_RO (bm->bgp, node, bgp)) {
+    if(bgp_flag_check(bgp, BGP_FLAG_VALIDATE_DISABLE)){
+      continue;
+    }
     for (safi = SAFI_UNICAST; safi < SAFI_MAX; safi++) {
       switch (rec.prefix.ver) {
         case IPV4:
-          bgp_node = bgp_node_from_rnode(bgp->rib[AFI_IP][safi]->route_table->top);
-          if(bgp_node != NULL){
-            rpki_process(bgp, bgp_node, AFI_IP, safi);
-          }
-          bgp_node = bgp_node_from_rnode(bgp->aggregate[AFI_IP][safi]->route_table->top);
-          if(bgp_node != NULL){
-            rpki_process(bgp, bgp_node, AFI_IP, safi);
-          }
-          bgp_node = bgp_node_from_rnode(bgp->route[AFI_IP][safi]->route_table->top);
-          if(bgp_node != NULL){
-            rpki_process(bgp, bgp_node, AFI_IP, safi);
+          table = bgp->rib[AFI_IP][SAFI_UNICAST];
+          for (bgp_node = bgp_table_top(table); bgp_node; bgp_node = bgp_route_next(bgp_node)){
+            if (bgp_node->info != NULL ) {
+              for (bgp_info = bgp_node->info; bgp_info; bgp_info = bgp_info->next) {
+                bgp_info->rpki_validation_status = rpki_validate_prefix(bgp_info->peer, bgp_info->attr, &bgp_node->p);
+                bgp_process(bgp, bgp_node, AFI_IP, safi);
+              }
+            }
           }
           break;
         case IPV6:
-          bgp_node = bgp_node_from_rnode(bgp->rib[AFI_IP6][safi]->route_table->top);
-          if(bgp_node != NULL){
-            rpki_process(bgp, bgp_node, AFI_IP, safi);
-          }
-          bgp_node = bgp_node_from_rnode(bgp->aggregate[AFI_IP6][safi]->route_table->top);
-          if(bgp_node != NULL){
-            rpki_process(bgp, bgp_node, AFI_IP, safi);
-          }
-          bgp_node = bgp_node_from_rnode(bgp->route[AFI_IP6][safi]->route_table->top);
-          if(bgp_node != NULL){
-            rpki_process(bgp, bgp_node, AFI_IP, safi);
+          table = bgp->rib[AFI_IP6][SAFI_UNICAST];
+          for (bgp_node = bgp_table_top(table); bgp_node; bgp_node = bgp_route_next(bgp_node)){
+            if (bgp_node->info != NULL ) {
+              for (bgp_info = bgp_node->info; bgp_info; bgp_info = bgp_info->next) {
+                bgp_info->rpki_validation_status = rpki_validate_prefix(bgp_info->peer, bgp_info->attr, &bgp_node->p);
+                bgp_process(bgp, bgp_node, AFI_IP6, safi);
+              }
+            }
           }
           break;
         default:
           break;
+      }
+    }
+  }
+}
+
+void rpki_test(void){
+  char buf[BUFSIZ];
+  struct bgp_info *ri;
+  struct bgp_node *rn;
+  struct bgp *bgp = bgp_get_default();
+  struct bgp_table *table = bgp->rib[AFI_IP][SAFI_UNICAST];
+  RPKI_DEBUG("Testoutput");
+  for (rn = bgp_table_top(table); rn; rn = bgp_route_next(rn)){
+    RPKI_DEBUG("bgp_node: %s",
+        inet_ntop(rn->p.family,
+            &rn->p.u.prefix,
+            buf, BUFSIZ));
+    if (rn->info != NULL ) {
+      for (ri = rn->info; ri; ri = ri->next) {
+        do_rpki_origin_validation(bgp, ri, &rn->p);
+        RPKI_DEBUG("bgp_info: weight: %7u; rpki: %u",
+            (ri->attr->extra ? ri->attr->extra->weight : 0), ri->rpki_validation_status);
       }
     }
   }
