@@ -1338,6 +1338,7 @@ bgp_best_selection (struct bgp *bgp, struct bgp_node *rn,
   /* bgp deterministic-med */
   new_select = NULL;
   if (bgp_flag_check (bgp, BGP_FLAG_DETERMINISTIC_MED))
+    {
     for (ri1 = rn->info; ri1; ri1 = ri1->next)
       {
 	if (CHECK_FLAG (ri1->flags, BGP_INFO_DMED_CHECK))
@@ -1348,7 +1349,8 @@ bgp_best_selection (struct bgp *bgp, struct bgp_node *rn,
 	new_select = ri1;
 	if (do_mpath)
 	  bgp_mp_list_add (&mp_list, ri1);
-	old_select = CHECK_FLAG (ri1->flags, BGP_INFO_SELECTED) ? ri1 : NULL;
+	  old_select =
+	    CHECK_FLAG (ri1->flags, BGP_INFO_SELECTED) ? ri1 : NULL;
 	if (ri1->next)
 	  for (ri2 = ri1->next; ri2; ri2 = ri2->next)
 	    {
@@ -1386,6 +1388,7 @@ bgp_best_selection (struct bgp *bgp, struct bgp_node *rn,
 	bgp_info_mpath_update (rn, new_select, old_select, &mp_list, mpath_cfg);
 	bgp_mp_list_clear (&mp_list);
       }
+    }
 
   /* Check old selected route and new selected route. */
   old_select = NULL;
@@ -1421,7 +1424,17 @@ bgp_best_selection (struct bgp *bgp, struct bgp_node *rn,
 	  if (do_mpath && bgp_flag_check (bgp, BGP_FLAG_DETERMINISTIC_MED))
 	    bgp_mp_dmed_deselect (new_select);
 
+#ifdef include_rpki
+	  if (ri->rpki_validation_status != RPKI_INVALID
+	      || CHECK_FLAG (bgp->flags, BGP_FLAG_ALLOW_INVALID))
+	    {
 	  new_select = ri;
+	    }
+#else
+	  new_select = ri;
+#endif
+
+
 
 	  if (do_mpath && !paths_eq)
 	    {
@@ -1521,6 +1534,22 @@ bgp_process_rsclient (struct work_queue *wq, void *data)
   struct listnode *node, *nnode;
   struct peer *rsclient = bgp_node_table (rn)->owner;
 
+#ifdef include_rpki
+  if (rn->info != NULL)
+    {
+      struct bgp_info *bgp_info = rn->info;
+      // If we have validation data and prefix has not yet been validated
+      if (rpki_is_synchronized () && bgp_info->rpki_validation_status == 0)
+	{
+	DO_RPKI_ORIGIN_VALIDATION (bgp, bgp_info, &rn->p)}
+      // If validation is off but validation status has not yet been resetted
+      else if (!rpki_is_running () && bgp_info->rpki_validation_status != 0)
+	{
+	  bgp_info->rpki_validation_status = 0;
+	}
+    }
+#endif
+
   /* Best path selection. */
   bgp_best_selection (bgp, rn, &bgp->maxpaths[afi][safi], &old_and_new);
   new_select = old_and_new.new;
@@ -1587,9 +1616,17 @@ bgp_process_main (struct work_queue *wq, void *data)
 #ifdef include_rpki
   if (rn->info != NULL) {
     struct bgp_info * bgp_info = rn->info;
-    if(bgp_info->rpki_validation_status == 0){
-      DO_RPKI_ORIGIN_VALIDATION(bgp, bgp_info, p)
-    }
+    // If we have validation data and prefix has not yet been validated
+    if (rpki_is_synchronized () && bgp_info->rpki_validation_status == 0)
+      {
+        DO_RPKI_ORIGIN_VALIDATION(bgp, bgp_info, p)
+      }
+    // If validation is off but validation status has not yet been resetted
+    else if (!rpki_is_synchronized ()
+	     && bgp_info->rpki_validation_status != 0)
+      {
+	bgp_info->rpki_validation_status = 0;
+      }
   }
 #endif
 
@@ -2014,7 +2051,7 @@ bgp_update_rsclient (struct peer *rsclient, afi_t afi, safi_t safi,
   new->peer = peer;
   new->attr = attr_new;
   new->uptime = bgp_clock ();
-  DO_RPKI_ORIGIN_VALIDATION (bgp, new, p)
+
   /* Update MPLS tag. */
   if (safi == SAFI_MPLS_VPN)
     memcpy ((bgp_info_extra_get (new))->tag, tag, 3);
@@ -2352,7 +2389,7 @@ bgp_update_main (struct peer *peer, struct prefix *p, struct attr *attr,
   new->peer = peer;
   new->attr = attr_new;
   new->uptime = bgp_clock ();
-  DO_RPKI_ORIGIN_VALIDATION (bgp, new, p)
+
   /* Update MPLS tag. */
   if (safi == SAFI_MPLS_VPN)
     memcpy ((bgp_info_extra_get (new))->tag, tag, 3);
@@ -3449,7 +3486,7 @@ bgp_static_update_rsclient (struct peer *rsclient, struct prefix *p,
   SET_FLAG (new->flags, BGP_INFO_VALID);
   new->attr = attr_new;
   new->uptime = bgp_clock ();
-  DO_RPKI_ORIGIN_VALIDATION (bgp, new, p)
+
   /* Register new BGP information. */
   bgp_info_add (rn, new);
 
@@ -3568,7 +3605,7 @@ bgp_static_update_main (struct bgp *bgp, struct prefix *p,
   SET_FLAG (new->flags, BGP_INFO_VALID);
   new->attr = attr_new;
   new->uptime = bgp_clock ();
-  DO_RPKI_ORIGIN_VALIDATION (bgp, new, p)
+
   /* Aggregate address increment. */
   bgp_aggregate_increment (bgp, p, new, afi, safi);
 
@@ -3622,7 +3659,6 @@ bgp_static_update_vpnv4 (struct bgp *bgp, struct prefix *p, afi_t afi,
   new->extra = bgp_info_extra_new();
   memcpy (new->extra->tag, tag, 3);
 
-  DO_RPKI_ORIGIN_VALIDATION (bgp, new, p)
   /* Aggregate address increment. */
   bgp_aggregate_increment (bgp, p, new, afi, safi);
 
@@ -4686,7 +4722,6 @@ bgp_aggregate_route (struct bgp *bgp, struct prefix *p, struct bgp_info *rinew,
       new->attr = bgp_attr_aggregate_intern (bgp, origin, aspath, community, aggregate->as_set);
       new->uptime = bgp_clock ();
 
-      DO_RPKI_ORIGIN_VALIDATION (bgp, new, p)
       bgp_info_add (rn, new);
       bgp_unlock_node (rn);
       bgp_process (bgp, rn, afi, safi);
@@ -4872,7 +4907,6 @@ bgp_aggregate_add (struct bgp *bgp, struct prefix *p, afi_t afi, safi_t safi,
       new->attr = bgp_attr_aggregate_intern (bgp, origin, aspath, community, aggregate->as_set);
       new->uptime = bgp_clock ();
 
-      DO_RPKI_ORIGIN_VALIDATION (bgp, new, p)
       bgp_info_add (rn, new);
       bgp_unlock_node (rn);
 
@@ -5521,10 +5555,8 @@ bgp_redistribute_add (struct prefix *p, const struct in_addr *nexthop,
 	  SET_FLAG (new->flags, BGP_INFO_VALID);
 	  new->attr = new_attr;
 	  new->uptime = bgp_clock ();
-	  DO_RPKI_ORIGIN_VALIDATION (bgp, new,
-				     p) bgp_aggregate_increment (bgp, p, new,
-								 afi,
-								 SAFI_UNICAST);
+
+	  bgp_aggregate_increment (bgp, p, new, afi, SAFI_UNICAST);
 	  bgp_info_add (bn, new);
 	  bgp_unlock_node (bn);
 	  bgp_process (bgp, bn, afi, SAFI_UNICAST);

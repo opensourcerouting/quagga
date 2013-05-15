@@ -526,6 +526,33 @@ DEFUN (no_rpki_cache,
   return CMD_SUCCESS;
 }
 
+static void reprocess_routes(struct bgp* bgp){
+  struct bgp_table* table;
+  struct bgp_info* bgp_info;
+  struct listnode* node;
+  struct bgp_node* bgp_node;
+  safi_t safi;
+  afi_t afi;
+
+  if(!rpki_is_synchronized()){
+    return;
+  }
+
+  for (safi = SAFI_UNICAST; safi < SAFI_MAX; ++safi) {
+    for (afi = AFI_IP; afi < AFI_MAX; ++afi) {
+      table = bgp->rib[afi][safi];
+      for (bgp_node = bgp_table_top(table); bgp_node; bgp_node = bgp_route_next(bgp_node)){
+        if (bgp_node->info != NULL ) {
+          for (bgp_info = bgp_node->info; bgp_info; bgp_info = bgp_info->next) {
+            bgp_info->rpki_validation_status = rpki_validate_prefix(bgp_info->peer, bgp_info->attr, &bgp_node->p);
+            bgp_process(bgp, bgp_node, AFI_IP, safi);
+          }
+        }
+      }
+    }
+  }
+}
+
 DEFUN (bgp_bestpath_prefix_validate_disable,
       bgp_bestpath_prefix_validate_disable_cmd,
        "bgp bestpath prefix-validate disable",
@@ -536,6 +563,7 @@ DEFUN (bgp_bestpath_prefix_validate_disable,
 {
   struct bgp *bgp = vty->index;
   bgp_flag_set (bgp, BGP_FLAG_VALIDATE_DISABLE);
+  reprocess_routes(bgp);
   return CMD_SUCCESS;
 }
 
@@ -550,6 +578,7 @@ DEFUN (no_bgp_bestpath_prefix_validate_disable,
 {
   struct bgp *bgp = vty->index;
   bgp_flag_unset (bgp, BGP_FLAG_VALIDATE_DISABLE);
+  reprocess_routes(bgp);
   return CMD_SUCCESS;
 }
 
@@ -563,6 +592,7 @@ DEFUN (bgp_bestpath_prefix_validate_allow_invalid,
 {
   struct bgp *bgp = vty->index;
   bgp_flag_set (bgp, BGP_FLAG_ALLOW_INVALID);
+  reprocess_routes(bgp);
   return CMD_SUCCESS;
 }
 
@@ -577,6 +607,7 @@ DEFUN (no_bgp_bestpath_prefix_validate_allow_invalid,
 {
   struct bgp *bgp = vty->index;
   bgp_flag_unset (bgp, BGP_FLAG_ALLOW_INVALID);
+  reprocess_routes(bgp);
   return CMD_SUCCESS;
 }
 

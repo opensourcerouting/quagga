@@ -63,6 +63,7 @@ void rpki_test(void);
 void rpki_init(void);
 void rpki_finish(void);
 int rpki_is_synchronized(void);
+int rpki_is_running(void);
 void do_rpki_origin_validation(struct bgp* bgp, struct bgp_info* bgp_info, struct prefix* prefix);
 int rpki_validate_prefix(struct peer* peer, struct attr* attr, struct prefix *prefix);
 

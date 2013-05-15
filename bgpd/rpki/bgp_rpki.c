@@ -49,6 +49,10 @@ inline int rpki_is_synchronized(void){
       rtr_mgr_conf_in_sync(&rtr_config);
 }
 
+inline int rpki_is_running(void){
+  return rtr_is_running;
+}
+
 void rpki_reset_session(void){
   RPKI_DEBUG("Resetting RPKI Session");
   if(rtr_is_running){
@@ -126,10 +130,11 @@ static int validate_prefix(struct prefix *prefix, uint32_t asn, uint8_t mask_len
   ip_addr ip_addr_prefix;
   pfxv_state result;
   char buf[BUFSIZ];
+  char result_buf[10];
   u_char* quagga_prefix = &(prefix->u.prefix);
   u_char* rtr_prefix;
   const char* prefix_string = inet_ntop (prefix->family, &prefix->u.prefix, buf, BUFSIZ);
-  RPKI_DEBUG("Validating Prefix %s from asn %u", prefix_string , asn);
+
   switch (prefix->family) {
     case AF_INET:
       ip_addr_prefix.ver = IPV4;
@@ -171,15 +176,19 @@ static int validate_prefix(struct prefix *prefix, uint32_t asn, uint8_t mask_len
       return 0;
   }
   rtr_mgr_validate(&rtr_config, asn, &ip_addr_prefix, mask_len, &result);
-
+  RPKI_DEBUG("Validating Prefix %s from asn %u", prefix_string , asn);
   switch (result) {
     case BGP_PFXV_STATE_VALID:
+      RPKI_DEBUG("    Result: VALID");
       return RPKI_VALID;
     case BGP_PFXV_STATE_NOT_FOUND:
+      RPKI_DEBUG("    Result: NOTFOUND");
       return RPKI_NOTFOUND;
     case BGP_PFXV_STATE_INVALID:
+      RPKI_DEBUG("    Result: INVALID");
       return RPKI_INVALID;
     default:
+      RPKI_DEBUG("    Result: CANNOT VALIDATE");
       break;
   }
   return 0;
@@ -237,13 +246,17 @@ void print_record(struct vty *vty, const lpfst_node* node){
 }
 
 void do_rpki_origin_validation(struct bgp* bgp, struct bgp_info* bgp_info, struct prefix* prefix) {
-  if(bgp_flag_check(bgp, BGP_FLAG_VALIDATE_DISABLE)){
-    bgp_info->rpki_validation_status = 0;
-    return;
+  int validate_disable = bgp_flag_check(bgp, BGP_FLAG_VALIDATE_DISABLE);
+
+  for (; bgp_info; bgp_info = bgp_info->next) {
+    if(validate_disable){
+      bgp_info->rpki_validation_status = 0;
+    }
+    else {
+      bgp_info->rpki_validation_status = rpki_validate_prefix(bgp_info->peer, bgp_info->attr, prefix);
+    }
   }
-  else {
-    bgp_info->rpki_validation_status = rpki_validate_prefix(bgp_info->peer, bgp_info->attr, prefix);
-  }
+
 }
 
 static void update_cb(struct pfx_table* p __attribute__ ((unused)),
