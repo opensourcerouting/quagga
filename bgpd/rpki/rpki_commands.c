@@ -740,6 +740,7 @@ static void* route_match_rpki_compile(const char *arg) {
 }
 
 static void route_match_rpki_free(void *rule) {
+  rpki_set_route_map_active(0);
   XFREE(MTYPE_ROUTE_MAP_COMPILED, rule);
 }
 

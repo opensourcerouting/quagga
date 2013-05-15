@@ -66,7 +66,8 @@ int rpki_is_synchronized(void);
 int rpki_is_running(void);
 void do_rpki_origin_validation(struct bgp* bgp, struct bgp_info* bgp_info, struct prefix* prefix);
 int rpki_validate_prefix(struct peer* peer, struct attr* attr, struct prefix *prefix);
-
+int rpki_route_map_active();
+void rpki_set_route_map_active(int activate);
 void print_prefix_table(struct vty *vty);
 int get_connected_group();
 #endif /* BGP_RPKI_H_ */

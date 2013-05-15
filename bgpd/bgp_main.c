@@ -50,8 +50,7 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #include "bgpd/bgp_filter.h"
 #include "bgpd/bgp_zebra.h"
 
-#define include_rpki
-#ifdef include_rpki
+#ifdef HAVE_RPKI
 #include "bgpd/rpki/bgp_rpki.h"
 #endif
 
@@ -281,7 +280,7 @@ bgp_exit (int status)
   bgp_scan_finish ();
 
   /* reverse bgp_rpki_init  */
-#ifdef include_rpki
+#ifdef HAVE_RPKI
   rpki_finish();
 #endif
 
@@ -440,7 +439,7 @@ main (int argc, char **argv)
 
   /* BGP related initialization.  */
   bgp_init ();
-  #ifdef include_rpki
+  #ifdef HAVE_RPKI
 
   rpki_init();
   #endif
@@ -466,7 +465,7 @@ main (int argc, char **argv)
   vty_serv_sock (vty_addr, vty_port, BGP_VTYSH_PATH);
 
   /* Start rpki protocol to get validated prefix data */
-  #ifdef include_rpki
+  #ifdef HAVE_RPKI
 //  rpki_test();
   rpki_start();
   #endif

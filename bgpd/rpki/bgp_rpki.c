@@ -29,6 +29,7 @@
 
 rtr_mgr_config rtr_config;
 int rtr_is_running;
+int route_map_active;
 
 extern void bgp_process(struct bgp *bgp, struct bgp_node *rn, afi_t afi, safi_t safi);
 
@@ -42,6 +43,14 @@ void rpki_init(void){
   rtr_is_running = 0;
   polling_period = POLLING_PERIOD_DEFAULT;
   timeout = TIMEOUT_DEFAULT;
+}
+
+inline void rpki_set_route_map_active(int activate){
+  route_map_active = activate;
+}
+
+inline int rpki_route_map_active(){
+  return route_map_active;
 }
 
 inline int rpki_is_synchronized(void){
