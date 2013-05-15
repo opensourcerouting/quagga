@@ -130,7 +130,6 @@ static int validate_prefix(struct prefix *prefix, uint32_t asn, uint8_t mask_len
   ip_addr ip_addr_prefix;
   pfxv_state result;
   char buf[BUFSIZ];
-  char result_buf[10];
   u_char* quagga_prefix = &(prefix->u.prefix);
   u_char* rtr_prefix;
   const char* prefix_string = inet_ntop (prefix->family, &prefix->u.prefix, buf, BUFSIZ);
@@ -176,19 +175,18 @@ static int validate_prefix(struct prefix *prefix, uint32_t asn, uint8_t mask_len
       return 0;
   }
   rtr_mgr_validate(&rtr_config, asn, &ip_addr_prefix, mask_len, &result);
-  RPKI_DEBUG("Validating Prefix %s from asn %u", prefix_string , asn);
   switch (result) {
     case BGP_PFXV_STATE_VALID:
-      RPKI_DEBUG("    Result: VALID");
+      RPKI_DEBUG("Validating Prefix %s from asn %u    Result: VALID", prefix_string , asn);
       return RPKI_VALID;
     case BGP_PFXV_STATE_NOT_FOUND:
-      RPKI_DEBUG("    Result: NOTFOUND");
+      RPKI_DEBUG("Validating Prefix %s from asn %u    Result: NOT FOUND", prefix_string , asn);
       return RPKI_NOTFOUND;
     case BGP_PFXV_STATE_INVALID:
-      RPKI_DEBUG("    Result: INVALID");
+      RPKI_DEBUG("Validating Prefix %s from asn %u    Result: INVALID", prefix_string , asn);
       return RPKI_INVALID;
     default:
-      RPKI_DEBUG("    Result: CANNOT VALIDATE");
+      RPKI_DEBUG("Validating Prefix %s from asn %u    Result: CANNOT VALIDATE", prefix_string , asn);
       break;
   }
   return 0;
