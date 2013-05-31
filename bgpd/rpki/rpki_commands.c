@@ -377,6 +377,29 @@ DEFUN (no_rpki_timeout,
   return CMD_SUCCESS;
 }
 
+DEFUN (rpki_synchronisation_timeout,
+    rpki_synchronisation_timeout_cmd,
+    "rpki initial-synchronisation-timeout TIMEOUT",
+    RPKI_OUTPUT_STRING
+    "Set a timeout for the initial synchronisation of prefix validation data\n"
+    "Timeout value\n") {
+  if (argc != 1) {
+    return CMD_ERR_INCOMPLETE;
+  }
+  VTY_GET_INTEGER("timeout", initial_synchronisation_timeout, argv[0]);
+  return CMD_SUCCESS;
+}
+
+DEFUN (no_rpki_synchronisation_timeout,
+    no_rpki_synchronisation_timeout_cmd,
+    "no rpki initial-synchronisation-timeout",
+    NO_STR
+    RPKI_OUTPUT_STRING
+    "Set the inital synchronisation timeout back to default (30 sec.)\n") {
+  initial_synchronisation_timeout = INITIAL_SYNCHRONISATION_TIMEOUT_DEFAULT;
+  return CMD_SUCCESS;
+}
+
 DEFUN (rpki_group,
     rpki_group_cmd,
     "rpki group PREFERENCE",
@@ -703,6 +726,27 @@ DEFUN (rpki_end,
   return CMD_SUCCESS;
 }
 
+DEFUN (debug_rpki,
+    debug_rpki_cmd,
+       "debug rpki",
+       DEBUG_STR
+       "Enable debugging for rpki")
+{
+  rpki_debug = 1;
+  return CMD_SUCCESS;
+}
+
+DEFUN (no_debug_rpki,
+       no_debug_rpki_cmd,
+       "no debug rpki",
+       NO_STR
+       DEBUG_STR
+       "Disable debugging for rpki")
+{
+  rpki_debug = 0;
+  return CMD_SUCCESS;
+}
+
 /**************************************************/
 /** Declaration of route-map match rpki command  **/
 /**************************************************/
@@ -767,7 +811,7 @@ int rpki_config_write (struct vty * vty){
   if(listcount(cache_group_list)){
     vty_out(vty, "enable-rpki%s", VTY_NEWLINE);
     vty_out(vty, "  rpki polling_period %d %s", polling_period, VTY_NEWLINE);
-    vty_out(vty, "  rpki timeout %d %s", timeout, VTY_NEWLINE);
+    vty_out(vty, "  rpki timeout %d %s", rpki_timeout, VTY_NEWLINE);
     vty_out(vty, "! %s", VTY_NEWLINE);
     for (ALL_LIST_ELEMENTS_RO(cache_group_list, cache_group_node, cache_group)) {
       struct list* cache_list = cache_group->cache_config_list;
@@ -844,6 +888,8 @@ void install_cli_commands() {
   /* Install rpki timeout commands */
   install_element(RPKI_NODE, &rpki_timeout_cmd);
   install_element(RPKI_NODE, &no_rpki_timeout_cmd);
+  install_element(RPKI_NODE, &rpki_synchronisation_timeout_cmd);
+  install_element(RPKI_NODE, &no_rpki_synchronisation_timeout_cmd);
 
   /* Install rpki group commands */
   install_element(RPKI_NODE, &rpki_group_cmd);
@@ -868,6 +914,12 @@ void install_cli_commands() {
   install_element(RESTRICTED_NODE, &show_rpki_cache_connection_cmd);
   install_element(ENABLE_NODE, &show_rpki_prefix_table_cmd);
   install_element(ENABLE_NODE, &show_rpki_cache_connection_cmd);
+
+  /* Install debug commands */
+  install_element(CONFIG_NODE, &debug_rpki_cmd);
+  install_element(ENABLE_NODE, &debug_rpki_cmd);
+  install_element(CONFIG_NODE, &no_debug_rpki_cmd);
+  install_element(ENABLE_NODE, &no_debug_rpki_cmd);
 
   /* Install route match */
   route_map_install_match(&route_match_rpki_cmd);

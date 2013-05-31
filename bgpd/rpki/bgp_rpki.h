@@ -16,9 +16,9 @@
 /**********************************/
 /** Declaration of debug makros  **/
 /**********************************/
-#define debug 1
+int rpki_debug;
 #define RPKI_DEBUG(...) \
-  if(debug){zlog_debug("RPKI: "__VA_ARGS__);}
+  if(rpki_debug){zlog_debug("RPKI: "__VA_ARGS__);}
 #define TO_STRING(s) str(s)
 #define str(s) #s
 
@@ -29,6 +29,7 @@
 #define CMD_TIMEOUT_RANGE "<1-4294967295>"
 #define POLLING_PERIOD_DEFAULT 300
 #define TIMEOUT_DEFAULT 650
+#define INITIAL_SYNCHRONISATION_TIMEOUT_DEFAULT 30
 #define CALLBACK_TIMEOUT 10
 #define RPKI_VALID      1
 #define RPKI_NOTFOUND   2
@@ -40,6 +41,8 @@
 struct list* cache_group_list;
 unsigned int polling_period;
 unsigned int timeout;
+unsigned int initial_synchronisation_timeout;
+
 /**********************************/
 /** Declaration of structs       **/
 /**********************************/

@@ -39,10 +39,12 @@ static int validate_prefix(struct prefix *prefix, uint32_t asn, uint8_t mask_len
 static void update_cb(struct pfx_table* p, const pfx_record rec, const bool added);
 
 void rpki_init(void){
+  rpki_debug = 0;
   install_cli_commands();
   rtr_is_running = 0;
   polling_period = POLLING_PERIOD_DEFAULT;
   timeout = TIMEOUT_DEFAULT;
+  initial_synchronisation_timeout = INITIAL_SYNCHRONISATION_TIMEOUT_DEFAULT;
 }
 
 inline void rpki_set_route_map_active(int activate){
@@ -73,6 +75,7 @@ void rpki_reset_session(void){
 }
 
 void rpki_start(){
+  int waiting_time = 0;
   rtr_config.len = get_number_of_cache_groups();
   rtr_config.groups = get_rtr_mgr_groups();
   if(rtr_config.len == 0 || rtr_config.groups == NULL){
@@ -82,12 +85,15 @@ void rpki_start(){
   rtr_mgr_init(&rtr_config, polling_period, timeout, &update_cb);
   rtr_mgr_start(&rtr_config);
   rtr_is_running = 1;
-//  RPKI_DEBUG("Waiting for rtr connection to synchronize.");
-//  while(!rtr_mgr_conf_in_sync(&rtr_config)){
-//      RPKI_DEBUG("Still waiting.");
-//      sleep(1);
-//  }
-//  RPKI_DEBUG("Got it!");
+  RPKI_DEBUG("Waiting for rtr connection to synchronize.");
+  while(!rtr_mgr_conf_in_sync(&rtr_config) || waiting_time++ <= initial_synchronisation_timeout){
+      sleep(1);
+  }
+  if (rtr_mgr_conf_in_sync(&rtr_config)) {
+    RPKI_DEBUG("Got synchronisation with at least one RPKI cache!");
+  } else {
+    RPKI_DEBUG("Timeout expired! Proceeding without RPKI validation data.");
+  }
 }
 
 void rpki_finish(void){
