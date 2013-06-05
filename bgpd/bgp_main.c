@@ -440,7 +440,6 @@ main (int argc, char **argv)
   /* BGP related initialization.  */
   bgp_init ();
   #ifdef HAVE_RPKI
-
   rpki_init();
   #endif
 
@@ -467,7 +466,6 @@ main (int argc, char **argv)
 
   /* Start rpki protocol to get validated prefix data */
   #ifdef HAVE_RPKI
-//  rpki_test();
   rpki_start();
   #endif
 
