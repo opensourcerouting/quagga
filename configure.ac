@@ -133,11 +133,11 @@ if test "x${cflags_specified}" = "x" ; then
         AC_MSG_RESULT([Intel default])
         ;;
     "GCC")
-  	CFLAGS="-O0 -g -fno-omit-frame-pointer -std=gnu99 -Wall -Wextra -pedantic"
-  	# CFLAGS="${CFLAGS} -Wsign-compare -Wpointer-arith"
-  	# CFLAGS="${CFLAGS} -Wbad-function-cast -Wwrite-strings"
-  	# CFLAGS="${CFLAGS} -Wmissing-prototypes -Wmissing-declarations"
-  	# CFLAGS="${CFLAGS} -Wchar-subscripts -Wcast-qual"
+  	CFLAGS="-Os -fno-omit-frame-pointer -g -std=gnu99 -Wall"
+  	CFLAGS="${CFLAGS} -Wsign-compare -Wpointer-arith"
+  	CFLAGS="${CFLAGS} -Wbad-function-cast -Wwrite-strings"
+  	CFLAGS="${CFLAGS} -Wmissing-prototypes -Wmissing-declarations"
+  	CFLAGS="${CFLAGS} -Wchar-subscripts -Wcast-qual"
   	# TODO: conditionally addd -Wpacked if handled
   	AC_MSG_RESULT([gcc default])
   	;;
@@ -1365,7 +1365,6 @@ esac
 AM_CONDITIONAL(ISISD, test "x$ISISD" = "xisisd")
 
 # XXX Perhaps auto-enable on Solaris, but that's messy for cross builds.
-
 case "${enable_solaris}" in
   "yes") SOLARIS="solaris";;
   "no" ) SOLARIS="";;
@@ -1517,8 +1516,6 @@ AC_CHECK_DECL(CLOCK_MONOTONIC,
 	[AC_CHECK_LIB(rt, clock_gettime, [LIBS="$LIBS -lrt"])
 	 AC_DEFINE(HAVE_CLOCK_MONOTONIC,, Have monotonic clock)
 ], [AC_MSG_RESULT(no)], [QUAGGA_INCLUDES])
-
-
 
 dnl -------------------
 dnl capabilities checks
