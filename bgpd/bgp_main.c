@@ -55,7 +55,7 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #endif
 
 /* bgpd options, we use GNU getopt library. */
-static const struct option longopts[] =
+static const struct option longopts[] = 
 {
   { "daemon",      no_argument,       NULL, 'd'},
   { "config_file", required_argument, NULL, 'f'},
@@ -82,10 +82,10 @@ void sigusr1 (void);
 
 static void bgp_exit (int);
 
-static struct quagga_signal_t bgp_signals[] =
+static struct quagga_signal_t bgp_signals[] = 
 {
-  {
-    .signal = SIGHUP,
+  { 
+    .signal = SIGHUP, 
     .handler = &sighup,
   },
   {
@@ -122,9 +122,9 @@ int vty_port = BGP_VTY_PORT;
 char *vty_addr = NULL;
 
 /* privileges */
-static zebra_capabilities_t _caps_p [] =
+static zebra_capabilities_t _caps_p [] =  
 {
-    ZCAP_BIND,
+    ZCAP_BIND, 
     ZCAP_NET_RAW,
     ZCAP_NET_ADMIN,
 };
@@ -150,7 +150,7 @@ usage (char *progname, int status)
   if (status != 0)
     fprintf (stderr, "Try `%s --help' for more information.\n", progname);
   else
-    {
+    {    
       printf ("Usage : %s [OPTION...]\n\n\
 Daemon which manages kernel routing table management and \
 redistribution between different routing protocols.\n\n\
@@ -175,9 +175,9 @@ Report bugs to %s\n", progname, ZEBRA_BUG_ADDRESS);
 
   exit (status);
 }
-
+
 /* SIGHUP handler. */
-void
+void 
 sighup (void)
 {
   zlog (NULL, LOG_INFO, "SIGHUP received");
@@ -276,7 +276,7 @@ bgp_exit (int status)
   /* reverse bgp_route_map_init/route_map_init */
   route_map_finish ();
 
-  /* reverse bgp_scan_irpki_testnit */
+  /* reverse bgp_scan_init */
   bgp_scan_finish ();
 
   /* reverse bgp_rpki_init  */
@@ -323,7 +323,7 @@ bgp_exit (int status)
 
   exit (status);
 }
-
+
 /* Main routine of bgpd. Treatment of argument and start bgp finite
    state machine is handled at here. */
 int
@@ -350,14 +350,14 @@ main (int argc, char **argv)
   bgp_master_init ();
 
   /* Command line argument treatment. */
-  while (1)
+  while (1) 
     {
       opt = getopt_long (argc, argv, "df:i:z:hp:l:A:P:rnu:g:vC", longopts, 0);
-
+    
       if (opt == EOF)
 	break;
 
-      switch (opt)
+      switch (opt) 
 	{
 	case 0:
 	  break;
@@ -386,11 +386,11 @@ main (int argc, char **argv)
 	case 'P':
           /* Deal with atoi() returning 0 on failure, and bgpd not
              listening on bgp port... */
-          if (strcmp(optarg, "0") == 0)
+          if (strcmp(optarg, "0") == 0) 
             {
               vty_port = 0;
               break;
-            }
+            } 
           vty_port = atoi (optarg);
 	  if (vty_port <= 0 || vty_port > 0xffff)
 	    vty_port = BGP_VTY_PORT;
@@ -450,13 +450,14 @@ main (int argc, char **argv)
   /* Start execution only if not in dry-run mode */
   if(dryrun)
     return(0);
-
+  
   /* Turn into daemon if daemon_mode is set. */
   if (daemon_mode && daemon (0, 0) < 0)
     {
       zlog_err("BGPd daemon failed: %s", strerror(errno));
       return (1);
     }
+
 
   /* Process ID file creation. */
   pid_output (pid_file);
@@ -472,7 +473,7 @@ main (int argc, char **argv)
 
   /* Print banner. */
   zlog_notice ("BGPd %s starting: vty@%d, bgp@%s:%d", QUAGGA_VERSION,
-	       vty_port,
+	       vty_port, 
 	       (bm->address ? bm->address : "<all>"),
 	       bm->port);
 

@@ -1,4 +1,4 @@
-/* BGP attributes.
+/* BGP attributes. 
    Copyright (C) 1996, 97, 98 Kunihiro Ishiguro
 
 This file is part of GNU Zebra.
@@ -20,8 +20,6 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 
 #ifndef _QUAGGA_BGP_ATTR_H
 #define _QUAGGA_BGP_ATTR_H
-
-#include "bgpd/bgpd.h"
 
 /* Simple bit mapping. */
 #define BITMAP_NBBY 8
@@ -63,28 +61,28 @@ struct attr_extra
 
   /* Extended Communities attribute. */
   struct ecommunity *ecommunity;
-
+  
   /* Route-Reflector Cluster attribute */
   struct cluster_list *cluster;
-
+  
   /* Unknown transitive attribute. */
   struct transit *transit;
 
   struct in_addr mp_nexthop_global_in;
   struct in_addr mp_nexthop_local_in;
-
+  
   /* Aggregator Router ID attribute */
   struct in_addr aggregator_addr;
-
+  
   /* Route Reflector Originator attribute */
   struct in_addr originator_id;
-
+  
   /* Local weight, not actually an attribute */
   u_int32_t weight;
-
+  
   /* Aggregator ASN */
   as_t aggregator_as;
-
+  
   /* MP Nexthop length */
   u_char mp_nexthop_len;
 };
@@ -96,22 +94,22 @@ struct attr
   struct aspath *aspath;
 
   /* Community structure */
-  struct community *community;
-
+  struct community *community;	
+  
   /* Lazily allocated pointer to extra attributes */
   struct attr_extra *extra;
-
+  
   /* Reference count of this attribute. */
   unsigned long refcnt;
 
   /* Flag of attribute is set or not. */
   u_int32_t flag;
-
+  
   /* Apart from in6_addr, the remaining static attributes */
   struct in_addr nexthop;
   u_int32_t med;
   u_int32_t local_pref;
-
+  
   /* Path origin attribute */
   u_char origin;
 };
@@ -159,7 +157,7 @@ extern void bgp_attr_flush (struct attr *);
 extern struct attr *bgp_attr_default_set (struct attr *attr, u_char);
 extern struct attr *bgp_attr_default_intern (u_char);
 extern struct attr *bgp_attr_aggregate_intern (struct bgp *, u_char,
-                                        struct aspath *,
+                                        struct aspath *, 
                                         struct community *, int as_set);
 extern bgp_size_t bgp_packet_attribute (struct bgp *bgp, struct peer *,
 					struct stream *, struct attr *,
@@ -189,9 +187,9 @@ struct bgp_attr_parser_args {
   struct attr *attr;
   u_int8_t type;
   u_int8_t flags;
-  u_char *startp;
+  u_char *startp;   
 };
-extern int bgp_mp_reach_parse (struct bgp_attr_parser_args *args,
+extern int bgp_mp_reach_parse (struct bgp_attr_parser_args *args, 
 			       struct bgp_nlri *);
 extern int bgp_mp_unreach_parse (struct bgp_attr_parser_args *args,
                                  struct bgp_nlri *);
