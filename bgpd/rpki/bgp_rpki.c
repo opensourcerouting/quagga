@@ -86,8 +86,11 @@ void rpki_start(){
   rtr_mgr_start(&rtr_config);
   rtr_is_running = 1;
   RPKI_DEBUG("Waiting for rtr connection to synchronize.");
-  while(!rtr_mgr_conf_in_sync(&rtr_config) || waiting_time++ <= initial_synchronisation_timeout){
-      sleep(1);
+  while(waiting_time++ <= initial_synchronisation_timeout){
+    if(rtr_mgr_conf_in_sync(&rtr_config)){
+      break;
+    }
+    sleep(1);
   }
   if (rtr_mgr_conf_in_sync(&rtr_config)) {
     RPKI_DEBUG("Got synchronisation with at least one RPKI cache!");
