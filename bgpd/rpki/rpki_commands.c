@@ -340,7 +340,7 @@ DEFUN (rpki_polling_period,
   if (argc != 1) {
     return CMD_ERR_INCOMPLETE;
   }
-  VTY_GET_INTEGER_RANGE("polling_period", polling_period, argv[0], 0, 3600);
+  VTY_GET_INTEGER_RANGE("polling_period", polling_period, argv[0], 1, 3600);
   return CMD_SUCCESS;
 }
 
@@ -888,6 +888,8 @@ void install_cli_commands() {
   /* Install rpki timeout commands */
   install_element(RPKI_NODE, &rpki_timeout_cmd);
   install_element(RPKI_NODE, &no_rpki_timeout_cmd);
+
+  /* Install rpki synchronisation timeout commands */
   install_element(RPKI_NODE, &rpki_synchronisation_timeout_cmd);
   install_element(RPKI_NODE, &no_rpki_synchronisation_timeout_cmd);
 
