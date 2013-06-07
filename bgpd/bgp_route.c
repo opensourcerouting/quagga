@@ -5676,7 +5676,9 @@ enum bgp_display_type
 };
 
 /* Print the short form route status for a bgp_info */
-static void route_vty_short_status_out(struct vty *vty, struct bgp_info *binfo) {
+static void
+route_vty_short_status_out (struct vty *vty, struct bgp_info *binfo)
+{
 
 #ifdef HAVE_RPKI
   /* RPKI Origin Validation code */
@@ -5697,10 +5699,9 @@ static void route_vty_short_status_out(struct vty *vty, struct bgp_info *binfo) 
       vty_out(vty, " ");
       break;
   }
-
 #endif
 
-  /* Route status display. */
+ /* Route status display. */
   if (CHECK_FLAG (binfo->flags, BGP_INFO_REMOVED))
     vty_out (vty, "R");
   else if (CHECK_FLAG (binfo->flags, BGP_INFO_STALE))

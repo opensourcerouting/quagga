@@ -4046,10 +4046,12 @@ bgp_route_map_init (void)
   install_element (RMAP_NODE, &match_probability_cmd);
   install_element (RMAP_NODE, &no_match_probability_cmd);
   install_element (RMAP_NODE, &no_match_probability_val_cmd);
+
 #ifdef HAVE_RPKI
   install_element (RMAP_NODE, &match_rpki_cmd);
   install_element (RMAP_NODE, &no_match_rpki_cmd);
 #endif
+
   install_element (RMAP_NODE, &set_ip_nexthop_cmd);
   install_element (RMAP_NODE, &set_ip_nexthop_peer_cmd);
   install_element (RMAP_NODE, &no_set_ip_nexthop_cmd);
