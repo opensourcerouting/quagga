@@ -439,9 +439,10 @@ main (int argc, char **argv)
 
   /* BGP related initialization.  */
   bgp_init ();
-  #ifdef HAVE_RPKI
+
+#ifdef HAVE_RPKI
   rpki_init();
-  #endif
+#endif
 
   /* Parse config file. */
   vty_read_config (config_file, config_default);

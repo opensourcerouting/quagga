@@ -92,7 +92,7 @@ struct bgp_info
 #define BGP_ROUTE_NORMAL       0
 #define BGP_ROUTE_STATIC       1
 #define BGP_ROUTE_AGGREGATE    2
-#define BGP_ROUTE_REDISTRIBUTE 3
+#define BGP_ROUTE_REDISTRIBUTE 3 
 
   /* RPKI Route origin validation status */
   u_char rpki_validation_status;
