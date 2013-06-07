@@ -1444,12 +1444,10 @@ bgp_best_selection (struct bgp *bgp, struct bgp_node *rn,
 #ifdef HAVE_RPKI
       if(ri->rpki_validation_status != RPKI_INVALID
           || CHECK_FLAG(bgp->flags, BGP_FLAG_ALLOW_INVALID)){
-
 	  new_select = ri;
-
       }
 #else
-    new_select = ri;
+	  new_select = ri;
 #endif
 
 	  if (do_mpath && !paths_eq)
