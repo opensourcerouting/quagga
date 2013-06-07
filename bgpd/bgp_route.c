@@ -1447,7 +1447,7 @@ bgp_best_selection (struct bgp *bgp, struct bgp_node *rn,
         new_select = ri;
       }
 #else
-      new_select = ri;
+	  new_select = ri;
 #endif
 
 	  if (do_mpath && !paths_eq)
@@ -1546,22 +1546,8 @@ bgp_process_rsclient (struct work_queue *wq, void *data)
   struct bgp_info *old_select;
   struct bgp_info_pair old_and_new;
   struct listnode *node, *nnode;
-  struct peer *rsclient = bgp_node_table(rn)->owner;
-
-#ifdef HAVE_RPKI
-  if (rn->info != NULL ) {
-    struct bgp_info * bgp_info = rn->info;
-    // If we have validation data and prefix has not yet been validated
-    if (rpki_is_synchronized() && bgp_info->rpki_validation_status == 0) {
-      DO_RPKI_ORIGIN_VALIDATION(bgp, bgp_info, &rn->p)
-    }
-    // If validation is off but validation status has not yet been resetted
-    else if (!rpki_is_running() && bgp_info->rpki_validation_status != 0) {
-      bgp_info->rpki_validation_status = 0;
-    }
-  }
-#endif
-
+  struct peer *rsclient = bgp_node_table (rn)->owner;
+  
   /* Best path selection. */
   bgp_best_selection (bgp, rn, &bgp->maxpaths[afi][safi], &old_and_new);
   new_select = old_and_new.new;
