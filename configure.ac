@@ -1710,7 +1710,6 @@ AC_DEFINE(QUAGGA_NO_DEPRECATED_INTERFACES, 1, Hide deprecated interfaces)
 dnl ------------------------------------
 dnl Enable RPKI and add librtr to libs
 dnl ------------------------------------
-
 if test "${enable_rpki}" = "yes"; then
   AC_CHECK_LIB(rtr, rtr_mgr_start,
     [AC_CHECK_HEADERS(pthread.h,
@@ -1722,6 +1721,7 @@ if test "${enable_rpki}" = "yes"; then
     [AC_MSG_ERROR([librtr was not found on your system, which is needed by rpki prefix validation.])]
   )
 fi
+
 dnl ---------------------------
 dnl Check htonl works correctly
 dnl ---------------------------
