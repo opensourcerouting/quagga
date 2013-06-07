@@ -1624,7 +1624,7 @@ bgp_process_main (struct work_queue *wq, void *data)
   struct bgp_info_pair old_and_new;
   struct listnode *node, *nnode;
   struct peer *peer;
-
+  
 #ifdef HAVE_RPKI
   if (rn->info != NULL ) {
     struct bgp_info * bgp_info = rn->info;
