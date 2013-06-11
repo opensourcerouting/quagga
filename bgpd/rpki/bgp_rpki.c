@@ -211,7 +211,8 @@ static int validate_prefix(struct prefix *prefix, uint32_t asn, uint8_t mask_len
 }
 
 int get_connected_group(){
-  for(unsigned int i = 0; i < rtr_config.len; i++){
+	unsigned int i;
+	for(i = 0; i < rtr_config.len; i++){
     if(rtr_config.groups[i].status == RTR_MGR_ESTABLISHED
         || rtr_config.groups[i].status == RTR_MGR_CONNECTING){
       return rtr_config.groups[i].preference;
@@ -251,9 +252,10 @@ void list_all_nodes(struct vty *vty, const lpfst_node* node, unsigned int* count
 }
 
 void print_record(struct vty *vty, const lpfst_node* node){
-  char ip[INET6_ADDRSTRLEN];
+	unsigned int i;
+	char ip[INET6_ADDRSTRLEN];
   node_data* data = (node_data*) node->data;
-  for(unsigned int i = 0; i < data->len; ++i){
+  for(i = 0; i < data->len; ++i){
     ip_addr_to_str(&(node->prefix), ip, sizeof(ip));
 //    rtr_socket* rtr_socket = (rtr_socket*) data->ary[i].socket_id;
     vty_out(vty, "%-40s   %3u - %3u   %10u %s", ip, node->len,
