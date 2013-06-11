@@ -304,8 +304,9 @@ rtr_mgr_group* get_rtr_mgr_groups() {
 }
 
 void free_rtr_mgr_groups(rtr_mgr_group* group, int length) {
+	int i;
   rtr_mgr_group* group_temp = group;
-  for (int i = 0; i < length; ++i) {
+  for (i = 0; i < length; ++i) {
     XFREE(MTYPE_BGP_RPKI_CACHE, group_temp->sockets);
     group_temp++;
   }
@@ -857,8 +858,9 @@ int rpki_config_write (struct vty * vty){
 }
 
 static void overwrite_exit_commands(){
-  vector cmd_vector = rpki_node.cmd_vector;
-  for (unsigned int i = 0; i < cmd_vector->active; ++i) {
+	unsigned int i;
+	vector cmd_vector = rpki_node.cmd_vector;
+  for (i = 0; i < cmd_vector->active; ++i) {
     struct cmd_element* cmd = (struct cmd_element*) vector_lookup(cmd_vector, i);
     if(strcmp(cmd->string, "exit") == 0
         || strcmp(cmd->string, "quit") == 0
