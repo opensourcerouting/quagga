@@ -184,7 +184,7 @@ vty_log_out (struct vty *vty, const char *level, const char *proto_str,
   buf[len++] = '\r';
   buf[len++] = '\n';
 
-  if (write(vty->fd, buf, len) < 0)
+  if (write(vty->wfd, buf, len) < 0)
     {
       if (ERRNO_IO_RETRY(errno))
 	/* Kernel buffer is full, probably too much debugging output, so just
@@ -1540,7 +1540,7 @@ vty_read (struct thread *thread)
     vty_close (vty);
   else
     {
-      vty_event (VTY_WRITE, vty_sock, vty);
+      vty_event (VTY_WRITE, vty->wfd, vty);
       vty_event (VTY_READ, vty_sock, vty);
     }
   return 0;
@@ -1569,12 +1569,12 @@ vty_flush (struct thread *thread)
 
   /* N.B. if width is 0, that means we don't know the window size. */
   if ((vty->lines == 0) || (vty->width == 0))
-    flushrc = buffer_flush_available(vty->obuf, vty->fd);
+    flushrc = buffer_flush_available(vty->obuf, vty_sock);
   else if (vty->status == VTY_MORELINE)
-    flushrc = buffer_flush_window(vty->obuf, vty->fd, vty->width,
+    flushrc = buffer_flush_window(vty->obuf, vty_sock, vty->width,
 				  1, erase, 0);
   else
-    flushrc = buffer_flush_window(vty->obuf, vty->fd, vty->width,
+    flushrc = buffer_flush_window(vty->obuf, vty_sock, vty->width,
 				  vty->lines >= 0 ? vty->lines :
 						    vty->height,
 				  erase, 0);
@@ -1620,6 +1620,7 @@ vty_create (int vty_sock, union sockunion *su)
   /* Allocate new vty structure and set up default values. */
   vty = vty_new ();
   vty->fd = vty_sock;
+  vty->wfd = vty_sock;
   vty->type = VTY_TERM;
   strcpy (vty->address, buf);
   if (no_password_check)
@@ -2018,6 +2019,7 @@ vtysh_accept (struct thread *thread)
 
   vty = vty_new ();
   vty->fd = sock;
+  vty->wfd = sock;
   vty->type = VTY_SHELL_SERV;
   vty->node = VIEW_NODE;
 
@@ -2029,10 +2031,10 @@ vtysh_accept (struct thread *thread)
 static int
 vtysh_flush(struct vty *vty)
 {
-  switch (buffer_flush_available(vty->obuf, vty->fd))
+  switch (buffer_flush_available(vty->obuf, vty->wfd))
     {
     case BUFFER_PENDING:
-      vty_event(VTYSH_WRITE, vty->fd, vty);
+      vty_event(VTYSH_WRITE, vty->wfd, vty);
       break;
     case BUFFER_ERROR:
       vty->monitor = 0; /* disable monitoring to avoid infinite recursion */
@@ -2173,7 +2175,7 @@ vty_close (struct vty *vty)
     thread_cancel (vty->t_timeout);
 
   /* Flush buffer. */
-  buffer_flush_all (vty->obuf, vty->fd);
+  buffer_flush_all (vty->obuf, vty->wfd);
 
   /* Free input buffer. */
   buffer_free (vty->obuf);
@@ -2229,7 +2231,8 @@ vty_read_file (FILE *confp)
   struct vty *vty;
 
   vty = vty_new ();
-  vty->fd = 0;			/* stdout */
+  vty->fd = 0;			/* stdin */
+  vty->wfd = 2;			/* stderr */
   vty->type = VTY_TERM;
   vty->node = CONFIG_NODE;
   
@@ -2467,7 +2470,7 @@ vty_log_fixed (const char *buf, size_t len)
       if (((vty = vector_slot (vtyvec, i)) != NULL) && vty->monitor)
 	/* N.B. We don't care about the return code, since process is
 	   most likely just about to die anyway. */
-	writev(vty->fd, iov, 2);
+	writev(vty->wfd, iov, 2);
     }
 }
 
