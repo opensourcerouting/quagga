@@ -69,6 +69,7 @@ struct option longopts[] =
 {
   { "batch",       no_argument,       NULL, 'b'},
   { "daemon",      no_argument,       NULL, 'd'},
+  { "terminal",    no_argument,       NULL, 't'},
   { "keep_kernel", no_argument,       NULL, 'k'},
   { "config_file", required_argument, NULL, 'f'},
   { "pid_file",    required_argument, NULL, 'i'},
@@ -128,6 +129,7 @@ usage (char *progname, int status)
 	      "redistribution between different routing protocols.\n\n"\
 	      "-b, --batch        Runs in batch mode\n"\
 	      "-d, --daemon       Runs in daemon mode\n"\
+	      "-t, --terminal     Open vty on console (disables --daemon)\n"\
 	      "-f, --config_file  Set configuration file name\n"\
 	      "-i, --pid_file     Set process identifier file name\n"\
 	      "-z, --socket       Set path of zebra socket\n"\
@@ -214,6 +216,7 @@ main (int argc, char **argv)
   int dryrun = 0;
   int batch_mode = 0;
   int daemon_mode = 0;
+  int terminal_mode = 0;
   char *config_file = NULL;
   char *progname;
   struct thread thread;
@@ -233,9 +236,9 @@ main (int argc, char **argv)
       int opt;
   
 #ifdef HAVE_NETLINK  
-      opt = getopt_long (argc, argv, "bdkf:i:z:hA:P:ru:g:vs:C", longopts, 0);
+      opt = getopt_long (argc, argv, "bdtkf:i:z:hA:P:ru:g:vs:C", longopts, 0);
 #else
-      opt = getopt_long (argc, argv, "bdkf:i:z:hA:P:ru:g:vC", longopts, 0);
+      opt = getopt_long (argc, argv, "bdtkf:i:z:hA:P:ru:g:vC", longopts, 0);
 #endif /* HAVE_NETLINK */
 
       if (opt == EOF)
@@ -249,6 +252,9 @@ main (int argc, char **argv)
 	  batch_mode = 1;
 	case 'd':
 	  daemon_mode = 1;
+	  break;
+	case 't':
+	  terminal_mode = 1;
 	  break;
 	case 'k':
 	  keep_kernel_mode = 1;
@@ -377,7 +383,7 @@ main (int argc, char **argv)
     exit (0);
 
   /* Daemonize. */
-  if (daemon_mode && daemon (0, 0) < 0)
+  if (daemon_mode && !terminal_mode && daemon (0, 0) < 0)
     {
       zlog_err("Zebra daemon failed: %s", strerror(errno));
       exit (1);
@@ -385,6 +391,11 @@ main (int argc, char **argv)
 
   /* Output pid of zebra. */
   pid_output (pid_file);
+
+  if (terminal_mode)
+    /* no need to do anything with the return value, it'll open to
+     * enable prompt without further intervention */
+    vty_stdio();
 
   /* After we have successfully acquired the pidfile, we can be sure
   *  about being the only copy of zebra process, which is submitting
