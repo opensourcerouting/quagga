@@ -238,6 +238,7 @@ class TestMultiPath(quagga.TestCase):
         del self.dummy2
         del self.dummy1
 
+    @unittest.skipUnless(system.SUPPORTS_MULTIPATH, "Platform doesn't support multipath")
     def test_nexthop_ipv4(self):
         route = pyzclient.Route(None, '198.51.100.128/25')
         route.nexthops.append(pyzclient.Nexthop('192.0.2.2'))
@@ -350,6 +351,7 @@ class TestMultiPath(quagga.TestCase):
         self.assertNotIn('198.51.100.128/25', self.zebra.rib('O'))
         self.assertNotIn('198.51.100.128/25', system.fib())
 
+    @unittest.skipUnless(system.SUPPORTS_MULTIPATH, "Platform doesn't support multipath")
     def test_nexthop_ifindex(self):
         route = pyzclient.Route(None, '198.51.100.128/25')
         route.nexthops.append(pyzclient.Nexthop(ifindex=self.dummy1.index))
@@ -562,6 +564,7 @@ class TestRecursive(quagga.TestCase):
         self.assertNotIn('198.51.100.128/25', self.zebra.rib('B'))
         self.assertNotIn('198.51.100.128/25', system.fib())
 
+    @unittest.skipUnless(system.SUPPORTS_MULTIPATH, "Platform doesn't support multipath")
     def test_resolve_via_multipath_ifindex(self):
         self.setUpMultipath()
         self.route.add_nexthop('192.0.2.49')
@@ -647,6 +650,7 @@ class TestRecursive(quagga.TestCase):
         self.assertNotIn('198.51.100.128/25', self.zebra.rib('B'))
         self.assertNotIn('198.51.100.128/25', system.fib())
 
+    @unittest.skipUnless(system.SUPPORTS_MULTIPATH, "Platform doesn't support multipath")
     def test_resolve_via_multipath_ipv4(self):
         self.setUpMultipath()
         self.route.add_nexthop('192.0.2.57')
@@ -696,6 +700,7 @@ class TestRecursive(quagga.TestCase):
         self.assertNotIn('198.51.100.128/25', system.fib())
 
 
+@unittest.skipUnless(system.SUPPORTS_PREFSRC, "Platform doesn't support prefsrc")
 class TestRouteMapSrc(quagga.TestCase):
     def setUp(self):
         self.dummy1 = system.DummyIface()

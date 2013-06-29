@@ -7,6 +7,9 @@ import pexpect
 
 from .. import generic
 
+SUPPORTS_MULTIPATH = True
+SUPPORTS_PREFSRC = True
+
 def fib(ipv = 4):
     rlist = pexpect.spawn('ip -%d -o route list' % (ipv),
                           logfile = open('/tmp/zebraip.log', 'a'))
