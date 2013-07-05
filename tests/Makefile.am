@@ -1,5 +1,4 @@
 AUTOMAKE_OPTIONS    = dejagnu
-export DEJAGNU
 DEJATOOL = libzebra
 
 SUBDIRS = \
@@ -25,7 +24,7 @@ else
 TESTS_BGPD =
 endif
 
-noinst_PROGRAMS = testsig testbuffer testmemory heavy heavywq heavythread \
+check_PROGRAMS = testsig testbuffer testmemory heavy heavywq heavythread \
 		testprivs teststream testchecksum tabletest \
 		$(TESTS_BGPD)
 
