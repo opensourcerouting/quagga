@@ -60,6 +60,8 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #ifdef HAVE_RPKI
 #include "bgpd/rpki/bgp_rpki.h"
 
+#define BGP_SHOW_RPKI_HEADER "RPKI validation codes: V valid, I invalid, N not found%s"
+
 #define DO_RPKI_ORIGIN_VALIDATION(bgp, bgp_info, prefix) \
 		do_rpki_origin_validation(bgp, bgp_info, prefix);
 #else
@@ -6399,7 +6401,13 @@ bgp_show_table (struct vty *vty, struct bgp_table *table, struct in_addr *router
 	      {
 		vty_out (vty, "BGP table version is 0, local router ID is %s%s", inet_ntoa (*router_id), VTY_NEWLINE);
 		vty_out (vty, BGP_SHOW_SCODE_HEADER, VTY_NEWLINE, VTY_NEWLINE);
+#ifdef HAVE_RPKI
+		vty_out(vty, BGP_SHOW_OCODE_HEADER, "", VTY_NEWLINE);
+		vty_out(vty, BGP_SHOW_RPKI_HEADER, VTY_NEWLINE);
+		vty_out(vty, "%s", VTY_NEWLINE);
+#else
 		vty_out (vty, BGP_SHOW_OCODE_HEADER, VTY_NEWLINE, VTY_NEWLINE);
+#endif
 		if (type == bgp_show_type_dampend_paths
 		    || type == bgp_show_type_damp_neighbor)
 		  vty_out (vty, BGP_SHOW_DAMP_HEADER, VTY_NEWLINE);
@@ -6415,6 +6423,9 @@ bgp_show_table (struct vty *vty, struct bgp_table *table, struct in_addr *router
 			 || type == bgp_show_type_flap_neighbor)
 		  vty_out (vty, BGP_SHOW_FLAP_HEADER, VTY_NEWLINE);
 		else
+#ifdef HAVE_RPKI
+			vty_out(vty, " ");
+#endif
 		  vty_out (vty, BGP_SHOW_HEADER, VTY_NEWLINE);
 		header = 0;
 	      }
