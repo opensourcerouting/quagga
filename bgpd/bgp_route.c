@@ -58,7 +58,7 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 
 
 #ifdef HAVE_RPKI
-#include "bgpd/rpki/bgp_rpki.h"
+#include "bgpd/bgp_rpki.h"
 
 #define BGP_SHOW_RPKI_HEADER "RPKI validation codes: V valid, I invalid, N not found%s"
 

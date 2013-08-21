@@ -11,8 +11,8 @@ noinst_LIBRARIES = libbgp.a
 sbin_PROGRAMS = bgpd
 
 if HAVE_RPKI
-rpkisrc = rpki/bgp_rpki.c rpki/rpki_commands.c
-rpkiheader = rpki/bgp_rpki.h rpki/rpki_commands.h
+rpkisrc = bgp_rpki.c bgp_rpki_commands.c
+rpkiheader = bgp_rpki.h bgp_rpki_commands.h
 endif
 
 libbgp_a_SOURCES = \

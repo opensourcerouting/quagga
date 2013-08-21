@@ -51,7 +51,7 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #include "bgpd/bgp_zebra.h"
 
 #ifdef HAVE_RPKI
-#include "bgpd/rpki/bgp_rpki.h"
+#include "bgpd/bgp_rpki.h"
 #endif
 
 /* bgpd options, we use GNU getopt library. */

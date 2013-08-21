@@ -59,6 +59,7 @@ $ignore{'"who"'} = "ignore";
 $ignore{'"terminal monitor"'} = "ignore";
 $ignore{'"terminal no monitor"'} = "ignore";
 $ignore{'"show history"'} = "ignore";
+$ignore{'"enable-rpki"'} = "ignore";
 
 foreach (@ARGV) {
     $file = $_;

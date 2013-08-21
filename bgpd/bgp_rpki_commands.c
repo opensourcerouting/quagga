@@ -26,7 +26,7 @@
 #include "bgpd/bgp_attr.h"
 #include "bgpd/bgp_aspath.h"
 #include "bgpd/bgp_route.h"
-#include "bgpd/rpki/bgp_rpki.h"
+#include "bgpd/bgp_rpki.h"
 
 #define RPKI_OUTPUT_STRING "Control rpki specific settings\n"
 /**************************************/
@@ -326,9 +326,9 @@ DEFUN (enable_rpki,
     enable_rpki_cmd,
     "enable-rpki",
     BGP_STR
-    "Enable rpki and enter rpki configuration mode\n") {
+    "Enable rpki and enter rpki configuration mode\n")
+{
   vty->node = RPKI_NODE;
-//  vty->index = NULL;
   return CMD_SUCCESS;
 }
 
@@ -337,7 +337,8 @@ DEFUN (rpki_polling_period,
     "rpki polling_period " CMD_POLLING_PERIOD_RANGE,
     RPKI_OUTPUT_STRING
     "Set polling period\n"
-    "Polling period value\n") {
+    "Polling period value\n")
+{
   if (argc != 1) {
     return CMD_ERR_INCOMPLETE;
   }
@@ -350,7 +351,8 @@ DEFUN (no_rpki_polling_period,
     "no rpki polling_period ",
     NO_STR
     RPKI_OUTPUT_STRING
-    "Set polling period back to default\n") {
+    "Set polling period back to default\n")
+{
   polling_period = POLLING_PERIOD_DEFAULT;
   return CMD_SUCCESS;
 }
@@ -360,7 +362,8 @@ DEFUN (rpki_timeout,
     "rpki timeout TIMEOUT",
     RPKI_OUTPUT_STRING
     "Set timeout\n"
-    "Timeout value\n") {
+    "Timeout value\n")
+{
   if (argc != 1) {
     return CMD_ERR_INCOMPLETE;
   }
@@ -373,7 +376,8 @@ DEFUN (no_rpki_timeout,
     "no rpki timeout",
     NO_STR
     RPKI_OUTPUT_STRING
-    "Set timeout back to default\n") {
+    "Set timeout back to default\n")
+{
   timeout = TIMEOUT_DEFAULT;
   return CMD_SUCCESS;
 }
@@ -383,7 +387,8 @@ DEFUN (rpki_synchronisation_timeout,
     "rpki initial-synchronisation-timeout TIMEOUT",
     RPKI_OUTPUT_STRING
     "Set a timeout for the initial synchronisation of prefix validation data\n"
-    "Timeout value\n") {
+    "Timeout value\n")
+{
   if (argc != 1) {
     return CMD_ERR_INCOMPLETE;
   }
@@ -396,7 +401,8 @@ DEFUN (no_rpki_synchronisation_timeout,
     "no rpki initial-synchronisation-timeout",
     NO_STR
     RPKI_OUTPUT_STRING
-    "Set the inital synchronisation timeout back to default (30 sec.)\n") {
+    "Set the inital synchronisation timeout back to default (30 sec.)\n")
+{
   initial_synchronisation_timeout = INITIAL_SYNCHRONISATION_TIMEOUT_DEFAULT;
   return CMD_SUCCESS;
 }
@@ -406,7 +412,8 @@ DEFUN (rpki_group,
     "rpki group PREFERENCE",
     RPKI_OUTPUT_STRING
     "Select an existing or start a new group of cache servers\n"
-    "Preference Value for this group (lower value means higher preference)\n") {
+    "Preference Value for this group (lower value means higher preference)\n")
+{
   int group_preference;
   cache_group* new_cache_group;
   if (argc != 1) {
@@ -442,7 +449,8 @@ DEFUN (no_rpki_group,
     NO_STR
     RPKI_OUTPUT_STRING
     "Remove a group of cache servers\n"
-    "Preference Value for this group (lower value means higher preference)\n") {
+    "Preference Value for this group (lower value means higher preference)\n")
+{
   int group_preference;
   cache_group* cache_group;
   if (argc != 1) {
@@ -470,7 +478,8 @@ DEFUN (rpki_cache,
     "SSH user name \n"
     "Path to own SSH private key \n"
     "Path to own SSH public key \n"
-    "Path to Public key of cache server \n") {
+    "Path to Public key of cache server \n")
+{
   int return_value = SUCCESS;
   if (list_isempty(cache_group_list)) {
     vty_out(vty, "Cannot create new rpki cache because "
@@ -518,7 +527,8 @@ DEFUN (no_rpki_cache,
     RPKI_OUTPUT_STRING
     "Remove a cache server from current group\n"
     "IP address of cache server\n Hostname of cache server\n"
-    "Tcp port number (optional) \n") {
+    "Tcp port number (optional) \n")
+{
   cache* cache = NULL;
   if (list_isempty(cache_group_list)) {
     return CMD_SUCCESS;
@@ -557,10 +567,6 @@ static void reprocess_routes(struct bgp* bgp){
   struct bgp_node* bgp_node;
   safi_t safi;
   afi_t afi;
-
-  if(!rpki_is_synchronized()){
-    return;
-  }
 
   for (safi = SAFI_UNICAST; safi < SAFI_MAX; ++safi) {
     for (afi = AFI_IP; afi < AFI_MAX; ++afi) {
@@ -640,7 +646,8 @@ DEFUN (show_rpki_prefix_table,
     "show rpki prefix-table",
     SHOW_STR
     RPKI_OUTPUT_STRING
-    "Show validated prefixes which were received from RPKI Cache") {
+    "Show validated prefixes which were received from RPKI Cache")
+{
   if(rpki_is_synchronized()){
     print_prefix_table(vty);
   }
@@ -655,7 +662,8 @@ DEFUN (show_rpki_cache_connection,
     "show rpki cache-connection",
     SHOW_STR
     RPKI_OUTPUT_STRING
-    "Show to which RPKI Cache Servers we have a connection") {
+    "Show to which RPKI Cache Servers we have a connection")
+{
   if(rpki_is_synchronized()){
     struct listnode *cache_group_node;
     cache_group* cache_group;
@@ -705,7 +713,8 @@ DEFUN (show_rpki_cache_connection,
 DEFUN (rpki_exit,
     rpki_exit_cmd,
     "exit",
-    "Exit rpki configuration and restart rpki session") {
+    "Exit rpki configuration and restart rpki session")
+{
   rpki_reset_session();
   vty->node = CONFIG_NODE;
   return CMD_SUCCESS;
@@ -720,7 +729,8 @@ ALIAS(rpki_exit,
 DEFUN (rpki_end,
     rpki_end_cmd,
     "end",
-    "End rpki configuration, restart rpki sessoin and change to enable mode.") {
+    "End rpki configuration, restart rpki session and change to enable mode.")
+{
   rpki_reset_session();
   vty_config_unlock(vty);
   vty->node = ENABLE_NODE;
@@ -810,9 +820,14 @@ int rpki_config_write (struct vty * vty){
   struct listnode *cache_group_node;
   cache_group* cache_group;
   if(listcount(cache_group_list)){
+  	if (rpki_debug) {
+  		vty_out(vty, "debug rpki%s", VTY_NEWLINE);
+  	}
+  	vty_out(vty, "! %s", VTY_NEWLINE);
     vty_out(vty, "enable-rpki%s", VTY_NEWLINE);
     vty_out(vty, "  rpki polling_period %d %s", polling_period, VTY_NEWLINE);
-    vty_out(vty, "  rpki timeout %d %s", rpki_timeout, VTY_NEWLINE);
+    vty_out(vty, "  rpki timeout %d %s", timeout, VTY_NEWLINE);
+    vty_out(vty, "  rpki initial-synchronisation-timeout %d %s", initial_synchronisation_timeout, VTY_NEWLINE);
     vty_out(vty, "! %s", VTY_NEWLINE);
     for (ALL_LIST_ELEMENTS_RO(cache_group_list, cache_group_node, cache_group)) {
       struct list* cache_list = cache_group->cache_config_list;
@@ -868,9 +883,15 @@ static void overwrite_exit_commands(){
       vector_unset(cmd_vector, i);
     }
   }
-  install_element(RPKI_NODE, &rpki_exit_cmd);
-  install_element(RPKI_NODE, &rpki_quit_cmd);
-  install_element(RPKI_NODE, &rpki_end_cmd);
+  /*
+  The comments in the following 3 lines must not be removed.
+  They prevent the script ../vtysh/extract.pl from copying the lines
+  into ../vtysh/vtysh_cmd.c which would cause the commands to be ambiguous
+  and we don't want that.
+  */
+  install_element(RPKI_NODE /*DO NOT REMOVE THIS COMMENT*/, &rpki_exit_cmd);
+  install_element(RPKI_NODE /*DO NOT REMOVE THIS COMMENT*/, &rpki_quit_cmd);
+  install_element(RPKI_NODE /*DO NOT REMOVE THIS COMMENT*/, &rpki_end_cmd);
 }
 
 void install_cli_commands() {
