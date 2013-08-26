@@ -189,17 +189,15 @@ ospf6_interface_delete (struct ospf6_interface *oi)
   
   list_delete (oi->neighbor_list);
 
+  oi->lsdb->hook_add = NULL;
+  oi->lsdb->hook_remove = NULL;
+
   THREAD_OFF (oi->thread_send_hello);
   THREAD_OFF (oi->thread_send_lsupdate);
   THREAD_OFF (oi->thread_send_lsack);
 
-  ospf6_lsdb_remove_all (oi->lsdb);
-  ospf6_lsdb_remove_all (oi->lsupdate_list);
-  ospf6_lsdb_remove_all (oi->lsack_list);
-
   ospf6_lsdb_delete (oi->lsdb);
   ospf6_lsdb_delete (oi->lsdb_self);
-
   ospf6_lsdb_delete (oi->lsupdate_list);
   ospf6_lsdb_delete (oi->lsack_list);
 

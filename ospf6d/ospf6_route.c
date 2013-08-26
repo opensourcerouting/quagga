@@ -270,6 +270,7 @@ ospf6_route_lookup (struct prefix *prefix,
     return NULL;
 
   route = (struct ospf6_route *) node->info;
+  route_unlock_node (node);
   return route;
 }
 
@@ -416,6 +417,7 @@ ospf6_route_add (struct ospf6_route *route,
           ospf6_route_delete (route);
           SET_FLAG (old->flag, OSPF6_ROUTE_ADD);
           ospf6_route_table_assert (table);
+	  route_unlock_node (node);
 
           return old;
         }
@@ -448,6 +450,7 @@ ospf6_route_add (struct ospf6_route *route,
 
       ospf6_route_unlock (old); /* will be deleted later */
       ospf6_route_lock (route);
+      route_unlock_node (node);
 
       SET_FLAG (route->flag, OSPF6_ROUTE_CHANGE);
       ospf6_route_table_assert (table);
@@ -497,6 +500,7 @@ ospf6_route_add (struct ospf6_route *route,
       route->table = table;
 
       ospf6_route_lock (route);
+      route_unlock_node (node);
       table->count++;
       ospf6_route_table_assert (table);
 
@@ -632,6 +636,7 @@ ospf6_route_remove (struct ospf6_route *route,
   if (table->hook_remove)
     (*table->hook_remove) (route);
 
+  route_unlock_node (node);
   ospf6_route_unlock (route);
 }
 
@@ -756,6 +761,10 @@ void
 ospf6_route_remove_all (struct ospf6_route_table *table)
 {
   struct ospf6_route *route;
+
+  if (table == NULL)
+    return;
+
   for (route = ospf6_route_head (table); route;
        route = ospf6_route_next (route))
     ospf6_route_remove (route, table);

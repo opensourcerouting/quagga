@@ -110,18 +110,11 @@ ospf6_neighbor_delete (struct ospf6_neighbor *on)
 {
   struct ospf6_lsa *lsa;
 
-  ospf6_lsdb_remove_all (on->summary_list);
-  ospf6_lsdb_remove_all (on->request_list);
   for (lsa = ospf6_lsdb_head (on->retrans_list); lsa;
        lsa = ospf6_lsdb_next (lsa))
     {
       ospf6_decrement_retrans_count (lsa);
-      ospf6_lsdb_remove (lsa, on->retrans_list);
     }
-
-  ospf6_lsdb_remove_all (on->dbdesc_list);
-  ospf6_lsdb_remove_all (on->lsupdate_list);
-  ospf6_lsdb_remove_all (on->lsack_list);
 
   ospf6_lsdb_delete (on->summary_list);
   ospf6_lsdb_delete (on->request_list);

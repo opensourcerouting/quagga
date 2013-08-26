@@ -52,6 +52,38 @@ unsigned char conf_debug_ospf6_asbr = 0;
 
 #define ZROUTE_NAME(x) zebra_route_string(x)
 
+struct ospf6_external_info *
+ospf6_external_info_new (void)
+{
+  return ((struct ospf6_external_info *)
+	  XCALLOC (MTYPE_OSPF6_EXTERNAL_INFO,
+		   sizeof (struct ospf6_external_info)));
+}
+
+void
+ospf6_external_info_free (struct ospf6_external_info *info)
+{
+  if (info != NULL)
+    XFREE (MTYPE_OSPF6_EXTERNAL_INFO, info);
+}
+
+void
+ospf6_external_table_free (struct ospf6_route_table *ext_rt_table)
+{
+  struct ospf6_route *route;
+  struct ospf6_external_info *info;
+
+  for (route = ospf6_route_head (ext_rt_table); route;
+       route = ospf6_route_next (route))
+    {
+      info = (struct ospf6_external_info *)route->route_option;
+      ospf6_external_info_free (info);
+      ospf6_route_remove (route, ext_rt_table);
+    }
+  route_table_finish (ext_rt_table->table);
+  XFREE (MTYPE_OSPF6_ROUTE, ext_rt_table);
+}
+
 /* AS External LSA origination */
 static void
 ospf6_as_external_lsa_originate (struct ospf6_route *route)
@@ -297,6 +329,9 @@ ospf6_asbr_lsa_remove (struct ospf6_lsa *lsa)
         }
       ospf6_route_remove (route, ospf6->route_table);
     }
+
+  if (route)
+    ospf6_route_unlock (route);
 }
 
 void
@@ -511,8 +546,7 @@ ospf6_asbr_redistribute_add (int type, int ifindex, struct prefix *prefix,
   route->type = OSPF6_DEST_TYPE_NETWORK;
   memcpy (&route->prefix, prefix, sizeof (struct prefix));
 
-  info = (struct ospf6_external_info *)
-    XCALLOC (MTYPE_OSPF6_EXTERNAL_INFO, sizeof (struct ospf6_external_info));
+  info = ospf6_external_info_new();
   route->route_option = info;
   info->id = ospf6->external_id++;
 
@@ -615,7 +649,6 @@ ospf6_asbr_redistribute_remove (int type, int ifindex, struct prefix *prefix)
   route_unlock_node (node);
 
   ospf6_route_remove (match, ospf6->external_table);
-  XFREE (MTYPE_OSPF6_EXTERNAL_INFO, info);
 
   /* Router-Bit (ASBR Flag) may have to be updated */
   for (ALL_LIST_ELEMENTS (ospf6->area_list, lnode, lnnode, oa))

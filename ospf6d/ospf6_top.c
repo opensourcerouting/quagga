@@ -157,20 +157,28 @@ ospf6_delete (struct ospf6 *o)
   struct listnode *node, *nnode;
   struct ospf6_area *oa;
 
-  ospf6_disable (ospf6);
+  if (o == NULL)
+    return;
+
+  o->lsdb->hook_add = NULL;
+  o->lsdb->hook_remove = NULL;
+  o->route_table->hook_add = NULL;
+  o->route_table->hook_remove = NULL;
+  o->brouter_table->hook_add = NULL;
+  o->brouter_table->hook_remove = NULL;
 
   for (ALL_LIST_ELEMENTS (o->area_list, node, nnode, oa))
     ospf6_area_delete (oa);
   list_delete (o->area_list);
 
-  ospf6_lsdb_delete (o->lsdb);
-  ospf6_lsdb_delete (o->lsdb_self);
-
   ospf6_route_table_delete (o->route_table);
   ospf6_route_table_delete (o->brouter_table);
 
-  ospf6_route_table_delete (o->external_table);
+  ospf6_external_table_free (o->external_table);
   route_table_finish (o->external_id_table);
+
+  ospf6_lsdb_delete (o->lsdb);
+  ospf6_lsdb_delete (o->lsdb_self);
 
   XFREE (MTYPE_OSPF6_TOP, o);
 }
@@ -198,11 +206,12 @@ ospf6_disable (struct ospf6 *o)
   if (! CHECK_FLAG (o->flag, OSPF6_DISABLED))
     {
       SET_FLAG (o->flag, OSPF6_DISABLED);
-      
+
       for (ALL_LIST_ELEMENTS (o->area_list, node, nnode, oa))
         ospf6_area_disable (oa);
 
       ospf6_lsdb_remove_all (o->lsdb);
+      ospf6_lsdb_remove_all (o->lsdb_self);
       ospf6_route_remove_all (o->route_table);
       ospf6_route_remove_all (o->brouter_table);
     }

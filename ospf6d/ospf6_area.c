@@ -207,6 +207,11 @@ ospf6_area_delete (struct ospf6_area *oa)
     }
   list_delete (oa->if_list);
 
+  oa->lsdb->hook_add = NULL;
+  oa->lsdb->hook_remove = NULL;
+  oa->route_table->hook_add = NULL;
+  oa->route_table->hook_remove = NULL;
+
   ospf6_lsdb_delete (oa->lsdb);
   ospf6_lsdb_delete (oa->lsdb_self);
 
@@ -269,6 +274,9 @@ ospf6_area_disable (struct ospf6_area *oa)
 
   for (ALL_LIST_ELEMENTS (oa->if_list, node, nnode, oi))
     ospf6_interface_disable (oi);
+
+  ospf6_lsdb_remove_all(oa->lsdb);
+  ospf6_lsdb_remove_all(oa->lsdb_self);
 }
 
 

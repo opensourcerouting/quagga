@@ -73,6 +73,9 @@ struct ospf6_as_external_lsa
   { (E)->bits_metric &= htonl (0xff000000); \
     (E)->bits_metric |= htonl (0x00ffffff) & htonl (C); }
 
+extern struct ospf6_external_info *ospf6_external_info_new (void);
+extern void ospf6_external_info_free (struct ospf6_external_info *);
+extern void ospf6_external_table_free (struct ospf6_route_table *);
 extern void ospf6_asbr_lsa_add (struct ospf6_lsa *lsa);
 extern void ospf6_asbr_lsa_remove (struct ospf6_lsa *lsa);
 extern void ospf6_asbr_lsentry_add (struct ospf6_route *asbr_entry);
