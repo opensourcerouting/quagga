@@ -32,4 +32,6 @@ testprivs
 testsig
 teststream
 testnexthopiter
+testcommands
+test-commands-defun.c
 site.exp
