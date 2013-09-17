@@ -62,15 +62,15 @@ typedef struct node_data_t{
 /**********************************/
 void rpki_start(void);
 void rpki_reset_session(void);
-void rpki_test(void);
 void rpki_init(void);
 void rpki_finish(void);
 int rpki_is_synchronized(void);
 int rpki_is_running(void);
 void do_rpki_origin_validation(struct bgp* bgp, struct bgp_info* bgp_info, struct prefix* prefix);
 int rpki_validate_prefix(struct peer* peer, struct attr* attr, struct prefix *prefix);
-int rpki_route_map_active();
+int rpki_route_map_active(void);
 void rpki_set_route_map_active(int activate);
 void print_prefix_table(struct vty *vty);
-int get_connected_group();
+int rpki_get_connected_group(void);
+void rpki_revalidate_all_routes(struct bgp* bgp, afi_t afi);
 #endif /* BGP_RPKI_H_ */

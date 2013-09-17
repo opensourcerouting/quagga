@@ -11,8 +11,8 @@
 #include "command.h"
 #include "linklist.h"
 #include "memory.h"
-#include "routemap.h"
 #include "prefix.h"
+#include "routemap.h"
 #include "vector.h"
 #include "vty.h"
 
@@ -62,7 +62,31 @@ cache_group* currently_selected_cache_group;
 /*******************************************/
 /** Declaration of list helper functions  **/
 /*******************************************/
-void delete_cache(cache* cache_p) {
+void delete_cache(void* value);
+struct list* create_cache_list(void);
+cache* create_cache(tr_socket* tr_socket);
+cache* find_cache(struct list* cache_list, const char* host, const char* port_string, const unsigned int port);
+int add_tcp_cache(struct list* cache_list, const char* host, const char* port);
+int add_ssh_cache(struct list* cache_list, const char* host, const unsigned int port,
+    const char* username, const char* client_privkey_path,
+    const char* client_pubkey_path, const char* server_pubkey_path);
+void delete_cache_group(void* _cache_group);
+void delete_marked_cache_groups(void);
+cache_group* find_cache_group(int preference_value);
+cache_group* create_cache_group(int preference_value);
+unsigned int get_number_of_cache_groups(void);
+rtr_mgr_group* get_rtr_mgr_groups(void);
+void free_rtr_mgr_groups(rtr_mgr_group* group, int length);
+void delete_cache_group_list(void);
+void install_cli_commands(void);
+int rpki_config_write (struct vty * vty);
+static void route_match_rpki_free(void *rule);
+static void* route_match_rpki_compile(const char *arg);
+static route_map_result_t route_match_rpki(void *rule, struct prefix *prefix,
+    route_map_object_t type, void *object);
+
+void delete_cache(void* value) {
+  cache* cache_p = (cache*) value;
   if (cache_p->type == TCP) {
     XFREE(MTYPE_BGP_RPKI_CACHE, cache_p->tr_config.tcp_config->host);
     XFREE(MTYPE_BGP_RPKI_CACHE, cache_p->tr_config.tcp_config->port);
@@ -561,25 +585,9 @@ DEFUN (no_rpki_cache,
 }
 
 static void reprocess_routes(struct bgp* bgp){
-  struct bgp_table* table;
-  struct bgp_info* bgp_info;
-  struct listnode* node;
-  struct bgp_node* bgp_node;
-  safi_t safi;
   afi_t afi;
-
-  for (safi = SAFI_UNICAST; safi < SAFI_MAX; ++safi) {
-    for (afi = AFI_IP; afi < AFI_MAX; ++afi) {
-      table = bgp->rib[afi][safi];
-      for (bgp_node = bgp_table_top(table); bgp_node; bgp_node = bgp_route_next(bgp_node)){
-        if (bgp_node->info != NULL ) {
-          for (bgp_info = bgp_node->info; bgp_info; bgp_info = bgp_info->next) {
-            bgp_info->rpki_validation_status = rpki_validate_prefix(bgp_info->peer, bgp_info->attr, &bgp_node->p);
-            bgp_process(bgp, bgp_node, AFI_IP, safi);
-          }
-        }
-      }
-    }
+  for (afi = AFI_IP; afi < AFI_MAX; ++afi) {
+    rpki_revalidate_all_routes(bgp, afi);
   }
 }
 
@@ -667,7 +675,7 @@ DEFUN (show_rpki_cache_connection,
   if(rpki_is_synchronized()){
     struct listnode *cache_group_node;
     cache_group* cache_group;
-    int group = get_connected_group();
+    int group = rpki_get_connected_group();
     if(group == -1){
       vty_out(vty, "Cannot find a connected group. %s", VTY_NEWLINE);
       return CMD_SUCCESS;
@@ -777,7 +785,6 @@ static route_map_result_t route_match_rpki(void *rule, struct prefix *prefix,
   }
   return RMAP_NOMATCH;
 }
-
 
 static void* route_match_rpki_compile(const char *arg) {
   int* rpki_status;

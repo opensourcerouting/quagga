@@ -75,7 +75,7 @@ void rpki_reset_session(void){
 }
 
 void rpki_start(){
-  int waiting_time = 0;
+  unsigned int waiting_time = 0;
   rtr_config.len = get_number_of_cache_groups();
   rtr_config.groups = get_rtr_mgr_groups();
   if(rtr_config.len == 0 || rtr_config.groups == NULL){
@@ -210,7 +210,7 @@ static int validate_prefix(struct prefix *prefix, uint32_t asn, uint8_t mask_len
   return 0;
 }
 
-int get_connected_group(){
+int rpki_get_connected_group(){
 	unsigned int i;
 	for(i = 0; i < rtr_config.len; i++){
     if(rtr_config.groups[i].status == RTR_MGR_ESTABLISHED
@@ -274,17 +274,12 @@ void do_rpki_origin_validation(struct bgp* bgp, struct bgp_info* bgp_info, struc
       bgp_info->rpki_validation_status = rpki_validate_prefix(bgp_info->peer, bgp_info->attr, prefix);
     }
   }
-
 }
 
 static void update_cb(struct pfx_table* p __attribute__ ((unused)),
     const pfx_record rec __attribute__ ((unused)), const bool added __attribute__ ((unused))){
   struct bgp* bgp;
-  struct bgp_table *table;
-  struct bgp_info* bgp_info;
   struct listnode* node;
-  struct bgp_node* bgp_node;
-  safi_t safi;
 
   if(!rpki_is_synchronized()){
     return;
@@ -294,54 +289,37 @@ static void update_cb(struct pfx_table* p __attribute__ ((unused)),
     if(bgp_flag_check(bgp, BGP_FLAG_VALIDATE_DISABLE)){
       continue;
     }
-    for (safi = SAFI_UNICAST; safi < SAFI_MAX; safi++) {
-      switch (rec.prefix.ver) {
-        case IPV4:
-          table = bgp->rib[AFI_IP][SAFI_UNICAST];
-          for (bgp_node = bgp_table_top(table); bgp_node; bgp_node = bgp_route_next(bgp_node)){
-            if (bgp_node->info != NULL ) {
-              for (bgp_info = bgp_node->info; bgp_info; bgp_info = bgp_info->next) {
-                bgp_info->rpki_validation_status = rpki_validate_prefix(bgp_info->peer, bgp_info->attr, &bgp_node->p);
-                bgp_process(bgp, bgp_node, AFI_IP, safi);
-              }
-            }
-          }
-          break;
-        case IPV6:
-          table = bgp->rib[AFI_IP6][SAFI_UNICAST];
-          for (bgp_node = bgp_table_top(table); bgp_node; bgp_node = bgp_route_next(bgp_node)){
-            if (bgp_node->info != NULL ) {
-              for (bgp_info = bgp_node->info; bgp_info; bgp_info = bgp_info->next) {
-                bgp_info->rpki_validation_status = rpki_validate_prefix(bgp_info->peer, bgp_info->attr, &bgp_node->p);
-                bgp_process(bgp, bgp_node, AFI_IP6, safi);
-              }
-            }
-          }
-          break;
-        default:
-          break;
-      }
+    switch (rec.prefix.ver) {
+      case IPV4:
+        rpki_revalidate_all_routes(bgp, AFI_IP);
+        break;
+      case IPV6:
+        rpki_revalidate_all_routes(bgp, AFI_IP6);
+        break;
+      default:
+        break;
     }
   }
 }
 
-void rpki_test(void){
-  char buf[BUFSIZ];
-  struct bgp_info *ri;
-  struct bgp_node *rn;
-  struct bgp *bgp = bgp_get_default();
-  struct bgp_table *table = bgp->rib[AFI_IP][SAFI_UNICAST];
-  RPKI_DEBUG("Testoutput");
-  for (rn = bgp_table_top(table); rn; rn = bgp_route_next(rn)){
-    RPKI_DEBUG("bgp_node: %s",
-        inet_ntop(rn->p.family,
-            &rn->p.u.prefix,
-            buf, BUFSIZ));
-    if (rn->info != NULL ) {
-      for (ri = rn->info; ri; ri = ri->next) {
-        do_rpki_origin_validation(bgp, ri, &rn->p);
-        RPKI_DEBUG("bgp_info: weight: %7u; rpki: %u",
-            (ri->attr->extra ? ri->attr->extra->weight : 0), ri->rpki_validation_status);
+void rpki_revalidate_all_routes(struct bgp* bgp, afi_t afi) {
+  struct bgp_node* bgp_node;
+  struct bgp_info* bgp_info;
+  safi_t safi;
+  for (safi = SAFI_UNICAST; safi < SAFI_MAX; safi++) {
+    for (bgp_node = bgp_table_top(bgp->rib[afi][safi]); bgp_node; bgp_node = bgp_route_next(bgp_node)){
+      if (bgp_node->info != NULL ) {
+        bool status_changed = false;
+        for (bgp_info = bgp_node->info; bgp_info; bgp_info = bgp_info->next) {
+          u_char old_status = bgp_info->rpki_validation_status;
+          bgp_info->rpki_validation_status = rpki_validate_prefix(bgp_info->peer, bgp_info->attr, &bgp_node->p);
+          if(old_status != bgp_info->rpki_validation_status) {
+            status_changed = true;
+          }
+        }
+        if(status_changed){
+          bgp_process(bgp, bgp_node, afi, safi);
+        }
       }
     }
   }
