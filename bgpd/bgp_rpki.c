@@ -148,44 +148,18 @@ static int validate_prefix(struct prefix *prefix, uint32_t asn, uint8_t mask_len
   ip_addr ip_addr_prefix;
   pfxv_state result;
   char buf[BUFSIZ];
-  u_char* quagga_prefix = &(prefix->u.prefix);
-  u_char* rtr_prefix;
   const char* prefix_string = inet_ntop (prefix->family, &prefix->u.prefix, buf, BUFSIZ);
 
   switch (prefix->family) {
     case AF_INET:
       ip_addr_prefix.ver = IPV4;
-      rtr_prefix = (u_char*) &(ip_addr_prefix.u.addr4.addr);
-      rtr_prefix[0] = quagga_prefix[3];
-      rtr_prefix[1] = quagga_prefix[2];
-      rtr_prefix[2] = quagga_prefix[1];
-      rtr_prefix[3] = quagga_prefix[0];
+      ip_addr_prefix.u.addr4.addr = ntohl(prefix->u.prefix4.s_addr);
       break;
 
 #ifdef HAVE_IPV6
     case AF_INET6:
       ip_addr_prefix.ver = IPV6;
-      rtr_prefix = (u_char*) &(ip_addr_prefix.u.addr6.addr);
-
-      rtr_prefix[0] = quagga_prefix[3];
-      rtr_prefix[1] = quagga_prefix[2];
-      rtr_prefix[2] = quagga_prefix[1];
-      rtr_prefix[3] = quagga_prefix[0];
-
-      rtr_prefix[4] = quagga_prefix[7];
-      rtr_prefix[5] = quagga_prefix[6];
-      rtr_prefix[6] = quagga_prefix[5];
-      rtr_prefix[7] = quagga_prefix[4];
-
-      rtr_prefix[8] = quagga_prefix[11];
-      rtr_prefix[9] = quagga_prefix[10];
-      rtr_prefix[10] = quagga_prefix[9];
-      rtr_prefix[11] = quagga_prefix[8];
-
-      rtr_prefix[12] = quagga_prefix[15];
-      rtr_prefix[13] = quagga_prefix[14];
-      rtr_prefix[14] = quagga_prefix[13];
-      rtr_prefix[15] = quagga_prefix[12];
+      ipv6_addr_to_host_byte_order(prefix->u.prefix6.s6_addr32, ip_addr_prefix.u.addr6.addr);
       break;
 #endif /* HAVE_IPV6 */
 
@@ -195,16 +169,16 @@ static int validate_prefix(struct prefix *prefix, uint32_t asn, uint8_t mask_len
   rtr_mgr_validate(&rtr_config, asn, &ip_addr_prefix, mask_len, &result);
   switch (result) {
     case BGP_PFXV_STATE_VALID:
-      RPKI_DEBUG("Validating Prefix %s from asn %u    Result: VALID", prefix_string , asn);
+      RPKI_DEBUG("Validating Prefix %s/%hu from asn %u    Result: VALID", prefix_string, mask_len , asn);
       return RPKI_VALID;
     case BGP_PFXV_STATE_NOT_FOUND:
-      RPKI_DEBUG("Validating Prefix %s from asn %u    Result: NOT FOUND", prefix_string , asn);
+      RPKI_DEBUG("Validating Prefix %s/%hu from asn %u    Result: NOT FOUND", prefix_string, mask_len , asn);
       return RPKI_NOTFOUND;
     case BGP_PFXV_STATE_INVALID:
-      RPKI_DEBUG("Validating Prefix %s from asn %u    Result: INVALID", prefix_string , asn);
+      RPKI_DEBUG("Validating Prefix %s/%hu from asn %u    Result: INVALID", prefix_string, mask_len , asn);
       return RPKI_INVALID;
     default:
-      RPKI_DEBUG("Validating Prefix %s from asn %u    Result: CANNOT VALIDATE", prefix_string , asn);
+      RPKI_DEBUG("Validating Prefix %s/%hu from asn %u    Result: CANNOT VALIDATE", prefix_string, mask_len , asn);
       break;
   }
   return 0;
@@ -257,7 +231,6 @@ void print_record(struct vty *vty, const lpfst_node* node){
   node_data* data = (node_data*) node->data;
   for(i = 0; i < data->len; ++i){
     ip_addr_to_str(&(node->prefix), ip, sizeof(ip));
-//    rtr_socket* rtr_socket = (rtr_socket*) data->ary[i].socket_id;
     vty_out(vty, "%-40s   %3u - %3u   %10u %s", ip, node->len,
         data->ary[i].max_len, data->ary[i].asn, VTY_NEWLINE);
   }
