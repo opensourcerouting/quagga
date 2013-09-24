@@ -444,6 +444,7 @@ DEFUN (rpki_group,
     return CMD_ERR_INCOMPLETE;
   }
   VTY_GET_INTEGER("group preference", group_preference, argv[0]);
+  // Select group for further configuration
   currently_selected_cache_group = find_cache_group(group_preference);
   
   // Group does not yet exist so create new one
@@ -455,15 +456,7 @@ DEFUN (rpki_group,
     }
     listnode_add(cache_group_list, new_cache_group);
     currently_selected_cache_group = new_cache_group;
-    RPKI_DEBUG("Created new rpki cache group with preference: %d",
-          group_preference)
   }
-  // Select group for further configuration
-  else {
-    RPKI_DEBUG("Selected rpki cache group %d for configuration",
-              group_preference)
-  }
-
   return CMD_SUCCESS;
 }
 
@@ -488,7 +481,6 @@ DEFUN (no_rpki_group,
   }
   cache_group->delete_flag = 1;
   currently_selected_cache_group = NULL;
-  RPKI_DEBUG("Removed rpki cache group with preference: %d", group_preference)
   return CMD_SUCCESS;
 }
 
@@ -540,7 +532,6 @@ DEFUN (rpki_cache,
         "of memory allocation error%s", VTY_NEWLINE);
     return CMD_WARNING;
   }
-  RPKI_DEBUG("Added new cache: %s:%s", argv[0], argv[1])
   return CMD_SUCCESS;
 }
 
@@ -580,7 +571,6 @@ DEFUN (no_rpki_cache,
     return CMD_WARNING;
   }
   cache->delete_flag = 1;
-  RPKI_DEBUG("Removed cache: %s", argv[0])
   return CMD_SUCCESS;
 }
 
