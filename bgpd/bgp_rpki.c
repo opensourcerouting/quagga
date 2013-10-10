@@ -37,6 +37,8 @@ static void list_all_nodes(struct vty *vty, const lpfst_node* node, unsigned int
 static void print_record(struct vty *vty, const lpfst_node* node);
 static int validate_prefix(struct prefix *prefix, uint32_t asn, uint8_t mask_len);
 static void update_cb(struct pfx_table* p, const pfx_record rec, const bool added);
+static void ipv6_addr_to_network_byte_order(const uint32_t* src, uint32_t* dest);
+static void revalidate_prefix(struct bgp* bgp, afi_t afi, struct prefix *prefix);
 
 void rpki_init(void){
   rpki_debug = 0;
@@ -250,10 +252,11 @@ void do_rpki_origin_validation(struct bgp* bgp, struct bgp_info* bgp_info, struc
   }
 }
 
-static void update_cb(struct pfx_table* p __attribute__ ((unused)),
-    const pfx_record rec __attribute__ ((unused)), const bool added __attribute__ ((unused))){
+static void update_cb(struct pfx_table* p __attribute__ ((unused)), const pfx_record rec,
+    const bool added __attribute__ ((unused))){
   struct bgp* bgp;
   struct listnode* node;
+  struct prefix prefix;
 
   if(!rpki_is_synchronized()){
     return;
@@ -263,15 +266,44 @@ static void update_cb(struct pfx_table* p __attribute__ ((unused)),
     if(bgp_flag_check(bgp, BGP_FLAG_VALIDATE_DISABLE)){
       continue;
     }
-    switch (rec.prefix.ver) {
-      case IPV4:
-        rpki_revalidate_all_routes(bgp, AFI_IP);
-        break;
-      case IPV6:
-        rpki_revalidate_all_routes(bgp, AFI_IP6);
-        break;
-      default:
-        break;
+    for (prefix.prefixlen = rec.min_len; prefix.prefixlen < rec.max_len; ++prefix.prefixlen) {
+      switch (rec.prefix.ver) {
+        case IPV4:
+          prefix.family = AFI_IP;
+          prefix.u.prefix4.s_addr = htonl(rec.prefix.u.addr4.addr);
+          revalidate_prefix(bgp, AFI_IP, &prefix);
+          break;
+        case IPV6:
+          prefix.family = AFI_IP6;
+          ipv6_addr_to_network_byte_order(rec.prefix.u.addr6.addr, prefix.u.prefix6.s6_addr32);
+          revalidate_prefix(bgp, AFI_IP6, &prefix);
+          break;
+        default:
+          break;
+      }
+    }
+  }
+}
+
+void revalidate_prefix(struct bgp* bgp, afi_t afi, struct prefix *prefix){
+  struct bgp_node *bgp_node;
+  struct bgp_info* bgp_info;
+  safi_t safi;
+
+  for (safi = SAFI_UNICAST; safi < SAFI_MAX; safi++){
+    bgp_node = bgp_node_lookup (bgp->rib[afi][safi], prefix);
+    if (bgp_node != NULL && bgp_node->info != NULL){
+      bool status_changed = false;
+      for (bgp_info = bgp_node->info; bgp_info; bgp_info = bgp_info->next) {
+        u_char old_status = bgp_info->rpki_validation_status;
+        bgp_info->rpki_validation_status = rpki_validate_prefix(bgp_info->peer, bgp_info->attr, &bgp_node->p);
+        if(old_status != bgp_info->rpki_validation_status) {
+          status_changed = true;
+        }
+      }
+      if(status_changed){
+        bgp_process(bgp, bgp_node, afi, safi);
+      }
     }
   }
 }
@@ -297,4 +329,9 @@ void rpki_revalidate_all_routes(struct bgp* bgp, afi_t afi) {
       }
     }
   }
+}
+
+void ipv6_addr_to_network_byte_order(const uint32_t* src, uint32_t* dest){
+  for(int i = 0; i < 4; i++)
+    dest[i] = htonl(src[i]);
 }
