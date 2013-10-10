@@ -137,7 +137,8 @@ int rpki_validate_prefix(struct peer* peer, struct attr* attr, struct prefix *pr
       as_number = peer->bgp->as;
     } else {
       // RFC says: "Take distinguished value NONE as asn"
-      // we just leave as_number as zero
+      // which means state is unknown
+      return RPKI_NOTFOUND;
     }
   }
 
