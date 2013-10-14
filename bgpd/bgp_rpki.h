@@ -1,8 +1,7 @@
 /*
  * bgp_rpki.h
  *
- *  Created on: 15.02.2013
- *      Author: Michael Mester
+ * Author: Michael Mester (m.mester@fu-berlin.de)
  */
 
 #ifndef BGP_RPKI_H_

@@ -373,17 +373,21 @@ bgp_info_cmp (struct bgp *bgp, struct bgp_info *new, struct bgp_info *exist,
    * The user may e.g. set a local preference.
    */
   if(!CHECK_FLAG(bgp->flags, BGP_FLAG_VALIDATE_DISABLE)
-      && rpki_is_running() && !rpki_is_route_map_active()){
-    if(exist->rpki_validation_status != new->rpki_validation_status){
-      if(exist->rpki_validation_status == RPKI_VALID
-          || new->rpki_validation_status == RPKI_INVALID){
-        return 0;
-      }
-      else {
-        return 1;
-      }
+      && rpki_is_running() && !rpki_is_route_map_active())
+    {
+      if(exist->rpki_validation_status != new->rpki_validation_status)
+        {
+          if(exist->rpki_validation_status == RPKI_VALID
+              || new->rpki_validation_status == RPKI_INVALID)
+            {
+              return 0;
+            }
+          else
+            {
+              return 1;
+            }
+        }
     }
-  }
 #endif
 
   newattr = new->attr;
@@ -1444,10 +1448,11 @@ bgp_best_selection (struct bgp *bgp, struct bgp_node *rn,
 	    bgp_mp_dmed_deselect (new_select);
 
 #ifdef HAVE_RPKI
-      if(ri->rpki_validation_status != RPKI_INVALID
-          || CHECK_FLAG(bgp->flags, BGP_FLAG_ALLOW_INVALID)){
-	  new_select = ri;
-      }
+          if(ri->rpki_validation_status != RPKI_INVALID
+              || CHECK_FLAG(bgp->flags, BGP_FLAG_ALLOW_INVALID))
+            {
+              new_select = ri;
+            }
 #else
 	  new_select = ri;
 #endif
@@ -1614,17 +1619,20 @@ bgp_process_main (struct work_queue *wq, void *data)
   struct peer *peer;
   
 #ifdef HAVE_RPKI
-  if (rn->info != NULL ) {
-    struct bgp_info * bgp_info = rn->info;
-    // If we have validation data and prefix has not yet been validated
-    if (rpki_is_synchronized() && bgp_info->rpki_validation_status == 0) {
-      RPKI_SET_ORIGIN_VALIDATION_STATUS(bgp, bgp_info, p)
+  if (rn->info != NULL )
+    {
+      struct bgp_info * bgp_info = rn->info;
+      // If we have validation data and prefix has not yet been validated
+      if (rpki_is_synchronized() && bgp_info->rpki_validation_status == 0)
+        {
+          RPKI_SET_ORIGIN_VALIDATION_STATUS(bgp, bgp_info, p)
+        }
+      // If validation is off but validation status has not yet been resetted
+      else if (!rpki_is_synchronized() && bgp_info->rpki_validation_status != 0)
+        {
+          bgp_info->rpki_validation_status = 0;
+        }
     }
-    // If validation is off but validation status has not yet been resetted
-    else if (!rpki_is_synchronized() && bgp_info->rpki_validation_status != 0) {
-      bgp_info->rpki_validation_status = 0;
-    }
-  }
 #endif
 
   /* Best path selection. */
@@ -5670,23 +5678,24 @@ route_vty_short_status_out (struct vty *vty, struct bgp_info *binfo)
 
 #ifdef HAVE_RPKI
   /* RPKI Origin Validation code */
-  switch (binfo->rpki_validation_status) {
-    case RPKI_VALID:
-      vty_out(vty, "V");
-      break;
+  switch (binfo->rpki_validation_status)
+    {
+      case RPKI_VALID:
+        vty_out(vty, "V");
+        break;
 
-    case RPKI_INVALID:
-      vty_out(vty, "I");
-      break;
+      case RPKI_INVALID:
+        vty_out(vty, "I");
+        break;
 
-    case RPKI_NOTFOUND:
-      vty_out(vty, "N");
-      break;
+      case RPKI_NOTFOUND:
+        vty_out(vty, "N");
+        break;
 
-    default:
-      vty_out(vty, " ");
-      break;
-  }
+      default:
+        vty_out(vty, " ");
+        break;
+    }
 #endif
 
  /* Route status display. */
