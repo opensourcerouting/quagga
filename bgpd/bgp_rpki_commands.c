@@ -27,6 +27,7 @@
 #include "bgpd/bgp_aspath.h"
 #include "bgpd/bgp_route.h"
 #include "bgpd/bgp_rpki.h"
+#include "bgpd/bgp_rpki_commands.h"
 
 #define RPKI_OUTPUT_STRING "Control rpki specific settings\n"
 /**************************************/
@@ -59,33 +60,38 @@ typedef struct {
 /**********************************/
 cache_group* currently_selected_cache_group;
 
-/*******************************************/
-/** Declaration of list helper functions  **/
-/*******************************************/
-void delete_cache(void* value);
-struct list* create_cache_list(void);
-cache* create_cache(tr_socket* tr_socket);
-cache* find_cache(struct list* cache_list, const char* host, const char* port_string, const unsigned int port);
-int add_tcp_cache(struct list* cache_list, const char* host, const char* port);
-int add_ssh_cache(struct list* cache_list, const char* host, const unsigned int port,
+/* RPKI command node structure */
+struct cmd_node rpki_node =
+{
+  RPKI_NODE,
+  "%s(config-rpki)# ",
+  1,
+  NULL,
+  NULL
+};
+
+/**************************************/
+/** Declaration of static functions  **/
+/**************************************/
+static void delete_cache(void* value);
+static struct list* create_cache_list(void);
+static cache* create_cache(tr_socket* tr_socket);
+static cache* find_cache(struct list* cache_list, const char* host, const char* port_string, const unsigned int port);
+static int add_tcp_cache(struct list* cache_list, const char* host, const char* port);
+static int add_ssh_cache(struct list* cache_list, const char* host, const unsigned int port,
     const char* username, const char* client_privkey_path,
     const char* client_pubkey_path, const char* server_pubkey_path);
-void delete_cache_group(void* _cache_group);
-void delete_marked_cache_groups(void);
-cache_group* find_cache_group(int preference_value);
-cache_group* create_cache_group(int preference_value);
-unsigned int get_number_of_cache_groups(void);
-rtr_mgr_group* get_rtr_mgr_groups(void);
-void free_rtr_mgr_groups(rtr_mgr_group* group, int length);
-void delete_cache_group_list(void);
-void install_cli_commands(void);
-int rpki_config_write (struct vty * vty);
+static void delete_cache_group(void* _cache_group);
+static void delete_marked_cache_groups(void);
+static cache_group* find_cache_group(int preference_value);
+static cache_group* create_cache_group(int preference_value);
+static int rpki_config_write (struct vty * vty);
 static void route_match_rpki_free(void *rule);
 static void* route_match_rpki_compile(const char *arg);
 static route_map_result_t route_match_rpki(void *rule, struct prefix *prefix,
     route_map_object_t type, void *object);
 
-void delete_cache(void* value) {
+static void delete_cache(void* value) {
   cache* cache_p = (cache*) value;
   if (cache_p->type == TCP) {
     XFREE(MTYPE_BGP_RPKI_CACHE, cache_p->tr_config.tcp_config->host);
@@ -107,14 +113,14 @@ void delete_cache(void* value) {
   XFREE(MTYPE_BGP_RPKI_CACHE, cache_p);
 }
 
-struct list* create_cache_list() {
+static struct list* create_cache_list() {
   struct list* cache_list = list_new();
   cache_list->del = delete_cache;
   cache_list->count = 0;
   return cache_list;
 }
 
-cache* create_cache(tr_socket* tr_socket) {
+static cache* create_cache(tr_socket* tr_socket) {
   rtr_socket* rtr_socket_p;
   cache* cache_p;
   if ((rtr_socket_p = XMALLOC (MTYPE_BGP_RPKI_CACHE, sizeof (rtr_socket)))
@@ -130,7 +136,7 @@ cache* create_cache(tr_socket* tr_socket) {
   return cache_p;
 }
 
-cache* find_cache(struct list* cache_list, const char* host, const char* port_string, const unsigned int port) {
+static cache* find_cache(struct list* cache_list, const char* host, const char* port_string, const unsigned int port) {
   struct listnode* cache_node;
   cache* cache;
   for (ALL_LIST_ELEMENTS_RO(cache_list, cache_node, cache)) {
@@ -159,7 +165,7 @@ cache* find_cache(struct list* cache_list, const char* host, const char* port_st
   return NULL;
 }
 
-int add_tcp_cache(struct list* cache_list, const char* host, const char* port) {
+static int add_tcp_cache(struct list* cache_list, const char* host, const char* port) {
   tr_tcp_config* tcp_config_p;
   tr_socket* tr_socket_p;
   cache* cache_p;
@@ -183,7 +189,7 @@ int add_tcp_cache(struct list* cache_list, const char* host, const char* port) {
   return SUCCESS;
 }
 
-int add_ssh_cache(struct list* cache_list, const char* host, const unsigned int port,
+static int add_ssh_cache(struct list* cache_list, const char* host, const unsigned int port,
     const char* username, const char* client_privkey_path,
     const char* client_pubkey_path, const char* server_pubkey_path) {
 
@@ -223,13 +229,13 @@ int add_ssh_cache(struct list* cache_list, const char* host, const unsigned int 
   return SUCCESS;
 }
 
-void delete_cache_group(void* _cache_group) {
+static void delete_cache_group(void* _cache_group) {
   cache_group* group = _cache_group;
   list_delete(group->cache_config_list);
   XFREE(MTYPE_BGP_RPKI_CACHE_GROUP, group);
 }
 
-void delete_marked_cache_groups(){
+static void delete_marked_cache_groups(){
   cache_group* cache_group;
   cache* cache;
   struct listnode *cache_group_node, *cache_node;
@@ -249,7 +255,7 @@ void delete_marked_cache_groups(){
   }
 }
 
-cache_group* find_cache_group(int preference_value){
+static cache_group* find_cache_group(int preference_value){
   cache_group* cache_group;
   struct listnode *cache_group_node;
   for (ALL_LIST_ELEMENTS_RO(cache_group_list, cache_group_node, cache_group)) {
@@ -261,7 +267,7 @@ cache_group* find_cache_group(int preference_value){
   return NULL;
 }
 
-cache_group* create_cache_group(int preference_value) {
+static cache_group* create_cache_group(int preference_value) {
   cache_group* group;
   if ((group = XMALLOC (MTYPE_BGP_RPKI_CACHE_GROUP, sizeof (cache_group)))
       == NULL ) {
@@ -273,73 +279,67 @@ cache_group* create_cache_group(int preference_value) {
   return group;
 }
 
-unsigned int get_number_of_cache_groups() {
-  delete_marked_cache_groups();
-  return listcount(cache_group_list);
+static void reprocess_routes(struct bgp* bgp){
+  afi_t afi;
+  for (afi = AFI_IP; afi < AFI_MAX; ++afi) {
+    rpki_revalidate_all_routes(bgp, afi);
+  }
 }
 
-rtr_mgr_group* get_rtr_mgr_groups() {
+static int rpki_config_write (struct vty * vty){
   struct listnode *cache_group_node;
   cache_group* cache_group;
-  rtr_mgr_group* rtr_mgr_groups;
-  rtr_mgr_group* loop_group_pointer;
-
-  delete_marked_cache_groups();
-  int number_of_groups = listcount(cache_group_list);
-  if (number_of_groups == 0) {
-    return NULL ;
-  }
-
-  if ((rtr_mgr_groups = XMALLOC (MTYPE_BGP_RPKI_CACHE_GROUP,
-      number_of_groups * sizeof (rtr_mgr_group))) == NULL ) {
-    return NULL ;
-  }
-  loop_group_pointer = rtr_mgr_groups;
-
-  for (ALL_LIST_ELEMENTS_RO(cache_group_list, cache_group_node, cache_group)) {
-    struct list* cache_list = cache_group->cache_config_list;
-    struct listnode* cache_node;
-    cache* cache;
-    rtr_socket** loop_cache_pointer;
-    int number_of_caches = listcount(cache_list);
-    if (number_of_caches == 0) {
-      break;
+  if(listcount(cache_group_list)){
+    if (rpki_debug) {
+      vty_out(vty, "debug rpki%s", VTY_NEWLINE);
     }
-    if ((loop_group_pointer->sockets = XMALLOC (MTYPE_BGP_RPKI_CACHE,
-        number_of_caches * sizeof (rtr_socket*))) == NULL ) {
-      return NULL ;
+    vty_out(vty, "! %s", VTY_NEWLINE);
+    vty_out(vty, "enable-rpki%s", VTY_NEWLINE);
+    vty_out(vty, "  rpki polling_period %d %s", polling_period, VTY_NEWLINE);
+    vty_out(vty, "  rpki timeout %d %s", timeout, VTY_NEWLINE);
+    vty_out(vty, "  rpki initial-synchronisation-timeout %d %s", initial_synchronisation_timeout, VTY_NEWLINE);
+    vty_out(vty, "! %s", VTY_NEWLINE);
+    for (ALL_LIST_ELEMENTS_RO(cache_group_list, cache_group_node, cache_group)) {
+      struct list* cache_list = cache_group->cache_config_list;
+      struct listnode* cache_node;
+      cache* cache;
+      vty_out(vty, "  rpki group %d %s", cache_group->preference_value, VTY_NEWLINE);
+      if (listcount(cache_list) == 0) {
+        vty_out(vty, "! %s", VTY_NEWLINE);
+        continue;
+      }
+      for (ALL_LIST_ELEMENTS_RO(cache_list, cache_node, cache)) {
+        switch (cache->type) {
+          tr_tcp_config* tcp_config;
+          tr_ssh_config* ssh_config;
+          case TCP:
+            tcp_config = cache->tr_config.tcp_config;
+            vty_out(vty, "    rpki cache %s %s %s",tcp_config->host, tcp_config->port , VTY_NEWLINE);
+            break;
+
+          case SSH:
+            ssh_config = cache->tr_config.ssh_config;
+            vty_out(vty, "    rpki cache %s %u %s %s %s %s %s",
+                ssh_config->host,
+                ssh_config->port,
+                ssh_config->username,
+                ssh_config->client_privkey_path,
+                ssh_config->client_pubkey_path,
+                ssh_config->server_hostkey_path != NULL ? ssh_config->server_hostkey_path : " ",
+                VTY_NEWLINE);
+            break;
+
+          default:
+            break;
+        }
+      }
+      vty_out(vty, "! %s", VTY_NEWLINE);
     }
-    loop_cache_pointer = loop_group_pointer->sockets;
-
-    for (ALL_LIST_ELEMENTS_RO(cache_list, cache_node, cache)) {
-      *loop_cache_pointer = cache->rtr_socket;
-      loop_cache_pointer++;
-    }
-    loop_group_pointer->sockets_len = number_of_caches;
-    loop_group_pointer->preference = cache_group->preference_value;
-    loop_group_pointer++;
+    return 1;
   }
-
-  if (loop_group_pointer == rtr_mgr_groups) {
-    // No caches were found in config file
-    return NULL ;
+  else {
+    return 0;
   }
-  return rtr_mgr_groups;
-}
-
-void free_rtr_mgr_groups(rtr_mgr_group* group, int length) {
-	int i;
-  rtr_mgr_group* group_temp = group;
-  for (i = 0; i < length; ++i) {
-    XFREE(MTYPE_BGP_RPKI_CACHE, group_temp->sockets);
-    group_temp++;
-  }
-
-  XFREE(MTYPE_BGP_RPKI_CACHE_GROUP, group);
-}
-
-void delete_cache_group_list() {
-  list_delete(cache_group_list);
 }
 
 /**********************************/
@@ -574,12 +574,6 @@ DEFUN (no_rpki_cache,
   return CMD_SUCCESS;
 }
 
-static void reprocess_routes(struct bgp* bgp){
-  afi_t afi;
-  for (afi = AFI_IP; afi < AFI_MAX; ++afi) {
-    rpki_revalidate_all_routes(bgp, afi);
-  }
-}
 
 DEFUN (bgp_bestpath_prefix_validate_disable,
       bgp_bestpath_prefix_validate_disable_cmd,
@@ -647,7 +641,7 @@ DEFUN (show_rpki_prefix_table,
     "Show validated prefixes which were received from RPKI Cache")
 {
   if(rpki_is_synchronized()){
-    print_prefix_table(vty);
+    rpki_print_prefix_table(vty);
   }
   else {
     vty_out(vty, "No connection to RPKI cache server.%s", VTY_NEWLINE);
@@ -756,6 +750,28 @@ DEFUN (no_debug_rpki,
   return CMD_SUCCESS;
 }
 
+static void overwrite_exit_commands(){
+  unsigned int i;
+  vector cmd_vector = rpki_node.cmd_vector;
+  for (i = 0; i < cmd_vector->active; ++i) {
+    struct cmd_element* cmd = (struct cmd_element*) vector_lookup(cmd_vector, i);
+    if(strcmp(cmd->string, "exit") == 0
+        || strcmp(cmd->string, "quit") == 0
+        || strcmp(cmd->string, "exit") == 0){
+      vector_unset(cmd_vector, i);
+    }
+  }
+  /*
+  The comments in the following 3 lines must not be removed.
+  They prevent the script ../vtysh/extract.pl from copying the lines
+  into ../vtysh/vtysh_cmd.c which would cause the commands to be ambiguous
+  and we don't want that.
+  */
+  install_element(RPKI_NODE /*DO NOT REMOVE THIS COMMENT*/, &rpki_exit_cmd);
+  install_element(RPKI_NODE /*DO NOT REMOVE THIS COMMENT*/, &rpki_quit_cmd);
+  install_element(RPKI_NODE /*DO NOT REMOVE THIS COMMENT*/, &rpki_end_cmd);
+}
+
 /**************************************************/
 /** Declaration of route-map match rpki command  **/
 /**************************************************/
@@ -796,6 +812,7 @@ static void route_match_rpki_free(void *rule) {
   XFREE(MTYPE_ROUTE_MAP_COMPILED, rule);
 }
 
+/* Route-Map match RPKI structure */
 struct route_map_rule_cmd route_match_rpki_cmd = {
     "rpki",
     route_match_rpki,
@@ -803,92 +820,77 @@ struct route_map_rule_cmd route_match_rpki_cmd = {
     route_match_rpki_free
 };
 
-/* RPKI node structure. */
-static struct cmd_node rpki_node =
-{
-  RPKI_NODE,
-  "%s(config-rpki)# ",
-  1,
-  NULL,
-  NULL
-};
+/**************************************/
+/** Declaration of public functions  **/
+/**************************************/
 
-int rpki_config_write (struct vty * vty){
-  struct listnode *cache_group_node;
-  cache_group* cache_group;
-  if(listcount(cache_group_list)){
-  	if (rpki_debug) {
-  		vty_out(vty, "debug rpki%s", VTY_NEWLINE);
-  	}
-  	vty_out(vty, "! %s", VTY_NEWLINE);
-    vty_out(vty, "enable-rpki%s", VTY_NEWLINE);
-    vty_out(vty, "  rpki polling_period %d %s", polling_period, VTY_NEWLINE);
-    vty_out(vty, "  rpki timeout %d %s", timeout, VTY_NEWLINE);
-    vty_out(vty, "  rpki initial-synchronisation-timeout %d %s", initial_synchronisation_timeout, VTY_NEWLINE);
-    vty_out(vty, "! %s", VTY_NEWLINE);
-    for (ALL_LIST_ELEMENTS_RO(cache_group_list, cache_group_node, cache_group)) {
-      struct list* cache_list = cache_group->cache_config_list;
-      struct listnode* cache_node;
-      cache* cache;
-      vty_out(vty, "  rpki group %d %s", cache_group->preference_value, VTY_NEWLINE);
-      if (listcount(cache_list) == 0) {
-        vty_out(vty, "! %s", VTY_NEWLINE);
-        continue;
-      }
-      for (ALL_LIST_ELEMENTS_RO(cache_list, cache_node, cache)) {
-        switch (cache->type) {
-          tr_tcp_config* tcp_config;
-          tr_ssh_config* ssh_config;
-          case TCP:
-            tcp_config = cache->tr_config.tcp_config;
-            vty_out(vty, "    rpki cache %s %s %s",tcp_config->host, tcp_config->port , VTY_NEWLINE);
-            break;
-
-          case SSH:
-            ssh_config = cache->tr_config.ssh_config;
-            vty_out(vty, "    rpki cache %s %u %s %s %s %s %s",
-                ssh_config->host,
-                ssh_config->port,
-                ssh_config->username,
-                ssh_config->client_privkey_path,
-                ssh_config->client_pubkey_path,
-                ssh_config->server_hostkey_path != NULL ? ssh_config->server_hostkey_path : " ",
-                VTY_NEWLINE);
-            break;
-
-          default:
-            break;
-        }
-      }
-      vty_out(vty, "! %s", VTY_NEWLINE);
-    }
-    return 1;
-  }
-  else {
-    return 0;
-  }
+unsigned int get_number_of_cache_groups() {
+  delete_marked_cache_groups();
+  return listcount(cache_group_list);
 }
 
-static void overwrite_exit_commands(){
-	unsigned int i;
-	vector cmd_vector = rpki_node.cmd_vector;
-  for (i = 0; i < cmd_vector->active; ++i) {
-    struct cmd_element* cmd = (struct cmd_element*) vector_lookup(cmd_vector, i);
-    if(strcmp(cmd->string, "exit") == 0
-        || strcmp(cmd->string, "quit") == 0
-        || strcmp(cmd->string, "exit") == 0){
-      vector_unset(cmd_vector, i);
-    }
+rtr_mgr_group* get_rtr_mgr_groups() {
+  struct listnode *cache_group_node;
+  cache_group* cache_group;
+  rtr_mgr_group* rtr_mgr_groups;
+  rtr_mgr_group* loop_group_pointer;
+
+  delete_marked_cache_groups();
+  int number_of_groups = listcount(cache_group_list);
+  if (number_of_groups == 0) {
+    return NULL ;
   }
-  /*
-  The comments in the following 3 lines must not be removed.
-  They prevent the script ../vtysh/extract.pl from copying the lines
-  into ../vtysh/vtysh_cmd.c which would cause the commands to be ambiguous
-  and we don't want that.
-  */
-  install_element(RPKI_NODE /*DO NOT REMOVE THIS COMMENT*/, &rpki_exit_cmd);
-  install_element(RPKI_NODE /*DO NOT REMOVE THIS COMMENT*/, &rpki_quit_cmd);
-  install_element(RPKI_NODE /*DO NOT REMOVE THIS COMMENT*/, &rpki_end_cmd);
+
+  if ((rtr_mgr_groups = XMALLOC (MTYPE_BGP_RPKI_CACHE_GROUP,
+      number_of_groups * sizeof (rtr_mgr_group))) == NULL ) {
+    return NULL ;
+  }
+  loop_group_pointer = rtr_mgr_groups;
+
+  for (ALL_LIST_ELEMENTS_RO(cache_group_list, cache_group_node, cache_group)) {
+    struct list* cache_list = cache_group->cache_config_list;
+    struct listnode* cache_node;
+    cache* cache;
+    rtr_socket** loop_cache_pointer;
+    int number_of_caches = listcount(cache_list);
+    if (number_of_caches == 0) {
+      break;
+    }
+    if ((loop_group_pointer->sockets = XMALLOC (MTYPE_BGP_RPKI_CACHE,
+        number_of_caches * sizeof (rtr_socket*))) == NULL ) {
+      return NULL ;
+    }
+    loop_cache_pointer = loop_group_pointer->sockets;
+
+    for (ALL_LIST_ELEMENTS_RO(cache_list, cache_node, cache)) {
+      *loop_cache_pointer = cache->rtr_socket;
+      loop_cache_pointer++;
+    }
+    loop_group_pointer->sockets_len = number_of_caches;
+    loop_group_pointer->preference = cache_group->preference_value;
+    loop_group_pointer++;
+  }
+
+  if (loop_group_pointer == rtr_mgr_groups) {
+    // No caches were found in config file
+    return NULL ;
+  }
+  return rtr_mgr_groups;
+}
+
+void free_rtr_mgr_groups(rtr_mgr_group* group, int length) {
+  int i;
+  rtr_mgr_group* group_temp = group;
+  for (i = 0; i < length; ++i) {
+    XFREE(MTYPE_BGP_RPKI_CACHE, group_temp->sockets);
+    group_temp++;
+  }
+
+  XFREE(MTYPE_BGP_RPKI_CACHE_GROUP, group);
+}
+
+void delete_cache_group_list() {
+  list_delete(cache_group_list);
 }
 
 void install_cli_commands() {
@@ -947,4 +949,3 @@ void install_cli_commands() {
   route_map_install_match(&route_match_rpki_cmd);
 
 }
-

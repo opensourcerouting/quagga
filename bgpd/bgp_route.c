@@ -62,10 +62,10 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 
 #define BGP_SHOW_RPKI_HEADER "RPKI validation codes: V valid, I invalid, N not found%s"
 
-#define DO_RPKI_ORIGIN_VALIDATION(bgp, bgp_info, prefix) \
-		do_rpki_origin_validation(bgp, bgp_info, prefix);
+#define RPKI_SET_ORIGIN_VALIDATION_STATUS(bgp, bgp_info, prefix) \
+		rpki_set_validation_status(bgp, bgp_info, prefix);
 #else
-#define DO_RPKI_ORIGIN_VALIDATION(bgp, bgp_info, prefix) \
+#define RPKI_SET_ORIGIN_VALIDATION_STATUS(bgp, bgp_info, prefix) \
 		bgp_info->rpki_validation_status = 0;
 #endif
 
@@ -373,7 +373,7 @@ bgp_info_cmp (struct bgp *bgp, struct bgp_info *new, struct bgp_info *exist,
    * The user may e.g. set a local preference.
    */
   if(!CHECK_FLAG(bgp->flags, BGP_FLAG_VALIDATE_DISABLE)
-      && rpki_is_running() && !rpki_route_map_active()){
+      && rpki_is_running() && !rpki_is_route_map_active()){
     if(exist->rpki_validation_status != new->rpki_validation_status){
       if(exist->rpki_validation_status == RPKI_VALID
           || new->rpki_validation_status == RPKI_INVALID){
@@ -1618,7 +1618,7 @@ bgp_process_main (struct work_queue *wq, void *data)
     struct bgp_info * bgp_info = rn->info;
     // If we have validation data and prefix has not yet been validated
     if (rpki_is_synchronized() && bgp_info->rpki_validation_status == 0) {
-      DO_RPKI_ORIGIN_VALIDATION(bgp, bgp_info, p)
+      RPKI_SET_ORIGIN_VALIDATION_STATUS(bgp, bgp_info, p)
     }
     // If validation is off but validation status has not yet been resetted
     else if (!rpki_is_synchronized() && bgp_info->rpki_validation_status != 0) {
