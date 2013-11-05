@@ -36,6 +36,7 @@ build
 *~
 *.loT
 m4/*.m4
+!m4/ax_pkg_swig.m4
 !m4/ax_sys_weak_alias.m4
 *.gcno
 *.gcda

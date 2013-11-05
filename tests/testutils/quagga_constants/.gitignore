@@ -1,0 +1,4 @@
+_header_constants.*
+header_constants.py
+header_constants_wrap.c
+subst_constants.py

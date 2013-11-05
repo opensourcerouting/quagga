@@ -436,6 +436,7 @@ struct in_pktinfo
 /* Zebra route's types are defined in route_types.h */
 #include "route_types.h"
 
+#ifndef SWIG
 /* Note: whenever a new route-type or zserv-command is added the
  * corresponding {command,route}_types[] table in lib/log.c MUST be
  * updated! */
@@ -454,6 +455,7 @@ extern int proto_name2num(const char *s);
 extern int proto_redistnum(int afi, const char *s);
 
 extern const char *zserv_command_string (unsigned int command);
+#endif /* !SWIG */
 
 /* Zebra's family types. */
 #define ZEBRA_FAMILY_IPV4                1

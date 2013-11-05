@@ -1274,6 +1274,7 @@ if test "${enable_tests}" = "no";then
   BUILD_TESTS=""
 else
   BUILD_TESTS="tests"
+  AX_PKG_SWIG([], [], AC_MSG_ERROR([Swig is not installed. It's needed for the testsuite.]))
 fi
 
 dnl --------------------
@@ -1707,6 +1708,8 @@ AC_CONFIG_FILES([Makefile lib/Makefile zebra/Makefile ripd/Makefile
 	  doc/Makefile ospfclient/Makefile tests/Makefile m4/Makefile
 	  tests/bgpd.tests/Makefile
 	  tests/libzebra.tests/Makefile
+	  tests/testutils/quagga_constants/Makefile
+	  tests/testutils/quagga_constants/subst_constants.py
 	  redhat/Makefile
 	  pkgsrc/Makefile
 	  redhat/quagga.spec 

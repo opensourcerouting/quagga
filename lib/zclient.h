@@ -124,6 +124,7 @@ struct zapi_ipv4
   u_int32_t metric;
 };
 
+#ifndef SWIG
 /* Prototypes of zebra client service functions. */
 extern struct zclient *zclient_new (void);
 extern void zclient_init (struct zclient *, int);
@@ -158,6 +159,7 @@ extern void zebra_interface_if_set_value (struct stream *, struct interface *);
 extern void zebra_router_id_update_read (struct stream *s, struct prefix *rid);
 extern int zapi_ipv4_route (u_char, struct zclient *, struct prefix_ipv4 *, 
                             struct zapi_ipv4 *);
+#endif /* !SWIG */
 
 #ifdef HAVE_IPV6
 /* IPv6 prefix add and delete function prototype. */
@@ -183,8 +185,10 @@ struct zapi_ipv6
   u_int32_t metric;
 };
 
+#ifndef SWIG
 extern int zapi_ipv6_route (u_char cmd, struct zclient *zclient, 
                      struct prefix_ipv6 *p, struct zapi_ipv6 *api);
+#endif /* !SWIG */
 #endif /* HAVE_IPV6 */
 
 #endif /* _ZEBRA_ZCLIENT_H */

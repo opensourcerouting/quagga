@@ -3,7 +3,8 @@ DEJATOOL = libzebra
 
 SUBDIRS = \
 	bgpd.tests \
-	libzebra.tests
+	libzebra.tests \
+	testutils/quagga_constants
 
 EXTRA_DIST = \
 	config/unix.exp \
