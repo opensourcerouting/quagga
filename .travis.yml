@@ -1,0 +1,23 @@
+language: c
+compiler:
+  - clang
+#  - gcc
+env:
+  - MULTIPATH=1 IPV6=1
+#  - MULTIPATH=0 IPV6=1
+#  - MULTIPATH=1 IPV6=0
+#  - MULTIPATH=0 IPV6=0
+before_install:
+  - sudo apt-get update
+install:
+  - sudo apt-get install dia libcap-dev libreadline-dev texinfo
+  - sudo apt-get install python-ipaddr python-nose python-pexpect swig2.0
+script: |
+  autoreconf -fis
+  ./configure --enable-vtysh --enable-isisd --enable-netlink \
+              --enable-gcc-rdynamic --enable-fpm --with-pkg-git-version \
+              --enable-irdp \
+              $([ $MULTIPATH -ne 1 ] || echo "--enable-multipath=16") \
+              $([ $IPV6 -eq 1 ] || echo  "--disable-ipv6 --disable-babeld")
+  make
+  make check && sudo make check
