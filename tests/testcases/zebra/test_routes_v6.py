@@ -1,10 +1,12 @@
 import time
-import unittest
 
-from testutils import quagga
 from testutils import pyzclient
+from testutils import quagga
+from testutils import requires
 from testutils import system
 
+@requires.ipv6
+@requires.root
 class TestSimple(quagga.TestCase):
     def setUp(self):
         self.dummy1 = system.DummyIface()
@@ -223,6 +225,8 @@ class TestSimple(quagga.TestCase):
         self.assertNotIn(str(self.route.dest), self.zebra.rib('O',6))
 
 
+@requires.ipv6
+@requires.root
 class TestRecursive(quagga.TestCase):
     maxDiff = None
     def setUp(self):
@@ -395,6 +399,3 @@ class TestRecursive(quagga.TestCase):
 
         self.assertNotIn(str(self.route.dest), self.zebra.rib('B'))
         self.assertNotIn(str(self.route.dest), system.fib(6))
-
-if __name__ == '__main__':
-    unittest.main()

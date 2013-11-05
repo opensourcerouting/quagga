@@ -12,7 +12,7 @@ SUPPORTS_PREFSRC = True
 
 def fib(ipv = 4):
     rlist = pexpect.spawn('ip -%d -o route list' % (ipv),
-                          logfile = open('/tmp/zebraip.log', 'a'))
+                          logfile=generic.LogFile('iproute'))
     routes = {}
     while True:
         i = rlist.expect([
@@ -80,6 +80,7 @@ class DummyIface(object):
             if not os.access('/sys/class/net/' + self.name, os.F_OK):
                 break
         else:
+            self.name = None
             raise RuntimeError("Coulnd't find a suitable test interface")
 
         generic.call_log('ip', 'link', 'add', 'name', self.name, 'type', 'dummy')
@@ -88,7 +89,15 @@ class DummyIface(object):
             self.index = int(f.read().strip())
 
     def __del__(self):
-        generic.call_log('ip', 'link', 'del', self.name)
+        self.destroy()
+
+    def destroy(self):
+        if self.name is None:
+            return
+        try:
+            generic.call_log('ip', 'link', 'del', self.name)
+        finally:
+            self.name = None
 
     def up(self, up = True):
         generic.call_log('ip', 'link', 'set', self.name, 'up' if up else 'down')

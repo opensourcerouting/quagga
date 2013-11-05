@@ -23,7 +23,7 @@ def if_nametoindex(name):
 def fib(ipv = 4):
     rlist = pexpect.spawn(
             'netstat -r -nW -f %s' % ('inet' if ipv == 4 else 'inet6'),
-            logfile=open('/tmp/zebraip.log', 'a')
+            logfile=generic.LogFile('netstat')
     )
 
     rlist.expect(r'Expire\s*\n')

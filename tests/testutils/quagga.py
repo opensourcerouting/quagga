@@ -1,9 +1,12 @@
 # vim:set ts=4 expandtab:
 
+import os
 import pprint
+import pwd
 import re
 import signal
 import sys
+import tempfile
 import unittest
 
 import pexpect
@@ -12,10 +15,16 @@ from . import generic
 
 class Zebra(object):
     def __init__(self):
+        self.pid_file = tempfile.NamedTemporaryFile()
+        self.config_file = tempfile.NamedTemporaryFile()
+        self.user = pwd.getpwuid(os.getuid())
         self.zebra = pexpect.spawn(
-                '../zebra/zebra -t',
+                '../zebra/zebra -i {0} -f {1} -u {2} -t'.format(
+                    self.pid_file.name,
+                    self.config_file.name,
+                    self.user.pw_name),
                 timeout = 5,
-                logfile = file('/tmp/zebraio.log', 'a')
+                logfile = generic.LogFile('zebra')
         )
         self.zebra.expect('# ')
 

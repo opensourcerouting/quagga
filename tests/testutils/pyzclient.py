@@ -4,42 +4,7 @@ import re
 import socket
 import struct
 
-# Load constants from headers
-define_re = re.compile(r'^#define\s+(?P<name>[A-Z_0-9]+)\s+(?P<value>.*)$')
-
-basedir = os.path.realpath(__file__)
-basedir = os.path.dirname(basedir)
-basedir = os.path.join(basedir, "../..")
-for header in ["config.h",
-               "lib/route_types.h",
-               "lib/zclient.h",
-               "lib/zebra.h"
-              ]:
-    with open(os.path.join(basedir, header)) as header_file:
-        for line in header_file:
-            match = define_re.match(line)
-            if match is None:
-                continue
-
-            name = match.group('name')
-            value = match.group('value').strip()
-            if not value:
-                continue
-
-            if value[0] == '"':
-                value = value[1:-1]
-                try:
-                    value = value.decode('string_escape')
-                except ValueError:
-                    continue
-            else:
-                try:
-                    value = int(value, 0)
-                except ValueError:
-                    continue
-
-            globals()[name] = value
-
+from .quagga_constants import *
 
 def recv_all(input_socket, length):
     return_buf = bytes()

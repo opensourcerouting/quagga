@@ -1,9 +1,10 @@
 import time
-import unittest
 
 from testutils import quagga
+from testutils import requires
 from testutils import system
 
+@requires.root
 class TestAddDel(quagga.TestCase):
     maxDiff = None
     def setUp(self):
@@ -14,6 +15,9 @@ class TestAddDel(quagga.TestCase):
         del self.zebra
         del self.dummy
 
+    # TODO: these tests are badly written - we should have some that work
+    # w/o ipv6
+    @requires.ipv6
     def test_sys_addr_updown(self):
         self.dummy.up()
         self.dummy.addr_add('192.0.2.1/24')
@@ -35,6 +39,9 @@ class TestAddDel(quagga.TestCase):
             self.zebra.addr_list(self.dummy.name),
             self.dummy.addr_list())
 
+    # TODO: these tests are badly written - we should have some that work
+    # w/o ipv6
+    @requires.ipv6
     def test_zeb_addr_updown(self):
         self.dummy.up()
         self.zebra.config(
@@ -140,6 +147,3 @@ class TestAddDel(quagga.TestCase):
                 ]
             },
         }, system.fib())
-
-if __name__ == '__main__':
-    unittest.main()

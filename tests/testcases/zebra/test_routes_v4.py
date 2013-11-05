@@ -1,11 +1,14 @@
 import contextlib
 import time
-import unittest
 
-from testutils import quagga
+from nose.tools import nottest
+
 from testutils import pyzclient
+from testutils import quagga
+from testutils import requires
 from testutils import system
 
+@requires.root
 class TestSimple(quagga.TestCase):
     def setUp(self):
         self.dummy1 = system.DummyIface()
@@ -217,7 +220,7 @@ class TestSimple(quagga.TestCase):
         self.assertNotIn('198.51.100.128/25', system.fib())
         self.assertNotIn('198.51.100.128/25', self.zebra.rib('O'))
 
-
+@requires.root
 class TestMultiPath(quagga.TestCase):
     def setUp(self):
         self.dummy1 = system.DummyIface()
@@ -238,7 +241,7 @@ class TestMultiPath(quagga.TestCase):
         del self.dummy2
         del self.dummy1
 
-    @unittest.skipUnless(system.SUPPORTS_MULTIPATH, "Platform doesn't support multipath")
+    @requires.multipath
     def test_nexthop_ipv4(self):
         route = pyzclient.Route(None, '198.51.100.128/25')
         route.nexthops.append(pyzclient.Nexthop('192.0.2.2'))
@@ -340,7 +343,7 @@ class TestMultiPath(quagga.TestCase):
                 'iface': nexthop['iface']
             })
 
-        # There should be at least one nexthop installed
+        # Check that at least one nexthop has been installed into fib
         self.assertTrue(fib_nexthops)
         self.assertRoutes(expected_fib, system.fib())
 
@@ -351,7 +354,7 @@ class TestMultiPath(quagga.TestCase):
         self.assertNotIn('198.51.100.128/25', self.zebra.rib('O'))
         self.assertNotIn('198.51.100.128/25', system.fib())
 
-    @unittest.skipUnless(system.SUPPORTS_MULTIPATH, "Platform doesn't support multipath")
+    @requires.multipath
     def test_nexthop_ifindex(self):
         route = pyzclient.Route(None, '198.51.100.128/25')
         route.nexthops.append(pyzclient.Nexthop(ifindex=self.dummy1.index))
@@ -413,7 +416,7 @@ class TestMultiPath(quagga.TestCase):
         self.assertNotIn('198.51.100.128/25', self.zebra.rib('O'))
         self.assertNotIn('198.51.100.128/25', system.fib())
 
-
+@requires.root
 class TestRecursive(quagga.TestCase):
     maxDiff = None
     def setUp(self):
@@ -564,7 +567,7 @@ class TestRecursive(quagga.TestCase):
         self.assertNotIn('198.51.100.128/25', self.zebra.rib('B'))
         self.assertNotIn('198.51.100.128/25', system.fib())
 
-    @unittest.skipUnless(system.SUPPORTS_MULTIPATH, "Platform doesn't support multipath")
+    @requires.multipath
     def test_resolve_via_multipath_ifindex(self):
         self.setUpMultipath()
         self.route.add_nexthop('192.0.2.49')
@@ -650,7 +653,7 @@ class TestRecursive(quagga.TestCase):
         self.assertNotIn('198.51.100.128/25', self.zebra.rib('B'))
         self.assertNotIn('198.51.100.128/25', system.fib())
 
-    @unittest.skipUnless(system.SUPPORTS_MULTIPATH, "Platform doesn't support multipath")
+    @requires.multipath
     def test_resolve_via_multipath_ipv4(self):
         self.setUpMultipath()
         self.route.add_nexthop('192.0.2.57')
@@ -700,7 +703,8 @@ class TestRecursive(quagga.TestCase):
         self.assertNotIn('198.51.100.128/25', system.fib())
 
 
-@unittest.skipUnless(system.SUPPORTS_PREFSRC, "Platform doesn't support prefsrc")
+@requires.root
+@requires.prefsrc
 class TestRouteMapSrc(quagga.TestCase):
     def setUp(self):
         self.dummy1 = system.DummyIface()
@@ -846,6 +850,7 @@ class TestRouteMapSrc(quagga.TestCase):
         self.assertNotIn(str(self.route.dest), self.zebra.rib('O'))
         self.assertNotIn(str(self.route.dest), system.fib())
 
+    @requires.multipath
     def test_multipath_ifindex(self):
         self.route.add_nexthop(ifindex=self.dummy1.index)
         self.route.add_nexthop(ifindex=self.dummy2.index)
@@ -896,6 +901,7 @@ class TestRouteMapSrc(quagga.TestCase):
         self.assertNotIn(str(self.route.dest), self.zebra.rib('O'))
         self.assertNotIn(str(self.route.dest), system.fib())
 
+    @requires.multipath
     def test_multipath_ipv4(self):
         self.route.add_nexthop('192.0.2.2')
         self.route.add_nexthop('192.0.2.3')
@@ -945,6 +951,7 @@ class TestRouteMapSrc(quagga.TestCase):
         self.assertNotIn(str(self.route.dest), self.zebra.rib('O'))
         self.assertNotIn(str(self.route.dest), system.fib())
 
+    @requires.multipath
     def test_multipath_ipv4_ifindex(self):
         self.route.add_nexthop('192.0.2.2', ifindex=self.dummy1.index)
         self.route.add_nexthop('192.0.2.3', ifindex=self.dummy1.index)
@@ -994,6 +1001,7 @@ class TestRouteMapSrc(quagga.TestCase):
         self.assertNotIn(str(self.route.dest), self.zebra.rib('O'))
         self.assertNotIn(str(self.route.dest), system.fib())
 
+@requires.root
 class TestRouteMapMatchAndDeny(quagga.TestCase):
     def setUp(self):
         self.dummy1 = system.DummyIface()
@@ -1044,6 +1052,7 @@ class TestRouteMapMatchAndDeny(quagga.TestCase):
             "ip protocol ospf route-map match-test"
         )
 
+    @nottest
     def do_singlepath_test(self):
         # This route should make it through the filter
         self.route.add_nexthop('192.0.2.2')
@@ -1119,6 +1128,7 @@ class TestRouteMapMatchAndDeny(quagga.TestCase):
         self.setUpIfaceMatch()
         self.do_singlepath_test()
 
+    @nottest
     def do_multipath_test(self):
         self.route.add_nexthop('192.0.2.2')
         self.route.add_nexthop('192.0.2.10')
@@ -1251,6 +1261,3 @@ class TestRouteMapMatchAndDeny(quagga.TestCase):
 
             self.assertNotIn(str(self.route.dest), self.zebra.rib('B'))
             self.assertNotIn(str(self.route.dest), system.fib())
-
-if __name__ == '__main__':
-    unittest.main()

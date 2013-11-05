@@ -1,8 +1,6 @@
-import unittest
+#!/usr/bin/env python
 
-class MyTestProgram(unittest.TestProgram):
-    def createTests(self):
-        self.test = self.testLoader.discover('testcases', pattern='*.py')
+import nose
 
 if __name__ == '__main__':
-    MyTestProgram()
+    nose.main()
