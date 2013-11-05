@@ -19,7 +19,7 @@ AC_CANONICAL_BUILD()
 AC_CANONICAL_HOST()
 AC_CANONICAL_TARGET()
 
-AM_INIT_AUTOMAKE(1.6)
+AM_INIT_AUTOMAKE([subdir-objects])
 AC_CONFIG_HEADERS(config.h)
 
 AC_PATH_PROG(PERL, perl)
@@ -1621,18 +1621,6 @@ fi
 AC_SUBST(PICFLAGS)
 AC_SUBST(PILDFLAGS)
 
-dnl -------
-dnl DejaGNU
-dnl -------
-if test x"$DEJAGNU" = x
-then
-  DEJAGNU="\$(top_srcdir)/tests/global-conf.exp"
-fi
-RUNTESTDEFAULTFLAGS="-x --tool \$\$tool"
-
-AC_SUBST(DEJAGNU)
-AC_SUBST(RUNTESTDEFAULTFLAGS)
-
 dnl ------------------------------
 dnl set paths for state directory
 dnl ------------------------------
@@ -1706,8 +1694,6 @@ AC_CONFIG_FILES([Makefile lib/Makefile zebra/Makefile ripd/Makefile
 	  ripngd/Makefile bgpd/Makefile ospfd/Makefile watchquagga/Makefile
 	  ospf6d/Makefile isisd/Makefile babeld/Makefile vtysh/Makefile
 	  doc/Makefile ospfclient/Makefile tests/Makefile m4/Makefile
-	  tests/bgpd.tests/Makefile
-	  tests/libzebra.tests/Makefile
 	  tests/testutils/quagga_constants/Makefile
 	  tests/testutils/quagga_constants/subst_constants.py
 	  redhat/Makefile
