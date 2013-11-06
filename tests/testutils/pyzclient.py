@@ -283,16 +283,20 @@ class ZebraRouteMessage(ZebraMessage):
 
 
 class ZClient(object):
-    def __init__(self, route_type, auto_connect=True):
+    def __init__(self, route_type, auto_connect=True, statedir=None):
         self.route_type = route_type
         self.socket = None
+        self.statedir = statedir
 
         if auto_connect:
             self.connect()
 
     def connect(self):
         self.socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        self.socket.connect(ZEBRA_SERV_PATH)
+        if self.statedir is None:
+            self.socket.connect(ZEBRA_SERV_PATH)
+        else:
+            self.socket.connect(os.path.join(self.statedir, 'zserv.api'))
 
         message = ZebraRouteTypeMessage(self.route_type)
         message.command = ZEBRA_HELLO

@@ -6,23 +6,30 @@ import pwd
 import re
 import signal
 import sys
-import tempfile
 import unittest
 
 import pexpect
 
 from . import generic
+from . import quagga_constants
 
 class Zebra(object):
-    def __init__(self):
-        self.pid_file = tempfile.NamedTemporaryFile()
-        self.config_file = tempfile.NamedTemporaryFile()
-        self.user = pwd.getpwuid(os.getuid())
+    def __init__(self, statedir=None):
+        if statedir is None:
+            self._statedir = generic.TemporaryDir()
+            statedir = self._statedir.name
+        self.statedir = statedir
+        self.pid_file = os.path.join(statedir, 'zebra.pid')
+        self.config_file = os.path.join(statedir, 'zebra.conf')
+        open(self.config_file, 'a').close() # Create the config file
+        self.socket_path = os.path.join(statedir, 'zserv.api')
+        self.user = pwd.getpwuid(os.getuid()).pw_name
         self.zebra = pexpect.spawn(
-                '../zebra/zebra -i {0} -f {1} -u {2} -t'.format(
-                    self.pid_file.name,
-                    self.config_file.name,
-                    self.user.pw_name),
+                '../zebra/zebra -i {0} -f {1} -z {2} -u {3} -t'.format(
+                    self.pid_file,
+                    self.config_file,
+                    self.socket_path,
+                    self.user),
                 timeout = 5,
                 logfile = generic.LogFile('zebra')
         )

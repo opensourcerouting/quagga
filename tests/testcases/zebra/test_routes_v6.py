@@ -19,7 +19,8 @@ class TestSimple(quagga.TestCase):
 
         self.zebra = quagga.Zebra()
 
-        self.zclient = pyzclient.ZClient(pyzclient.ZEBRA_ROUTE_OSPF6)
+        self.zclient = pyzclient.ZClient(pyzclient.ZEBRA_ROUTE_OSPF6,
+                                         statedir=self.zebra.statedir)
         self.route = pyzclient.Route(None, '2001:db8:2::/48')
 
     def tearDown(self):
@@ -236,7 +237,8 @@ class TestRecursive(quagga.TestCase):
 
         self.zebra = quagga.Zebra()
 
-        self.ospf_client = pyzclient.ZClient(pyzclient.ZEBRA_ROUTE_OSPF)
+        self.ospf_client = pyzclient.ZClient(pyzclient.ZEBRA_ROUTE_OSPF,
+                                             statedir=self.zebra.statedir)
 
         route = pyzclient.Route(None, '2001:db8:1:3::/64')
         route.add_nexthop(ifindex=self.dummy1.index)
@@ -251,7 +253,8 @@ class TestRecursive(quagga.TestCase):
         route.add_nexthop(ifindex=self.dummy1.index)
         self.ospf_client.add_route(route)
 
-        self.bgp_client = pyzclient.ZClient(pyzclient.ZEBRA_ROUTE_BGP)
+        self.bgp_client = pyzclient.ZClient(pyzclient.ZEBRA_ROUTE_BGP,
+                                            statedir=self.zebra.statedir)
         self.route = pyzclient.Route(None, '2001:db8:2::/48')
         self.route.rib_flags |= pyzclient.ZEBRA_FLAG_INTERNAL
 
