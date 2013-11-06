@@ -16,6 +16,7 @@ TAGS
 *.xml
 .arch-inventory
 .arch-ids
+.dirstamp
 testcases/bgpd/test_aspath
 testcases/bgpd/test_capability_parser
 testcases/bgpd/test_ecommunities
