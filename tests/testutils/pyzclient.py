@@ -110,6 +110,9 @@ class Route(object):
     def add_nexthop(self, *args, **kwargs):
         self.nexthops.append(Nexthop(*args, **kwargs))
 
+    def clear_nexthops(self):
+        self.nexthops = []
+
 class Nexthop(object):
     def __init__(self, gate=None, ifindex=None):
         if gate is not None:

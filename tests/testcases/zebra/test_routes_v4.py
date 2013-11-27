@@ -102,6 +102,45 @@ class TestSimple(quagga.TestCase):
         self.assertNotIn('198.51.100.128/25', system.fib())
         self.assertNotIn('198.51.100.128/25', self.zebra.rib('O'))
 
+    def test_nexthop_ipv4_ifindex_invalid_delete(self):
+        self.route.add_nexthop('192.0.2.2', self.dummy1.index)
+        self.zclient.add_route(self.route)
+        time.sleep(0.1)
+
+        self.assertIn('198.51.100.128/25', self.zebra.rib('O'))
+        self.assertRoutes({
+            '198.51.100.128/25': {
+                'nexthops': [
+                    {
+                        'gate': '192.0.2.2',
+                        'iface': self.dummy1.name,
+                    },
+                ],
+            },
+        }, system.fib())
+
+        # We now try to delete routes for that prefix with
+        # different nexthop information. The route we installed
+        # should not be removed
+        self.route.clear_nexthops()
+        self.route.add_nexthop('192.0.2.3', self.dummy1.index)
+        self.zclient.del_route(self.route)
+        time.sleep(0.1)
+
+        self.assertIn('198.51.100.128/25', self.zebra.rib('O'))
+        self.assertIn('198.51.100.128/25', system.fib())
+
+        # Delete the route with the correct nexthop informtaion and verify
+        # that it's actually removed
+
+        self.route.clear_nexthops()
+        self.route.add_nexthop('192.0.2.2', self.dummy1.index)
+        self.zclient.del_route(self.route)
+        time.sleep(0.1)
+
+        self.assertNotIn('198.51.100.128/25', system.fib())
+        self.assertNotIn('198.51.100.128/25', self.zebra.rib('O'))
+
     def test_nexthop_ipv4_ifindex_invalid(self):
         self.route.add_nexthop('192.0.2.2', self.dummy2.index)
         self.zclient.add_route(self.route)
