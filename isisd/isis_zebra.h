@@ -28,5 +28,6 @@ void isis_zebra_init (void);
 void isis_zebra_route_update (struct prefix *prefix,
 			      struct isis_route_info *route_info);
 int isis_distribute_list_update (int routetype);
+void isis_zebra_redistribute_set(int type);
 
 #endif /* _ZEBRA_ISIS_ZEBRA_H */
