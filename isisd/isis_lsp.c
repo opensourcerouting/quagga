@@ -1741,6 +1741,7 @@ lsp_regenerate_schedule (struct isis_area *area, int level, int all_pseudo)
   struct isis_lsp *lsp;
   u_char id[ISIS_SYS_ID_LEN + 2];
   time_t now, diff;
+  long timeout;
   struct listnode *cnode;
   struct isis_circuit *circuit;
   int lvl;
@@ -1770,20 +1771,20 @@ lsp_regenerate_schedule (struct isis_area *area, int level, int all_pseudo)
       THREAD_TIMER_OFF (area->t_lsp_refresh[lvl - 1]);
       diff = now - lsp->last_generated;
       if (diff < area->lsp_gen_interval[lvl - 1])
-        {
-          area->lsp_regenerate_pending[lvl - 1] = 1;
-          if (lvl == IS_LEVEL_1)
-            THREAD_TIMER_ON (master, area->t_lsp_refresh[lvl - 1],
-                             lsp_l1_refresh, area,
-                             area->lsp_gen_interval[lvl - 1] - diff);
-          else if (lvl == IS_LEVEL_2)
-            THREAD_TIMER_ON (master, area->t_lsp_refresh[lvl - 1],
-                             lsp_l2_refresh, area,
-                             area->lsp_gen_interval[lvl - 1] - diff);
-        }
+        timeout = 1000 * (area->lsp_gen_interval[lvl - 1] - diff);
       else
+        timeout = 100;
+
+      area->lsp_regenerate_pending[lvl - 1] = 1;
+      if (lvl == IS_LEVEL_1)
         {
-          lsp_regenerate (area, lvl);
+          THREAD_TIMER_MSEC_ON(master, area->t_lsp_refresh[lvl - 1],
+                               lsp_l1_refresh, area, timeout);
+        }
+      else if (lvl == IS_LEVEL_2)
+        {
+          THREAD_TIMER_MSEC_ON(master, area->t_lsp_refresh[lvl - 1],
+                               lsp_l2_refresh, area, timeout);
         }
     }
 
@@ -2100,6 +2101,7 @@ lsp_regenerate_schedule_pseudo (struct isis_circuit *circuit, int level)
   struct isis_lsp *lsp;
   u_char lsp_id[ISIS_SYS_ID_LEN + 2];
   time_t now, diff;
+  long timeout;
   int lvl;
 
   if (circuit == NULL ||
@@ -2131,22 +2133,23 @@ lsp_regenerate_schedule_pseudo (struct isis_circuit *circuit, int level)
       THREAD_TIMER_OFF (circuit->u.bc.t_refresh_pseudo_lsp[lvl - 1]);
       diff = now - lsp->last_generated;
       if (diff < circuit->area->lsp_gen_interval[lvl - 1])
-        {
-          circuit->lsp_regenerate_pending[lvl - 1] = 1;
-          if (lvl == IS_LEVEL_1)
-            THREAD_TIMER_ON (master,
-                             circuit->u.bc.t_refresh_pseudo_lsp[lvl - 1],
-                             lsp_l1_refresh_pseudo, circuit,
-                             circuit->area->lsp_gen_interval[lvl - 1] - diff);
-          else if (lvl == IS_LEVEL_2)
-            THREAD_TIMER_ON (master,
-                             circuit->u.bc.t_refresh_pseudo_lsp[lvl - 1],
-                             lsp_l2_refresh_pseudo, circuit,
-                             circuit->area->lsp_gen_interval[lvl - 1] - diff);
-        }
+        timeout = 1000 * (circuit->area->lsp_gen_interval[lvl - 1] - diff);
       else
+        timeout = 100;
+
+      circuit->lsp_regenerate_pending[lvl - 1] = 1;
+
+      if (lvl == IS_LEVEL_1)
         {
-          lsp_regenerate_pseudo (circuit, lvl);
+          THREAD_TIMER_MSEC_ON(master,
+                               circuit->u.bc.t_refresh_pseudo_lsp[lvl - 1],
+                               lsp_l1_refresh_pseudo, circuit, timeout);
+        }
+      else if (lvl == IS_LEVEL_2)
+        {
+          THREAD_TIMER_MSEC_ON(master,
+                               circuit->u.bc.t_refresh_pseudo_lsp[lvl - 1],
+                               lsp_l2_refresh_pseudo, circuit, timeout);
         }
     }
 
