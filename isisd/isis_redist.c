@@ -107,6 +107,30 @@ get_ext_reach(struct isis_area *area, int family, int level)
   return area->ext_reach[protocol][level-1];
 }
 
+static struct route_node *
+isis_redist_route_node_create(route_table_delegate_t *delegate,
+                              struct route_table *table)
+{
+  struct route_node *node;
+  node = XCALLOC(MTYPE_ROUTE_NODE, sizeof(*node));
+  return node;
+}
+
+static void
+isis_redist_route_node_destroy(route_table_delegate_t *delegate,
+                               struct route_table *table,
+                               struct route_node *node)
+{
+  if (node->info)
+    XFREE(MTYPE_ISIS, node->info);
+  XFREE (MTYPE_ROUTE_NODE, node);
+}
+
+static route_table_delegate_t isis_redist_rt_delegate = {
+  .create_node = isis_redist_route_node_create,
+  .destroy_node = isis_redist_route_node_destroy
+};
+
 /* Install external reachability information into a
  * specific area for a specific level.
  * Schedule an lsp regenerate if necessary */
@@ -169,7 +193,6 @@ isis_redist_uninstall(struct isis_area *area, int level, struct prefix *p)
   if (!er_node->info)
     return;
 
-  XFREE(MTYPE_ISIS, er_node->info);
   route_unlock_node(er_node);
   lsp_regenerate_schedule(area, level, 0);
 }
@@ -358,7 +381,6 @@ isis_redist_delete(int type, struct prefix *p)
         isis_redist_uninstall(area, level, p);
       }
 
-  XFREE(MTYPE_ISIS, ei_node->info);
   route_unlock_node(ei_node);
 }
 
@@ -374,6 +396,33 @@ isis_redist_routemap_set(struct isis_redist *redist, const char *routemap)
     redist->map_name = XSTRDUP(MTYPE_ISIS, routemap);
     redist->map = route_map_lookup_by_name(routemap);
   }
+}
+
+static void
+isis_redist_update_zebra_subscriptions(struct isis *isis)
+{
+  struct listnode *node;
+  struct isis_area *area;
+  int type;
+  int level;
+  int protocol;
+
+  char do_subscribe[ZEBRA_ROUTE_MAX + 1];
+
+  memset(do_subscribe, 0, sizeof(do_subscribe));
+
+  for (ALL_LIST_ELEMENTS_RO(isis->area_list, node, area))
+    for (protocol = 0; protocol < REDIST_PROTOCOL_COUNT; protocol++)
+      for (type = 0; type < ZEBRA_ROUTE_MAX + 1; type++)
+        for (level = 0; level < ISIS_LEVELS; level++)
+          if (area->redist_settings[protocol][type][level].redist)
+            do_subscribe[type] = 1;
+
+  for (type = 0; type < ZEBRA_ROUTE_MAX + 1; type++)
+    if (do_subscribe[type])
+      isis_zebra_redistribute_set(type);
+    else
+      isis_zebra_redistribute_unset(type);
 }
 
 static void
@@ -393,13 +442,19 @@ isis_redist_set(struct isis_area *area, int level,
   isis_redist_routemap_set(redist, routemap);
 
   if (!area->ext_reach[protocol][level-1])
-    area->ext_reach[protocol][level-1] = route_table_init();
+    {
+      area->ext_reach[protocol][level-1] =
+          route_table_init_with_delegate(&isis_redist_rt_delegate);
+    }
 
   for (i = 0; i < REDIST_PROTOCOL_COUNT; i++)
     if (!area->isis->ext_info[i])
-      area->isis->ext_info[i] = route_table_init();
+      {
+        area->isis->ext_info[i] =
+            route_table_init_with_delegate(&isis_redist_rt_delegate);
+      }
 
-  isis_zebra_redistribute_set(type);
+  isis_redist_update_zebra_subscriptions(area->isis);
 
   if (type == DEFAULT_ROUTE && originate_type == DEFAULT_ORIGINATE_ALWAYS)
     isis_redist_ensure_default(area->isis, family);
@@ -462,11 +517,36 @@ isis_redist_unset(struct isis_area *area, int level,
             continue;
         }
 
-      XFREE(MTYPE_ISIS, rn->info);
       route_unlock_node(rn);
     }
 
   lsp_regenerate_schedule(area, level, 0);
+  isis_redist_update_zebra_subscriptions(area->isis);
+}
+
+void
+isis_redist_area_finish(struct isis_area *area)
+{
+  int protocol;
+  int level;
+  int type;
+
+  for (protocol = 0; protocol < REDIST_PROTOCOL_COUNT; protocol++)
+    for (level = 0; level < ISIS_LEVELS; level++)
+      {
+        for (type = 0; type < ZEBRA_ROUTE_MAX + 1; type++)
+          {
+            struct isis_redist *redist;
+
+            redist = &area->redist_settings[protocol][type][level];
+            redist->redist = 0;
+            if (redist->map_name)
+              XFREE(MTYPE_ISIS, redist->map_name);
+          }
+        route_table_finish(area->ext_reach[protocol][level]);
+      }
+
+  isis_redist_update_zebra_subscriptions(area->isis);
 }
 
 DEFUN(isis_redistribute_ipv4,

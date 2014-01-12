@@ -626,6 +626,15 @@ isis_zebra_redistribute_set(int type)
 }
 
 void
+isis_zebra_redistribute_unset(int type)
+{
+  if (type == DEFAULT_ROUTE)
+    zclient_redistribute_default(ZEBRA_REDISTRIBUTE_DEFAULT_DELETE, zclient);
+  else
+    zclient_redistribute(ZEBRA_REDISTRIBUTE_DELETE, zclient, type);
+}
+
+void
 isis_zebra_init ()
 {
   zclient = zclient_new ();

@@ -28,7 +28,7 @@
 #include "isisd/isis_redist.h"
 
 /* uncomment if you are a developer in bug hunt */
-/* #define EXTREME_DEBUG */
+/* #define EXTREME_DEBUG  */
 /* #define EXTREME_TLV_DEBUG */
 
 struct isis

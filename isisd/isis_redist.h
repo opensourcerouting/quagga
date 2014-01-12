@@ -14,8 +14,8 @@
 struct isis_ext_info
 {
   int origin;
-  u_char distance;
   uint32_t metric;
+  u_char distance;
 };
 
 struct isis_redist
@@ -37,5 +37,6 @@ void isis_redist_delete(int type, struct prefix *p);
 int isis_redist_config_write(struct vty *vty, struct isis_area *area,
                              int family);
 void isis_redist_init(void);
+void isis_redist_area_finish(struct isis_area *area);
 
 #endif
