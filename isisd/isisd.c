@@ -282,6 +282,8 @@ isis_area_destroy (struct vty *vty, const char *area_tag)
     }
 #endif /* HAVE_IPV6 */
 
+  isis_redist_area_finish(area);
+
   for (ALL_LIST_ELEMENTS (area->area_addrs, node, nnode, addr))
     {
       list_delete_node (area->area_addrs, node);
