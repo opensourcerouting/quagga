@@ -11,7 +11,7 @@ EXTRA_DIST = \
 	lib/libzebra.exp \
 	global-conf.exp \
 	testcommands.in \
-	testcommands.out
+	testcommands.refout
 
 INCLUDES = @INCLUDES@ -I.. -I$(top_srcdir) -I$(top_srcdir)/lib -I$(top_builddir)/lib
 DEFS = @DEFS@ $(LOCAL_OPTS) -DSYSCONFDIR=\"$(sysconfdir)/\"
@@ -26,13 +26,11 @@ else
 TESTS_BGPD =
 endif
 
-check_PROGRAMS = testsig testbuffer testmemory heavy heavywq heavythread \
+check_PROGRAMS = testsig testsegv testbuffer testmemory heavy heavywq heavythread \
 		testprivs teststream testchecksum tabletest testnexthopiter \
 		testcommands \
 		test-timer-correctness test-timer-performance \
 		$(TESTS_BGPD)
-
-noinst_HEADERS = prng.h
 
 ../vtysh/vtysh_cmd.c:
 	$(MAKE) -C ../vtysh vtysh_cmd.c
@@ -45,7 +43,11 @@ test-commands-defun.c: ../vtysh/vtysh_cmd.c
 		< ../vtysh/vtysh_cmd.c \
 		> test-commands-defun.c
 
+BUILT_SOURCES = test-commands-defun.c
+noinst_HEADERS = prng.h
+
 testsig_SOURCES = test-sig.c
+testsegv_SOURCES = test-segv.c
 testbuffer_SOURCES = test-buffer.c
 testmemory_SOURCES = test-memory.c
 testprivs_SOURCES = test-privs.c
@@ -66,6 +68,7 @@ test_timer_correctness_SOURCES = test-timer-correctness.c prng.c
 test_timer_performance_SOURCES = test-timer-performance.c prng.c
 
 testsig_LDADD = ../lib/libzebra.la @LIBCAP@
+testsegv_LDADD = ../lib/libzebra.la @LIBCAP@
 testbuffer_LDADD = ../lib/libzebra.la @LIBCAP@
 testmemory_LDADD = ../lib/libzebra.la @LIBCAP@
 testprivs_LDADD = ../lib/libzebra.la @LIBCAP@
