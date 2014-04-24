@@ -31,6 +31,50 @@
 
 /* Routing information base. */
 
+/* old/IPv4/non-srcdest:
+ * vrf->table[afi][safi] -...-> route_node .info -> rib
+ *
+ * new/IPv6/srcdest:
+ * vrf->table[afi][safi] -...-> srcdest_rnode [prefix = dest] .info -> rib
+ *							      .src_table ->
+ *	   srcdest table -...-> route_node [prefix = src] .info -> rib
+ *
+ * non-srcdest routes (src = ::/0) are treated just like before, their
+ * information being directly there in the info pointer to rib elements
+ *
+ * srcdest routes are found by looking up destination first, then looking
+ * up the source in the "src_table".  src_table contains normal route_nodes,
+ * whose prefix is the _source_ prefix.
+ *
+ * NB: info can be NULL on the destination rnode, if there are only srcdest
+ * routes for a particular destination prefix.
+ */
+
+extern int rib_rnode_is_dstnode (struct route_node *rn);
+extern int rib_rnode_is_srcnode (struct route_node *rn);
+
+/* extended route node for IPv6 srcdest routing */
+struct srcdest_rnode
+{
+  /* must be first in structure for casting to/from route_node */
+  ROUTE_NODE_FIELDS;
+
+  struct route_table *src_table;
+};
+
+static inline struct srcdest_rnode *
+srcdest_rnode_from_rnode (struct route_node *rn)
+{
+  assert (rib_rnode_is_dstnode (rn));
+  return (struct srcdest_rnode *) rn;
+}
+
+static inline struct route_node *
+srcdest_rnode_to_rnode (struct srcdest_rnode *srn)
+{
+  return (struct route_node *) srn;
+}
+
 union g_addr {
   struct in_addr ipv4;
 #ifdef HAVE_IPV6

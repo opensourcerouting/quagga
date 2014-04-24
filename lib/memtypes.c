@@ -40,6 +40,7 @@ struct memory_list memory_list_lib[] =
   { MTYPE_HASH_INDEX,		"Hash Index"			},
   { MTYPE_ROUTE_TABLE,		"Route table"			},
   { MTYPE_ROUTE_NODE,		"Route node"			},
+  { MTYPE_ROUTE_SRC_NODE,	"Route source node"		},
   { MTYPE_DISTRIBUTE,		"Distribute list"		},
   { MTYPE_DISTRIBUTE_IFNAME,	"Dist-list ifname"		},
   { MTYPE_ACCESS_LIST,		"Access List"			},

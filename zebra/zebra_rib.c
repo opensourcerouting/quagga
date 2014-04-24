@@ -106,6 +106,33 @@ _rnode_zlog(const char *_func, struct route_node *rn, int priority,
 #define rnode_info(node, ...) \
 	_rnode_zlog(__func__, node, LOG_INFO, __VA_ARGS__)
 
+static struct route_node *
+srcdest_rnode_create (route_table_delegate_t *delegate,
+		      struct route_table *table)
+{
+  struct srcdest_rnode *srn;
+  srn = XCALLOC (MTYPE_ROUTE_NODE, sizeof (struct srcdest_rnode));
+  return srcdest_rnode_to_rnode(srn);
+}
+
+static void
+srcdest_rnode_destroy (route_table_delegate_t *delegate,
+		       struct route_table *table, struct route_node *rn)
+{
+  XFREE (MTYPE_ROUTE_NODE, rn);
+}
+
+static route_table_delegate_t srcdest_dstnode_delegate = {
+  .create_node = srcdest_rnode_create,
+  .destroy_node = srcdest_rnode_destroy
+};
+
+int
+rib_rnode_is_dstnode (struct route_node *rn)
+{
+  return rn->table->delegate == &srcdest_dstnode_delegate;
+}
+
 /*
  * vrf_table_create
  */
@@ -117,7 +144,12 @@ vrf_table_create (struct vrf *vrf, afi_t afi, safi_t safi)
 
   assert (!vrf->table[afi][safi]);
 
-  table = route_table_init ();
+  /* srcdest lookups are only supported/done on IPv6 */
+  if (afi == AFI_IP6)
+    table = route_table_init_with_delegate (&srcdest_dstnode_delegate);
+  else
+    table = route_table_init ();
+
   vrf->table[afi][safi] = table;
 
   info = XCALLOC (MTYPE_RIB_TABLE_INFO, sizeof (*info));
@@ -2607,6 +2639,106 @@ rib_bogus_ipv6 (int type, struct prefix_ipv6 *p,
   return 0;
 }
 
+/* node creation / deletion for srcdest source prefix nodes.
+ * the route_node isn't actually different from the normal route_node,
+ * but the cleanup is special to free the table (and possibly the
+ * destination prefix's route_node) */
+
+static struct route_node *
+srcdest_srcnode_create (route_table_delegate_t *delegate,
+		   struct route_table *table)
+{
+  return XCALLOC (MTYPE_ROUTE_SRC_NODE, sizeof (struct route_node));
+}
+
+static void
+srcdest_srcnode_destroy (route_table_delegate_t *delegate,
+		    struct route_table *table, struct route_node *rn)
+{
+  struct srcdest_rnode *srn;
+
+  XFREE (MTYPE_ROUTE_SRC_NODE, rn);
+
+  srn = table->info;
+  if (route_table_count (srn->src_table) == 0)
+    {
+      /* deleting the route_table from inside destroy_node is ONLY
+       * permitted IF table->count is 0!  see lib/table.c route_node_delete()
+       * for details */
+      route_table_finish (srn->src_table);
+      srn->src_table = NULL;
+
+      /* drop the ref we're holding in srcdest_node_get().  there might be
+       * non-srcdest routes, so the route_node may still exist.  hence, it's
+       * important to clear src_table above. */
+      route_unlock_node (srcdest_rnode_to_rnode (srn));
+    }
+}
+
+static route_table_delegate_t srcdest_srcnode_delegate = {
+  .create_node = srcdest_srcnode_create,
+  .destroy_node = srcdest_srcnode_destroy
+};
+
+int
+rib_rnode_is_srcnode (struct route_node *rn)
+{
+  return rn->table->delegate == &srcdest_srcnode_delegate;
+}
+
+/* NB: read comments in code for refcounting before using! */
+static struct route_node *
+srcdest_node_get (struct route_node *rn, struct prefix_ipv6 *src_p)
+{
+  struct srcdest_rnode *srn;
+
+  if (!src_p || src_p->prefixlen == 0)
+    return rn;
+
+  srn = srcdest_rnode_from_rnode (rn);
+  if (!srn->src_table)
+    {
+      /* this won't use srcdest_rnode, we're already on the source here */
+      srn->src_table = route_table_init_with_delegate (&srcdest_srcnode_delegate);
+      srn->src_table->info = srn;
+
+      /* there is no route_unlock_node on the original rn here.
+       * The reference is kept for the src_table. */
+    }
+  else
+    {
+      /* only keep 1 reference for the src_table, makes the refcounting
+       * more similar to the non-srcdest case.  Either way after return from
+       * function, the only reference held is the one on the return value.
+       *
+       * We can safely drop our reference here because src_table is holding
+       * another reference, so this won't free rn */
+      route_unlock_node (rn);
+    }
+
+  return route_node_get (srn->src_table, (struct prefix *)src_p);
+}
+
+static struct route_node *
+srcdest_node_lookup (struct route_node *rn, struct prefix_ipv6 *src_p)
+{
+  struct srcdest_rnode *srn;
+
+  if (!rn || !src_p || src_p->prefixlen == 0)
+    return rn;
+
+  srn = srcdest_rnode_from_rnode (rn);
+  if (!srn->src_table)
+    return NULL;
+
+  /* we got this route_node from a lookup, so it had refcnt >= 1, and we took
+   * a reference, so now it's >= 2.  Means, we can safely drop the latter ref
+   * here. */
+
+  route_unlock_node (rn);
+  return route_node_lookup (srn->src_table, (struct prefix *)src_p);
+}
+
 int
 rib_add_ipv6 (int type, int flags, struct prefix_ipv6 *p,
 	      struct prefix_ipv6 *src_p, struct in6_addr *gate,
@@ -2626,6 +2758,8 @@ rib_add_ipv6 (int type, int flags, struct prefix_ipv6 *p,
 
   /* Make sure mask is applied. */
   apply_mask_ipv6 (p);
+  if (src_p)
+    apply_mask_ipv6 (src_p);
 
   /* Set default distance by route type. */
   if (!distance)
@@ -2640,6 +2774,7 @@ rib_add_ipv6 (int type, int flags, struct prefix_ipv6 *p,
 
   /* Lookup route node.*/
   rn = route_node_get (table, (struct prefix *) p);
+  rn = srcdest_node_get (rn, src_p);
 
   /* If same type of route are installed, treat it as a implicit
      withdraw. */
@@ -2734,6 +2869,8 @@ rib_delete_ipv6 (int type, int flags, struct prefix_ipv6 *p,
 
   /* Apply mask. */
   apply_mask_ipv6 (p);
+  if (src_p)
+    apply_mask_ipv6 (src_p);
 
   /* Lookup table.  */
   table = vrf_table (AFI_IP6, safi, 0);
@@ -2741,7 +2878,8 @@ rib_delete_ipv6 (int type, int flags, struct prefix_ipv6 *p,
     return 0;
   
   /* Lookup route node. */
-  rn = route_node_lookup (table, (struct prefix *) p);
+  rn = route_node_lookup_maynull (table, (struct prefix *) p);
+  rn = srcdest_node_lookup (rn, src_p);
   if (! rn)
     {
       if (IS_ZEBRA_DEBUG_KERNEL)
