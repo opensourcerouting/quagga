@@ -63,7 +63,7 @@ ripng_zebra_ipv6_add (struct prefix_ipv6 *p, struct in6_addr *nexthop,
       SET_FLAG (api.message, ZAPI_MESSAGE_METRIC);
       api.metric = metric;
       
-      zapi_ipv6_route (ZEBRA_IPV6_ROUTE_ADD, zclient, p, &api);
+      zapi_ipv6_route (ZEBRA_IPV6_ROUTE_ADD, zclient, p, NULL, &api);
     }
 }
 
@@ -86,7 +86,7 @@ ripng_zebra_ipv6_delete (struct prefix_ipv6 *p, struct in6_addr *nexthop,
       api.ifindex_num = 1;
       api.ifindex = &ifindex;
 
-      zapi_ipv6_route (ZEBRA_IPV6_ROUTE_DELETE, zclient, p, &api);
+      zapi_ipv6_route (ZEBRA_IPV6_ROUTE_DELETE, zclient, p, NULL, &api);
     }
 }
 

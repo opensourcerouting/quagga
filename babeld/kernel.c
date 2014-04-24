@@ -252,7 +252,7 @@ kernel_route_v6(int add, const unsigned char *pref, unsigned short plen,
            add ? "adding" : "removing" );
     return zapi_ipv6_route (add ? ZEBRA_IPV6_ROUTE_ADD :
                                   ZEBRA_IPV6_ROUTE_DELETE,
-                            zclient, &quagga_prefix, &api);
+                            zclient, &quagga_prefix, NULL, &api);
 }
 
 int

@@ -471,9 +471,9 @@ ospf6_zebra_route_update (int type, struct ospf6_route *request)
 
   dest = (struct prefix_ipv6 *) &request->prefix;
   if (type == REM)
-    ret = zapi_ipv6_route (ZEBRA_IPV6_ROUTE_DELETE, zclient, dest, &api);
+    ret = zapi_ipv6_route (ZEBRA_IPV6_ROUTE_DELETE, zclient, dest, NULL, &api);
   else
-    ret = zapi_ipv6_route (ZEBRA_IPV6_ROUTE_ADD, zclient, dest, &api);
+    ret = zapi_ipv6_route (ZEBRA_IPV6_ROUTE_ADD, zclient, dest, NULL, &api);
 
   if (ret < 0)
     zlog_err ("zapi_ipv6_route() %s failed: %s",
