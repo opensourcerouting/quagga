@@ -75,6 +75,37 @@ static const struct
 /* Vector for routing table.  */
 static vector vrf_vector;
 
+static void
+_rnode_zlog(const char *_func, struct route_node *rn, int priority,
+	    const char *msgfmt, ...)
+{
+  char buf[INET6_ADDRSTRLEN + 4], *bptr;
+  char msgbuf[512];
+  va_list ap;
+
+  va_start(ap, msgfmt);
+  vsnprintf(msgbuf, sizeof(msgbuf), msgfmt, ap);
+  va_end(ap);
+
+  if (rn)
+    {
+      inet_ntop (rn->p.family, &rn->p.u.prefix, buf, INET6_ADDRSTRLEN);
+      bptr = buf + strlen(buf);
+      snprintf(bptr, buf + sizeof(buf) - bptr, "/%d", rn->p.prefixlen);
+    }
+  else
+    {
+      snprintf(buf, sizeof(buf), "{(route_node *) NULL}");
+    }
+
+  zlog (NULL, priority, "%s: %s: %s", _func, buf, msgbuf);
+}
+
+#define rnode_debug(node, ...) \
+	_rnode_zlog(__func__, node, LOG_DEBUG, __VA_ARGS__)
+#define rnode_info(node, ...) \
+	_rnode_zlog(__func__, node, LOG_INFO, __VA_ARGS__)
+
 /*
  * vrf_table_create
  */
@@ -1209,7 +1240,6 @@ int
 rib_gc_dest (struct route_node *rn)
 {
   rib_dest_t *dest;
-  char buf[INET6_ADDRSTRLEN];
 
   dest = rib_dest_from_rnode (rn);
   if (!dest)
@@ -1219,11 +1249,7 @@ rib_gc_dest (struct route_node *rn)
     return 0;
 
   if (IS_ZEBRA_DEBUG_RIB)
-    {
-      inet_ntop (rn->p.family, &rn->p.u.prefix, buf, sizeof (buf));
-      zlog_debug ("%s: %s/%d: removing dest from table", __func__,
-		  buf, rn->p.prefixlen);
-    }
+    rnode_debug (rn, "removing dest from table");
 
   dest->rnode = NULL;
   XFREE (MTYPE_RIB_DEST, dest);
@@ -1248,13 +1274,9 @@ rib_process (struct route_node *rn)
   int installed = 0;
   struct nexthop *nexthop = NULL, *tnexthop;
   int recursing;
-  char buf[INET6_ADDRSTRLEN];
   
   assert (rn);
   
-  if (IS_ZEBRA_DEBUG_RIB || IS_ZEBRA_DEBUG_RIB_Q)
-    inet_ntop (rn->p.family, &rn->p.u.prefix, buf, INET6_ADDRSTRLEN);
-
   RNODE_FOREACH_RIB_SAFE (rn, rib, next)
     {
       /* Currently installed rib. */
@@ -1272,8 +1294,7 @@ rib_process (struct route_node *rn)
           if (rib != fib)
             {
               if (IS_ZEBRA_DEBUG_RIB)
-                zlog_debug ("%s: %s/%d: rn %p, removing rib %p", __func__,
-                  buf, rn->p.prefixlen, rn, rib);
+		rnode_debug (rn, "rn %p, removing rib %p", rn, rib);
 	      rib_unlink (rn, rib);
             }
           else
@@ -1344,8 +1365,8 @@ rib_process (struct route_node *rn)
   if (select && select == fib)
     {
       if (IS_ZEBRA_DEBUG_RIB)
-        zlog_debug ("%s: %s/%d: Updating existing route, select %p, fib %p",
-                     __func__, buf, rn->p.prefixlen, select, fib);
+	rnode_debug (rn, "Updating existing route, select %p, fib %p",
+		     select, fib);
       if (CHECK_FLAG (select->flags, ZEBRA_FLAG_CHANGED))
         {
 	  zfpm_trigger_update (rn, "updating existing route");
@@ -1389,8 +1410,7 @@ rib_process (struct route_node *rn)
   if (fib)
     {
       if (IS_ZEBRA_DEBUG_RIB)
-        zlog_debug ("%s: %s/%d: Removing existing route, fib %p", __func__,
-          buf, rn->p.prefixlen, fib);
+	rnode_debug (rn, "Removing existing route, fib %p", fib);
 
       zfpm_trigger_update (rn, "removing existing route");
 
@@ -1410,8 +1430,7 @@ rib_process (struct route_node *rn)
   if (select)
     {
       if (IS_ZEBRA_DEBUG_RIB)
-        zlog_debug ("%s: %s/%d: Adding route, select %p", __func__, buf,
-          rn->p.prefixlen, select);
+	rnode_debug (rn, "Adding route, select %p", select);
 
       zfpm_trigger_update (rn, "new route selected");
 
@@ -1428,14 +1447,13 @@ rib_process (struct route_node *rn)
   if (del)
     {
       if (IS_ZEBRA_DEBUG_RIB)
-        zlog_debug ("%s: %s/%d: Deleting fib %p, rn %p", __func__, buf,
-          rn->p.prefixlen, del, rn);
+        rnode_debug (rn, "Deleting fib %p, rn %p", del, rn);
       rib_unlink (rn, del);
     }
 
 end:
   if (IS_ZEBRA_DEBUG_RIB_Q)
-    zlog_debug ("%s: %s/%d: rn %p dequeued", __func__, buf, rn->p.prefixlen, rn);
+    rnode_debug (rn, "rn %p dequeued", rn);
 
   /*
    * Check if the dest can be deleted now.
@@ -1519,10 +1537,6 @@ static void
 rib_meta_queue_add (struct meta_queue *mq, struct route_node *rn)
 {
   struct rib *rib;
-  char buf[INET6_ADDRSTRLEN];
-
-  if (IS_ZEBRA_DEBUG_RIB_Q)
-    inet_ntop (rn->p.family, &rn->p.u.prefix, buf, INET6_ADDRSTRLEN);
 
   RNODE_FOREACH_RIB (rn, rib)
     {
@@ -1533,8 +1547,8 @@ rib_meta_queue_add (struct meta_queue *mq, struct route_node *rn)
 		      RIB_ROUTE_QUEUED (qindex)))
 	{
 	  if (IS_ZEBRA_DEBUG_RIB_Q)
-	    zlog_debug ("%s: %s/%d: rn %p is already queued in sub-queue %u",
-			__func__, buf, rn->p.prefixlen, rn, qindex);
+	    rnode_debug (rn, "rn %p is already queued in sub-queue %u",
+			 rn, qindex);
 	  continue;
 	}
 
@@ -1544,8 +1558,8 @@ rib_meta_queue_add (struct meta_queue *mq, struct route_node *rn)
       mq->size++;
 
       if (IS_ZEBRA_DEBUG_RIB_Q)
-	zlog_debug ("%s: %s/%d: queued rn %p into sub-queue %u",
-		    __func__, buf, rn->p.prefixlen, rn, qindex);
+	rnode_debug (rn, "queued rn %p into sub-queue %u",
+		     rn, qindex);
     }
 }
 
@@ -1553,11 +1567,7 @@ rib_meta_queue_add (struct meta_queue *mq, struct route_node *rn)
 static void
 rib_queue_add (struct zebra_t *zebra, struct route_node *rn)
 {
-  char buf[INET_ADDRSTRLEN];
   assert (zebra && rn);
-  
-  if (IS_ZEBRA_DEBUG_RIB_Q)
-    inet_ntop (AF_INET, &rn->p.u.prefix, buf, INET_ADDRSTRLEN);
 
   /* Pointless to queue a route_node with no RIB entries to add or remove */
   if (!rnode_to_ribs (rn))
@@ -1569,7 +1579,7 @@ rib_queue_add (struct zebra_t *zebra, struct route_node *rn)
     }
 
   if (IS_ZEBRA_DEBUG_RIB_Q)
-    zlog_info ("%s: %s/%d: work queue added", __func__, buf, rn->p.prefixlen);
+    rnode_info (rn, "work queue added");
 
   assert (zebra);
 
@@ -1593,7 +1603,7 @@ rib_queue_add (struct zebra_t *zebra, struct route_node *rn)
   rib_meta_queue_add (zebra->mq, rn);
 
   if (IS_ZEBRA_DEBUG_RIB_Q)
-    zlog_debug ("%s: %s/%d: rn %p queued", __func__, buf, rn->p.prefixlen, rn);
+    rnode_debug (rn, "rn %p queued", rn);
 
   return;
 }
@@ -1690,25 +1700,17 @@ rib_link (struct route_node *rn, struct rib *rib)
 {
   struct rib *head;
   rib_dest_t *dest;
-  char buf[INET6_ADDRSTRLEN];
 
   assert (rib && rn);
   
   if (IS_ZEBRA_DEBUG_RIB)
-  {
-    inet_ntop (rn->p.family, &rn->p.u.prefix, buf, INET6_ADDRSTRLEN);
-    zlog_debug ("%s: %s/%d: rn %p, rib %p", __func__,
-      buf, rn->p.prefixlen, rn, rib);
-  }
+    rnode_debug (rn, "rn %p, rib %p", rn, rib);
 
   dest = rib_dest_from_rnode (rn);
   if (!dest)
     {
       if (IS_ZEBRA_DEBUG_RIB)
-	{
-	  zlog_debug ("%s: %s/%d: adding dest to table", __func__,
-		      buf, rn->p.prefixlen);
-	}
+	rnode_debug (rn, "adding dest to table");
 
       dest = XCALLOC (MTYPE_RIB_DEST, sizeof (rib_dest_t));
       route_lock_node (rn); /* rn route table reference */
@@ -1735,12 +1737,8 @@ rib_addnode (struct route_node *rn, struct rib *rib)
   if (CHECK_FLAG (rib->status, RIB_ENTRY_REMOVED))
     {
       if (IS_ZEBRA_DEBUG_RIB)
-      {
-        char buf[INET6_ADDRSTRLEN];
-        inet_ntop (rn->p.family, &rn->p.u.prefix, buf, INET6_ADDRSTRLEN);
-        zlog_debug ("%s: %s/%d: rn %p, un-removed rib %p",
-                    __func__, buf, rn->p.prefixlen, rn, rib);
-      }
+        rnode_debug (rn, "rn %p, un-removed rib %p", rn, rib);
+
       UNSET_FLAG (rib->status, RIB_ENTRY_REMOVED);
       return;
     }
@@ -1759,17 +1757,12 @@ rib_addnode (struct route_node *rn, struct rib *rib)
 static void
 rib_unlink (struct route_node *rn, struct rib *rib)
 {
-  char buf[INET6_ADDRSTRLEN];
   rib_dest_t *dest;
 
   assert (rn && rib);
 
   if (IS_ZEBRA_DEBUG_RIB)
-  {
-    inet_ntop (rn->p.family, &rn->p.u.prefix, buf, INET6_ADDRSTRLEN);
-    zlog_debug ("%s: %s/%d: rn %p, rib %p",
-                __func__, buf, rn->p.prefixlen, rn, rib);
-  }
+    rnode_debug (rn, "rn %p, rib %p", rn, rib);
 
   dest = rib_dest_from_rnode (rn);
 
@@ -1793,12 +1786,7 @@ static void
 rib_delnode (struct route_node *rn, struct rib *rib)
 {
   if (IS_ZEBRA_DEBUG_RIB)
-  {
-    char buf[INET6_ADDRSTRLEN];
-    inet_ntop (rn->p.family, &rn->p.u.prefix, buf, INET6_ADDRSTRLEN);
-    zlog_debug ("%s: %s/%d: rn %p, rib %p, removing", __func__,
-      buf, rn->p.prefixlen, rn, rib);
-  }
+    rnode_debug (rn, "rn %p, rib %p, removing", rn, rib);
   SET_FLAG (rib->status, RIB_ENTRY_REMOVED);
   rib_queue_add (&zebrad, rn);
 }
