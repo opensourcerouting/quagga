@@ -943,7 +943,7 @@ zread_ipv6_add (struct zserv *client, u_short length)
   struct zapi_ipv6 api;
   struct in6_addr nexthop;
   unsigned long ifindex;
-  struct prefix_ipv6 p;
+  struct prefix_ipv6 p, src_p, *src_pp;
   
   s = client->ibuf;
   ifindex = 0;
@@ -960,6 +960,17 @@ zread_ipv6_add (struct zserv *client, u_short length)
   p.family = AF_INET6;
   p.prefixlen = stream_getc (s);
   stream_get (&p.prefix, s, PSIZE (p.prefixlen));
+
+  if (CHECK_FLAG (api.message, ZAPI_MESSAGE_SRCPFX))
+    {
+      memset (&src_p, 0, sizeof (struct prefix_ipv6));
+      src_p.family = AF_INET6;
+      src_p.prefixlen = stream_getc (s);
+      stream_get (&src_p.prefix, s, PSIZE (src_p.prefixlen));
+      src_pp = &src_p;
+    }
+  else
+    src_pp = NULL;
 
   /* Nexthop, ifindex, distance, metric. */
   if (CHECK_FLAG (api.message, ZAPI_MESSAGE_NEXTHOP))
@@ -994,10 +1005,10 @@ zread_ipv6_add (struct zserv *client, u_short length)
     api.metric = 0;
     
   if (IN6_IS_ADDR_UNSPECIFIED (&nexthop))
-    rib_add_ipv6 (api.type, api.flags, &p, NULL, ifindex, zebrad.rtm_table_default, api.metric,
+    rib_add_ipv6 (api.type, api.flags, &p, src_pp, NULL, ifindex, zebrad.rtm_table_default, api.metric,
 		  api.distance, api.safi);
   else
-    rib_add_ipv6 (api.type, api.flags, &p, &nexthop, ifindex, zebrad.rtm_table_default, api.metric,
+    rib_add_ipv6 (api.type, api.flags, &p, src_pp, &nexthop, ifindex, zebrad.rtm_table_default, api.metric,
 		  api.distance, api.safi);
   return 0;
 }
@@ -1011,7 +1022,7 @@ zread_ipv6_delete (struct zserv *client, u_short length)
   struct zapi_ipv6 api;
   struct in6_addr nexthop;
   unsigned long ifindex;
-  struct prefix_ipv6 p;
+  struct prefix_ipv6 p, src_p, *src_pp;
   
   s = client->ibuf;
   ifindex = 0;
@@ -1028,6 +1039,17 @@ zread_ipv6_delete (struct zserv *client, u_short length)
   p.family = AF_INET6;
   p.prefixlen = stream_getc (s);
   stream_get (&p.prefix, s, PSIZE (p.prefixlen));
+
+  if (CHECK_FLAG (api.message, ZAPI_MESSAGE_SRCPFX))
+    {
+      memset (&src_p, 0, sizeof (struct prefix_ipv6));
+      src_p.family = AF_INET6;
+      src_p.prefixlen = stream_getc (s);
+      stream_get (&src_p.prefix, s, PSIZE (src_p.prefixlen));
+      src_pp = &src_p;
+    }
+  else
+    src_pp = NULL;
 
   /* Nexthop, ifindex, distance, metric. */
   if (CHECK_FLAG (api.message, ZAPI_MESSAGE_NEXTHOP))
@@ -1061,9 +1083,9 @@ zread_ipv6_delete (struct zserv *client, u_short length)
     api.metric = 0;
     
   if (IN6_IS_ADDR_UNSPECIFIED (&nexthop))
-    rib_delete_ipv6 (api.type, api.flags, &p, NULL, ifindex, client->rtm_table, api.safi);
+    rib_delete_ipv6 (api.type, api.flags, &p, src_pp, NULL, ifindex, client->rtm_table, api.safi);
   else
-    rib_delete_ipv6 (api.type, api.flags, &p, &nexthop, ifindex, client->rtm_table, api.safi);
+    rib_delete_ipv6 (api.type, api.flags, &p, src_pp, &nexthop, ifindex, client->rtm_table, api.safi);
   return 0;
 }
 

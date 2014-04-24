@@ -976,17 +976,17 @@ rtm_read (struct rt_msghdr *rtm)
        * to specify the route really
        */
       if (rtm->rtm_type == RTM_CHANGE)
-        rib_delete_ipv6 (ZEBRA_ROUTE_KERNEL, zebra_flags, &p,
+        rib_delete_ipv6 (ZEBRA_ROUTE_KERNEL, zebra_flags, &p, NULL,
                          NULL, 0, 0, SAFI_UNICAST);
       
       if (rtm->rtm_type == RTM_GET 
           || rtm->rtm_type == RTM_ADD
           || rtm->rtm_type == RTM_CHANGE)
-	rib_add_ipv6 (ZEBRA_ROUTE_KERNEL, zebra_flags,
-		      &p, &gate.sin6.sin6_addr, ifindex, 0, 0, 0, SAFI_UNICAST);
+	rib_add_ipv6 (ZEBRA_ROUTE_KERNEL, zebra_flags, &p, NULL,
+		      &gate.sin6.sin6_addr, ifindex, 0, 0, 0, SAFI_UNICAST);
       else
-	rib_delete_ipv6 (ZEBRA_ROUTE_KERNEL, zebra_flags,
-			 &p, &gate.sin6.sin6_addr, ifindex, 0, SAFI_UNICAST);
+	rib_delete_ipv6 (ZEBRA_ROUTE_KERNEL, zebra_flags, &p, NULL,
+			 &gate.sin6.sin6_addr, ifindex, 0, SAFI_UNICAST);
     }
 #endif /* HAVE_IPV6 */
 }

@@ -353,8 +353,8 @@ connected_up_ipv6 (struct interface *ifp, struct connected *ifc)
     return;
 #endif
 
-  rib_add_ipv6 (ZEBRA_ROUTE_CONNECT, 0, &p, NULL, ifp->ifindex, RT_TABLE_MAIN,
-                ifp->metric, 0, SAFI_UNICAST);
+  rib_add_ipv6 (ZEBRA_ROUTE_CONNECT, 0, &p, NULL, NULL, ifp->ifindex,
+		RT_TABLE_MAIN, ifp->metric, 0, SAFI_UNICAST);
 
   rib_update ();
 }
@@ -436,7 +436,8 @@ connected_down_ipv6 (struct interface *ifp, struct connected *ifc)
   if (IN6_IS_ADDR_UNSPECIFIED (&p.prefix))
     return;
 
-  rib_delete_ipv6 (ZEBRA_ROUTE_CONNECT, 0, &p, NULL, ifp->ifindex, 0, SAFI_UNICAST);
+  rib_delete_ipv6 (ZEBRA_ROUTE_CONNECT, 0, &p, NULL, NULL, ifp->ifindex, 0,
+		   SAFI_UNICAST);
 
   rib_update ();
 }

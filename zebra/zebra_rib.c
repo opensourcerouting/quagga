@@ -2609,7 +2609,8 @@ rib_bogus_ipv6 (int type, struct prefix_ipv6 *p,
 
 int
 rib_add_ipv6 (int type, int flags, struct prefix_ipv6 *p,
-	      struct in6_addr *gate, unsigned int ifindex, u_int32_t vrf_id,
+	      struct prefix_ipv6 *src_p, struct in6_addr *gate,
+	      unsigned int ifindex, u_int32_t vrf_id,
 	      u_int32_t metric, u_char distance, safi_t safi)
 {
   struct rib *rib;
@@ -2718,7 +2719,8 @@ rib_add_ipv6 (int type, int flags, struct prefix_ipv6 *p,
 /* XXX factor with rib_delete_ipv6 */
 int
 rib_delete_ipv6 (int type, int flags, struct prefix_ipv6 *p,
-		 struct in6_addr *gate, unsigned int ifindex, u_int32_t vrf_id, safi_t safi)
+		 struct prefix_ipv6 *src_p, struct in6_addr *gate,
+		 unsigned int ifindex, u_int32_t vrf_id, safi_t safi)
 {
   struct route_table *table;
   struct route_node *rn;

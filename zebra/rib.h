@@ -440,12 +440,14 @@ static_delete_ipv4 (struct prefix *p, struct in_addr *gate, const char *ifname,
 #ifdef HAVE_IPV6
 extern int
 rib_add_ipv6 (int type, int flags, struct prefix_ipv6 *p,
-	      struct in6_addr *gate, unsigned int ifindex, u_int32_t vrf_id,
+	      struct prefix_ipv6 *src_p, struct in6_addr *gate,
+	      unsigned int ifindex, u_int32_t vrf_id,
 	      u_int32_t metric, u_char distance, safi_t safi);
 
 extern int
 rib_delete_ipv6 (int type, int flags, struct prefix_ipv6 *p,
-		 struct in6_addr *gate, unsigned int ifindex, u_int32_t vrf_id, safi_t safi);
+		 struct prefix_ipv6 *src_p, struct in6_addr *gate,
+		 unsigned int ifindex, u_int32_t vrf_id, safi_t safi);
 
 extern struct rib *rib_lookup_ipv6 (struct in6_addr *);
 
