@@ -1620,12 +1620,20 @@ vty_show_ipv6_route_detail (struct vty *vty, struct route_node *rn)
 
 static void
 vty_show_ipv6_route (struct vty *vty, struct route_node *rn,
-		     struct rib *rib)
+		     struct route_node *src_rn, struct rib *rib)
 {
   struct nexthop *nexthop, *tnexthop;
   int recursing;
   int len = 0;
   char buf[BUFSIZ];
+  char srcdest_info[BUFSIZ] = "";
+
+  if (src_rn)
+    {
+      snprintf (srcdest_info, sizeof (srcdest_info), " from %s/%d",
+		inet_ntop (AF_INET6, &src_rn->p.u.prefix6, buf, BUFSIZ),
+		src_rn->p.prefixlen);
+    }
 
   /* Nexthop information. */
   for (ALL_NEXTHOPS_RO(rib->nexthop, nexthop, tnexthop, recursing))
@@ -1633,14 +1641,15 @@ vty_show_ipv6_route (struct vty *vty, struct route_node *rn,
       if (nexthop == rib->nexthop)
 	{
 	  /* Prefix information. */
-	  len = vty_out (vty, "%c%c%c %s/%d",
+	  len = vty_out (vty, "%c%c%c %s/%d%s",
 			 zebra_route_char (rib->type),
 			 CHECK_FLAG (rib->flags, ZEBRA_FLAG_SELECTED)
 			 ? '>' : ' ',
 			 CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_FIB)
 			 ? '*' : ' ',
 			 inet_ntop (AF_INET6, &rn->p.u.prefix6, buf, BUFSIZ),
-			 rn->p.prefixlen);
+			 rn->p.prefixlen,
+			 srcdest_info);
 
 	  /* Distance and metric display. */
 	  if (rib->type != ZEBRA_ROUTE_CONNECT 
@@ -1737,15 +1746,34 @@ DEFUN (show_ipv6_route,
 
   /* Show all IPv6 route. */
   for (rn = route_top (table); rn; rn = route_next (rn))
-    RNODE_FOREACH_RIB (rn, rib)
-      {
-	if (first)
+    {
+      struct srcdest_rnode *srn = srcdest_rnode_from_rnode (rn);
+      struct route_node *src_rn;
+
+      RNODE_FOREACH_RIB (rn, rib)
+	{
+	  if (first)
+	    {
+	      vty_out (vty, SHOW_ROUTE_V6_HEADER);
+	      first = 0;
+	    }
+	  vty_show_ipv6_route (vty, rn, NULL, rib);
+        }
+
+      if (!srn->src_table)
+        continue;
+
+      for (src_rn = route_top (srn->src_table); src_rn; src_rn = route_next (src_rn))
+	RNODE_FOREACH_RIB (src_rn, rib)
 	  {
-	    vty_out (vty, SHOW_ROUTE_V6_HEADER);
-	    first = 0;
+	    if (first)
+	      {
+		vty_out (vty, SHOW_ROUTE_V6_HEADER);
+		first = 0;
+	      }
+	    vty_show_ipv6_route (vty, rn, src_rn, rib);
 	  }
-	vty_show_ipv6_route (vty, rn, rib);
-      }
+    }
   return CMD_SUCCESS;
 }
 
@@ -1786,7 +1814,7 @@ DEFUN (show_ipv6_route_prefix_longer,
 	      vty_out (vty, SHOW_ROUTE_V6_HEADER);
 	      first = 0;
 	    }
-	  vty_show_ipv6_route (vty, rn, rib);
+	  vty_show_ipv6_route (vty, rn, NULL, rib);
 	}
   return CMD_SUCCESS;
 }
@@ -1826,7 +1854,7 @@ DEFUN (show_ipv6_route_protocol,
 	      vty_out (vty, SHOW_ROUTE_V6_HEADER);
 	      first = 0;
 	    }
-	  vty_show_ipv6_route (vty, rn, rib);
+	  vty_show_ipv6_route (vty, rn, NULL, rib);
 	}
   return CMD_SUCCESS;
 }
@@ -1957,7 +1985,7 @@ DEFUN (show_ipv6_mroute,
 	   vty_out (vty, SHOW_ROUTE_V6_HEADER);
            first = 0;
          }
-       vty_show_ipv6_route (vty, rn, rib);
+       vty_show_ipv6_route (vty, rn, NULL, rib);
       }
   return CMD_SUCCESS;
 }
