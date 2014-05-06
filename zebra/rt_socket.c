@@ -453,9 +453,15 @@ kernel_rtm_ipv6_multipath (int cmd, struct prefix *p, struct rib *rib,
 }
 
 int
-kernel_add_ipv6 (struct prefix *p, struct rib *rib)
+kernel_add_ipv6 (struct prefix *p, struct prefix *src_p, struct rib *rib)
 {
   int route;
+
+  if (src_p && src_p->prefixlen)
+    {
+      zlog (NULL, LOG_ERR, "route add: IPv6 sourcedest routes unsupported!");
+      return 1;
+    }
 
   if (zserv_privs.change(ZPRIVS_RAISE))
     zlog (NULL, LOG_ERR, "Can't raise privileges");
@@ -467,9 +473,15 @@ kernel_add_ipv6 (struct prefix *p, struct rib *rib)
 }
 
 int
-kernel_delete_ipv6 (struct prefix *p, struct rib *rib)
+kernel_delete_ipv6 (struct prefix *p, struct prefix *src_p, struct rib *rib)
 {
   int route;
+
+  if (src_p && src_p->prefixlen)
+    {
+      zlog (NULL, LOG_ERR, "route del: IPv6 sourcedest routes unsupported!");
+      return 1;
+    }
 
   if (zserv_privs.change(ZPRIVS_RAISE))
     zlog (NULL, LOG_ERR, "Can't raise privileges");

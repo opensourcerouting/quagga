@@ -1039,6 +1039,8 @@ nexthop_active_check (struct route_node *rn, struct rib *rib,
   extern char *proto_rm[AFI_MAX][ZEBRA_ROUTE_MAX+1];
   struct route_map *rmap;
   int family;
+  struct prefix *p, *src_p;
+  rib_rnode_prefixes (rn, &p, &src_p);
 
   family = 0;
   switch (nexthop->type)
@@ -1114,8 +1116,8 @@ nexthop_active_check (struct route_node *rn, struct rib *rib,
   /* XXX: What exactly do those checks do? Do we support
    * e.g. IPv4 routes with IPv6 nexthops or vice versa? */
   if (RIB_SYSTEM_ROUTE(rib) ||
-      (family == AFI_IP && rn->p.family != AF_INET) ||
-      (family == AFI_IP6 && rn->p.family != AF_INET6))
+      (family == AFI_IP && p->family != AF_INET) ||
+      (family == AFI_IP6 && p->family != AF_INET6))
     return CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_ACTIVE);
 
   /* The original code didn't determine the family correctly
@@ -1134,7 +1136,8 @@ nexthop_active_check (struct route_node *rn, struct rib *rib,
   if (!rmap && proto_rm[family][ZEBRA_ROUTE_MAX])
     rmap = route_map_lookup_by_name (proto_rm[family][ZEBRA_ROUTE_MAX]);
   if (rmap) {
-      ret = route_map_apply(rmap, &rn->p, RMAP_ZEBRA, nexthop);
+#warning implement route_map src option
+      ret = route_map_apply(rmap, p, RMAP_ZEBRA, nexthop);
   }
 
   if (ret == RMAP_DENYMATCH)
@@ -1181,20 +1184,23 @@ rib_install_kernel (struct route_node *rn, struct rib *rib)
   int ret = 0;
   struct nexthop *nexthop, *tnexthop;
   int recursing;
+  struct prefix *p, *src_p;
+
+  rib_rnode_prefixes (rn, &p, &src_p);
 
   /*
    * Make sure we update the FPM any time we send new information to
    * the kernel.
    */
   zfpm_trigger_update (rn, "installing in kernel");
-  switch (PREFIX_FAMILY (&rn->p))
+  switch (PREFIX_FAMILY (p))
     {
     case AF_INET:
-      ret = kernel_add_ipv4 (&rn->p, rib);
+      ret = kernel_add_ipv4 (p, rib);
       break;
 #ifdef HAVE_IPV6
     case AF_INET6:
-      ret = kernel_add_ipv6 (&rn->p, rib);
+      ret = kernel_add_ipv6 (p, src_p, rib);
       break;
 #endif /* HAVE_IPV6 */
     }
@@ -1214,6 +1220,9 @@ rib_uninstall_kernel (struct route_node *rn, struct rib *rib)
   int ret = 0;
   struct nexthop *nexthop, *tnexthop;
   int recursing;
+  struct prefix *p, *src_p;
+
+  rib_rnode_prefixes (rn, &p, &src_p);
 
   /*
    * Make sure we update the FPM any time we send new information to
@@ -1221,14 +1230,14 @@ rib_uninstall_kernel (struct route_node *rn, struct rib *rib)
    */
   zfpm_trigger_update (rn, "uninstalling from kernel");
 
-  switch (PREFIX_FAMILY (&rn->p))
+  switch (PREFIX_FAMILY (p))
     {
     case AF_INET:
-      ret = kernel_delete_ipv4 (&rn->p, rib);
+      ret = kernel_delete_ipv4 (p, rib);
       break;
 #ifdef HAVE_IPV6
     case AF_INET6:
-      ret = kernel_delete_ipv6 (&rn->p, rib);
+      ret = kernel_delete_ipv6 (p, src_p, rib);
       break;
 #endif /* HAVE_IPV6 */
     }
@@ -1245,9 +1254,12 @@ rib_uninstall (struct route_node *rn, struct rib *rib)
 {
   if (CHECK_FLAG (rib->flags, ZEBRA_FLAG_SELECTED))
     {
+      struct prefix *p, *src_p;
+      rib_rnode_prefixes (rn, &p, &src_p);
+
       zfpm_trigger_update (rn, "rib_uninstall");
 
-      redistribute_delete (&rn->p, rib);
+      redistribute_delete (p, src_p, rib);
       if (! RIB_SYSTEM_ROUTE (rib))
 	rib_uninstall_kernel (rn, rib);
       UNSET_FLAG (rib->flags, ZEBRA_FLAG_SELECTED);
@@ -1326,9 +1338,11 @@ rib_process (struct route_node *rn)
   int installed = 0;
   struct nexthop *nexthop = NULL, *tnexthop;
   int recursing;
-  
+  struct prefix *p, *src_p;
+
   assert (rn);
-  
+  rib_rnode_prefixes (rn, &p, &src_p);
+
   RNODE_FOREACH_RIB_SAFE (rn, rib, next)
     {
       /* Currently installed rib. */
@@ -1423,7 +1437,7 @@ rib_process (struct route_node *rn)
         {
 	  zfpm_trigger_update (rn, "updating existing route");
 
-          redistribute_delete (&rn->p, select);
+	  redistribute_delete (p, src_p, select);
           if (! RIB_SYSTEM_ROUTE (select))
             rib_uninstall_kernel (rn, select);
 
@@ -1432,7 +1446,7 @@ rib_process (struct route_node *rn)
   
           if (! RIB_SYSTEM_ROUTE (select))
             rib_install_kernel (rn, select);
-          redistribute_add (&rn->p, select);
+	  redistribute_add (p, src_p, select);
         }
       else if (! RIB_SYSTEM_ROUTE (select))
         {
@@ -1466,7 +1480,7 @@ rib_process (struct route_node *rn)
 
       zfpm_trigger_update (rn, "removing existing route");
 
-      redistribute_delete (&rn->p, fib);
+      redistribute_delete (p, src_p, fib);
       if (! RIB_SYSTEM_ROUTE (fib))
 	rib_uninstall_kernel (rn, fib);
       UNSET_FLAG (fib->flags, ZEBRA_FLAG_SELECTED);
@@ -1492,7 +1506,7 @@ rib_process (struct route_node *rn)
       if (! RIB_SYSTEM_ROUTE (select))
         rib_install_kernel (rn, select);
       SET_FLAG (select->flags, ZEBRA_FLAG_SELECTED);
-      redistribute_add (&rn->p, select);
+      redistribute_add (p, src_p, select);
     }
 
   /* FIB route was removed, should be deleted */

@@ -1637,8 +1637,8 @@ _netlink_route_debug(
 
 /* Routing table change via netlink interface. */
 static int
-netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
-                         int family)
+netlink_route_multipath (int cmd, struct prefix *p, struct prefix *src_p,
+			 struct rib *rib, int family)
 {
   int bytelen;
   struct sockaddr_nl snl;
@@ -1819,26 +1819,26 @@ skip:
 int
 kernel_add_ipv4 (struct prefix *p, struct rib *rib)
 {
-  return netlink_route_multipath (RTM_NEWROUTE, p, rib, AF_INET);
+  return netlink_route_multipath (RTM_NEWROUTE, p, NULL, rib, AF_INET);
 }
 
 int
 kernel_delete_ipv4 (struct prefix *p, struct rib *rib)
 {
-  return netlink_route_multipath (RTM_DELROUTE, p, rib, AF_INET);
+  return netlink_route_multipath (RTM_DELROUTE, p, NULL, rib, AF_INET);
 }
 
 #ifdef HAVE_IPV6
 int
-kernel_add_ipv6 (struct prefix *p, struct rib *rib)
+kernel_add_ipv6 (struct prefix *p, struct prefix *src_p, struct rib *rib)
 {
-  return netlink_route_multipath (RTM_NEWROUTE, p, rib, AF_INET6);
+  return netlink_route_multipath (RTM_NEWROUTE, p, src_p, rib, AF_INET6);
 }
 
 int
-kernel_delete_ipv6 (struct prefix *p, struct rib *rib)
+kernel_delete_ipv6 (struct prefix *p, struct prefix *src_p, struct rib *rib)
 {
-  return netlink_route_multipath (RTM_DELROUTE, p, rib, AF_INET6);
+  return netlink_route_multipath (RTM_DELROUTE, p, src_p, rib, AF_INET6);
 }
 
 /* Delete IPv6 route from the kernel. */

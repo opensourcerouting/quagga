@@ -507,14 +507,26 @@ kernel_ioctl_ipv6_multipath (u_long cmd, struct prefix *p, struct rib *rib,
 }
 
 int
-kernel_add_ipv6 (struct prefix *p, struct rib *rib)
+kernel_add_ipv6 (struct prefix *p, struct prefix *src_p, struct rib *rib)
 {
+  if (src_p && src_p->prefixlen)
+    {
+      zlog (NULL, LOG_ERR, "route add: IPv6 sourcedest routes unsupported!");
+      return 1;
+    }
+
   return kernel_ioctl_ipv6_multipath (SIOCADDRT, p, rib, AF_INET6);
 }
 
 int
-kernel_delete_ipv6 (struct prefix *p, struct rib *rib)
+kernel_delete_ipv6 (struct prefix *p, struct prefix *src_p, struct rib *rib)
 {
+  if (src_p && src_p->prefixlen)
+    {
+      zlog (NULL, LOG_ERR, "route del: IPv6 sourcedest routes unsupported!");
+      return 1;
+    }
+
   return kernel_ioctl_ipv6_multipath (SIOCDELRT, p, rib, AF_INET6);
 }
 

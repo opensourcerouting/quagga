@@ -350,7 +350,7 @@ zsend_interface_update (int cmd, struct zserv *client, struct interface *ifp)
  */
 int
 zsend_route_multipath (int cmd, struct zserv *client, struct prefix *p,
-                       struct rib *rib)
+		       struct prefix *src_p, struct rib *rib)
 {
   int psize;
   struct stream *s;
@@ -376,6 +376,14 @@ zsend_route_multipath (int cmd, struct zserv *client, struct prefix *p,
   psize = PSIZE (p->prefixlen);
   stream_putc (s, p->prefixlen);
   stream_write (s, (u_char *) & p->u.prefix, psize);
+
+  if (src_p)
+    {
+      SET_FLAG (zapi_flags, ZAPI_MESSAGE_SRCPFX);
+      psize = PSIZE (src_p->prefixlen);
+      stream_putc (s, src_p->prefixlen);
+      stream_write (s, (u_char *) & src_p->u.prefix, psize);
+    }
 
   /* 
    * XXX The message format sent by zebra below does not match the format
