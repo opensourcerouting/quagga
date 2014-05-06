@@ -151,6 +151,8 @@ extern struct route_node *route_node_get (struct route_table *const,
                                           struct prefix *);
 extern struct route_node *route_node_lookup (const struct route_table *,
                                              struct prefix *);
+extern struct route_node *route_node_lookup_maynull (const struct route_table *,
+                                             struct prefix *);
 extern struct route_node *route_lock_node (struct route_node *node);
 extern struct route_node *route_node_match (const struct route_table *,
                                             const struct prefix *);
