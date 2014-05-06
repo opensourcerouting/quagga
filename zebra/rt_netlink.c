@@ -661,13 +661,14 @@ netlink_routing_table (struct sockaddr_nl *snl, struct nlmsghdr *h)
 
   char anyaddr[16] = { 0 };
 
-  int index;
+  int index = 0;
   int table;
-  int metric;
+  int metric = 0;
 
-  void *dest;
-  void *gate;
-  void *src;
+  void *dest = NULL;
+  void *gate = NULL;
+  void *prefsrc = NULL;		/* IPv4 preferred source host address */
+  void *src = NULL;		/* IPv6 srcdest   source prefix */
 
   rtm = NLMSG_DATA (h);
 
@@ -696,18 +697,9 @@ netlink_routing_table (struct sockaddr_nl *snl, struct nlmsghdr *h)
   if (rtm->rtm_protocol == RTPROT_KERNEL)
     return 0;
 
-  if (rtm->rtm_src_len != 0)
-    return 0;
-
   /* Route which inserted by Zebra. */
   if (rtm->rtm_protocol == RTPROT_ZEBRA)
     flags |= ZEBRA_FLAG_SELFROUTE;
-
-  index = 0;
-  metric = 0;
-  dest = NULL;
-  gate = NULL;
-  src = NULL;
 
   if (tb[RTA_OIF])
     index = *(int *) RTA_DATA (tb[RTA_OIF]);
@@ -717,8 +709,13 @@ netlink_routing_table (struct sockaddr_nl *snl, struct nlmsghdr *h)
   else
     dest = anyaddr;
 
+  if (tb[RTA_SRC])
+    src = RTA_DATA (tb[RTA_SRC]);
+  else
+    src = anyaddr;
+
   if (tb[RTA_PREFSRC])
-    src = RTA_DATA (tb[RTA_PREFSRC]);
+    prefsrc = RTA_DATA (tb[RTA_PREFSRC]);
 
   if (tb[RTA_GATEWAY])
     gate = RTA_DATA (tb[RTA_GATEWAY]);
@@ -733,8 +730,11 @@ netlink_routing_table (struct sockaddr_nl *snl, struct nlmsghdr *h)
       memcpy (&p.prefix, dest, 4);
       p.prefixlen = rtm->rtm_dst_len;
 
+      if (rtm->rtm_src_len != 0)
+	return 0;
+
       if (!tb[RTA_MULTIPATH])
-          rib_add_ipv4 (ZEBRA_ROUTE_KERNEL, flags, &p, gate, src, index,
+          rib_add_ipv4 (ZEBRA_ROUTE_KERNEL, flags, &p, gate, prefsrc, index,
                         table, metric, 0, SAFI_UNICAST);
       else
         {
@@ -795,12 +795,16 @@ netlink_routing_table (struct sockaddr_nl *snl, struct nlmsghdr *h)
 #ifdef HAVE_IPV6
   if (rtm->rtm_family == AF_INET6)
     {
-      struct prefix_ipv6 p;
+      struct prefix_ipv6 p, src_p;
       p.family = AF_INET6;
       memcpy (&p.prefix, dest, 16);
       p.prefixlen = rtm->rtm_dst_len;
 
-      rib_add_ipv6 (ZEBRA_ROUTE_KERNEL, flags, &p, NULL, gate, index, table,
+      src_p.family = AF_INET6;
+      memcpy (&src_p.prefix, src, 16);
+      src_p.prefixlen = rtm->rtm_src_len;
+
+      rib_add_ipv6 (ZEBRA_ROUTE_KERNEL, flags, &p, &src_p, gate, index, table,
 		    metric, 0, SAFI_UNICAST);
     }
 #endif /* HAVE_IPV6 */
@@ -833,13 +837,14 @@ netlink_route_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 
   char anyaddr[16] = { 0 };
 
-  int index;
+  int index = 0;
   int table;
-  int metric;
+  int metric = 0;
 
-  void *dest;
-  void *gate;
-  void *src;
+  void *dest = NULL;
+  void *gate = NULL;
+  void *prefsrc = NULL;		/* IPv4 preferred source host address */
+  void *src = NULL;		/* IPv6 srcdest   source prefix */
 
   rtm = NLMSG_DATA (h);
 
@@ -887,18 +892,6 @@ netlink_route_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
   if (rtm->rtm_protocol == RTPROT_ZEBRA && h->nlmsg_type == RTM_NEWROUTE)
     return 0;
 
-  if (rtm->rtm_src_len != 0)
-    {
-      zlog_warn ("netlink_route_change(): no src len");
-      return 0;
-    }
-
-  index = 0;
-  metric = 0;
-  dest = NULL;
-  gate = NULL;
-  src = NULL;
-
   if (tb[RTA_OIF])
     index = *(int *) RTA_DATA (tb[RTA_OIF]);
 
@@ -907,11 +900,16 @@ netlink_route_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
   else
     dest = anyaddr;
 
+  if (tb[RTA_SRC])
+    src = RTA_DATA (tb[RTA_SRC]);
+  else
+    src = anyaddr;
+
   if (tb[RTA_GATEWAY])
     gate = RTA_DATA (tb[RTA_GATEWAY]);
 
   if (tb[RTA_PREFSRC])
-    src = RTA_DATA (tb[RTA_PREFSRC]);
+    prefsrc = RTA_DATA (tb[RTA_PREFSRC]);
 
   if (h->nlmsg_type == RTM_NEWROUTE && tb[RTA_PRIORITY])
     metric = *(int *) RTA_DATA(tb[RTA_PRIORITY]);
@@ -922,6 +920,13 @@ netlink_route_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
       p.family = AF_INET;
       memcpy (&p.prefix, dest, 4);
       p.prefixlen = rtm->rtm_dst_len;
+
+      if (rtm->rtm_src_len != 0)
+	{
+	  zlog_warn ("unsupported IPv4 sourcedest route (dest %s/%d)",
+		     inet_ntoa (p.prefix), p.prefixlen);
+	  return 0;
+	}
 
       if (IS_ZEBRA_DEBUG_KERNEL)
         {
@@ -936,8 +941,8 @@ netlink_route_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
       if (h->nlmsg_type == RTM_NEWROUTE)
         {
           if (!tb[RTA_MULTIPATH])
-            rib_add_ipv4 (ZEBRA_ROUTE_KERNEL, 0, &p, gate, src, index, table,
-                          metric, 0, SAFI_UNICAST);
+	    rib_add_ipv4 (ZEBRA_ROUTE_KERNEL, 0, &p, gate, prefsrc, index,
+			  table, metric, 0, SAFI_UNICAST);
           else
             {
               /* This is a multipath route */
@@ -977,9 +982,9 @@ netlink_route_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
                   if (gate)
                     {
                       if (index)
-                        nexthop_ipv4_ifindex_add (rib, gate, src, index);
+                        nexthop_ipv4_ifindex_add (rib, gate, prefsrc, index);
                       else
-                        nexthop_ipv4_add (rib, gate, src);
+                        nexthop_ipv4_add (rib, gate, prefsrc);
                     }
                   else
                     nexthop_ifindex_add (rib, index);
@@ -1001,30 +1006,39 @@ netlink_route_change (struct sockaddr_nl *snl, struct nlmsghdr *h)
 #ifdef HAVE_IPV6
   if (rtm->rtm_family == AF_INET6)
     {
-      struct prefix_ipv6 p;
-      char buf[BUFSIZ];
+      struct prefix_ipv6 p, src_p;
+      char buf[BUFSIZ], src_info[BUFSIZ];
 
       p.family = AF_INET6;
       memcpy (&p.prefix, dest, 16);
       p.prefixlen = rtm->rtm_dst_len;
 
+      src_p.family = AF_INET6;
+      memcpy (&src_p.prefix, src, 16);
+      src_p.prefixlen = rtm->rtm_src_len;
+
+      if (rtm->rtm_src_len)
+	snprintf (src_info, sizeof (src_info), " from %s/%d",
+		  inet_ntop (AF_INET6, &src_p.prefix, buf, BUFSIZ),
+		  src_p.prefixlen);
+
       if (IS_ZEBRA_DEBUG_KERNEL)
         {
           if (h->nlmsg_type == RTM_NEWROUTE)
-            zlog_debug ("RTM_NEWROUTE %s/%d",
+            zlog_debug ("RTM_NEWROUTE %s/%d%s",
                        inet_ntop (AF_INET6, &p.prefix, buf, BUFSIZ),
-                       p.prefixlen);
+                       p.prefixlen, src_info);
           else
-            zlog_debug ("RTM_DELROUTE %s/%d",
+            zlog_debug ("RTM_DELROUTE %s/%d%s",
                        inet_ntop (AF_INET6, &p.prefix, buf, BUFSIZ),
-                       p.prefixlen);
+                       p.prefixlen, src_info);
         }
 
       if (h->nlmsg_type == RTM_NEWROUTE)
-        rib_add_ipv6 (ZEBRA_ROUTE_KERNEL, 0, &p, NULL, gate, index, table,
+        rib_add_ipv6 (ZEBRA_ROUTE_KERNEL, 0, &p, &src_p, gate, index, table,
 		      metric, 0, SAFI_UNICAST);
       else
-        rib_delete_ipv6 (ZEBRA_ROUTE_KERNEL, 0, &p, NULL, gate, index, table,
+        rib_delete_ipv6 (ZEBRA_ROUTE_KERNEL, 0, &p, &src_p, gate, index, table,
 		      SAFI_UNICAST);
     }
 #endif /* HAVE_IPV6 */
@@ -1665,6 +1679,7 @@ netlink_route_multipath (int cmd, struct prefix *p, struct prefix *src_p,
   req.r.rtm_family = family;
   req.r.rtm_table = rib->table;
   req.r.rtm_dst_len = p->prefixlen;
+  req.r.rtm_src_len = src_p ? src_p->prefixlen : 0;
   req.r.rtm_protocol = RTPROT_ZEBRA;
   req.r.rtm_scope = RT_SCOPE_UNIVERSE;
 
@@ -1689,6 +1704,8 @@ netlink_route_multipath (int cmd, struct prefix *p, struct prefix *src_p,
     }
 
   addattr_l (&req.n, sizeof req, RTA_DST, &p->u.prefix, bytelen);
+  if (src_p)
+    addattr_l (&req.n, sizeof req, RTA_SRC, &src_p->u.prefix, bytelen);
 
   /* Metric. */
   addattr32 (&req.n, sizeof req, RTA_PRIORITY, rib->metric);
