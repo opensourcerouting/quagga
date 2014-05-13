@@ -79,7 +79,7 @@ static void
 _rnode_zlog(const char *_func, struct route_node *rn, int priority,
 	    const char *msgfmt, ...)
 {
-  char buf[INET6_ADDRSTRLEN + 4], *bptr;
+  char buf[INET6_ADDRSTRLEN * 2 + 16], *bptr;
   char msgbuf[512];
   va_list ap;
 
@@ -89,9 +89,29 @@ _rnode_zlog(const char *_func, struct route_node *rn, int priority,
 
   if (rn)
     {
-      inet_ntop (rn->p.family, &rn->p.u.prefix, buf, INET6_ADDRSTRLEN);
+      struct prefix *p, *src_p;
+      rib_rnode_prefixes (rn, &p, &src_p);
+
+      inet_ntop (p->family, &p->u.prefix, buf, sizeof(buf));
       bptr = buf + strlen(buf);
-      snprintf(bptr, buf + sizeof(buf) - bptr, "/%d", rn->p.prefixlen);
+
+      bptr += snprintf(bptr, buf + sizeof(buf) - bptr, "/%d", p->prefixlen);
+      assert(bptr < buf + sizeof(buf));
+
+      if (src_p)
+	{
+	  bptr += snprintf(bptr, buf + sizeof(buf) - bptr, " src ");
+	  assert(bptr < buf + sizeof(buf));
+
+	  inet_ntop (src_p->family, &src_p->u.prefix,
+		     bptr, buf + sizeof(buf) - bptr);
+	  bptr = buf + strlen(buf);
+	  assert(bptr < buf + sizeof(buf));
+
+	  bptr += snprintf(bptr, buf + sizeof(buf) - bptr,
+			   "/%d", src_p->prefixlen);
+	  assert(bptr < buf + sizeof(buf));
+	}
     }
   else
     {
@@ -2684,6 +2704,27 @@ int
 rib_rnode_is_srcnode (struct route_node *rn)
 {
   return rn->table->delegate == &srcdest_srcnode_delegate;
+}
+
+void
+rib_rnode_prefixes (struct route_node *rn, struct prefix **p,
+		    struct prefix **src_p)
+{
+  if (rib_rnode_is_srcnode (rn))
+    {
+      struct route_node *dst_rn = rn->table->info;
+      if (p)
+	*p = &dst_rn->p;
+      if (src_p)
+	*src_p = &rn->p;
+    }
+  else
+    {
+      if (p)
+	*p = &rn->p;
+      if (src_p)
+	*src_p = NULL;
+    }
 }
 
 /* NB: read comments in code for refcounting before using! */

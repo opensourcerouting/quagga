@@ -75,6 +75,9 @@ srcdest_rnode_to_rnode (struct srcdest_rnode *srn)
   return (struct route_node *) srn;
 }
 
+extern void rib_rnode_prefixes (struct route_node *rn, struct prefix **p,
+				struct prefix **src_p);
+
 union g_addr {
   struct in_addr ipv4;
 #ifdef HAVE_IPV6
