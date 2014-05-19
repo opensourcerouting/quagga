@@ -205,7 +205,7 @@ ospf6_zebra_read_ipv6 (int command, struct zclient *zclient,
   struct stream *s;
   struct zapi_ipv6 api;
   unsigned long ifindex;
-  struct prefix_ipv6 p;
+  struct prefix_ipv6 p, src_p;
   struct in6_addr *nexthop;
 
   s = zclient->ibuf;
@@ -223,6 +223,18 @@ ospf6_zebra_read_ipv6 (int command, struct zclient *zclient,
   p.family = AF_INET6;
   p.prefixlen = stream_getc (s);
   stream_get (&p.prefix, s, PSIZE (p.prefixlen));
+
+  memset (&src_p, 0, sizeof (struct prefix_ipv6));
+  src_p.family = AF_INET6;
+  if (CHECK_FLAG (api.message, ZAPI_MESSAGE_SRCPFX))
+    {
+      src_p.prefixlen = stream_getc (s);
+      stream_get (&src_p.prefix, s, PSIZE (src_p.prefixlen));
+    }
+
+  if (src_p.prefixlen)
+    /* we completely ignore srcdest routes for now. */
+    return;
 
   /* Nexthop, ifindex, distance, metric. */
   if (CHECK_FLAG (api.message, ZAPI_MESSAGE_NEXTHOP))
