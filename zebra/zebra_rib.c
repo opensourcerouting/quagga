@@ -1033,7 +1033,6 @@ static unsigned
 nexthop_active_check (struct route_node *rn, struct rib *rib,
 		      struct nexthop *nexthop, int set)
 {
-  rib_table_info_t *info = rn->table->info;
   struct interface *ifp;
   route_map_result_t ret = RMAP_MATCH;
   extern char *proto_rm[AFI_MAX][ZEBRA_ROUTE_MAX+1];
@@ -1127,7 +1126,19 @@ nexthop_active_check (struct route_node *rn, struct rib *rib,
    * in every case.
    */
   if (!family)
-    family = info->afi;
+    {
+      rib_table_info_t *info;
+
+      if (rib_rnode_is_srcnode(rn))
+        {
+          struct route_node *dst_rn = rn->table->info;
+          info = dst_rn->table->info;
+        }
+      else
+        info = rn->table->info;
+
+      family = info->afi;
+    }
 
   rmap = 0;
   if (rib->type >= 0 && rib->type < ZEBRA_ROUTE_MAX &&
