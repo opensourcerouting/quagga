@@ -3434,17 +3434,40 @@ rib_score_proto_table (u_char proto, struct route_table *table)
 
   if (table)
     for (rn = route_top (table); rn; rn = route_next (rn))
-      RNODE_FOREACH_RIB_SAFE (rn, rib, next)
-        {
-          if (CHECK_FLAG (rib->status, RIB_ENTRY_REMOVED))
-            continue;
-          if (rib->type == proto)
-            {
-              rib_delnode (rn, rib);
-              n++;
-            }
-        }
+      {
+        struct srcdest_rnode *srn;
+        struct route_node *src_rn;
+        RNODE_FOREACH_RIB_SAFE (rn, rib, next)
+          {
+            if (CHECK_FLAG (rib->status, RIB_ENTRY_REMOVED))
+              continue;
+            if (rib->type == proto)
+              {
+                rib_delnode (rn, rib);
+                n++;
+              }
+          }
 
+        if (!rib_rnode_is_dstnode(rn))
+          continue;
+
+        srn = srcdest_rnode_from_rnode (rn);
+
+        if (!srn->src_table)
+          continue;
+
+        for (src_rn = route_top(srn->src_table); src_rn; src_rn = route_next(src_rn))
+          RNODE_FOREACH_RIB_SAFE(src_rn, rib, next)
+            {
+              if (CHECK_FLAG (rib->status, RIB_ENTRY_REMOVED))
+                continue;
+              if (rib->type == proto)
+                {
+                  rib_delnode (src_rn, rib);
+                  n++;
+                }
+            }
+      }
   return n;
 }
 
