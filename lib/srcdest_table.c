@@ -143,15 +143,15 @@ src_node_lookup (struct route_node *rn, struct prefix_ipv6 *src_p)
   if (!rn || !src_p || src_p->prefixlen == 0)
     return rn;
 
+  /* We got this rn from a lookup, so its refcnt was incremented. As we won't
+   * return return rn from any point beyond here, we should decrement its refcnt.
+   */
+  route_unlock_node (rn);
+
   srn = srcdest_rnode_from_rnode (rn);
   if (!srn->src_table)
     return NULL;
 
-  /* we got this route_node from a lookup, so it had refcnt >= 1, and we took
-   * a reference, so now it's >= 2.  Means, we can safely drop the latter ref
-   * here. */
-
-  route_unlock_node (rn);
   return route_node_lookup (srn->src_table, (struct prefix *)src_p);
 }
 
