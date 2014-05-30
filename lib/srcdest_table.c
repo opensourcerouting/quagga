@@ -38,6 +38,19 @@ struct srcdest_rnode
   struct route_table *src_table;
 };
 
+static struct srcdest_rnode *
+srcdest_rnode_from_rnode (struct route_node *rn)
+{
+  assert (rnode_is_dstnode (rn));
+  return (struct srcdest_rnode *) rn;
+}
+
+static struct route_node *
+srcdest_rnode_to_rnode (struct srcdest_rnode *srn)
+{
+  return (struct route_node *) srn;
+}
+
 static struct route_node *
 srcdest_rnode_create (route_table_delegate_t *delegate,
 		      struct route_table *table)
@@ -116,7 +129,7 @@ static route_table_delegate_t srcdest_srcnode_delegate = {
 
 /* NB: read comments in code for refcounting before using! */
 static struct route_node *
-src_node_get (struct route_node *rn, struct prefix_ipv6 *src_p)
+srcdest_srcnode_get (struct route_node *rn, struct prefix *src_p)
 {
   struct srcdest_rnode *srn;
 
@@ -144,11 +157,11 @@ src_node_get (struct route_node *rn, struct prefix_ipv6 *src_p)
       route_unlock_node (rn);
     }
 
-  return route_node_get (srn->src_table, (struct prefix *)src_p);
+  return route_node_get (srn->src_table, src_p);
 }
 
 static struct route_node *
-src_node_lookup (struct route_node *rn, struct prefix_ipv6 *src_p)
+srcdest_srcnode_lookup (struct route_node *rn, struct prefix *src_p)
 {
   struct srcdest_rnode *srn;
 
@@ -164,7 +177,7 @@ src_node_lookup (struct route_node *rn, struct prefix_ipv6 *src_p)
   if (!srn->src_table)
     return NULL;
 
-  return route_node_lookup (srn->src_table, (struct prefix *)src_p);
+  return route_node_lookup (srn->src_table, src_p);
 }
 
 /* ----- exported functions ----- */
@@ -238,24 +251,24 @@ srcdest_route_next(struct route_node *rn)
 }
 
 struct route_node *
-srcdest_rnode_get (struct route_table *table, struct prefix_ipv6 *dst_p,
-                  struct prefix_ipv6 *src_p)
+srcdest_rnode_get (struct route_table *table, struct prefix *dst_p,
+                  struct prefix *src_p)
 {
   struct route_node *rn;
 
-  rn = route_node_get (table, (struct prefix *) dst_p);
-  return src_node_get (rn, src_p);
+  rn = route_node_get (table, dst_p);
+  return srcdest_srcnode_get (rn, src_p);
 }
 
 struct route_node *
-srcdest_rnode_lookup (struct route_table *table, struct prefix_ipv6 *dst_p,
-                      struct prefix_ipv6 *src_p)
+srcdest_rnode_lookup (struct route_table *table, struct prefix *dst_p,
+                      struct prefix *src_p)
 {
   struct route_node *rn;
   struct route_node *srn;
 
-  rn = route_node_lookup_maynull (table, (struct prefix *) dst_p);
-  srn = src_node_lookup (rn, src_p);
+  rn = route_node_lookup_maynull (table, dst_p);
+  srn = srcdest_srcnode_lookup (rn, src_p);
 
   if (rn != NULL && rn == srn && !rn->info)
     {

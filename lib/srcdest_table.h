@@ -46,7 +46,6 @@
 struct route_node;
 struct route_table;
 struct prefix;
-struct prefix_ipv6;
 
 /* extended route node for IPv6 srcdest routing */
 struct srcdest_rnode;
@@ -56,26 +55,13 @@ extern int rnode_is_srcnode (struct route_node *rn);
 
 extern struct route_table *srcdest_table_init(void);
 extern struct route_node *srcdest_rnode_get(struct route_table *table,
-                                            struct prefix_ipv6 *dst_p,
-                                            struct prefix_ipv6 *src_p);
+                                            struct prefix *dst_p,
+                                            struct prefix *src_p);
 extern struct route_node *srcdest_rnode_lookup(struct route_table *table,
-                                            struct prefix_ipv6 *dst_p,
-                                            struct prefix_ipv6 *src_p);
+                                            struct prefix *dst_p,
+                                            struct prefix *src_p);
 extern void srcdest_rnode_prefixes (struct route_node *rn, struct prefix **p,
                                     struct prefix **src_p);
 extern struct route_node *srcdest_route_next(struct route_node *rn);
-
-static inline struct srcdest_rnode *
-srcdest_rnode_from_rnode (struct route_node *rn)
-{
-  assert (rnode_is_dstnode (rn));
-  return (struct srcdest_rnode *) rn;
-}
-
-static inline struct route_node *
-srcdest_rnode_to_rnode (struct srcdest_rnode *srn)
-{
-  return (struct route_node *) srn;
-}
 
 #endif /* _ZEBRA_SRC_DEST_TABLE_H */

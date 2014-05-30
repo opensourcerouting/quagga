@@ -2692,7 +2692,7 @@ rib_add_ipv6 (int type, int flags, struct prefix_ipv6 *p,
     return 0;
 
   /* Lookup route node.*/
-  rn = srcdest_rnode_get (table, p, src_p);
+  rn = srcdest_rnode_get (table, (struct prefix*)p, (struct prefix*)src_p);
 
   /* If same type of route are installed, treat it as a implicit
      withdraw. */
@@ -2796,7 +2796,7 @@ rib_delete_ipv6 (int type, int flags, struct prefix_ipv6 *p,
     return 0;
   
   /* Lookup route node. */
-  rn = srcdest_rnode_lookup (table, p, src_p);
+  rn = srcdest_rnode_lookup (table, (struct prefix*)p, (struct prefix*)src_p);
   if (! rn)
     {
       if (IS_ZEBRA_DEBUG_KERNEL)
