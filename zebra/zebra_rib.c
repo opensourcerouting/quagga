@@ -34,6 +34,7 @@
 #include "workqueue.h"
 #include "prefix.h"
 #include "routemap.h"
+#include "srcdest_table.h"
 
 #include "zebra/rib.h"
 #include "zebra/rt.h"
@@ -90,7 +91,7 @@ _rnode_zlog(const char *_func, struct route_node *rn, int priority,
   if (rn)
     {
       struct prefix *p, *src_p;
-      rib_rnode_prefixes (rn, &p, &src_p);
+      srcdest_rnode_prefixes (rn, &p, &src_p);
 
       inet_ntop (p->family, &p->u.prefix, buf, sizeof(buf));
       bptr = buf + strlen(buf);
@@ -126,33 +127,6 @@ _rnode_zlog(const char *_func, struct route_node *rn, int priority,
 #define rnode_info(node, ...) \
 	_rnode_zlog(__func__, node, LOG_INFO, __VA_ARGS__)
 
-static struct route_node *
-srcdest_rnode_create (route_table_delegate_t *delegate,
-		      struct route_table *table)
-{
-  struct srcdest_rnode *srn;
-  srn = XCALLOC (MTYPE_ROUTE_NODE, sizeof (struct srcdest_rnode));
-  return srcdest_rnode_to_rnode(srn);
-}
-
-static void
-srcdest_rnode_destroy (route_table_delegate_t *delegate,
-		       struct route_table *table, struct route_node *rn)
-{
-  XFREE (MTYPE_ROUTE_NODE, rn);
-}
-
-static route_table_delegate_t srcdest_dstnode_delegate = {
-  .create_node = srcdest_rnode_create,
-  .destroy_node = srcdest_rnode_destroy
-};
-
-int
-rib_rnode_is_dstnode (struct route_node *rn)
-{
-  return rn->table->delegate == &srcdest_dstnode_delegate;
-}
-
 /*
  * vrf_table_create
  */
@@ -166,7 +140,7 @@ vrf_table_create (struct vrf *vrf, afi_t afi, safi_t safi)
 
   /* srcdest lookups are only supported/done on IPv6 */
   if (afi == AFI_IP6)
-    table = route_table_init_with_delegate (&srcdest_dstnode_delegate);
+    table = srcdest_table_init ();
   else
     table = route_table_init ();
 
@@ -1039,7 +1013,7 @@ nexthop_active_check (struct route_node *rn, struct rib *rib,
   struct route_map *rmap;
   int family;
   struct prefix *p, *src_p;
-  rib_rnode_prefixes (rn, &p, &src_p);
+  srcdest_rnode_prefixes (rn, &p, &src_p);
 
   family = 0;
   switch (nexthop->type)
@@ -1129,7 +1103,7 @@ nexthop_active_check (struct route_node *rn, struct rib *rib,
     {
       rib_table_info_t *info;
 
-      if (rib_rnode_is_srcnode(rn))
+      if (rnode_is_srcnode(rn))
         {
           struct route_node *dst_rn = rn->table->info;
           info = dst_rn->table->info;
@@ -1197,7 +1171,7 @@ rib_install_kernel (struct route_node *rn, struct rib *rib)
   int recursing;
   struct prefix *p, *src_p;
 
-  rib_rnode_prefixes (rn, &p, &src_p);
+  srcdest_rnode_prefixes (rn, &p, &src_p);
 
   /*
    * Make sure we update the FPM any time we send new information to
@@ -1233,7 +1207,7 @@ rib_uninstall_kernel (struct route_node *rn, struct rib *rib)
   int recursing;
   struct prefix *p, *src_p;
 
-  rib_rnode_prefixes (rn, &p, &src_p);
+  srcdest_rnode_prefixes (rn, &p, &src_p);
 
   /*
    * Make sure we update the FPM any time we send new information to
@@ -1266,7 +1240,7 @@ rib_uninstall (struct route_node *rn, struct rib *rib)
   if (CHECK_FLAG (rib->flags, ZEBRA_FLAG_SELECTED))
     {
       struct prefix *p, *src_p;
-      rib_rnode_prefixes (rn, &p, &src_p);
+      srcdest_rnode_prefixes (rn, &p, &src_p);
 
       zfpm_trigger_update (rn, "rib_uninstall");
 
@@ -1352,7 +1326,7 @@ rib_process (struct route_node *rn)
   struct prefix *p, *src_p;
 
   assert (rn);
-  rib_rnode_prefixes (rn, &p, &src_p);
+  srcdest_rnode_prefixes (rn, &p, &src_p);
 
   RNODE_FOREACH_RIB_SAFE (rn, rib, next)
     {
@@ -2684,127 +2658,6 @@ rib_bogus_ipv6 (int type, struct prefix_ipv6 *p,
   return 0;
 }
 
-/* node creation / deletion for srcdest source prefix nodes.
- * the route_node isn't actually different from the normal route_node,
- * but the cleanup is special to free the table (and possibly the
- * destination prefix's route_node) */
-
-static struct route_node *
-srcdest_srcnode_create (route_table_delegate_t *delegate,
-		   struct route_table *table)
-{
-  return XCALLOC (MTYPE_ROUTE_SRC_NODE, sizeof (struct route_node));
-}
-
-static void
-srcdest_srcnode_destroy (route_table_delegate_t *delegate,
-		    struct route_table *table, struct route_node *rn)
-{
-  struct srcdest_rnode *srn;
-
-  XFREE (MTYPE_ROUTE_SRC_NODE, rn);
-
-  srn = table->info;
-  if (route_table_count (srn->src_table) == 0)
-    {
-      /* deleting the route_table from inside destroy_node is ONLY
-       * permitted IF table->count is 0!  see lib/table.c route_node_delete()
-       * for details */
-      route_table_finish (srn->src_table);
-      srn->src_table = NULL;
-
-      /* drop the ref we're holding in srcdest_node_get().  there might be
-       * non-srcdest routes, so the route_node may still exist.  hence, it's
-       * important to clear src_table above. */
-      route_unlock_node (srcdest_rnode_to_rnode (srn));
-    }
-}
-
-static route_table_delegate_t srcdest_srcnode_delegate = {
-  .create_node = srcdest_srcnode_create,
-  .destroy_node = srcdest_srcnode_destroy
-};
-
-int
-rib_rnode_is_srcnode (struct route_node *rn)
-{
-  return rn->table->delegate == &srcdest_srcnode_delegate;
-}
-
-void
-rib_rnode_prefixes (struct route_node *rn, struct prefix **p,
-		    struct prefix **src_p)
-{
-  if (rib_rnode_is_srcnode (rn))
-    {
-      struct route_node *dst_rn = rn->table->info;
-      if (p)
-	*p = &dst_rn->p;
-      if (src_p)
-	*src_p = &rn->p;
-    }
-  else
-    {
-      if (p)
-	*p = &rn->p;
-      if (src_p)
-	*src_p = NULL;
-    }
-}
-
-/* NB: read comments in code for refcounting before using! */
-static struct route_node *
-srcdest_node_get (struct route_node *rn, struct prefix_ipv6 *src_p)
-{
-  struct srcdest_rnode *srn;
-
-  if (!src_p || src_p->prefixlen == 0)
-    return rn;
-
-  srn = srcdest_rnode_from_rnode (rn);
-  if (!srn->src_table)
-    {
-      /* this won't use srcdest_rnode, we're already on the source here */
-      srn->src_table = route_table_init_with_delegate (&srcdest_srcnode_delegate);
-      srn->src_table->info = srn;
-
-      /* there is no route_unlock_node on the original rn here.
-       * The reference is kept for the src_table. */
-    }
-  else
-    {
-      /* only keep 1 reference for the src_table, makes the refcounting
-       * more similar to the non-srcdest case.  Either way after return from
-       * function, the only reference held is the one on the return value.
-       *
-       * We can safely drop our reference here because src_table is holding
-       * another reference, so this won't free rn */
-      route_unlock_node (rn);
-    }
-
-  return route_node_get (srn->src_table, (struct prefix *)src_p);
-}
-
-static struct route_node *
-srcdest_node_lookup (struct route_node *rn, struct prefix_ipv6 *src_p)
-{
-  struct srcdest_rnode *srn;
-
-  if (!rn || !src_p || src_p->prefixlen == 0)
-    return rn;
-
-  srn = srcdest_rnode_from_rnode (rn);
-  if (!srn->src_table)
-    return NULL;
-
-  /* we got this route_node from a lookup, so it had refcnt >= 1, and we took
-   * a reference, so now it's >= 2.  Means, we can safely drop the latter ref
-   * here. */
-
-  route_unlock_node (rn);
-  return route_node_lookup (srn->src_table, (struct prefix *)src_p);
-}
-
 int
 rib_add_ipv6 (int type, int flags, struct prefix_ipv6 *p,
 	      struct prefix_ipv6 *src_p, struct in6_addr *gate,
@@ -2839,8 +2692,7 @@ rib_add_ipv6 (int type, int flags, struct prefix_ipv6 *p,
     return 0;
 
   /* Lookup route node.*/
-  rn = route_node_get (table, (struct prefix *) p);
-  rn = srcdest_node_get (rn, src_p);
+  rn = srcdest_rnode_get (table, p, src_p);
 
   /* If same type of route are installed, treat it as a implicit
      withdraw. */
@@ -2944,8 +2796,7 @@ rib_delete_ipv6 (int type, int flags, struct prefix_ipv6 *p,
     return 0;
   
   /* Lookup route node. */
-  rn = route_node_lookup_maynull (table, (struct prefix *) p);
-  rn = srcdest_node_lookup (rn, src_p);
+  rn = srcdest_rnode_lookup (table, p, src_p);
   if (! rn)
     {
       if (IS_ZEBRA_DEBUG_KERNEL)
@@ -3365,7 +3216,7 @@ rib_update (void)
 
   table = vrf_table (AFI_IP6, SAFI_UNICAST, 0);
   if (table)
-    for (rn = route_top (table); rn; rn = route_next (rn))
+    for (rn = route_top (table); rn; rn = srcdest_route_next (rn))
       if (rnode_to_ribs (rn))
         rib_queue_add (&zebrad, rn);
 }
@@ -3380,7 +3231,7 @@ rib_weed_table (struct route_table *table)
   struct rib *next;
 
   if (table)
-    for (rn = route_top (table); rn; rn = route_next (rn))
+    for (rn = route_top (table); rn; rn = srcdest_route_next (rn))
       RNODE_FOREACH_RIB_SAFE (rn, rib, next)
 	{
 	  if (CHECK_FLAG (rib->status, RIB_ENTRY_REMOVED))
@@ -3410,7 +3261,7 @@ rib_sweep_table (struct route_table *table)
   int ret = 0;
 
   if (table)
-    for (rn = route_top (table); rn; rn = route_next (rn))
+    for (rn = route_top (table); rn; rn = srcdest_route_next (rn))
       RNODE_FOREACH_RIB_SAFE (rn, rib, next)
 	{
 	  if (CHECK_FLAG (rib->status, RIB_ENTRY_REMOVED))
@@ -3444,41 +3295,17 @@ rib_score_proto_table (u_char proto, struct route_table *table)
   unsigned long n = 0;
 
   if (table)
-    for (rn = route_top (table); rn; rn = route_next (rn))
-      {
-        struct srcdest_rnode *srn;
-        struct route_node *src_rn;
-        RNODE_FOREACH_RIB_SAFE (rn, rib, next)
-          {
-            if (CHECK_FLAG (rib->status, RIB_ENTRY_REMOVED))
-              continue;
-            if (rib->type == proto)
-              {
-                rib_delnode (rn, rib);
-                n++;
-              }
-          }
-
-        if (!rib_rnode_is_dstnode(rn))
-          continue;
-
-        srn = srcdest_rnode_from_rnode (rn);
-
-        if (!srn->src_table)
-          continue;
-
-        for (src_rn = route_top(srn->src_table); src_rn; src_rn = route_next(src_rn))
-          RNODE_FOREACH_RIB_SAFE(src_rn, rib, next)
+    for (rn = route_top (table); rn; rn = srcdest_route_next (rn))
+      RNODE_FOREACH_RIB_SAFE (rn, rib, next)
+        {
+          if (CHECK_FLAG (rib->status, RIB_ENTRY_REMOVED))
+            continue;
+          if (rib->type == proto)
             {
-              if (CHECK_FLAG (rib->status, RIB_ENTRY_REMOVED))
-                continue;
-              if (rib->type == proto)
-                {
-                  rib_delnode (src_rn, rib);
-                  n++;
-                }
+              rib_delnode (rn, rib);
+              n++;
             }
-      }
+        }
   return n;
 }
 
@@ -3498,7 +3325,7 @@ rib_close_table (struct route_table *table)
   struct rib *rib;
 
   if (table)
-    for (rn = route_top (table); rn; rn = route_next (rn))
+    for (rn = route_top (table); rn; rn = srcdest_route_next (rn))
       RNODE_FOREACH_RIB (rn, rib)
         {
           if (!CHECK_FLAG (rib->flags, ZEBRA_FLAG_SELECTED))

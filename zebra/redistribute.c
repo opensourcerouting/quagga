@@ -30,6 +30,7 @@
 #include "zclient.h"
 #include "linklist.h"
 #include "log.h"
+#include "srcdest_table.h"
 
 #include "zebra/rib.h"
 #include "zebra/zserv.h"
@@ -161,34 +162,24 @@ zebra_redistribute (struct zserv *client, int type)
 #ifdef HAVE_IPV6
   table = vrf_table (AFI_IP6, SAFI_UNICAST, 0);
   if (table)
-    for (rn = route_top (table); rn; rn = route_next (rn))
+    for (rn = route_top (table); rn; rn = srcdest_route_next (rn))
       {
-	struct srcdest_rnode *srn = srcdest_rnode_from_rnode (rn);
-	struct route_node *rn2 = rn, *rn2_next =
-			srn->src_table ? route_top (srn->src_table) : NULL;
-	struct prefix *p = &rn->p, *src_p = NULL;
-	
-	if (!zebra_check_addr (p))
+	struct prefix *dst_p, *src_p;
+	srcdest_rnode_prefixes(rn, &dst_p, &src_p);
+
+	if (!zebra_check_addr (dst_p))
 	  continue;
 
-	do
+	RNODE_FOREACH_RIB (rn, newrib)
 	  {
-	    RNODE_FOREACH_RIB (rn2, newrib)
-	      if (CHECK_FLAG (newrib->flags, ZEBRA_FLAG_SELECTED)
-	          && newrib->type == type 
-	          && newrib->distance != DISTANCE_INFINITY)
-	        zsend_route_multipath (ZEBRA_IPV6_ROUTE_ADD, client,
-				       p, src_p, newrib);
-
-	    /* loop down around the srcdest routes */
-	    rn2 = rn2_next;
-	    if (rn2)
+	    if (CHECK_FLAG (newrib->flags, ZEBRA_FLAG_SELECTED)
+	        && newrib->type == type
+	        && newrib->distance != DISTANCE_INFINITY)
 	      {
-		src_p = &rn2->p;
-		rn2_next = route_next (rn2);
+		zsend_route_multipath(ZEBRA_IPV6_ROUTE_ADD, client,
+		                      dst_p, src_p, newrib);
 	      }
 	  }
-	while (rn2);
       }
 #endif /* HAVE_IPV6 */
 }
