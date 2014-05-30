@@ -51,6 +51,18 @@ static void
 srcdest_rnode_destroy (route_table_delegate_t *delegate,
 		       struct route_table *table, struct route_node *rn)
 {
+  struct srcdest_rnode *srn = srcdest_rnode_from_rnode(rn);
+  struct route_table *src_table;
+
+  /* Clear route node's src_table here already, otherwise the
+   * deletion of the last node in the src_table will trigger
+   * another call to route_table_finish for the src_table.
+   *
+   * (Compare with srcdest_srcnode_destroy)
+   */
+  src_table = srn->src_table;
+  srn->src_table = NULL;
+  route_table_finish(src_table);
   XFREE (MTYPE_ROUTE_NODE, rn);
 }
 
@@ -82,7 +94,7 @@ srcdest_srcnode_destroy (route_table_delegate_t *delegate,
   XFREE (MTYPE_ROUTE_SRC_NODE, rn);
 
   srn = table->info;
-  if (route_table_count (srn->src_table) == 0)
+  if (srn->src_table && route_table_count (srn->src_table) == 0)
     {
       /* deleting the route_table from inside destroy_node is ONLY
        * permitted IF table->count is 0!  see lib/table.c route_node_delete()
