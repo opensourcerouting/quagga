@@ -240,11 +240,20 @@ srcdest_rnode_lookup (struct route_table *table, struct prefix_ipv6 *dst_p,
                       struct prefix_ipv6 *src_p)
 {
   struct route_node *rn;
+  struct route_node *srn;
 
   rn = route_node_lookup_maynull (table, (struct prefix *) dst_p);
-  return src_node_lookup (rn, src_p);
-}
+  srn = src_node_lookup (rn, src_p);
 
+  if (rn != NULL && rn == srn && !rn->info)
+    {
+      /* Match the behavior of route_node_lookup and don't return an
+       * empty route-node for a dest-route */
+      route_unlock_node(rn);
+      return NULL;
+    }
+  return srn;
+}
 
 void
 srcdest_rnode_prefixes (struct route_node *rn, struct prefix **p,
