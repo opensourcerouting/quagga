@@ -456,13 +456,14 @@ extern struct rib *rib_match_ipv6 (struct in6_addr *);
 extern struct route_table *rib_table_ipv6;
 
 extern int
-static_add_ipv6 (struct prefix *p, u_char type, struct in6_addr *gate,
-		 const char *ifname, u_char flags, u_char distance,
-		 u_int32_t vrf_id);
+static_add_ipv6 (struct prefix *p, struct prefix *src_p, u_char type,
+		 struct in6_addr *gate, const char *ifname,
+		 u_char flags, u_char distance, u_int32_t vrf_id);
 
 extern int
-static_delete_ipv6 (struct prefix *p, u_char type, struct in6_addr *gate,
-		    const char *ifname, u_char distance, u_int32_t vrf_id);
+static_delete_ipv6 (struct prefix *p, struct prefix *src_p, u_char type,
+		    struct in6_addr *gate, const char *ifname,
+		    u_char distance, u_int32_t vrf_id);
 
 #endif /* HAVE_IPV6 */
 

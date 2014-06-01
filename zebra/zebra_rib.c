@@ -169,7 +169,7 @@ vrf_alloc (const char *name)
   vrf_table_create (vrf, AFI_IP, SAFI_UNICAST);
   vrf_table_create (vrf, AFI_IP6, SAFI_UNICAST);
   vrf->stable[AFI_IP][SAFI_UNICAST] = route_table_init ();
-  vrf->stable[AFI_IP6][SAFI_UNICAST] = route_table_init ();
+  vrf->stable[AFI_IP6][SAFI_UNICAST] = srcdest_table_init ();
   vrf_table_create (vrf, AFI_IP, SAFI_MULTICAST);
   vrf_table_create (vrf, AFI_IP6, SAFI_MULTICAST);
   vrf->stable[AFI_IP][SAFI_MULTICAST] = route_table_init ();
@@ -2905,7 +2905,7 @@ rib_delete_ipv6 (int type, int flags, struct prefix_ipv6 *p,
 
 /* Install static route into rib. */
 static void
-static_install_ipv6 (struct prefix *p, struct static_ipv6 *si)
+static_install_ipv6 (struct prefix *p, struct prefix *src_p, struct static_ipv6 *si)
 {
   struct rib *rib;
   struct route_table *table;
@@ -2917,7 +2917,7 @@ static_install_ipv6 (struct prefix *p, struct static_ipv6 *si)
     return;
 
   /* Lookup existing route */
-  rn = route_node_get (table, p);
+  rn = srcdest_rnode_get (table, p, src_p);
   RNODE_FOREACH_RIB (rn, rib)
     {
       if (CHECK_FLAG(rib->status, RIB_ENTRY_REMOVED))
@@ -2998,7 +2998,7 @@ static_ipv6_nexthop_same (struct nexthop *nexthop, struct static_ipv6 *si)
 }
 
 static void
-static_uninstall_ipv6 (struct prefix *p, struct static_ipv6 *si)
+static_uninstall_ipv6 (struct prefix *p, struct prefix *src_p, struct static_ipv6 *si)
 {
   struct route_table *table;
   struct route_node *rn;
@@ -3011,7 +3011,7 @@ static_uninstall_ipv6 (struct prefix *p, struct static_ipv6 *si)
     return;
 
   /* Lookup existing route with type and distance. */
-  rn = route_node_lookup (table, (struct prefix *) p);
+  rn = srcdest_rnode_lookup (table, p, src_p);
   if (! rn)
     return;
 
@@ -3061,8 +3061,9 @@ static_uninstall_ipv6 (struct prefix *p, struct static_ipv6 *si)
 
 /* Add static route into static route configuration. */
 int
-static_add_ipv6 (struct prefix *p, u_char type, struct in6_addr *gate,
-		 const char *ifname, u_char flags, u_char distance,
+static_add_ipv6 (struct prefix *p, struct prefix *src_p, u_char type,
+		 struct in6_addr *gate, const char *ifname, u_char flags,
+		 u_char distance,
 		 u_int32_t vrf_id)
 {
   struct route_node *rn;
@@ -3085,7 +3086,7 @@ static_add_ipv6 (struct prefix *p, u_char type, struct in6_addr *gate,
     return -1;
 
   /* Lookup static route prefix. */
-  rn = route_node_get (stable, p);
+  rn = srcdest_rnode_get (stable, p, src_p);
 
   /* Do nothing if there is a same static route.  */
   for (si = rn->info; si; si = si->next)
@@ -3142,15 +3143,16 @@ static_add_ipv6 (struct prefix *p, u_char type, struct in6_addr *gate,
   si->next = cp;
 
   /* Install into rib. */
-  static_install_ipv6 (p, si);
+  static_install_ipv6 (p, src_p, si);
 
   return 1;
 }
 
 /* Delete static route from static route configuration. */
 int
-static_delete_ipv6 (struct prefix *p, u_char type, struct in6_addr *gate,
-		    const char *ifname, u_char distance, u_int32_t vrf_id)
+static_delete_ipv6 (struct prefix *p, struct prefix *src_p, u_char type,
+		    struct in6_addr *gate, const char *ifname,
+		    u_char distance, u_int32_t vrf_id)
 {
   struct route_node *rn;
   struct static_ipv6 *si;
@@ -3162,7 +3164,7 @@ static_delete_ipv6 (struct prefix *p, u_char type, struct in6_addr *gate,
     return -1;
 
   /* Lookup static route prefix. */
-  rn = route_node_lookup (stable, p);
+  rn = srcdest_rnode_lookup (stable, p, src_p);
   if (! rn)
     return 0;
 
@@ -3182,7 +3184,7 @@ static_delete_ipv6 (struct prefix *p, u_char type, struct in6_addr *gate,
     }
 
   /* Install into rib. */
-  static_uninstall_ipv6 (p, si);
+  static_uninstall_ipv6 (p, src_p, si);
 
   /* Unlink static route from linked list. */
   if (si->prev)
