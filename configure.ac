@@ -1181,7 +1181,6 @@ AC_SUBST(WATCHQUAGGA)
 AC_SUBST(ISISD)
 AC_SUBST(SOLARIS)
 AC_SUBST(VTYSH)
-AC_SUBST(INCLUDES)
 AC_SUBST(CURSES)
 AC_SUBST(OSPFCLIENT)
 AC_SUBST(OSPFAPI)
@@ -1533,7 +1532,6 @@ source code location    : ${srcdir}
 compiler                : ${CC}
 compiler flags          : ${CFLAGS}
 make                    : ${MAKE-make}
-includes                : ${INCLUDES}
 linker flags            : ${LDFLAGS} ${LIBS} ${LIBCAP} ${LIBREADLINE} ${LIBM}
 state file directory    : ${quagga_statedir}
 config file directory   : `eval echo \`echo ${sysconfdir}\``
