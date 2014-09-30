@@ -1379,7 +1379,7 @@ route_set_metric_compile (const char *arg)
     }
   else
     {
-      /* set metric +/-value check */
+      /* set metric <+/-metric> check */
       if ((strncmp (arg, "+", 1) != 0
 	   && strncmp (arg, "-", 1) != 0)
 	   || (! all_digit (arg+1)))
@@ -2503,10 +2503,10 @@ bgp_route_match_add (struct vty *vty, struct route_map_index *index,
       switch (ret)
 	{
 	case RMAP_RULE_MISSING:
-	  vty_out (vty, "%% Can't find rule.%s", VTY_NEWLINE);
+	  vty_out (vty, "%% BGP Can't find rule.%s", VTY_NEWLINE);
 	  return CMD_WARNING;
 	case RMAP_COMPILE_ERROR:
-	  vty_out (vty, "%% Argument is malformed.%s", VTY_NEWLINE);
+	  vty_out (vty, "%% BGP Argument is malformed.%s", VTY_NEWLINE);
 	  return CMD_WARNING;
 	}
     }
@@ -2547,10 +2547,10 @@ bgp_route_match_delete (struct vty *vty, struct route_map_index *index,
       switch (ret)
 	{
 	case RMAP_RULE_MISSING:
-	  vty_out (vty, "%% Can't find rule.%s", VTY_NEWLINE);
+	  vty_out (vty, "%% BGP Can't find rule.%s", VTY_NEWLINE);
 	  break;
 	case RMAP_COMPILE_ERROR:
-	  vty_out (vty, "%% Argument is malformed.%s", VTY_NEWLINE);
+	  vty_out (vty, "%% BGP Argument is malformed.%s", VTY_NEWLINE);
 	  break;
 	}
       if (arg == NULL && dep_name)
@@ -2584,10 +2584,10 @@ bgp_route_set_add (struct vty *vty, struct route_map_index *index,
       switch (ret)
 	{
 	case RMAP_RULE_MISSING:
-	  vty_out (vty, "%% Can't find rule.%s", VTY_NEWLINE);
+	  vty_out (vty, "%% BGP Can't find rule.%s", VTY_NEWLINE);
 	  return CMD_WARNING;
 	case RMAP_COMPILE_ERROR:
-	  vty_out (vty, "%% Argument is malformed.%s", VTY_NEWLINE);
+	  vty_out (vty, "%% BGP Argument is malformed.%s", VTY_NEWLINE);
 	  return CMD_WARNING;
 	}
     }
@@ -2607,10 +2607,10 @@ bgp_route_set_delete (struct vty *vty, struct route_map_index *index,
       switch (ret)
 	{
 	case RMAP_RULE_MISSING:
-	  vty_out (vty, "%% Can't find rule.%s", VTY_NEWLINE);
+	  vty_out (vty, "%% BGP Can't find rule.%s", VTY_NEWLINE);
 	  return CMD_WARNING;
 	case RMAP_COMPILE_ERROR:
-	  vty_out (vty, "%% Argument is malformed.%s", VTY_NEWLINE);
+	  vty_out (vty, "%% BGP Argument is malformed.%s", VTY_NEWLINE);
 	  return CMD_WARNING;
 	}
     }
@@ -4009,7 +4009,7 @@ DEFUN (set_community_delete,
        SET_STR
        "set BGP community list (for deletion)\n"
        "Community-list number (standard)\n"
-       "Communitly-list number (expanded)\n"
+       "Community-list number (expanded)\n"
        "Community-list name\n"
        "Delete matching communities\n")
 {
@@ -4042,7 +4042,7 @@ ALIAS (no_set_community_delete,
        SET_STR
        "set BGP community list (for deletion)\n"
        "Community-list number (standard)\n"
-       "Communitly-list number (expanded)\n"
+       "Community-list number (expanded)\n"
        "Community-list name\n"
        "Delete matching communities\n")
 
