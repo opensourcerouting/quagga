@@ -53,3 +53,19 @@ void zebra_interface_address_delete_update (struct interface *a,
                                                 struct connected *b)
 { return; }
 #endif
+
+int zebra_import_table (afi_t afi, u_int32_t table_id, u_int32_t metric,
+			int add)
+{ return 0; }
+
+int zebra_add_import_table_entry (struct route_node *rn, struct rib *rib)
+{ return 0; }
+
+int zebra_del_import_table_entry (struct route_node *rn, struct rib *rib)
+{ return 0; }
+
+int is_zebra_import_table_enabled(afi_t afi, u_int32_t table_id)
+{ return 0; }
+
+int zebra_import_table_config(struct vty *vty)
+{ return 0; }
