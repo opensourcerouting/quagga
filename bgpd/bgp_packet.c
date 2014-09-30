@@ -750,6 +750,26 @@ bgp_peer_adv_fifo_exists (struct peer *peer, int chk_recent)
   return 0;
 }
 
+static int bgp_peer_eor_pending (struct peer *peer)
+{
+  int afi, safi;
+
+  if (peer == NULL)
+    return 0;
+
+  if (CHECK_FLAG (peer->cap, PEER_CAP_RESTART_RCV))
+    for (afi = AFI_IP; afi < AFI_MAX; afi++)
+      for (safi = SAFI_UNICAST; safi < SAFI_MAX; safi++)
+	{
+	  if (peer->afc_nego[afi][safi] && peer->synctime
+	      && ! CHECK_FLAG (peer->af_sflags[afi][safi], PEER_STATUS_EOR_SEND)
+	      && safi != SAFI_MPLS_VPN)
+	    return 1;
+	}
+
+  return 0;
+}
+
 /*
  * Schedule updates for the peer, if needed.
  */
@@ -786,7 +806,8 @@ bgp_write_proceed (struct peer *peer)
    * queued before last MRAI timer expiry), schedule write
    */
   if (bgp_peer_wd_fifo_exists(peer)
-   || bgp_peer_adv_fifo_exists(peer, 1))
+      || bgp_peer_adv_fifo_exists(peer, 1)
+      || bgp_peer_eor_pending(peer))
     return 1;
 
   return 0;
