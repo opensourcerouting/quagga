@@ -5658,6 +5658,21 @@ bgp_config_write (struct vty *vty)
       /* BGP update-delay. */
       bgp_config_write_update_delay (vty, bgp);
 
+      if (bgp->maxmed_admin)
+        {
+          vty_out (vty, " bgp max-med administrative");
+          if (bgp->maxmed_value != BGP_MAXMED_VALUE_DEFAULT)
+            vty_out (vty, " %d", bgp->maxmed_value);
+          vty_out (vty, "%s", VTY_NEWLINE);
+        }
+      else if (bgp->v_maxmed_onstartup != BGP_MAXMED_ONSTARTUP_UNCONFIGURED)
+        {
+          vty_out (vty, " bgp max-med on-startup %d", bgp->v_maxmed_onstartup);
+          if (bgp->maxmed_value != BGP_MAXMED_VALUE_DEFAULT)
+            vty_out (vty, " %d", bgp->maxmed_value);
+          vty_out (vty, "%s", VTY_NEWLINE);
+        }
+
       /* write quanta */
       bgp_config_write_wpkt_quanta (vty, bgp);
 

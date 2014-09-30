@@ -113,6 +113,15 @@ struct bgp
 
   struct thread *t_startup;
 
+  struct thread *t_maxmed_onstartup;
+  u_int32_t v_maxmed_onstartup;
+  u_char    maxmed_onstartup_over;
+  u_char    maxmed_admin;
+  u_int32_t maxmed_value;
+  u_char    maxmed_active;
+#define BGP_MAXMED_VALUE_DEFAULT  4294967294 /* Maximum by default */
+#define BGP_MAXMED_ONSTARTUP_UNCONFIGURED  0 /* Off by default */
+
   /* BGP update delay on startup */
   struct thread *t_update_delay;
   struct thread *t_establish_wait;
