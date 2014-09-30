@@ -1054,6 +1054,14 @@ DEFUNSH (VTYSH_OSPFD,
   return CMD_SUCCESS;
 }
 
+ALIAS_SH (VTYSH_OSPFD,
+	 router_ospf,
+	 router_ospf_instance_cmd,
+	 "router ospf <1-65535>",
+	 "Enable a routing process\n"
+	 "Start OSPF configuration\n"
+         "Instance ID\n")
+
 DEFUNSH (VTYSH_OSPF6D,
 	 router_ospf6,
 	 router_ospf6_cmd,
@@ -2527,6 +2535,7 @@ vtysh_init_vty (void)
   install_element (CONFIG_NODE, &router_ripng_cmd);
 #endif
   install_element (CONFIG_NODE, &router_ospf_cmd);
+  install_element (CONFIG_NODE, &router_ospf_instance_cmd);
 #ifdef HAVE_IPV6
   install_element (CONFIG_NODE, &router_ospf6_cmd);
 #endif
