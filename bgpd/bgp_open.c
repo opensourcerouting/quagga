@@ -427,6 +427,7 @@ static const struct message capcode_str[] =
   { CAPABILITY_CODE_DYNAMIC,		"Dynamic"			},
   { CAPABILITY_CODE_REFRESH_OLD,	"Route Refresh (Old)"		},
   { CAPABILITY_CODE_ORF_OLD,		"ORF (Old)"			},
+  { CAPABILITY_CODE_DYNAMIC_OLD,        "Dynamic (Old)"                 },
 };
 static const int capcode_str_max = array_size(capcode_str);
 
@@ -441,6 +442,7 @@ static const size_t cap_minsizes[] =
   [CAPABILITY_CODE_DYNAMIC]	= CAPABILITY_CODE_DYNAMIC_LEN,
   [CAPABILITY_CODE_REFRESH_OLD]	= CAPABILITY_CODE_REFRESH_LEN,
   [CAPABILITY_CODE_ORF_OLD]	= sizeof (struct capability_orf_entry),
+  [CAPABILITY_CODE_DYNAMIC_OLD]	= CAPABILITY_CODE_DYNAMIC_LEN,
 };
 
 /**
@@ -503,6 +505,7 @@ bgp_capability_parse (struct peer *peer, size_t length, int *mp_capability,
           case CAPABILITY_CODE_RESTART:
           case CAPABILITY_CODE_AS4:
           case CAPABILITY_CODE_DYNAMIC:
+          case CAPABILITY_CODE_DYNAMIC_OLD:
               /* Check length. */
               if (caphdr.length < cap_minsizes[caphdr.code])
                 {
@@ -562,6 +565,7 @@ bgp_capability_parse (struct peer *peer, size_t length, int *mp_capability,
               return -1;
             break;
           case CAPABILITY_CODE_DYNAMIC:
+	  case CAPABILITY_CODE_DYNAMIC_OLD:
             SET_FLAG (peer->cap, PEER_CAP_DYNAMIC_RCV);
             break;
           case CAPABILITY_CODE_AS4:
@@ -1017,6 +1021,10 @@ bgp_open_capability (struct stream *s, struct peer *peer)
   if (CHECK_FLAG (peer->flags, PEER_FLAG_DYNAMIC_CAPABILITY))
     {
       SET_FLAG (peer->cap, PEER_CAP_DYNAMIC_ADV);
+      stream_putc (s, BGP_OPEN_OPT_CAP);
+      stream_putc (s, CAPABILITY_CODE_DYNAMIC_LEN + 2);
+      stream_putc (s, CAPABILITY_CODE_DYNAMIC_OLD);
+      stream_putc (s, CAPABILITY_CODE_DYNAMIC_LEN);
       stream_putc (s, BGP_OPEN_OPT_CAP);
       stream_putc (s, CAPABILITY_CODE_DYNAMIC_LEN + 2);
       stream_putc (s, CAPABILITY_CODE_DYNAMIC);
