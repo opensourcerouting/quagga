@@ -7893,7 +7893,7 @@ bgp_show_summary (struct vty *vty, struct bgp *bgp, int afi, int safi)
 
 	  vty_out (vty, "4 ");
 
-	  vty_out (vty, "%5u %7d %7d %8d %4d %4lu ",
+	  vty_out (vty, "%5u %7d %7d %8d %4d %4u ",
 		   peer->as,
 		   peer->open_in + peer->update_in + peer->keepalive_in
 		   + peer->notify_in + peer->refresh_in + peer->dynamic_cap_in,
