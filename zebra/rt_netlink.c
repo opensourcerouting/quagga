@@ -1466,7 +1466,8 @@ _netlink_route_build_singlepath(
         struct nexthop *nexthop,
         struct nlmsghdr *nlmsg,
         struct rtmsg *rtmsg,
-        size_t req_size)
+        size_t req_size,
+	int cmd)
 {
   if (CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_ONLINK))
     rtmsg->rtm_flags |= RTNH_F_ONLINK;
@@ -1475,7 +1476,11 @@ _netlink_route_build_singlepath(
     {
       addattr_l (nlmsg, req_size, RTA_GATEWAY,
                  &nexthop->gate.ipv4, bytelen);
-      if (nexthop->src.ipv4.s_addr)
+
+      if (nexthop->rmap_src.ipv4.s_addr && (cmd == RTM_NEWROUTE))
+        addattr_l (nlmsg, req_size, RTA_PREFSRC,
+                   &nexthop->rmap_src.ipv4, bytelen);
+      else if (nexthop->src.ipv4.s_addr && (cmd == RTM_NEWROUTE))
         addattr_l (nlmsg, req_size, RTA_PREFSRC,
                    &nexthop->src.ipv4, bytelen);
 
@@ -1508,7 +1513,10 @@ _netlink_route_build_singlepath(
     {
       addattr32 (nlmsg, req_size, RTA_OIF, nexthop->ifindex);
 
-      if (nexthop->src.ipv4.s_addr)
+      if (nexthop->rmap_src.ipv4.s_addr && (cmd == RTM_NEWROUTE))
+        addattr_l (nlmsg, req_size, RTA_PREFSRC,
+                   &nexthop->rmap_src.ipv4, bytelen);
+      else if (nexthop->src.ipv4.s_addr && (cmd == RTM_NEWROUTE))
         addattr_l (nlmsg, req_size, RTA_PREFSRC,
                    &nexthop->src.ipv4, bytelen);
 
@@ -1569,8 +1577,10 @@ _netlink_route_build_multipath(
                      &nexthop->gate.ipv4, bytelen);
       rtnh->rtnh_len += sizeof (struct rtattr) + bytelen;
 
-      if (nexthop->src.ipv4.s_addr)
-        *src = &nexthop->src;
+      if (nexthop->rmap_src.ipv4.s_addr)
+        *src = &nexthop->rmap_src;
+      else if (nexthop->src.ipv4.s_addr)
+         *src = &nexthop->src;
 
       if (IS_ZEBRA_DEBUG_KERNEL)
         zlog_debug("netlink_route_multipath() (%s): "
@@ -1602,8 +1612,12 @@ _netlink_route_build_multipath(
       || nexthop->type == NEXTHOP_TYPE_IFNAME)
     {
       rtnh->rtnh_ifindex = nexthop->ifindex;
-      if (nexthop->src.ipv4.s_addr)
+
+      if (nexthop->rmap_src.ipv4.s_addr)
+        *src = &nexthop->rmap_src;
+      else if (nexthop->src.ipv4.s_addr)
         *src = &nexthop->src;
+
       if (IS_ZEBRA_DEBUG_KERNEL)
         zlog_debug("netlink_route_multipath() (%s): "
                    "nexthop via if %u", routedesc, nexthop->ifindex);
@@ -1668,6 +1682,8 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
   int nexthop_num;
   int discard;
   const char *routedesc;
+  int setsrc = 0;
+  union g_addr src;
 
   struct
   {
@@ -1755,7 +1771,23 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
       for (ALL_NEXTHOPS_RO(rib->nexthop, nexthop, tnexthop, recursing))
         {
           if (CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_RECURSIVE))
-            continue;
+            {
+              /* This only works for IPv4 now */
+              if (!setsrc)
+                 {
+                  if (nexthop->rmap_src.ipv4.s_addr != 0)
+                    {
+                      src.ipv4 = nexthop->rmap_src.ipv4;
+                      setsrc = 1;
+                    }
+                  else if (nexthop->src.ipv4.s_addr != 0)
+                    {
+                      src.ipv4 = nexthop->src.ipv4;
+                      setsrc = 1;
+                    }
+                 }
+              continue;
+	    }
 
           if ((cmd == RTM_NEWROUTE
                && CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_ACTIVE))
@@ -1767,7 +1799,7 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
               _netlink_route_debug(cmd, p, nexthop, routedesc, family);
               _netlink_route_build_singlepath(routedesc, bytelen,
                                               nexthop, &req.n, &req.r,
-                                              sizeof req);
+                                              sizeof req, cmd);
 
               if (cmd == RTM_NEWROUTE)
                 SET_FLAG (nexthop->flags, NEXTHOP_FLAG_FIB);
@@ -1776,13 +1808,15 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
               break;
             }
         }
+      if (setsrc && (cmd == RTM_NEWROUTE))
+	addattr_l (&req.n, sizeof req, RTA_PREFSRC, &src.ipv4, bytelen);
     }
   else
     {
       char buf[NL_PKT_BUF_SIZE];
       struct rtattr *rta = (void *) buf;
       struct rtnexthop *rtnh;
-      union g_addr *src = NULL;
+      union g_addr *src1 = NULL;
 
       rta->rta_type = RTA_MULTIPATH;
       rta->rta_len = RTA_LENGTH (0);
@@ -1795,7 +1829,23 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
             break;
 
           if (CHECK_FLAG(nexthop->flags, NEXTHOP_FLAG_RECURSIVE))
-            continue;
+	    {
+              /* This only works for IPv4 now */
+              if (!setsrc)
+                 {
+                  if (nexthop->rmap_src.ipv4.s_addr != 0)
+                    {
+                      src.ipv4 = nexthop->rmap_src.ipv4;
+                      setsrc = 1;
+                    }
+                  else if (nexthop->src.ipv4.s_addr != 0)
+                    {
+                      src.ipv4 = nexthop->src.ipv4;
+                      setsrc = 1;
+                    }
+                 }
+	      continue;
+	    }
 
           if ((cmd == RTM_NEWROUTE
                && CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_ACTIVE))
@@ -1808,15 +1858,21 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
               _netlink_route_debug(cmd, p, nexthop,
                                    routedesc, family);
               _netlink_route_build_multipath(routedesc, bytelen,
-                                             nexthop, rta, rtnh, &src);
+                                             nexthop, rta, rtnh, &src1);
               rtnh = RTNH_NEXT (rtnh);
 
               if (cmd == RTM_NEWROUTE)
                 SET_FLAG (nexthop->flags, NEXTHOP_FLAG_FIB);
+
+	      if (!setsrc && src1)
+		{
+		  src.ipv4 = src1->ipv4;
+		  setsrc = 1;
+		}
             }
         }
-      if (src)
-        addattr_l (&req.n, sizeof req, RTA_PREFSRC, &src->ipv4, bytelen);
+      if (setsrc && (cmd == RTM_NEWROUTE))
+	addattr_l (&req.n, sizeof req, RTA_PREFSRC, &src.ipv4, bytelen);
 
       if (rta->rta_len > RTA_LENGTH (0))
         addattr_l (&req.n, NL_PKT_BUF_SIZE, RTA_MULTIPATH, RTA_DATA (rta),
