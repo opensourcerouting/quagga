@@ -1353,6 +1353,42 @@ DEFUN (show_ip_route_protocol,
   return CMD_SUCCESS;
 }
 
+DEFUN (show_ip_route_ospf_instance,
+       show_ip_route_ospf_instance_cmd,
+       "show ip route ospf <1-65535>",
+       SHOW_STR
+       IP_STR
+       "IP routing table\n"
+       "Open Shortest Path First (OSPFv2)\n"
+       "Instance ID\n")
+{
+  struct route_table *table;
+  struct route_node *rn;
+  struct rib *rib;
+  int first = 1;
+  u_short instance = 0;
+
+  VTY_GET_INTEGER ("Instance", instance, argv[0]);
+
+  table = vrf_table (AFI_IP, SAFI_UNICAST, 0);
+  if (! table)
+    return CMD_SUCCESS;
+
+  /* Show matched type IPv4 routes. */
+  for (rn = route_top (table); rn; rn = route_next (rn))
+    RNODE_FOREACH_RIB (rn, rib)
+      if (rib->type == ZEBRA_ROUTE_OSPF && rib->instance == instance)
+	{
+	  if (first)
+	    {
+	      vty_out (vty, SHOW_ROUTE_V4_HEADER);
+	      first = 0;
+	    }
+	  vty_show_ip_route (vty, rn, rib);
+	}
+  return CMD_SUCCESS;
+}
+
 DEFUN (show_ip_route_addr,
        show_ip_route_addr_cmd,
        "show ip route A.B.C.D",
@@ -2904,6 +2940,7 @@ zebra_vty_init (void)
   install_element (CONFIG_NODE, &no_ip_route_mask_flags_tag_distance2_cmd);
 
   install_element (VIEW_NODE, &show_ip_route_cmd);
+  install_element (VIEW_NODE, &show_ip_route_ospf_instance_cmd);
   install_element (VIEW_NODE, &show_ip_route_tag_cmd);
   install_element (VIEW_NODE, &show_ip_nht_cmd);
   install_element (VIEW_NODE, &show_ipv6_nht_cmd);
@@ -2915,6 +2952,7 @@ zebra_vty_init (void)
   install_element (VIEW_NODE, &show_ip_route_summary_cmd);
   install_element (VIEW_NODE, &show_ip_route_summary_prefix_cmd);
   install_element (ENABLE_NODE, &show_ip_route_cmd);
+  install_element (ENABLE_NODE, &show_ip_route_ospf_instance_cmd);
   install_element (ENABLE_NODE, &show_ip_route_tag_cmd);
   install_element (ENABLE_NODE, &show_ip_nht_cmd);
   install_element (ENABLE_NODE, &show_ipv6_nht_cmd);
