@@ -1356,11 +1356,11 @@ ospf_distance_apply (struct prefix_ipv4 *p, struct ospf_route *or)
 }
 
 void
-ospf_zebra_init ()
+ospf_zebra_init (u_short instance)
 {
   /* Allocate zebra structure. */
   zclient = zclient_new ();
-  zclient_init (zclient, ZEBRA_ROUTE_OSPF, 0);
+  zclient_init (zclient, ZEBRA_ROUTE_OSPF, instance);
   zclient->router_id_update = ospf_router_id_update_zebra;
   zclient->interface_add = ospf_interface_add;
   zclient->interface_delete = ospf_interface_delete;
