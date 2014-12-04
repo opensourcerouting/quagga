@@ -274,7 +274,7 @@ main (int argc, char **argv)
       exit (1);
     }
 
-  zlog_default = openzlog (progname, ZLOG_OSPF,
+  zlog_default = openzlog (progname, ZLOG_OSPF, instance,
 			   LOG_CONS|LOG_NDELAY|LOG_PID, LOG_DAEMON);
 
   /* OSPF master init. */
