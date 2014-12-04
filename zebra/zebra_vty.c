@@ -893,7 +893,10 @@ vty_show_ip_route_detail (struct vty *vty, struct route_node *rn)
       vty_out (vty, "Routing entry for %s/%d%s", 
 	       inet_ntoa (rn->p.u.prefix4), rn->p.prefixlen,
 	       VTY_NEWLINE);
-      vty_out (vty, "  Known via \"%s\"", zebra_route_string (rib->type));
+      vty_out (vty, "  Known via \"%s", zebra_route_string (rib->type));
+      if (rib->instance)
+        vty_out (vty, "[%d]", rib->instance);
+      vty_out (vty, "\"");
       vty_out (vty, ", distance %u, metric %u", rib->distance, rib->metric);
       if (rib->tag)
 	vty_out (vty, ", tag %d", rib->tag);
@@ -1022,15 +1025,17 @@ vty_show_ip_route (struct vty *vty, struct route_node *rn, struct rib *rib)
       if (nexthop == rib->nexthop)
 	{
 	  /* Prefix information. */
-	  len = vty_out (vty, "%c%c%c %s/%d",
-			 zebra_route_char (rib->type),
+	  len = vty_out (vty, "%c", zebra_route_char (rib->type));
+          if (rib->instance)
+	    len += vty_out (vty, "[%d]", rib->instance);
+          len += vty_out (vty, "%c%c %s/%d",
 			 CHECK_FLAG (rib->flags, ZEBRA_FLAG_SELECTED)
 			 ? '>' : ' ',
 			 CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_FIB)
 			 ? '*' : ' ',
 			 inet_ntop (AF_INET, &rn->p.u.prefix, buf, BUFSIZ),
 			 rn->p.prefixlen);
-		
+
 	  /* Distance and metric display. */
 	  if (rib->type != ZEBRA_ROUTE_CONNECT 
 	      && rib->type != ZEBRA_ROUTE_KERNEL)
