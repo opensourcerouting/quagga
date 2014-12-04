@@ -49,7 +49,7 @@ rip_zebra_ipv4_send (struct route_node *rp, u_char cmd)
   struct rip_info *rinfo = NULL;
   int count = 0;
 
-  if (zclient->redist[ZEBRA_ROUTE_RIP])
+  if (zclient->redist[ZEBRA_ROUTE_RIP].enabled)
     {
       api.type = ZEBRA_ROUTE_RIP;
       api.instance = 0;
@@ -289,13 +289,13 @@ rip_redistribute_set (int type)
 static int
 rip_redistribute_unset (int type)
 {
-  if (! zclient->redist[type])
+  if (! zclient->redist[type].enabled)
     return CMD_SUCCESS;
 
-  zclient->redist[type] = 0;
+  redist_del_instance(&zclient->redist[type], 0);
 
   if (zclient->sock > 0)
-    zebra_redistribute_send (ZEBRA_REDISTRIBUTE_DELETE, zclient, type);
+    zebra_redistribute_send (ZEBRA_REDISTRIBUTE_DELETE, zclient, type, 0);
 
   /* Remove the routes from RIP table. */
   rip_redistribute_withdraw (type);
@@ -306,7 +306,7 @@ rip_redistribute_unset (int type)
 int
 rip_redistribute_check (int type)
 {
-  return (zclient->redist[type]);
+  return (zclient->redist[type].enabled);
 }
 
 void
@@ -316,13 +316,13 @@ rip_redistribute_clean (void)
 
   for (i = 0; redist_type[i].str; i++)
     {
-      if (zclient->redist[redist_type[i].type])
+      if (zclient->redist[redist_type[i].type].enabled)
 	{
 	  if (zclient->sock > 0)
 	    zebra_redistribute_send (ZEBRA_REDISTRIBUTE_DELETE,
-				     zclient, redist_type[i].type);
+				     zclient, redist_type[i].type, 0);
 
-	  zclient->redist[redist_type[i].type] = 0;
+          redist_del_instance(&zclient->redist[redist_type[i].type], 0);
 
 	  /* Remove the routes from RIP table. */
 	  rip_redistribute_withdraw (redist_type[i].type);
@@ -336,7 +336,7 @@ DEFUN (rip_redistribute_rip,
        "Redistribute information from another routing protocol\n"
        "Routing Information Protocol (RIP)\n")
 {
-  zclient->redist[ZEBRA_ROUTE_RIP] = 1;
+  redist_add_instance(&zclient->redist[ZEBRA_ROUTE_RIP], 0);
   return CMD_SUCCESS;
 }
 
@@ -347,7 +347,7 @@ DEFUN (no_rip_redistribute_rip,
        "Redistribute information from another routing protocol\n"
        "Routing Information Protocol (RIP)\n")
 {
-  zclient->redist[ZEBRA_ROUTE_RIP] = 0;
+  redist_del_instance(&zclient->redist[ZEBRA_ROUTE_RIP], 0);
   return CMD_SUCCESS;
 }
 
@@ -365,7 +365,7 @@ DEFUN (rip_redistribute_type,
 		   redist_type[i].str_min_len) == 0) 
 	{
 	  zclient_redistribute (ZEBRA_REDISTRIBUTE_ADD, zclient, 
-	                        redist_type[i].type);
+	                        redist_type[i].type, 0);
 	  return CMD_SUCCESS;
 	}
     }
@@ -418,7 +418,7 @@ DEFUN (rip_redistribute_type_routemap,
 		redist_type[i].str_min_len) == 0) 
       {
 	rip_routemap_set (redist_type[i].type, argv[1]);
-	zclient_redistribute (ZEBRA_REDISTRIBUTE_ADD, zclient, redist_type[i].type);
+	zclient_redistribute (ZEBRA_REDISTRIBUTE_ADD, zclient, redist_type[i].type, 0);
 	return CMD_SUCCESS;
       }
   }
@@ -476,7 +476,7 @@ DEFUN (rip_redistribute_type_metric,
 		redist_type[i].str_min_len) == 0) 
       {
 	rip_redistribute_metric_set (redist_type[i].type, metric);
-	zclient_redistribute (ZEBRA_REDISTRIBUTE_ADD, zclient, redist_type[i].type);
+	zclient_redistribute (ZEBRA_REDISTRIBUTE_ADD, zclient, redist_type[i].type, 0);
 	return CMD_SUCCESS;
       }
   }
@@ -537,7 +537,7 @@ DEFUN (rip_redistribute_type_metric_routemap,
       {
 	rip_redistribute_metric_set (redist_type[i].type, metric);
 	rip_routemap_set (redist_type[i].type, argv[2]);
-	zclient_redistribute (ZEBRA_REDISTRIBUTE_ADD, zclient, redist_type[i].type);
+	zclient_redistribute (ZEBRA_REDISTRIBUTE_ADD, zclient, redist_type[i].type, 0);
 	return CMD_SUCCESS;
       }
   }
@@ -641,7 +641,7 @@ config_write_zebra (struct vty *vty)
       vty_out (vty, "no router zebra%s", VTY_NEWLINE);
       return 1;
     }
-  else if (! zclient->redist[ZEBRA_ROUTE_RIP])
+  else if (! zclient->redist[ZEBRA_ROUTE_RIP].enabled)
     {
       vty_out (vty, "router zebra%s", VTY_NEWLINE);
       vty_out (vty, " no redistribute rip%s", VTY_NEWLINE);
@@ -656,7 +656,8 @@ config_write_rip_redistribute (struct vty *vty, int config_mode)
   int i;
 
   for (i = 0; i < ZEBRA_ROUTE_MAX; i++)
-    if (i != zclient->redist_default && zclient->redist[i])
+    if (i != zclient->redist_default &&
+        zclient->redist[i].enabled)
       {
 	if (config_mode)
 	  {

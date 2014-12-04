@@ -139,7 +139,7 @@ zebra_redistribute_default (struct zserv *client)
 
 /* Redistribute routes. */
 static void
-zebra_redistribute (struct zserv *client, int type)
+zebra_redistribute (struct zserv *client, int type, u_short instance)
 {
   struct rib *newrib;
   struct route_table *table;
@@ -150,7 +150,8 @@ zebra_redistribute (struct zserv *client, int type)
     for (rn = route_top (table); rn; rn = route_next (rn))
       RNODE_FOREACH_RIB (rn, newrib)
 	if (CHECK_FLAG (newrib->flags, ZEBRA_FLAG_SELECTED) 
-	    && newrib->type == type 
+	    && newrib->type == type
+            && newrib->instance == instance
 	    && newrib->distance != DISTANCE_INFINITY
 	    && zebra_check_addr (&rn->p))
 	  {
@@ -164,7 +165,8 @@ zebra_redistribute (struct zserv *client, int type)
     for (rn = route_top (table); rn; rn = route_next (rn))
       RNODE_FOREACH_RIB (rn, newrib)
 	if (CHECK_FLAG (newrib->flags, ZEBRA_FLAG_SELECTED)
-	    && newrib->type == type 
+	    && newrib->type == type
+            && newrib->instance == instance
 	    && newrib->distance != DISTANCE_INFINITY
 	    && zebra_check_addr (&rn->p))
 	  {
@@ -184,7 +186,8 @@ redistribute_add (struct prefix *p, struct rib *rib)
     {
       if (is_default (p))
         {
-          if (client->redist_default || client->redist[rib->type])
+          if (client->redist_default ||
+              redist_check_instance(&client->redist[rib->type], rib->instance))
             {
               if (p->family == AF_INET)
 		{
@@ -200,7 +203,7 @@ redistribute_add (struct prefix *p, struct rib *rib)
 #endif /* HAVE_IPV6 */	  
 	    }
         }
-      else if (client->redist[rib->type])
+      else if (redist_check_instance(&client->redist[rib->type], rib->instance))
         {
           if (p->family == AF_INET)
 	    {
@@ -232,7 +235,8 @@ redistribute_delete (struct prefix *p, struct rib *rib)
     {
       if (is_default (p))
 	{
-	  if (client->redist_default || client->redist[rib->type])
+	  if (client->redist_default ||
+              redist_check_instance(&client->redist[rib->type], rib->instance))
 	    {
 	      if (p->family == AF_INET)
 		zsend_route_multipath (ZEBRA_IPV4_ROUTE_DELETE, client, p,
@@ -244,8 +248,8 @@ redistribute_delete (struct prefix *p, struct rib *rib)
 #endif /* HAVE_IPV6 */
 	    }
 	}
-      else if (client->redist[rib->type])
-	{
+      else if (redist_check_instance(&client->redist[rib->type], rib->instance))
+      {
 	  if (p->family == AF_INET)
 	    zsend_route_multipath (ZEBRA_IPV4_ROUTE_DELETE, client, p, rib);
 #ifdef HAVE_IPV6
@@ -260,16 +264,18 @@ void
 zebra_redistribute_add (int command, struct zserv *client, int length)
 {
   int type;
+  u_short instance;
 
   type = stream_getc (client->ibuf);
+  instance = stream_getw (client->ibuf);
 
   if (type == 0 || type >= ZEBRA_ROUTE_MAX)
     return;
 
-  if (! client->redist[type])
+  if (!redist_check_instance(&client->redist[type], instance))
     {
-      client->redist[type] = 1;
-      zebra_redistribute (client, type);
+      redist_add_instance(&client->redist[type], instance);
+      zebra_redistribute (client, type, instance);
     }
 }
 
@@ -277,13 +283,19 @@ void
 zebra_redistribute_delete (int command, struct zserv *client, int length)
 {
   int type;
+  u_short instance;
 
   type = stream_getc (client->ibuf);
+  instance = stream_getw (client->ibuf);
 
   if (type == 0 || type >= ZEBRA_ROUTE_MAX)
     return;
 
-  client->redist[type] = 0;
+  if (redist_check_instance(&client->redist[type], instance))
+    {
+      redist_del_instance(&client->redist[type], instance);
+      //Pending: why no reaction here?
+    }
 }
 
 void

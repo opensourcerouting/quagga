@@ -207,7 +207,7 @@ DEFUN (babel_redistribute_type,
         return CMD_WARNING;
     }
 
-    zclient_redistribute (ZEBRA_REDISTRIBUTE_ADD, zclient, type);
+    zclient_redistribute (ZEBRA_REDISTRIBUTE_ADD, zclient, type, 0);
     return CMD_SUCCESS;
 }
 
@@ -231,7 +231,7 @@ DEFUN (no_babel_redistribute_type,
         return CMD_WARNING;
     }
 
-    zclient_redistribute (ZEBRA_REDISTRIBUTE_DELETE, zclient, type);
+    zclient_redistribute (ZEBRA_REDISTRIBUTE_DELETE, zclient, type, 0);
     /* perhaps should we remove xroutes having the same type... */
     return CMD_SUCCESS;
 }
@@ -364,7 +364,7 @@ zebra_config_write (struct vty *vty)
         vty_out (vty, "no router zebra%s", VTY_NEWLINE);
         return 1;
     }
-    else if (! zclient->redist[ZEBRA_ROUTE_BABEL])
+    else if (! zclient->redist[ZEBRA_ROUTE_BABEL].enabled)
     {
         vty_out (vty, "router zebra%s", VTY_NEWLINE);
         vty_out (vty, " no redistribute babel%s", VTY_NEWLINE);

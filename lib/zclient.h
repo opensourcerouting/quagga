@@ -34,6 +34,12 @@
 /* Zebra header size. */
 #define ZEBRA_HEADER_SIZE             6
 
+struct redist_proto
+{
+  u_char enabled;
+  struct list *instances;
+};
+
 /* Structure for the zebra client. */
 struct zclient
 {
@@ -64,9 +70,9 @@ struct zclient
   struct thread *t_write;
 
   /* Redistribute information. */
-  u_char redist_default;
-  u_char redist[ZEBRA_ROUTE_MAX];
+  u_char redist_default; /* clients protocol */
   u_short instance;
+  struct redist_proto redist[ZEBRA_ROUTE_MAX];
 
   /* Redistribute defauilt. */
   u_char default_information;
@@ -144,11 +150,16 @@ extern void zclient_free (struct zclient *);
 extern int  zclient_socket_connect (struct zclient *);
 extern void zclient_serv_path_set  (char *path);
 
+extern int redist_check_instance (struct redist_proto *, u_short);
+extern void redist_add_instance (struct redist_proto *, u_short);
+extern void redist_del_instance (struct redist_proto *, u_short);
+
 /* Send redistribute command to zebra daemon. Do not update zclient state. */
-extern int zebra_redistribute_send (int command, struct zclient *, int type);
+extern int zebra_redistribute_send (int command, struct zclient *, int type, u_short instance);
 
 /* If state has changed, update state and call zebra_redistribute_send. */
-extern void zclient_redistribute (int command, struct zclient *, int type);
+extern void zclient_redistribute (int command, struct zclient *, int type,
+                                  u_short instance);
 
 /* If state has changed, update state and send the command to zebra. */
 extern void zclient_redistribute_default (int command, struct zclient *);

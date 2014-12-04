@@ -26,6 +26,7 @@
 #include "if.h"
 #include "workqueue.h"
 #include "routemap.h"
+#include "zclient.h"
 
 /* Default port information. */
 #define ZEBRA_VTY_PORT                2601
@@ -59,7 +60,7 @@ struct zserv
   int rtm_table;
 
   /* This client's redistribute flag. */
-  u_char redist[ZEBRA_ROUTE_MAX];
+  struct redist_proto redist[ZEBRA_ROUTE_MAX];
 
   /* Redistribute default route flag. */
   u_char redist_default;
