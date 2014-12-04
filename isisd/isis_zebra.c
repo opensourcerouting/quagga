@@ -252,6 +252,8 @@ isis_zebra_route_add_ipv4 (struct prefix *prefix,
       zclient_create_header (stream, ZEBRA_IPV4_ROUTE_ADD);
       /* type */
       stream_putc (stream, ZEBRA_ROUTE_ISIS);
+      /* instance */
+      stream_putw (stream, 0);
       /* flags */
       stream_putc (stream, flags);
       /* message */
@@ -304,6 +306,7 @@ isis_zebra_route_del_ipv4 (struct prefix *prefix,
   if (zclient->redist[ZEBRA_ROUTE_ISIS])
     {
       api.type = ZEBRA_ROUTE_ISIS;
+      api.instance = 0;
       api.flags = 0;
       api.message = 0;
       api.safi = SAFI_UNICAST;
@@ -334,6 +337,7 @@ isis_zebra_route_add_ipv6 (struct prefix *prefix,
     return;
 
   api.type = ZEBRA_ROUTE_ISIS;
+  api.instance = 0;
   api.flags = 0;
   api.message = 0;
   api.safi = SAFI_UNICAST;
@@ -419,6 +423,7 @@ isis_zebra_route_del_ipv6 (struct prefix *prefix,
     return;
 
   api.type = ZEBRA_ROUTE_ISIS;
+  api.instance = 0;
   api.flags = 0;
   api.message = 0;
   api.safi = SAFI_UNICAST;
@@ -527,6 +532,7 @@ isis_zebra_read_ipv4 (int command, struct zclient *zclient,
   ifindex = 0;
 
   api.type = stream_getc (stream);
+  api.instance = stream_getw (stream);
   api.flags = stream_getc (stream);
   api.message = stream_getc (stream);
 
@@ -591,7 +597,7 @@ void
 isis_zebra_init ()
 {
   zclient = zclient_new ();
-  zclient_init (zclient, ZEBRA_ROUTE_ISIS);
+  zclient_init (zclient, ZEBRA_ROUTE_ISIS, 0);
   zclient->router_id_update = isis_router_id_update_zebra;
   zclient->interface_add = isis_zebra_if_add;
   zclient->interface_delete = isis_zebra_if_del;

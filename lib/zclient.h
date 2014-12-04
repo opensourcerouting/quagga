@@ -66,6 +66,7 @@ struct zclient
   /* Redistribute information. */
   u_char redist_default;
   u_char redist[ZEBRA_ROUTE_MAX];
+  u_short instance;
 
   /* Redistribute defauilt. */
   u_char default_information;
@@ -111,6 +112,7 @@ struct zserv_header
 struct zapi_ipv4
 {
   u_char type;
+  u_short instance;
 
   u_char flags;
 
@@ -133,7 +135,7 @@ struct zapi_ipv4
 
 /* Prototypes of zebra client service functions. */
 extern struct zclient *zclient_new (void);
-extern void zclient_init (struct zclient *, int);
+extern void zclient_init (struct zclient *, int, u_short);
 extern int zclient_start (struct zclient *);
 extern void zclient_stop (struct zclient *);
 extern void zclient_reset (struct zclient *);
@@ -173,6 +175,7 @@ extern int zapi_ipv4_route (u_char, struct zclient *, struct prefix_ipv4 *,
 struct zapi_ipv6
 {
   u_char type;
+  u_short instance;
 
   u_char flags;
 

@@ -81,7 +81,7 @@ zclient_free (struct zclient *zclient)
 /* Initialize zebra client.  Argument redist_default is unwanted
    redistribute route type. */
 void
-zclient_init (struct zclient *zclient, int redist_default)
+zclient_init (struct zclient *zclient, int redist_default, u_short instance)
 {
   int i;
   
@@ -99,6 +99,7 @@ zclient_init (struct zclient *zclient, int redist_default)
      redistribution. */
   zclient->redist_default = redist_default;
   zclient->redist[redist_default] = 1;
+  zclient->instance = instance;
 
   /* Set default-information redistribute to zero. */
   zclient->default_information = 0;
@@ -142,7 +143,7 @@ void
 zclient_reset (struct zclient *zclient)
 {
   zclient_stop (zclient);
-  zclient_init (zclient, zclient->redist_default);
+  zclient_init (zclient, zclient->redist_default, zclient->instance);
 }
 
 #ifdef HAVE_TCP_ZEBRA
@@ -330,6 +331,7 @@ zebra_hello_send (struct zclient *zclient)
 
       zclient_create_header (s, ZEBRA_HELLO);
       stream_putc (s, zclient->redist_default);
+      stream_putw (s, zclient->instance);
       stream_putw_at (s, 0, stream_get_endp (s));
       return zclient_send_message(zclient);
     }
@@ -491,6 +493,7 @@ zapi_ipv4_route (u_char cmd, struct zclient *zclient, struct prefix_ipv4 *p,
   
   /* Put type and nexthop. */
   stream_putc (s, api->type);
+  stream_putw (s, api->instance);
   stream_putc (s, api->flags);
   stream_putc (s, api->message);
   stream_putw (s, api->safi);
@@ -572,6 +575,7 @@ zapi_ipv6_route (u_char cmd, struct zclient *zclient, struct prefix_ipv6 *p,
 
   /* Put type and nexthop. */
   stream_putc (s, api->type);
+  stream_putw (s, api->instance);
   stream_putc (s, api->flags);
   stream_putc (s, api->message);
   stream_putw (s, api->safi);

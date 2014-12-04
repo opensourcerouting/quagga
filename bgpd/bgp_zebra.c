@@ -387,6 +387,7 @@ zebra_read_ipv4 (int command, struct zclient *zclient, zebra_size_t length)
 
   /* Type, flags, message. */
   api.type = stream_getc (s);
+  api.instance = stream_getw (s);
   api.flags = stream_getc (s);
   api.message = stream_getc (s);
 
@@ -427,8 +428,8 @@ zebra_read_ipv4 (int command, struct zclient *zclient, zebra_size_t length)
       if (bgp_debug_zebra(&p))
 	{
 	  char buf[2][INET_ADDRSTRLEN];
-	  zlog_debug("Zebra rcvd: IPv4 route add %s %s/%d nexthop %s metric %u tag %d",
-		     zebra_route_string(api.type),
+	  zlog_debug("Zebra rcvd: IPv4 route add %s[%d] %s/%d nexthop %s metric %u tag %d",
+		     zebra_route_string(api.type), api.instance,
 		     inet_ntop(AF_INET, &p.prefix, buf[0], sizeof(buf[0])),
 		     p.prefixlen,
 		     inet_ntop(AF_INET, &nexthop, buf[1], sizeof(buf[1])),
@@ -443,9 +444,9 @@ zebra_read_ipv4 (int command, struct zclient *zclient, zebra_size_t length)
       if (bgp_debug_zebra(&p))
 	{
 	  char buf[2][INET_ADDRSTRLEN];
-	  zlog_debug("Zebra rcvd: IPv4 route delete %s %s/%d "
+	  zlog_debug("Zebra rcvd: IPv4 route delete %s[%d] %s/%d "
 		     "nexthop %s metric %u tag %d",
-		     zebra_route_string(api.type),
+		     zebra_route_string(api.type), api.instance,
 		     inet_ntop(AF_INET, &p.prefix, buf[0], sizeof(buf[0])),
 		     p.prefixlen,
 		     inet_ntop(AF_INET, &nexthop, buf[1], sizeof(buf[1])),
@@ -474,6 +475,7 @@ zebra_read_ipv6 (int command, struct zclient *zclient, zebra_size_t length)
 
   /* Type, flags, message. */
   api.type = stream_getc (s);
+  api.instance = stream_getw (s);
   api.flags = stream_getc (s);
   api.message = stream_getc (s);
 
@@ -520,8 +522,8 @@ zebra_read_ipv6 (int command, struct zclient *zclient, zebra_size_t length)
       if (bgp_debug_zebra(&p))
 	{
 	  char buf[2][INET6_ADDRSTRLEN];
-	  zlog_debug("Zebra rcvd: IPv6 route add %s %s/%d nexthop %s metric %u tag %d",
-		     zebra_route_string(api.type),
+	  zlog_debug("Zebra rcvd: IPv6 route add %s[%d] %s/%d nexthop %s metric %u tag %d",
+		     zebra_route_string(api.type), api.instance,
 		     inet_ntop(AF_INET6, &p.prefix, buf[0], sizeof(buf[0])),
 		     p.prefixlen,
 		     inet_ntop(AF_INET, &nexthop, buf[1], sizeof(buf[1])),
@@ -536,9 +538,9 @@ zebra_read_ipv6 (int command, struct zclient *zclient, zebra_size_t length)
       if (bgp_debug_zebra(&p))
 	{
 	  char buf[2][INET6_ADDRSTRLEN];
-	  zlog_debug("Zebra rcvd: IPv6 route delete %s %s/%d "
+	  zlog_debug("Zebra rcvd: IPv6 route delete %s[%d] %s/%d "
 		     "nexthop %s metric %u tag %d",
-		     zebra_route_string(api.type),
+		     zebra_route_string(api.type), api.instance,
 		     inet_ntop(AF_INET6, &p.prefix, buf[0], sizeof(buf[0])),
 		     p.prefixlen,
 		     inet_ntop(AF_INET6, &nexthop, buf[1], sizeof(buf[1])),
@@ -1008,6 +1010,7 @@ bgp_zebra_announce (struct prefix *p, struct bgp_info *info, struct bgp *bgp,
 
       api.flags = flags;
       api.type = ZEBRA_ROUTE_BGP;
+      api.instance = 0;
       api.message = 0;
       api.safi = safi;
       SET_FLAG (api.message, ZAPI_MESSAGE_NEXTHOP);
@@ -1176,6 +1179,7 @@ bgp_zebra_announce (struct prefix *p, struct bgp_info *info, struct bgp *bgp,
       /* Make Zebra API structure. */
       api.flags = flags;
       api.type = ZEBRA_ROUTE_BGP;
+      api.instance = 0;
       api.message = 0;
       api.safi = safi;
       SET_FLAG (api.message, ZAPI_MESSAGE_NEXTHOP);
@@ -1268,6 +1272,7 @@ bgp_zebra_withdraw (struct prefix *p, struct bgp_info *info, safi_t safi)
       nexthop = &info->attr->nexthop;
 
       api.type = ZEBRA_ROUTE_BGP;
+      api.instance = 0;
       api.message = 0;
       api.safi = safi;
       SET_FLAG (api.message, ZAPI_MESSAGE_NEXTHOP);
@@ -1331,6 +1336,7 @@ bgp_zebra_withdraw (struct prefix *p, struct bgp_info *info, safi_t safi)
 
       api.flags = flags;
       api.type = ZEBRA_ROUTE_BGP;
+      api.instance = 0;
       api.message = 0;
       api.safi = safi;
       SET_FLAG (api.message, ZAPI_MESSAGE_NEXTHOP);
@@ -1490,7 +1496,7 @@ bgp_zebra_init (void)
 {
   /* Set default values. */
   zclient = zclient_new ();
-  zclient_init (zclient, ZEBRA_ROUTE_BGP);
+  zclient_init (zclient, ZEBRA_ROUTE_BGP, 0);
   zclient->router_id_update = bgp_router_id_update;
   zclient->interface_add = bgp_interface_add;
   zclient->interface_delete = bgp_interface_delete;

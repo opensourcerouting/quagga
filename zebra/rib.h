@@ -48,6 +48,9 @@ struct rib
   /* Type fo this route. */
   int type;
 
+  /* Source protocol instance */
+  u_short instance;
+
   /* Which routing table */
   int table;			
 

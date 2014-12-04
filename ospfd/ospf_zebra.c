@@ -365,6 +365,7 @@ ospf_zebra_add (struct prefix_ipv4 *p, struct ospf_route *or)
       /* Put command, type, flags, message. */
       zclient_create_header (s, ZEBRA_IPV4_ROUTE_ADD);
       stream_putc (s, ZEBRA_ROUTE_OSPF);
+      stream_putw (s, ospf->instance);
       stream_putc (s, flags);
       stream_putc (s, message);
       stream_putw (s, SAFI_UNICAST);
@@ -494,6 +495,7 @@ ospf_zebra_delete (struct prefix_ipv4 *p, struct ospf_route *or)
       /* Put command, type, flags, message. */
       zclient_create_header (s, ZEBRA_IPV4_ROUTE_DELETE);
       stream_putc (s, ZEBRA_ROUTE_OSPF);
+      stream_putw (s, ospf->instance);
       stream_putc (s, flags);
       stream_putc (s, message);
       stream_putw (s, SAFI_UNICAST);
@@ -565,6 +567,7 @@ ospf_zebra_add_discard (struct prefix_ipv4 *p)
   if (zclient->redist[ZEBRA_ROUTE_OSPF])
     {
       api.type = ZEBRA_ROUTE_OSPF;
+      api.instance = ospf->instance;
       api.flags = ZEBRA_FLAG_BLACKHOLE;
       api.message = 0;
       api.safi = SAFI_UNICAST;
@@ -589,6 +592,7 @@ ospf_zebra_delete_discard (struct prefix_ipv4 *p)
   if (zclient->redist[ZEBRA_ROUTE_OSPF])
     {
       api.type = ZEBRA_ROUTE_OSPF;
+      api.instance = ospf->instance;
       api.flags = ZEBRA_FLAG_BLACKHOLE;
       api.message = 0;
       api.safi = SAFI_UNICAST;
@@ -882,6 +886,7 @@ ospf_zebra_read_ipv4 (int command, struct zclient *zclient,
 
   /* Type, flags, message. */
   api.type = stream_getc (s);
+  api.instance = stream_getw (s);
   api.flags = stream_getc (s);
   api.message = stream_getc (s);
 
@@ -1355,7 +1360,7 @@ ospf_zebra_init ()
 {
   /* Allocate zebra structure. */
   zclient = zclient_new ();
-  zclient_init (zclient, ZEBRA_ROUTE_OSPF);
+  zclient_init (zclient, ZEBRA_ROUTE_OSPF, 0);
   zclient->router_id_update = ospf_router_id_update_zebra;
   zclient->interface_add = ospf_interface_add;
   zclient->interface_delete = ospf_interface_delete;

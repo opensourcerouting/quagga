@@ -51,6 +51,7 @@ ripng_zebra_ipv6_add (struct prefix_ipv6 *p, struct in6_addr *nexthop,
   if (zclient->redist[ZEBRA_ROUTE_RIPNG])
     {
       api.type = ZEBRA_ROUTE_RIPNG;
+      api.instance = 0;
       api.flags = 0;
       api.message = 0;
       api.safi = SAFI_UNICAST;
@@ -76,6 +77,7 @@ ripng_zebra_ipv6_delete (struct prefix_ipv6 *p, struct in6_addr *nexthop,
   if (zclient->redist[ZEBRA_ROUTE_RIPNG])
     {
       api.type = ZEBRA_ROUTE_RIPNG;
+      api.instance = 0;
       api.flags = 0;
       api.message = 0;
       api.safi = SAFI_UNICAST;
@@ -107,6 +109,7 @@ ripng_zebra_read_ipv6 (int command, struct zclient *zclient,
 
   /* Type, flags, message. */
   api.type = stream_getc (s);
+  api.instance = stream_getw (s);
   api.flags = stream_getc (s);
   api.message = stream_getc (s);
 
@@ -502,7 +505,7 @@ zebra_init ()
 {
   /* Allocate zebra structure. */
   zclient = zclient_new ();
-  zclient_init (zclient, ZEBRA_ROUTE_RIPNG);
+  zclient_init (zclient, ZEBRA_ROUTE_RIPNG, 0);
 
   zclient->interface_up = ripng_interface_up;
   zclient->interface_down = ripng_interface_down;

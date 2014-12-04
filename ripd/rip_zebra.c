@@ -52,6 +52,7 @@ rip_zebra_ipv4_send (struct route_node *rp, u_char cmd)
   if (zclient->redist[ZEBRA_ROUTE_RIP])
     {
       api.type = ZEBRA_ROUTE_RIP;
+      api.instance = 0;
       api.flags = 0;
       api.message = 0;
       api.safi = SAFI_UNICAST;
@@ -139,6 +140,7 @@ rip_zebra_read_ipv4 (int command, struct zclient *zclient, zebra_size_t length)
 
   /* Type, flags, message. */
   api.type = stream_getc (s);
+  api.instance = stream_getw (s);
   api.flags = stream_getc (s);
   api.message = stream_getc (s);
 
@@ -699,7 +701,7 @@ rip_zclient_init ()
 {
   /* Set default value to the zebra client structure. */
   zclient = zclient_new ();
-  zclient_init (zclient, ZEBRA_ROUTE_RIP);
+  zclient_init (zclient, ZEBRA_ROUTE_RIP, 0);
   zclient->interface_add = rip_interface_add;
   zclient->interface_delete = rip_interface_delete;
   zclient->interface_address_add = rip_interface_address_add;

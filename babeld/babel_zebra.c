@@ -99,6 +99,7 @@ babel_zebra_read_ipv6 (int command, struct zclient *zclient,
 
     /* Type, flags, message. */
     api.type = stream_getc (s);
+    api.instance = stream_getw (s);
     api.flags = stream_getc (s);
     api.message = stream_getc (s);
 
@@ -151,6 +152,7 @@ babel_zebra_read_ipv4 (int command, struct zclient *zclient,
 
     /* Type, flags, message. */
     api.type = stream_getc (s);
+    api.instance = stream_getw (s);
     api.flags = stream_getc (s);
     api.message = stream_getc (s);
 
@@ -332,7 +334,7 @@ debug_babel_config_write (struct vty * vty)
 void babelz_zebra_init(void)
 {
     zclient = zclient_new();
-    zclient_init(zclient, ZEBRA_ROUTE_BABEL);
+    zclient_init(zclient, ZEBRA_ROUTE_BABEL, 0);
 
     zclient->interface_add = babel_interface_add;
     zclient->interface_delete = babel_interface_delete;

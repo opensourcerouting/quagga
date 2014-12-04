@@ -520,6 +520,7 @@ zsend_route_multipath (int cmd, struct zserv *client, struct prefix *p,
   
   /* Put type and nexthop. */
   stream_putc (s, rib->type);
+  stream_putw (s, rib->instance);
   stream_putc (s, rib->flags);
   
   /* marker for message flags field */
@@ -1000,6 +1001,7 @@ zread_ipv4_add (struct zserv *client, u_short length)
   
   /* Type, flags, message. */
   rib->type = stream_getc (s);
+  rib->instance = stream_getw (s);
   rib->flags = stream_getc (s);
   message = stream_getc (s); 
   safi = stream_getw (s);
@@ -1101,6 +1103,7 @@ zread_ipv4_delete (struct zserv *client, u_short length)
 
   /* Type, flags, message. */
   api.type = stream_getc (s);
+  api.instance = stream_getw (s);
   api.flags = stream_getc (s);
   api.message = stream_getc (s);
   api.safi = stream_getw (s);
@@ -1227,6 +1230,7 @@ zread_ipv6_add (struct zserv *client, u_short length)
 
   /* Type, flags, message. */
   rib->type = stream_getc (s);
+  rib->instance = stream_getw (s);
   rib->flags = stream_getc (s);
   message = stream_getc (s);
   safi = stream_getw (s);
@@ -1343,6 +1347,7 @@ zread_ipv6_delete (struct zserv *client, u_short length)
 
   /* Type, flags, message. */
   api.type = stream_getc (s);
+  api.instance = stream_getw (s);
   api.flags = stream_getc (s);
   api.message = stream_getc (s);
   api.safi = stream_getw (s);
@@ -1445,7 +1450,10 @@ zread_hello (struct zserv *client)
 {
   /* type of protocol (lib/zebra.h) */
   u_char proto;
+  u_short instance;
+
   proto = stream_getc (client->ibuf);
+  instance = stream_getw (client->ibuf);
 
   /* accept only dynamic routing protocols */
   if ((proto < ZEBRA_ROUTE_MAX)
@@ -1453,6 +1461,8 @@ zread_hello (struct zserv *client)
     {
       zlog_notice ("client %d says hello and bids fair to announce only %s routes",
                     client->sock, zebra_route_string(proto));
+      if (instance)
+        zlog_notice ("client protocol instance %d", instance);
 
       /* if route-type was binded by other client */
       if (route_type_oaths[proto])
@@ -1462,6 +1472,7 @@ zread_hello (struct zserv *client)
 
       route_type_oaths[proto] = client->sock;
       client->proto = proto;
+      client->instance = instance;
     }
 }
 
@@ -1952,8 +1963,11 @@ zebra_show_client_detail (struct vty *vty, struct zserv *client)
   char cbuf[ZEBRA_TIME_BUF], rbuf[ZEBRA_TIME_BUF];
   char wbuf[ZEBRA_TIME_BUF], nhbuf[ZEBRA_TIME_BUF], mbuf[ZEBRA_TIME_BUF];
 
-  vty_out (vty, "Client: %s %s",
-	   zebra_route_string(client->proto), VTY_NEWLINE);
+  vty_out (vty, "Client: %s", zebra_route_string(client->proto));
+  if (client->instance)
+    vty_out (vty, " Instance: %d", client->instance);
+  vty_out (vty, "%s", VTY_NEWLINE);
+
   vty_out (vty, "------------------------ %s", VTY_NEWLINE);
   vty_out (vty, "FD: %d %s", client->sock, VTY_NEWLINE);
   vty_out (vty, "Route Table ID: %d %s", client->rtm_table, VTY_NEWLINE);

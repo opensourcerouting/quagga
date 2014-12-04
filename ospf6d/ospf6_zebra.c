@@ -215,6 +215,7 @@ ospf6_zebra_read_ipv6 (int command, struct zclient *zclient,
 
   /* Type, flags, message. */
   api.type = stream_getc (s);
+  api.instance = stream_getw (s);
   api.flags = stream_getc (s);
   api.message = stream_getc (s);
 
@@ -438,6 +439,7 @@ ospf6_zebra_route_update (int type, struct ospf6_route *request)
   ospf6_route_zebra_copy_nexthops (request, ifindexes, nexthops, nhcount);
 
   api.type = ZEBRA_ROUTE_OSPF6;
+  api.instance = 0;
   api.flags = 0;
   api.message = 0;
   api.safi = SAFI_UNICAST;
@@ -504,6 +506,7 @@ ospf6_zebra_add_discard (struct ospf6_route *request)
 	{
 	  api.type = ZEBRA_ROUTE_OSPF6;
 	  api.flags = ZEBRA_FLAG_BLACKHOLE;
+	  api.instance = 0;
 	  api.message = 0;
 	  api.safi = SAFI_UNICAST;
 	  SET_FLAG (api.message, ZAPI_MESSAGE_NEXTHOP);
@@ -548,6 +551,7 @@ ospf6_zebra_delete_discard (struct ospf6_route *request)
 
 	  api.type = ZEBRA_ROUTE_OSPF6;
 	  api.flags = ZEBRA_FLAG_BLACKHOLE;
+	  api.instance = 0;
 	  api.message = 0;
 	  api.safi = SAFI_UNICAST;
 	  SET_FLAG (api.message, ZAPI_MESSAGE_NEXTHOP);
@@ -635,7 +639,7 @@ ospf6_zebra_init (void)
 {
   /* Allocate zebra structure. */
   zclient = zclient_new ();
-  zclient_init (zclient, ZEBRA_ROUTE_OSPF6);
+  zclient_init (zclient, ZEBRA_ROUTE_OSPF6, 0);
   zclient->router_id_update = ospf6_router_id_update_zebra;
   zclient->interface_add = ospf6_zebra_if_add;
   zclient->interface_delete = ospf6_zebra_if_del;
