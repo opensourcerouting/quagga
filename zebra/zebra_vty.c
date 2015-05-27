@@ -29,6 +29,7 @@
 #include "table.h"
 #include "rib.h"
 #include "vrf.h"
+#include "routemap.h"
 
 #include "zebra/zserv.h"
 

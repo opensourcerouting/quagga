@@ -29,6 +29,10 @@
 #include "buffer.h"
 #include "log.h"
 
+DEFINE_MTYPE_STATIC(LIB, ACCESS_LIST,     "Access List")
+DEFINE_MTYPE_STATIC(LIB, ACCESS_LIST_STR, "Access List Str")
+DEFINE_MTYPE_STATIC(LIB, ACCESS_FILTER,   "Access Filter")
+
 struct filter_cisco
 {
   /* Cisco access-list */

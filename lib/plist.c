@@ -32,6 +32,10 @@
 
 #include "plist_int.h"
 
+DEFINE_MTYPE_STATIC(LIB, PREFIX_LIST,       "Prefix List")
+DEFINE_MTYPE_STATIC(LIB, MPREFIX_LIST_STR,   "Prefix List Str")
+DEFINE_MTYPE_STATIC(LIB, PREFIX_LIST_ENTRY, "Prefix List Entry")
+
 /* List of struct prefix_list. */
 struct prefix_list_list
 {
@@ -203,7 +207,7 @@ prefix_list_insert (afi_t afi, int orf, const char *name)
 
   /* Allocate new prefix_list and copy given name. */
   plist = prefix_list_new ();
-  plist->name = XSTRDUP (MTYPE_PREFIX_LIST_STR, name);
+  plist->name = XSTRDUP (MTYPE_MPREFIX_LIST_STR, name);
   plist->master = master;
 
   /* If name is made by all digit character.  We treat it as
@@ -331,7 +335,7 @@ prefix_list_delete (struct prefix_list *plist)
   master->recent = NULL;
 
   if (plist->name)
-    XFREE (MTYPE_PREFIX_LIST_STR, plist->name);
+    XFREE (MTYPE_MPREFIX_LIST_STR, plist->name);
   
   prefix_list_free (plist);
   

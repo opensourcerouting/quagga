@@ -28,6 +28,9 @@
 #include "distribute.h"
 #include "memory.h"
 
+DEFINE_MTYPE_STATIC(LIB, DISTRIBUTE,        "Distribute list")
+DEFINE_MTYPE_STATIC(LIB, DISTRIBUTE_IFNAME, "Dist-list ifname")
+
 /* Hash of distribute list. */
 struct hash *disthash;
 

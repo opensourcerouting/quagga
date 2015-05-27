@@ -22,6 +22,10 @@
 #ifndef _ZEBRA_ROUTEMAP_H
 #define _ZEBRA_ROUTEMAP_H
 
+#include "memory.h"
+DECLARE_MTYPE(ROUTE_MAP_NAME)
+DECLARE_MTYPE(ROUTE_MAP_COMPILED)
+
 /* Route map's type. */
 enum route_map_type
 {

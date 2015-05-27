@@ -33,6 +33,10 @@ Boston, MA 02111-1307, USA.  */
 #include "command.h"
 #include "workqueue.h"
 
+DEFINE_MTYPE(       LIB, HOST,       "Host config")
+DEFINE_MTYPE(       LIB, STRVEC,     "String vector")
+DEFINE_MTYPE_STATIC(LIB, CMD_TOKENS, "Command desc")
+
 /* Command vector which includes some level of command lists. Normally
    each daemon maintains each own cmdvec. */
 vector cmdvec = NULL;

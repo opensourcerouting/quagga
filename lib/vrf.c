@@ -68,6 +68,10 @@ static int have_netns_enabled = -1;
 
 #endif /* HAVE_NETNS */
 
+DEFINE_MTYPE_STATIC(LIB, VRF,        "VRF")
+DEFINE_MTYPE_STATIC(LIB, VRF_NAME,   "VRF name")
+DEFINE_MTYPE_STATIC(LIB, VRF_BITMAP, "VRF bit-map")
+
 static int have_netns(void)
 {
 #ifdef HAVE_NETNS

@@ -31,6 +31,10 @@
 #include "command.h"
 #include "sigevent.h"
 
+DEFINE_MTYPE_STATIC(LIB, THREAD,        "Thread")
+DEFINE_MTYPE_STATIC(LIB, THREAD_MASTER, "Thread master")
+DEFINE_MTYPE_STATIC(LIB, THREAD_STATS,  "Thread stats")
+
 #if defined HAVE_SNMP && defined SNMP_AGENTX
 #include <net-snmp/net-snmp-config.h>
 #include <net-snmp/net-snmp-includes.h>

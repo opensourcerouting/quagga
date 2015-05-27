@@ -37,6 +37,10 @@
 #include "str.h"
 #include "log.h"
 
+DEFINE_MTYPE(       LIB, IF,              "Interface")
+DEFINE_MTYPE_STATIC(LIB, CONNECTED,       "Connected")
+DEFINE_MTYPE(       LIB, CONNECTED_LABEL, "Connected interface label")
+
 /* List of interfaces in only the default VRF */
 struct list *iflist;
 

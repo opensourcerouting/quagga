@@ -33,6 +33,8 @@
 #include "memory.h"
 #include "table.h"
 
+DEFINE_MTYPE_STATIC(LIB, ZCLIENT, "Zclient")
+
 /* Zebra client events. */
 enum event {ZCLIENT_SCHEDULE, ZCLIENT_READ, ZCLIENT_CONNECT};
 
