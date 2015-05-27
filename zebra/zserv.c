@@ -1303,7 +1303,7 @@ zebra_client_close (struct zserv *client)
 
   /* Free client structure. */
   listnode_delete (zebrad.client_list, client);
-  XFREE (0, client);
+  XFREE (MTYPE_TMP, client);
 }
 
 /* Make new client. */
@@ -1313,7 +1313,7 @@ zebra_client_create (int sock)
   struct zserv *client;
   int i;
 
-  client = XCALLOC (0, sizeof (struct zserv));
+  client = XCALLOC (MTYPE_TMP, sizeof (struct zserv));
 
   /* Make client input/output buffer. */
   client->sock = sock;
