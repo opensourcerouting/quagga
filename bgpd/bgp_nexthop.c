@@ -42,6 +42,8 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #include "zebra/rib.h"
 #include "zebra/zserv.h"	/* For ZEBRA_SERV_PATH. */
 
+DEFINE_MTYPE_STATIC(BGPD, BGP_NEXTHOP, "BGP nexthop")
+
 struct bgp_nexthop_cache *zlookup_query (struct in_addr);
 struct bgp_nexthop_cache *zlookup_query_ipv6 (struct in6_addr *);
 
@@ -92,7 +94,7 @@ bnc_nexthop_free (struct bgp_nexthop_cache *bnc)
   for (nexthop = bnc->nexthop; nexthop; nexthop = next)
     {
       next = nexthop->next;
-      XFREE (MTYPE_NEXTHOP, nexthop);
+      XFREE (MTYPE_BGP_NEXTHOP, nexthop);
     }
 }
 
@@ -819,7 +821,7 @@ zlookup_read (void)
 
       for (i = 0; i < nexthop_num; i++)
 	{
-	  nexthop = XCALLOC (MTYPE_NEXTHOP, sizeof (struct nexthop));
+	  nexthop = XCALLOC (MTYPE_BGP_NEXTHOP, sizeof (struct nexthop));
 	  nexthop->type = stream_getc (s);
 	  switch (nexthop->type)
 	    {
@@ -922,7 +924,7 @@ zlookup_read_ipv6 (void)
 
       for (i = 0; i < nexthop_num; i++)
 	{
-	  nexthop = XCALLOC (MTYPE_NEXTHOP, sizeof (struct nexthop));
+	  nexthop = XCALLOC (MTYPE_BGP_NEXTHOP, sizeof (struct nexthop));
 	  nexthop->type = stream_getc (s);
 	  switch (nexthop->type)
 	    {

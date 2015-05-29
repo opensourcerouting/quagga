@@ -43,6 +43,8 @@
 #include "ospf6_snmp.h"
 #include "ospf6d.h"
 
+DEFINE_MTYPE_STATIC(OSPF6D, CFG_PLIST_NAME, "configured prefix list names")
+
 unsigned char conf_debug_ospf6_interface = 0;
 
 const char *ospf6_interface_state_str[] =
@@ -259,7 +261,7 @@ ospf6_interface_delete (struct ospf6_interface *oi)
 
   /* plist_name */
   if (oi->plist_name)
-    XFREE (MTYPE_PREFIX_LIST_STR, oi->plist_name);
+    XFREE (MTYPE_CFG_PLIST_NAME, oi->plist_name);
 
   XFREE (MTYPE_OSPF6_IF, oi);
 }
@@ -1642,8 +1644,8 @@ DEFUN (ipv6_ospf6_advertise_prefix_list,
   assert (oi);
 
   if (oi->plist_name)
-    XFREE (MTYPE_PREFIX_LIST_STR, oi->plist_name);
-  oi->plist_name = XSTRDUP (MTYPE_PREFIX_LIST_STR, argv[0]);
+    XFREE (MTYPE_CFG_PLIST_NAME, oi->plist_name);
+  oi->plist_name = XSTRDUP (MTYPE_CFG_PLIST_NAME, argv[0]);
 
   ospf6_interface_connected_route_update (oi->interface);
 
@@ -1684,7 +1686,7 @@ DEFUN (no_ipv6_ospf6_advertise_prefix_list,
 
   if (oi->plist_name)
     {
-      XFREE (MTYPE_PREFIX_LIST_STR, oi->plist_name);
+      XFREE (MTYPE_CFG_PLIST_NAME, oi->plist_name);
       oi->plist_name = NULL;
     }
 
