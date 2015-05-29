@@ -25,6 +25,7 @@
 
 #include <stdint.h>
 
+#include "pim_memory.h"
 #include "pim_mroute.h"
 #include "pim_assert.h"
 

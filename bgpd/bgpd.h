@@ -23,6 +23,7 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 
 /* For union sockunion.  */
 #include "sockunion.h"
+#include "bgp_memory.h"
 
 /* Typedef BGP specific types.  */
 typedef u_int32_t as_t;

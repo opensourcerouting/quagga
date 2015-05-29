@@ -22,6 +22,7 @@
 #include <zebra.h>
 
 #include "memory.h"
+#include "zebra_memory.h"
 #include "if.h"
 #include "prefix.h"
 #include "command.h"

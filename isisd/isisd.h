@@ -26,6 +26,7 @@
 #define ISISD_VERSION "0.0.7"
 
 #include "isisd/isis_redist.h"
+#include "isis_memory.h"
 
 /* uncomment if you are a developer in bug hunt */
 /* #define EXTREME_DEBUG  */
