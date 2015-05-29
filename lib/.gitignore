@@ -14,5 +14,4 @@ gitversion.h.tmp
 .arch-ids
 *~
 *.loT
-memtypes.h
 route_types.h
