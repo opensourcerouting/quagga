@@ -21,9 +21,6 @@
  * 02111-1307, USA.
  */
 
-/***** MTYPE definition is not reflected to "memory.h" yet. *****/
-#define MTYPE_OSPF_MPLS_TE_LINKPARAMS	MTYPE_TMP
-
 #include <zebra.h>
 
 #include "linklist.h"
@@ -55,6 +52,8 @@
 #include "ospfd/ospf_ase.h"
 #include "ospfd/ospf_zebra.h"
 #include "ospfd/ospf_te.h"
+
+DEFINE_MTYPE_STATIC(OSPFD, OSPF_MPLS_TE_LINKPARAMS, "OSPF MPLS-TE link parameters")
 
 /* Following structure are internal use only. */
 struct ospf_mpls_te

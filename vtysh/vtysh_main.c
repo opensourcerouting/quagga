@@ -33,6 +33,7 @@
 #include "getopt.h"
 #include "command.h"
 #include "memory.h"
+#include "memory_vty.h"
 
 #include "vtysh/vtysh.h"
 #include "vtysh/vtysh_user.h"
