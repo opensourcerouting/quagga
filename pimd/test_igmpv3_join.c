@@ -30,6 +30,7 @@
 #include <net/if.h>
 #include <arpa/inet.h>
 
+typedef int ifindex_t;
 #include "pim_igmp_join.h"
 
 const char *prog_name = 0;
