@@ -14,7 +14,7 @@ libzebra_la_SOURCES = \
 	filter.c routemap.c distribute.c stream.c str.c log.c plist.c \
 	zclient.c sockopt.c smux.c agentx.c snmp.c md5.c if_rmap.c keychain.c privs.c \
 	sigevent.c pqueue.c jhash.c memtypes.c workqueue.c vrf.c \
-	event_counter.c nexthop.c
+	event_counter.c nexthop.c skiplist.c
 
 BUILT_SOURCES = memtypes.h route_types.h gitversion.h
 
@@ -30,7 +30,7 @@ pkginclude_HEADERS = \
 	plist.h zclient.h sockopt.h smux.h md5.h if_rmap.h keychain.h \
 	privs.h sigevent.h pqueue.h jhash.h zassert.h memtypes.h \
 	workqueue.h route_types.h libospf.h vrf.h fifo.h event_counter.h \
-	nexthop.h
+	nexthop.h skiplist.h
 
 noinst_HEADERS = \
 	plist_int.h
@@ -62,7 +62,7 @@ GITH=gitversion.h
 gitversion.h.tmp: $(srcdir)/../.git
 	@PERL@ $(srcdir)/gitversion.pl $(srcdir) > ${GITH}.tmp
 gitversion.h: gitversion.h.tmp
-	{ test -f ${GITH} && diff -s -q ${GITH}.tmp ${GITH}; } || cp -v ${GITH}.tmp ${GITH}
+	{ test -f ${GITH} && diff -s -q ${GITH}.tmp ${GITH}; } || cp -v ${GITH}.tmp ${GITH} 
 
 else
 .PHONY: gitversion.h
