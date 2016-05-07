@@ -144,6 +144,8 @@ bgp_afi_safi_valid_indices (afi_t afi, safi_t *safi)
 	  return 1;
 	}
       break;
+    default:
+        break;
     }
 
   zlog_debug ("unknown afi/safi (%u/%u)", afi, *safi);

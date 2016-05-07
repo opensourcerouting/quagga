@@ -238,6 +238,8 @@ afi2str(afi_t afi)
 	return "IPv6";
     case AFI_ETHER:
 	return "ethernet";
+    case AFI_MAX:
+        return "bad-value";
   }
   return NULL;
 }
