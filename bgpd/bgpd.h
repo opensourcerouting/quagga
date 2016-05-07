@@ -179,6 +179,11 @@ struct bgp
     u_int16_t maxpaths_ebgp;
     u_int16_t maxpaths_ibgp;
   } maxpaths[AFI_MAX][SAFI_MAX];
+
+#if ENABLE_BGP_VNC
+  struct rfapi_cfg *rfapi_cfg;
+  struct rfapi *rfapi;
+#endif
 };
 
 /* BGP peer-group support. */
@@ -228,6 +233,8 @@ struct bgp_rd
 #define RMAP_IMPORT   2
 #define RMAP_EXPORT   3
 #define RMAP_MAX        4
+
+#include "filter.h"
 
 /* BGP filter structure. */
 struct bgp_filter
@@ -401,6 +408,9 @@ struct peer
 #define PEER_FLAG_DISABLE_CONNECTED_CHECK   (1 << 6) /* disable-connected-check */
 #define PEER_FLAG_LOCAL_AS_NO_PREPEND       (1 << 7) /* local-as no-prepend */
 #define PEER_FLAG_LOCAL_AS_REPLACE_AS       (1 << 8) /* local-as no-prepend replace-as */
+#if ENABLE_BGP_VNC
+#define PEER_FLAG_IS_RFAPI_HD		    (1 << 9) /* attached to rfapi HD */
+#endif
 
   /* NSF mode (graceful restart) */
   u_char nsf[AFI_MAX][SAFI_MAX];
@@ -655,6 +665,9 @@ struct bgp_nlri
 #define BGP_ATTR_AS4_AGGREGATOR                 18
 #define BGP_ATTR_AS_PATHLIMIT                   21
 #define BGP_ATTR_ENCAP                          23
+#if ENABLE_BGP_VNC
+#define BGP_ATTR_VNC                           255
+#endif
 
 /* BGP update origin.  */
 #define BGP_ORIGIN_IGP                           0
@@ -767,6 +780,7 @@ struct bgp_nlri
 
 /* RFC4364 */
 #define SAFI_MPLS_LABELED_VPN                  128
+#define BGP_SAFI_VPN                           128
 
 /* Max TTL value.  */
 #define TTL_MAX                                255
@@ -998,4 +1012,8 @@ extern int peer_ttl_security_hops_set (struct peer *, int);
 extern int peer_ttl_security_hops_unset (struct peer *);
 
 extern void bgp_scan_finish (void);
+
+/* For benefit of rfapi */
+extern struct peer * peer_new (struct bgp *bgp);
+
 #endif /* _QUAGGA_BGPD_H */
