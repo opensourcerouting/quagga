@@ -415,7 +415,11 @@ struct in_pktinfo
 #define ZEBRA_HELLO                       23
 #define ZEBRA_IPV4_NEXTHOP_LOOKUP_MRIB    24
 #define ZEBRA_VRF_UNREGISTER              25
-#define ZEBRA_MESSAGE_MAX                 26
+#define ZEBRA_IPV4_NEXTHOP_ADD		  26
+#define ZEBRA_IPV4_NEXTHOP_DELETE	  27
+#define ZEBRA_IPV6_NEXTHOP_ADD		  28
+#define ZEBRA_IPV6_NEXTHOP_DELETE	  29
+#define ZEBRA_MESSAGE_MAX                 30
 
 /* Marker value used in new Zserv, in the byte location corresponding
  * the command value in the old zserv header. To allow old and new
@@ -483,7 +487,7 @@ typedef enum {
   AFI_IP  = 1,
   AFI_IP6 = 2,
   AFI_ETHER = 3,                /* RFC 1700 has "6" for 802.* */
-#define AFI_MAX 4
+  AFI_MAX = 4
 } afi_t;
 
 /* Subsequent Address Family Identifier. */

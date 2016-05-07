@@ -184,6 +184,15 @@ vtysh_config_parse_line (const char *line)
 	  else if (strncmp (line, " address-family ipv6",
 		   strlen (" address-family ipv6")) == 0)
 	    config = config_get (BGP_IPV6_NODE, line);
+	  else if (strncmp (line, " vnc defaults",
+		   strlen (" vnc defaults")) == 0)
+	    config = config_get (BGP_VNC_DEFAULTS_NODE, line);
+	  else if (strncmp (line, " vnc nve-group",
+		   strlen (" vnc nve-group")) == 0)
+	    config = config_get (BGP_VNC_NVE_GROUP_NODE, line);
+	  else if (strncmp (line, " vnc l2-group",
+		   strlen (" vnc l2-group")) == 0)
+	    config = config_get (BGP_VNC_L2_GROUP_NODE, line);
 	  else if (config->index == RMAP_NODE ||
 	           config->index == INTERFACE_NODE ||
 		   config->index == VTY_NODE)

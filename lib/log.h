@@ -53,6 +53,7 @@ typedef enum
   ZLOG_BABEL,
   ZLOG_OSPF6,
   ZLOG_ISIS,
+  ZLOG_RFP,
   ZLOG_PIM,
   ZLOG_MASC
 } zlog_proto_t;
@@ -120,6 +121,8 @@ extern void zlog_warn (const char *format, ...) PRINTF_ATTRIBUTE(1, 2);
 extern void zlog_info (const char *format, ...) PRINTF_ATTRIBUTE(1, 2);
 extern void zlog_notice (const char *format, ...) PRINTF_ATTRIBUTE(1, 2);
 extern void zlog_debug (const char *format, ...) PRINTF_ATTRIBUTE(1, 2);
+
+void vzlog (struct zlog *, int , const char *, va_list );
 
 /* For bgpd's peer oriented log. */
 extern void plog_err (struct zlog *, const char *format, ...)
@@ -190,6 +193,10 @@ extern size_t quagga_timestamp(int timestamp_precision /* # subsecond digits */,
 			       char *buf, size_t buflen);
 
 extern void zlog_hexdump(void *mem, unsigned int len);
+
+
+extern int 
+vzlog_test (struct zlog *zl, int priority);
 
 /* structure useful for avoiding repeated rendering of the same timestamp */
 struct timestamp_control {

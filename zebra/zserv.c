@@ -1464,6 +1464,12 @@ zebra_client_read (struct thread *thread)
     case ZEBRA_IPV4_ROUTE_DELETE:
       zread_ipv4_delete (client, length, vrf_id);
       break;
+    case ZEBRA_IPV4_NEXTHOP_ADD:
+      zread_ipv4_add(client, length, vrf_id); /* LB: r1.0 merge - id was 1 */
+      break;
+    case ZEBRA_IPV4_NEXTHOP_DELETE:
+      zread_ipv4_delete(client, length, vrf_id); /* LB: r1.0 merge - id was 1 */
+      break;
 #ifdef HAVE_IPV6
     case ZEBRA_IPV6_ROUTE_ADD:
       zread_ipv6_add (client, length, vrf_id);
