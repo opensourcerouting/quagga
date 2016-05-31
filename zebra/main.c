@@ -35,6 +35,7 @@
 #include "privs.h"
 #include "sigevent.h"
 #include "vrf.h"
+#include "plugin.h"
 
 #include "zebra/rib.h"
 #include "zebra/zserv.h"
@@ -72,6 +73,7 @@ struct option longopts[] =
 {
   { "batch",       no_argument,       NULL, 'b'},
   { "daemon",      no_argument,       NULL, 'd'},
+  { "module",      required_argument, NULL, 'M'},
   { "keep_kernel", no_argument,       NULL, 'k'},
   { "config_file", required_argument, NULL, 'f'},
   { "pid_file",    required_argument, NULL, 'i'},
@@ -131,6 +133,7 @@ usage (char *progname, int status)
 	      "redistribution between different routing protocols.\n\n"\
 	      "-b, --batch        Runs in batch mode\n"\
 	      "-d, --daemon       Runs in daemon mode\n"\
+	      "-M, --module       Load specified module\n"
 	      "-f, --config_file  Set configuration file name\n"\
 	      "-i, --pid_file     Set process identifier file name\n"\
 	      "-z, --socket       Set path of zebra socket\n"\
@@ -297,6 +300,8 @@ main (int argc, char **argv)
   char *progname;
   struct thread thread;
   char *zserv_path = NULL;
+  struct qplug_runtime *plugin;
+  char plugerr[256];
 
   /* Set umask before anything for security */
   umask (0027);
@@ -312,9 +317,9 @@ main (int argc, char **argv)
       int opt;
   
 #ifdef HAVE_NETLINK  
-      opt = getopt_long (argc, argv, "bdkf:i:z:hA:P:ru:g:vs:C", longopts, 0);
+      opt = getopt_long (argc, argv, "bdkf:i:z:hA:P:ru:g:vs:CM:", longopts, 0);
 #else
-      opt = getopt_long (argc, argv, "bdkf:i:z:hA:P:ru:g:vC", longopts, 0);
+      opt = getopt_long (argc, argv, "bdkf:i:z:hA:P:ru:g:vCM:", longopts, 0);
 #endif /* HAVE_NETLINK */
 
       if (opt == EOF)
@@ -328,6 +333,14 @@ main (int argc, char **argv)
 	  batch_mode = 1;
 	case 'd':
 	  daemon_mode = 1;
+	  break;
+	case 'M':
+	  plugin = qplug_load(optarg, plugerr, sizeof(plugerr));
+	  if (!plugin)
+	    {
+	      fprintf(stderr, "%s\n", plugerr);
+	      return 1;
+	    }
 	  break;
 	case 'k':
 	  keep_kernel_mode = 1;

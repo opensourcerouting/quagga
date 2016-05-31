@@ -39,6 +39,7 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #include "stream.h"
 #include "vrf.h"
 #include "workqueue.h"
+#include "plugin.h"
 
 #include "bgpd/bgpd.h"
 #include "bgpd/bgp_attr.h"
@@ -57,6 +58,7 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 static const struct option longopts[] = 
 {
   { "daemon",      no_argument,       NULL, 'd'},
+  { "module",      required_argument, NULL, 'M'},
   { "config_file", required_argument, NULL, 'f'},
   { "pid_file",    required_argument, NULL, 'i'},
   { "socket",      required_argument, NULL, 'z'},
@@ -151,6 +153,7 @@ usage (char *progname, int status)
 Daemon which manages kernel routing table management and \
 redistribution between different routing protocols.\n\n\
 -d, --daemon       Runs in daemon mode\n\
+-M, --module       Load specified module\n\
 -f, --config_file  Set configuration file name\n\
 -i, --pid_file     Set process identifier file name\n\
 -z, --socket       Set path of zebra socket\n\
@@ -335,6 +338,8 @@ bgp_exit (int status)
   exit (status);
 }
 
+QUAGGA_PLUGIN_SETUP(.name = "bgpd process")
+
 /* Main routine of bgpd. Treatment of argument and start bgp finite
    state machine is handled at here. */
 int
@@ -347,6 +352,8 @@ main (int argc, char **argv)
   char *progname;
   struct thread thread;
   int tmp_port;
+  struct qplug_runtime *plugin;
+  char plugerr[256];
 
   /* Set umask before anything for security */
   umask (0027);
@@ -363,7 +370,7 @@ main (int argc, char **argv)
   /* Command line argument treatment. */
   while (1) 
     {
-      opt = getopt_long (argc, argv, "df:i:z:hp:l:A:P:rnu:g:vC", longopts, 0);
+      opt = getopt_long (argc, argv, "df:i:z:hp:l:A:P:rnu:g:vCM:", longopts, 0);
     
       if (opt == EOF)
 	break;
@@ -374,6 +381,14 @@ main (int argc, char **argv)
 	  break;
 	case 'd':
 	  daemon_mode = 1;
+	  break;
+	case 'M':
+	  plugin = qplug_load(optarg, plugerr, sizeof(plugerr));
+	  if (!plugin)
+	    {
+	      fprintf(stderr, "%s\n", plugerr);
+	      return 1;
+	    }
 	  break;
 	case 'f':
 	  config_file = optarg;
