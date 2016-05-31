@@ -15,13 +15,15 @@ libzebra_la_SOURCES = \
 	zclient.c sockopt.c smux.c agentx.c snmp.c md5.c if_rmap.c keychain.c privs.c \
 	sigevent.c pqueue.c jhash.c workqueue.c vrf.c \
 	memory.c \
-	memory_vty.c
+	memory_vty.c \
+	plugin.c \
+	# end
 
 BUILT_SOURCES = route_types.h gitversion.h
 
 libzebra_la_DEPENDENCIES = @LIB_REGEX@
 
-libzebra_la_LIBADD = @LIB_REGEX@ @LIBCAP@
+libzebra_la_LIBADD = -ldl @LIB_REGEX@ @LIBCAP@
 
 pkginclude_HEADERS = \
 	buffer.h checksum.h command.h filter.h getopt.h hash.h \
@@ -31,7 +33,9 @@ pkginclude_HEADERS = \
 	plist.h zclient.h sockopt.h smux.h md5.h if_rmap.h keychain.h \
 	privs.h sigevent.h pqueue.h jhash.h zassert.h \
 	workqueue.h route_types.h libospf.h vrf.h fifo.h \
-	memory_vty.h
+	memory_vty.h \
+	plugin.h \
+	# end
 
 noinst_HEADERS = \
 	plist_int.h
