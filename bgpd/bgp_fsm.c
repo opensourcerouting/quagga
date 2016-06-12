@@ -42,9 +42,9 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #include "bgpd/bgp_route.h"
 #include "bgpd/bgp_dump.h"
 #include "bgpd/bgp_open.h"
-#ifdef HAVE_SNMP
-#include "bgpd/bgp_snmp.h"
-#endif /* HAVE_SNMP */
+
+DEFINE_HOOK(peer_ev_backward_transition, (struct peer *peer), (peer))
+DEFINE_HOOK(peer_ev_established, (struct peer *peer), (peer))
 
 /* BGP FSM (finite state machine) has three types of functions.  Type
    one is thread functions.  Type two is event functions.  Type three
@@ -499,9 +499,7 @@ bgp_stop (struct peer *peer)
       /* set last reset time */
       peer->resettime = peer->uptime = bgp_clock ();
 
-#ifdef HAVE_SNMP
-      bgpTrapBackwardTransition (peer);
-#endif /* HAVE_SNMP */
+      peer_ev_backward_transition_call(peer);
 
       /* Reset peer synctime */
       peer->synctime = 0;
@@ -873,9 +871,7 @@ bgp_establish (struct peer *peer)
 	zlog_debug ("%s graceful restart timer stopped", peer->host);
     }
 
-#ifdef HAVE_SNMP
-  bgpTrapEstablished (peer);
-#endif /* HAVE_SNMP */
+  peer_ev_established_call (peer);
 
   /* Reset uptime, send keepalive, send current table. */
   peer->uptime = bgp_clock ();

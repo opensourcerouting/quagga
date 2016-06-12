@@ -836,8 +836,8 @@ static struct trap_object bgpTrapList[] =
   {3, {3, 1, BGPPEERSTATE}}
 };
 
-void
-bgpTrapEstablished (struct peer *peer)
+static void
+bgpTrapEstablished (void *arg, struct peer *peer)
 {
   int ret;
   struct in_addr addr;
@@ -857,8 +857,8 @@ bgpTrapEstablished (struct peer *peer)
 	     BGPESTABLISHED);
 }
 
-void
-bgpTrapBackwardTransition (struct peer *peer)
+static void
+bgpTrapBackwardTransition (void *arg, struct peer *peer)
 {
   int ret;
   struct in_addr addr;
@@ -881,6 +881,9 @@ bgpTrapBackwardTransition (struct peer *peer)
 void
 bgp_snmp_init (void)
 {
+  peer_ev_established_sub (bgpTrapEstablished, NULL);
+  peer_ev_backward_transition_sub (bgpTrapBackwardTransition, NULL);
+
   smux_init (bm->master);
   REGISTER_MIB("mibII/bgp", bgp_variables, variable, bgp_oid);
 }

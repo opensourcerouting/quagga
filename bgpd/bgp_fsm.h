@@ -78,4 +78,8 @@ extern void bgp_timer_set (struct peer *);
 extern void bgp_fsm_change_status (struct peer *peer, int status);
 extern const char *peer_down_str[];
 
+#include "hook.h"
+DECLARE_HOOK(peer_ev_backward_transition, (struct peer *peer), (peer))
+DECLARE_HOOK(peer_ev_established, (struct peer *peer), (peer))
+
 #endif /* _QUAGGA_BGP_FSM_H */
