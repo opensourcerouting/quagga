@@ -38,7 +38,6 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #include "bgpd/bgp_attr.h"
 #include "bgpd/bgp_route.h"
 #include "bgpd/bgp_fsm.h"
-#include "bgpd/bgp_snmp.h"
 
 /* BGP4-MIB described in RFC1657. */
 #define BGP4MIB 1,3,6,1,2,1,15
@@ -878,13 +877,26 @@ bgpTrapBackwardTransition (void *arg, struct peer *peer)
 	     BGPBACKWARDTRANSITION);
 }
 
-void
-bgp_snmp_init (void)
+static void
+bgp_snmp_init (void *arg, struct bgp_master *bm)
 {
-  peer_ev_established_sub (bgpTrapEstablished, NULL);
-  peer_ev_backward_transition_sub (bgpTrapBackwardTransition, NULL);
-
   smux_init (bm->master);
   REGISTER_MIB("mibII/bgp", bgp_variables, variable, bgp_oid);
 }
+
+static int
+bgp_snmp_plugin_init (void)
+{
+  peer_ev_established_sub (bgpTrapEstablished, NULL);
+  peer_ev_backward_transition_sub (bgpTrapBackwardTransition, NULL);
+  bgp_ev_init_sub (bgp_snmp_init, NULL);
+  return 0;
+}
+
+QUAGGA_PLUGIN_SETUP(
+	.name = "bgpd AgentX SNMP plugin",
+	//.compat_list = ";bgpd;",
+	.init = bgp_snmp_plugin_init
+)
+
 #endif /* HAVE_SNMP */

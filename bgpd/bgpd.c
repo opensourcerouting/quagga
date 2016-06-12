@@ -61,9 +61,8 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #include "bgpd/bgp_network.h"
 #include "bgpd/bgp_vty.h"
 #include "bgpd/bgp_mpath.h"
-#ifdef HAVE_SNMP
-#include "bgpd/bgp_snmp.h"
-#endif /* HAVE_SNMP */
+
+DEFINE_HOOK(bgp_ev_init, (struct bgp_master *bm), (bm))
 
 /* BGP process wide configuration.  */
 static struct bgp_master bgp_master;
@@ -5663,7 +5662,8 @@ bgp_init (void)
   /* Community list initialize. */
   bgp_clist = community_list_init ();
 
-#ifdef HAVE_SNMP
+  bgp_ev_init_call(bm);
+#if 0 // def HAVE_SNMP
   bgp_snmp_init ();
 #endif /* HAVE_SNMP */
 }
