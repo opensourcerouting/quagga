@@ -17,6 +17,7 @@ libzebra_la_SOURCES = \
 	memory.c \
 	memory_vty.c \
 	plugin.c \
+	hook.c \
 	# end
 
 BUILT_SOURCES = route_types.h gitversion.h
@@ -35,6 +36,7 @@ pkginclude_HEADERS = \
 	workqueue.h route_types.h libospf.h vrf.h fifo.h \
 	memory_vty.h \
 	plugin.h \
+	hook.h \
 	# end
 
 noinst_HEADERS = \
