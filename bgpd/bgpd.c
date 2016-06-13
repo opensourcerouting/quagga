@@ -160,7 +160,7 @@ bgp_config_check (struct bgp *bgp, int config)
 }
 
 /* Set BGP router identifier. */
-int
+static int
 bgp_router_id_set (struct bgp *bgp, struct in_addr *id)
 {
   struct peer *peer;
@@ -185,6 +185,27 @@ bgp_router_id_set (struct bgp *bgp, struct in_addr *id)
                           BGP_NOTIFY_CEASE_CONFIG_CHANGE);
        }
     }
+  return 0;
+}
+
+void
+bgp_router_id_zebra_bump (void)
+{
+  struct listnode *node, *nnode;
+  struct bgp *bgp;
+
+  for (ALL_LIST_ELEMENTS (bm->bgp, node, nnode, bgp))
+    {
+      if (!bgp->router_id_static.s_addr)
+        bgp_router_id_set (bgp, &router_id_zebra);
+    }
+}
+
+int
+bgp_router_id_static_set (struct bgp *bgp, struct in_addr id)
+{
+  bgp->router_id_static = id;
+  bgp_router_id_set (bgp, id.s_addr ? &id : &router_id_zebra);
   return 0;
 }
 
@@ -1177,6 +1198,15 @@ peer_deactivate (struct peer *peer, afi_t afi, safi_t safi)
 	}
     }
   return 0;
+}
+
+int
+peer_afc_set (struct peer *peer, afi_t afi, safi_t safi, int enable)
+{
+  if (enable)
+    return peer_activate (peer, afi, safi);
+  else
+    return peer_deactivate (peer, afi, safi);
 }
 
 static void
@@ -2905,7 +2935,7 @@ peer_ebgp_multihop_unset (struct peer *peer)
 
 /* Neighbor description. */
 int
-peer_description_set (struct peer *peer, char *desc)
+peer_description_set (struct peer *peer, const char *desc)
 {
   if (peer->desc)
     XFREE (MTYPE_PEER_DESC, peer->desc);
@@ -2998,7 +3028,7 @@ peer_update_source_if_set (struct peer *peer, const char *ifname)
 }
 
 int
-peer_update_source_addr_set (struct peer *peer, union sockunion *su)
+peer_update_source_addr_set (struct peer *peer, const union sockunion *su)
 {
   struct peer_group *group;
   struct listnode *node, *nnode;
