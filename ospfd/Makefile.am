@@ -7,7 +7,7 @@ INSTALL_SDATA=@INSTALL@ -m 600
 
 lib_LTLIBRARIES = libospf.la
 libospf_la_LDFLAGS = -version-info 0:0:0
-libospf_la_LIBADD = ../lib/libzebra.la
+libospf_la_LIBADD = ../lib/libzebra.la ../lib/libquaggasnmp.la
 
 sbin_PROGRAMS = ospfd
 

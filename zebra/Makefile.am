@@ -46,7 +46,7 @@ noinst_HEADERS = \
 	rt_netlink.h zebra_fpm.h zebra_fpm_private.h \
 	ioctl_solaris.h
 
-zebra_LDADD = $(otherobj) ../lib/libzebra.la $(LIBCAP)
+zebra_LDADD = $(otherobj) ../lib/libzebra.la ../lib/libquaggasnmp.la $(LIBCAP)
 
 testzebra_LDADD = ../lib/libzebra.la $(LIBCAP)
 

@@ -38,6 +38,7 @@ lib_LTLIBRARIES = bgp_snmp.la
 
 bgp_snmp_la_SOURCES = bgp_snmp.c
 bgp_snmp_la_LDFLAGS = -avoid-version -module -shared -export-dynamic
+bgp_snmp_la_LIBADD = $(top_builddir)/lib/libquaggasnmp.la
 
 examplesdir = $(exampledir)
 dist_examples_DATA = bgpd.conf.sample bgpd.conf.sample2

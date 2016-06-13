@@ -4,7 +4,7 @@ AM_CPPFLAGS = -I.. -I$(top_srcdir) -I$(top_srcdir)/lib -I$(top_builddir)/lib
 AM_CFLAGS = $(WERROR)
 DEFS = @DEFS@ -DSYSCONFDIR=\"$(sysconfdir)/\"
 
-lib_LTLIBRARIES = libzebra.la
+lib_LTLIBRARIES = libzebra.la libquaggasnmp.la
 libzebra_la_LDFLAGS = -version-info 0:0:0 
 
 libzebra_la_SOURCES = \
@@ -12,7 +12,7 @@ libzebra_la_SOURCES = \
 	checksum.c vector.c linklist.c vty.c command.c \
 	sockunion.c prefix.c thread.c if.c buffer.c table.c hash.c \
 	filter.c routemap.c distribute.c stream.c str.c log.c plist.c \
-	zclient.c sockopt.c smux.c agentx.c snmp.c md5.c if_rmap.c keychain.c privs.c \
+	zclient.c sockopt.c md5.c if_rmap.c keychain.c privs.c \
 	sigevent.c pqueue.c jhash.c workqueue.c vrf.c \
 	memory.c \
 	memory_vty.c \
@@ -25,6 +25,15 @@ BUILT_SOURCES = route_types.h gitversion.h
 libzebra_la_DEPENDENCIES = @LIB_REGEX@
 
 libzebra_la_LIBADD = -ldl @LIB_REGEX@ @LIBCAP@
+
+libquaggasnmp_la_CFLAGS = $(WERROR) $(SNMP_CFLAGS)
+libquaggasnmp_la_LDFLAGS = -version-info 0:0:0
+libquaggasnmp_la_LIBADD = libzebra.la $(SNMP_LIBS)
+libquaggasnmp_la_SOURCES = \
+	agentx.c \
+	smux.c \
+	snmp.c \
+	#end
 
 pkginclude_HEADERS = \
 	buffer.h checksum.h command.h filter.h getopt.h hash.h \
