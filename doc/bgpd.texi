@@ -581,6 +581,10 @@ Redistribute RIP route to BGP process.
 Redistribute OSPF route to BGP process.
 @end deffn
 
+@deffn {BGP} {redistribute vpn} {}
+Redistribute VNC routes to BGP process.
+@end deffn
+
 @node BGP Peer
 @section BGP Peer
 
@@ -1476,6 +1480,7 @@ configured values.
 Override the result of Capability Negotiation with local configuration.
 Ignore remote peer's capability value.
 @end deffn
+
 
 @node Route Reflector
 @section Route Reflector

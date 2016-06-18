@@ -53,6 +53,7 @@ const char *zlog_proto_names[] =
   "ISIS",
   "PIM",
   "MASC",
+  "RFP", 
   NULL,
 };
 
@@ -148,7 +149,7 @@ time_print(FILE *fp, struct timestamp_control *ctl)
   
 
 /* va_list version of zlog. */
-static void
+void
 vzlog (struct zlog *zl, int priority, const char *format, va_list args)
 {
   int original_errno = errno;
@@ -220,6 +221,44 @@ vzlog (struct zlog *zl, int priority, const char *format, va_list args)
 	     zlog_proto_names[zl->protocol], format, &tsctl, args);
 
   errno = original_errno;
+}
+
+int 
+vzlog_test (struct zlog *zl, int priority)
+{
+  /* If zlog is not specified, use default one. */
+  if (zl == NULL)
+    zl = zlog_default;
+
+  /* When zlog_default is also NULL, use stderr for logging. */
+  if (zl == NULL)
+    {
+      return 1;
+    }
+
+  /* Syslog output */
+  if (priority <= zl->maxlvl[ZLOG_DEST_SYSLOG])
+    {
+      return 1;
+    }
+
+  /* File output. */
+  if ((priority <= zl->maxlvl[ZLOG_DEST_FILE]) && zl->fp)
+    {
+      return 1;
+    }
+
+  /* stdout output. */
+  if (priority <= zl->maxlvl[ZLOG_DEST_STDOUT])
+    {
+      return 1;
+    }
+
+  /* Terminal monitor. */
+  if (priority <= zl->maxlvl[ZLOG_DEST_MONITOR])
+    return 1;
+    
+  return 0;
 }
 
 static char *
@@ -666,6 +705,7 @@ _zlog_assert_failed (const char *assertion, const char *file,
        assertion,file,line,(function ? function : "?"));
   zlog_backtrace(LOG_CRIT);
   zlog_thread_info(LOG_CRIT);
+  log_memstats_stderr ("log");
   abort();
 }
 
@@ -895,6 +935,10 @@ static const struct zebra_desc_table command_types[] = {
   DESC_ENTRY	(ZEBRA_ROUTER_ID_DELETE),
   DESC_ENTRY	(ZEBRA_ROUTER_ID_UPDATE),
   DESC_ENTRY	(ZEBRA_HELLO),
+  DESC_ENTRY	(ZEBRA_IPV4_NEXTHOP_ADD),
+  DESC_ENTRY	(ZEBRA_IPV4_NEXTHOP_DELETE),
+  DESC_ENTRY	(ZEBRA_IPV6_NEXTHOP_ADD),
+  DESC_ENTRY	(ZEBRA_IPV6_NEXTHOP_DELETE),
 };
 #undef DESC_ENTRY
 
@@ -983,6 +1027,10 @@ proto_redistnum(int afi, const char *s)
 	return ZEBRA_ROUTE_BGP;
       else if (strncmp (s, "ba", 2) == 0)
 	return ZEBRA_ROUTE_BABEL;
+      else if (strncmp (s, "h", 1) == 0)
+	return ZEBRA_ROUTE_VNC;
+      else if (strncmp (s, "v", 1) == 0)
+	return ZEBRA_ROUTE_VNC_DIRECT;
     }
   if (afi == AFI_IP6)
     {
@@ -1002,6 +1050,10 @@ proto_redistnum(int afi, const char *s)
 	return ZEBRA_ROUTE_BGP;
       else if (strncmp (s, "ba", 2) == 0)
 	return ZEBRA_ROUTE_BABEL;
+      else if (strncmp (s, "h", 1) == 0)
+	return ZEBRA_ROUTE_VNC;
+      else if (strncmp (s, "v", 1) == 0)
+	return ZEBRA_ROUTE_VNC_DIRECT;
     }
   return -1;
 }

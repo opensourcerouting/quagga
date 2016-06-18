@@ -52,6 +52,9 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #include "bgpd/bgp_mplsvpn.h"
 #include "bgpd/bgp_ecommunity.h"
 #include "bgpd/bgp_vty.h"
+#if ENABLE_BGP_VNC
+#include "bgp_rfapi_cfg.h"
+#endif
 
 /* Memo of route-map commands.
 
@@ -2391,6 +2394,10 @@ bgp_route_map_update (const char *unused)
 	    bgp->rmap[AFI_IP6][i].map =
 	      route_map_lookup_by_name (bgp->rmap[AFI_IP][i].name);
 	}
+#if ENABLE_BGP_VNC
+      zlog_debug("%s: calling vnc_routemap_update", __func__);
+      vnc_routemap_update(bgp, unused);
+#endif
     }
 }
 

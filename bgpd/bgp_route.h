@@ -40,6 +40,32 @@ struct bgp_info_extra
 
   /* MPLS label.  */
   u_char tag[3];  
+
+#if ENABLE_BGP_VNC
+  union {
+
+      struct {
+	  void *rfapi_handle;	/* export: NVE advertising this route */
+	  struct list	*local_nexthops; /* optional, for static routes */
+      } export;
+
+      struct {
+	  void *timer;
+	  void *hme;		/* encap monitor, if this is a VPN route */
+	  struct prefix_rd rd;	/* import: route's route-distinguisher */
+	  u_char un_family;	/* family of cached un address, 0 if unset */
+	  union {
+	    struct in_addr addr4;
+#ifdef HAVE_IPV6
+	    struct in6_addr addr6;
+#endif
+	  } un;			/* cached un address */
+	  time_t create_time;
+	  struct prefix aux_prefix; /* AFI_ETHER: the IP addr, if family set */
+      } import;
+
+  } vnc;
+#endif
 };
 
 struct bgp_info
@@ -93,6 +119,9 @@ struct bgp_info
 #define BGP_ROUTE_STATIC       1
 #define BGP_ROUTE_AGGREGATE    2
 #define BGP_ROUTE_REDISTRIBUTE 3 
+#ifdef ENABLE_BGP_VNC
+#define BGP_ROUTE_RFP          4 
+#endif
 };
 
 /* BGP static route configuration. */
@@ -245,5 +274,15 @@ extern void route_vty_out_tmp (struct vty *, struct prefix *, struct attr *, saf
 
 extern void bgp_peer_clear_node_queue_drain_immediate (struct peer *peer);
 extern void bgp_process_queues_drain_immediate (void);
+
+/* for encap/vpn */
+extern struct bgp_node *
+bgp_afi_node_get (struct bgp_table *, afi_t , safi_t , struct prefix *,
+ 		  struct prefix_rd *);
+extern struct bgp_info *bgp_info_new (void);
+extern void bgp_info_restore (struct bgp_node *, struct bgp_info *);
+
+extern int bgp_info_cmp (struct bgp *, struct bgp_info *,
+                         struct bgp_info *, afi_t, safi_t );
 
 #endif /* _QUAGGA_BGP_ROUTE_H */

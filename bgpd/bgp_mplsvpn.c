@@ -35,6 +35,10 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #include "bgpd/bgp_mplsvpn.h"
 #include "bgpd/bgp_packet.h"
 
+#if ENABLE_BGP_VNC
+#include "rfapi_backend.h"
+#endif
+
 static u_int16_t
 decode_rd_type (u_char *pnt)
 {
@@ -42,6 +46,14 @@ decode_rd_type (u_char *pnt)
   
   v = ((u_int16_t) *pnt++ << 8);
   v |= (u_int16_t) *pnt;
+
+#if ENABLE_BGP_VNC
+  /*
+   * VNC L2 stores LHI in lower byte, so mask it off
+   */
+  if ((v & 0xff00) == 0xff00)
+    v = 0xff00;
+#endif
   return v;
 }
 
@@ -54,6 +66,17 @@ decode_label (u_char *pnt)
   l |= (u_int32_t) *pnt++ << 4;
   l |= (u_int32_t) ((*pnt & 0xf0) >> 4);
   return l;
+}
+
+void
+encode_label(u_int32_t label,
+             u_char *pnt)
+{
+    if (pnt == NULL)
+        return;
+    *pnt++ = (label>>12) & 0xff;
+    *pnt++ = (label>>4) & 0xff;
+    *pnt++ = ((label<<4)+1) & 0xff; /* S=1 */
 }
 
 /* type == RD_TYPE_AS */
@@ -107,6 +130,9 @@ bgp_nlri_parse_vpn (struct peer *peer, struct attr *attr,
   struct rd_ip rd_ip;
   struct prefix_rd prd;
   u_char *tagpnt;
+#if ENABLE_BGP_VNC
+  u_int32_t label = 0;
+#endif
 
   /* Check peer status. */
   if (peer->status != Established)
@@ -172,6 +198,10 @@ bgp_nlri_parse_vpn (struct peer *peer, struct attr *attr,
           return -1;
         }
       
+#if ENABLE_BGP_VNC
+      label = decode_label (pnt);
+#endif
+
       /* Copyr label to prefix. */
       tagpnt = pnt;
 
@@ -195,21 +225,39 @@ bgp_nlri_parse_vpn (struct peer *peer, struct attr *attr,
           decode_rd_ip (pnt + 5, &rd_ip);
           break;
 
+#if ENABLE_BGP_VNC
+	case RD_TYPE_EOI:
+	    break;
+#endif
+
 	default:
 	  zlog_err ("Unknown RD type %d", type);
           break;  /* just report */
       }
 
-      p.prefixlen = prefixlen - VPN_PREFIXLEN_MIN_BYTES*8;
+      p.prefixlen = prefixlen - VPN_PREFIXLEN_MIN_BYTES*8;/* exclude label & RD */
       memcpy (&p.u.prefix, pnt + VPN_PREFIXLEN_MIN_BYTES, 
               psize - VPN_PREFIXLEN_MIN_BYTES);
 
       if (attr)
-        bgp_update (peer, &p, attr, packet->afi, SAFI_MPLS_VPN,
-                    ZEBRA_ROUTE_BGP, BGP_ROUTE_NORMAL, &prd, tagpnt, 0);
+        {
+          bgp_update (peer, &p, attr, packet->afi, SAFI_MPLS_VPN,
+                      ZEBRA_ROUTE_BGP, BGP_ROUTE_NORMAL, &prd, tagpnt, 0);
+#if ENABLE_BGP_VNC
+          rfapiProcessUpdate(peer, NULL, &p, &prd, attr, packet->afi, 
+                             SAFI_MPLS_VPN, ZEBRA_ROUTE_BGP, BGP_ROUTE_NORMAL,
+                             &label);
+#endif
+        }
       else
-        bgp_withdraw (peer, &p, attr, packet->afi, SAFI_MPLS_VPN,
-                      ZEBRA_ROUTE_BGP, BGP_ROUTE_NORMAL, &prd, tagpnt);
+        {
+#if ENABLE_BGP_VNC
+          rfapiProcessWithdraw(peer, NULL, &p, &prd, attr, packet->afi, 
+                               SAFI_MPLS_VPN, ZEBRA_ROUTE_BGP, 0);
+#endif
+          bgp_withdraw (peer, &p, attr, packet->afi, SAFI_MPLS_VPN,
+                        ZEBRA_ROUTE_BGP, BGP_ROUTE_NORMAL, &prd, tagpnt);
+        }
     }
   /* Packet length consistency check. */
   if (pnt != lim)
@@ -343,6 +391,21 @@ prefix_rd2str (struct prefix_rd *prd, char *buf, size_t size)
       snprintf (buf, size, "%s:%d", inet_ntoa (rd_ip.ip), rd_ip.val);
       return buf;
     }
+#if ENABLE_BGP_VNC
+  else if (type == RD_TYPE_EOI)
+    {
+      snprintf(buf, size, "LHI:%d, %02x:%02x:%02x:%02x:%02x:%02x",
+	    *(pnt+1),	/* LHI */
+	    *(pnt+2),	/* MAC[0] */
+	    *(pnt+3),
+	    *(pnt+4),
+	    *(pnt+5),
+	    *(pnt+6),
+	    *(pnt+7));
+
+      return buf;
+    }
+#endif
   return NULL;
 }
 

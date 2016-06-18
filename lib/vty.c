@@ -423,7 +423,7 @@ vty_command (struct vty *vty, char *buf)
       snprintf(vty_str, sizeof(vty_str), "vty[??]@%s", vty->address);
       if (vty)
         for (i = 0; i < vector_active (vtyvec); i++)
-          if ((vty == vector_slot (vtyvec, i)))
+          if (vty == vector_slot (vtyvec, i))
             {
               snprintf(vty_str, sizeof(vty_str), "vty[%d]@%s",
                                                  i, vty->address);
@@ -740,6 +740,9 @@ vty_end_config (struct vty *vty)
     case BGP_VPNV6_NODE:
     case BGP_ENCAP_NODE:
     case BGP_ENCAPV6_NODE:
+    case BGP_VNC_DEFAULTS_NODE:
+    case BGP_VNC_NVE_GROUP_NODE:
+    case BGP_VNC_L2_GROUP_NODE:
     case BGP_IPV4_NODE:
     case BGP_IPV4M_NODE:
     case BGP_IPV6_NODE:

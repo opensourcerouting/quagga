@@ -72,6 +72,8 @@ struct memory_list memory_list_lib[] =
   { MTYPE_VRF,			"VRF"				},
   { MTYPE_VRF_NAME,		"VRF name"			},
   { MTYPE_VRF_BITMAP,		"VRF bit-map"			},
+  { MTYPE_SKIP_LIST,		"Skip List"			},
+  { MTYPE_SKIP_LIST_NODE,	"Skip Node"			},
   { -1, NULL },
 };
 
@@ -155,6 +157,8 @@ struct memory_list memory_list_bgp[] =
   { MTYPE_BGP_AGGREGATE,	"BGP aggregate"			},
   { MTYPE_BGP_ADDR,		"BGP own address"		},
   { MTYPE_ENCAP_TLV,		"ENCAP TLV",			},
+  { MTYPE_BGP_TEA_OPTIONS,	"BGP TEA Options",		},
+  { MTYPE_BGP_TEA_OPTIONS_VALUE,"BGP TEA Options Value",	},
   { -1, NULL }
 };
 
@@ -280,6 +284,42 @@ struct memory_list memory_list_vtysh[] =
   { MTYPE_VTYSH_CONFIG_LINE,	"Vtysh configuration line"	},
   { -1, NULL },
 };
+struct memory_list memory_list_rfapi[] = 
+{
+  { MTYPE_RFAPI_CFG,		"NVE Configuration",		},
+  { MTYPE_RFAPI_GROUP_CFG,	"NVE Group Configuration",	},
+  { MTYPE_RFAPI_L2_CFG,	        "RFAPI L2 Group Configuration",	},
+  { MTYPE_RFAPI_RFP_GROUP_CFG,  "RFAPI RFP Group Configuration",},
+  { MTYPE_RFAPI,		"RFAPI",			},
+  { MTYPE_RFAPI_DESC,		"RFAPI Descriptor",		},
+  { MTYPE_RFAPI_IMPORTTABLE,	"RFAPI Import Table",		},
+  { MTYPE_RFAPI_MONITOR,	"RFAPI Monitor VPN",		},
+  { MTYPE_RFAPI_MONITOR_ENCAP,	"RFAPI Monitor Encap",		},
+  { MTYPE_RFAPI_NEXTHOP,	"RFAPI Next Hop",		},
+  { MTYPE_RFAPI_VN_OPTION,	"RFAPI VN Option",		},
+  { MTYPE_RFAPI_UN_OPTION,	"RFAPI UN Option",		},
+  { MTYPE_RFAPI_WITHDRAW,	"RFAPI Withdraw",		},
+  { MTYPE_RFAPI_RFG_NAME,	"RFAPI RFGName",			},
+  { MTYPE_RFAPI_ADB,		"RFAPI Advertisement Data",	},
+  { MTYPE_RFAPI_ETI,		"RFAPI Export Table Info",	},
+  { MTYPE_RFAPI_NVE_ADDR,	"RFAPI NVE Address",		},
+  { MTYPE_RFAPI_PREFIX_BAG,	"RFAPI Prefix Bag",		},
+  { MTYPE_RFAPI_IT_EXTRA,	"RFAPI IT Extra",		},
+  { MTYPE_RFAPI_INFO,		"RFAPI Info",			},
+  { MTYPE_RFAPI_ADDR,		"RFAPI Addr",			},
+  { MTYPE_RFAPI_UPDATED_RESPONSE_QUEUE,	"RFAPI Updated Rsp Queue",},
+  { MTYPE_RFAPI_RECENT_DELETE,	"RFAPI Recently Deleted Route",},
+  { MTYPE_RFAPI_L2ADDR_OPT,	"RFAPI L2 Address Option",},
+  { MTYPE_RFAPI_AP,		"RFAPI Advertised Prefix",},
+  { MTYPE_RFAPI_MONITOR_ETH,	"RFAPI Monitor Ethernet",},
+  { -1, NULL },
+};
+
+struct memory_list memory_list_rfp[] = 
+{
+   { MTYPE_RFP_GENERIC,               "RFP Generic"              },
+   { -1, NULL},
+};
 
 struct mlist mlists[] __attribute__ ((unused)) = {
   { memory_list_lib,	"LIB"	},
@@ -290,6 +330,8 @@ struct mlist mlists[] __attribute__ ((unused)) = {
   { memory_list_ospf6,	"OSPF6"	},
   { memory_list_isis,	"ISIS"	},
   { memory_list_bgp,	"BGP"	},
+  { memory_list_rfapi,	"RFAPI"	},
+  { memory_list_rfp,	"RFP"	},
   { memory_list_pim,	"PIM"	},
   { NULL, NULL},
 };

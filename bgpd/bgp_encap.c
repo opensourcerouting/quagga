@@ -45,6 +45,10 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #include "bgpd/bgp_vty.h"
 #include "bgpd/bgp_encap.h"
 
+#if ENABLE_BGP_VNC
+#include "rfapi_backend.h"
+#endif
+
 static u_int16_t
 decode_rd_type (u_char *pnt)
 {
@@ -229,7 +233,15 @@ bgp_nlri_parse_encap(
       if (attr) {
 	bgp_update (peer, &p, attr, afi, SAFI_ENCAP,
 		    ZEBRA_ROUTE_BGP, BGP_ROUTE_NORMAL, &prd, NULL, 0);
+#if ENABLE_BGP_VNC
+	rfapiProcessUpdate(peer, NULL, &p, &prd, attr, afi, SAFI_ENCAP,
+                           ZEBRA_ROUTE_BGP,  BGP_ROUTE_NORMAL, NULL);
+#endif
       } else {
+#if ENABLE_BGP_VNC
+	rfapiProcessWithdraw(peer, NULL, &p, &prd, attr, afi, SAFI_ENCAP,
+                             ZEBRA_ROUTE_BGP, 0);
+#endif
 	bgp_withdraw (peer, &p, attr, afi, SAFI_ENCAP,
 		      ZEBRA_ROUTE_BGP, BGP_ROUTE_NORMAL, &prd, NULL);
       }
