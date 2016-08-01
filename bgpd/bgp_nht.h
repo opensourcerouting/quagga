@@ -55,4 +55,12 @@ extern int bgp_find_or_add_nexthop(afi_t a, struct bgp_info *p,
  */
 extern void bgp_unlink_nexthop(struct bgp_info *p);
 
+/**
+ * bgp_unlink_nexthop() - Drop the nexthop object based on a peer.
+ * ARGUMENTS:
+ *   a - afi: AFI_IP or AF_IP6
+ *   peer - The BGP peer associated with this NHT
+ */
+extern void bgp_drop_peer_nexthop(afi_t afi, struct peer *peer);
+
 #endif /* _BGP_NHT_H */

@@ -457,6 +457,8 @@ bgp_stop (struct peer *peer)
       BGP_EVENT_FLUSH (peer);
     }
 
+  bgp_drop_peer_nexthop(family2afi(peer->su.sa.sa_family), peer);
+
   /* Increment Dropped count. */
   if (peer->status == Established)
     {
@@ -721,6 +723,7 @@ bgp_start (struct peer *peer)
 
   bgp_find_or_add_nexthop(family2afi(peer->su.sa.sa_family), NULL, peer,
 			  connected);
+
   status = bgp_connect (peer);
 
   switch (status)
