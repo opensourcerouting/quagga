@@ -90,6 +90,45 @@ bgp_unlink_nexthop (struct bgp_info *path)
     }
 }
 
+void
+bgp_drop_peer_nexthop (afi_t afi, struct peer *peer)
+{
+  struct bgp_node *rn;
+  struct prefix p;
+
+  if (peer == NULL)
+    return;
+
+  if (afi == AFI_IP)
+    {
+      p.family = AF_INET;
+      p.prefixlen = IPV4_MAX_BITLEN;
+      p.u.prefix4 = peer->su.sin.sin_addr;
+    }
+  else if (afi == AFI_IP6)
+    {
+      p.family = AF_INET6;
+      p.prefixlen = IPV6_MAX_BITLEN;
+      p.u.prefix6 = peer->su.sin6.sin6_addr;
+    } 
+  else
+    return;                     /* unknown AFI */
+
+  rn = bgp_node_get (bgp_nexthop_cache_table[afi], &p);
+
+  if (rn->info)
+    {  
+      struct bgp_nexthop_cache *bnc;
+      bnc = rn->info;
+      unregister_nexthop(bnc);
+      bnc->node->info = NULL;
+      bgp_unlock_node(bnc->node);
+      bnc_free(bnc);
+    }
+
+  bgp_unlock_node (rn);
+}
+
 int
 bgp_find_or_add_nexthop (afi_t afi, struct bgp_info *ri, struct peer *peer,
 			 int connected)
