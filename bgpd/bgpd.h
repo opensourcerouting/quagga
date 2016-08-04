@@ -156,6 +156,11 @@ struct bgp
   u_char distance_ebgp;
   u_char distance_ibgp;
   u_char distance_local;
+
+  /* BGP ipv6 distance configuration.  */
+  u_char ipv6_distance_ebgp;
+  u_char ipv6_distance_ibgp;
+  u_char ipv6_distance_local;
   
   /* BGP default local-preference.  */
   u_int32_t default_local_pref;
@@ -789,9 +794,6 @@ enum bgp_clear_type
 #define BGP_INPUT_PNT(P)     (STREAM_PNT(BGP_INPUT(P)))
 #define BGP_IS_VALID_STATE_FOR_NOTIF(S)\
         (((S) == OpenSent) || ((S) == OpenConfirm) || ((S) == Established))
-
-/* Count prefix size from mask length */
-#define PSIZE(a) (((a) + 7) / (8))
 
 /* BGP error codes.  */
 #define BGP_SUCCESS                               0
