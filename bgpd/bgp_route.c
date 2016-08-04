@@ -8603,6 +8603,66 @@ DEFUN (show_bgp_ipv6_filter_list,
 			       bgp_show_type_filter_list);
 }
 
+
+DEFUN (show_ip_bgp_ipv4_dampening_parameters, 
+       show_ip_bgp_ipv4_dampening_parameters_cmd,
+       "show ip bgp ipv4 (unicast|multicast) dampening parameters",
+       SHOW_STR
+       IP_STR
+       BGP_STR
+       "Address family\n"
+       "Address Family modifier\n"
+       "Address Family modifier\n"
+       "Display detailed information about dampening\n"
+       "Display detail of configured dampening parameters\n")
+{
+    if (strncmp(argv[0], "m", 1) == 0)
+      return bgp_show_dampening_parameters (vty, AFI_IP, SAFI_MULTICAST);
+
+    return bgp_show_dampening_parameters (vty, AFI_IP, SAFI_UNICAST);
+}
+
+
+DEFUN (show_ip_bgp_ipv4_dampening_flap_stats,
+       show_ip_bgp_ipv4_dampening_flap_stats_cmd,
+       "show ip bgp ipv4 (unicast|multicast) dampening flap-statistics",
+       SHOW_STR
+       IP_STR
+       BGP_STR
+       "Address family\n"
+       "Address Family modifier\n"
+       "Address Family modifier\n"
+       "Display detailed information about dampening\n"
+       "Display flap statistics of routes\n")
+{
+    if (strncmp(argv[0], "m", 1) == 0)      
+      return bgp_show (vty, NULL, AFI_IP, SAFI_MULTICAST,
+                     bgp_show_type_flap_statistics, NULL);
+
+    return bgp_show (vty, NULL, AFI_IP, SAFI_MULTICAST,
+                 bgp_show_type_flap_statistics, NULL);
+}
+
+DEFUN (show_ip_bgp_ipv4_dampening_dampd_paths, 
+       show_ip_bgp_ipv4_dampening_dampd_paths_cmd,
+       "show ip bgp ipv4 (unicast|multicast) dampening dampened-paths",
+       SHOW_STR
+       IP_STR
+       BGP_STR
+       "Address family\n"
+       "Address Family modifier\n"
+       "Address Family modifier\n"
+       "Display detailed information about dampening\n"
+       "Display paths suppressed due to dampening\n")
+{
+    if (strncmp(argv[0], "m", 1) == 0)      
+      return bgp_show (vty, NULL, AFI_IP, SAFI_MULTICAST,
+                     bgp_show_type_dampend_paths, NULL);
+
+    return bgp_show (vty, NULL, AFI_IP, SAFI_MULTICAST,
+                 bgp_show_type_dampend_paths, NULL);
+}
+
 static int
 bgp_show_route_map (struct vty *vty, const char *rmap_str, afi_t afi,
 		    safi_t safi, enum bgp_show_type type)
@@ -11734,7 +11794,8 @@ bgp_table_stats (struct vty *vty, struct bgp *bgp, afi_t afi, safi_t safi)
   
   if (!bgp->rib[afi][safi])
     {
-      vty_out (vty, "%% No RIB exists for the AFI/SAFI%s", VTY_NEWLINE);
+      vty_out (vty, "%% No RIB exists for the specified AFI(%d)/SAFI(%d) %s",
+               afi, safi, VTY_NEWLINE);
       return CMD_WARNING;
     }
   
@@ -11848,7 +11909,7 @@ bgp_table_stats_vty (struct vty *vty, const char *name,
 	    safi = SAFI_UNICAST;
 	    break;
 	case 'v':
-	    safi =  SAFI_MPLS_LABELED_VPN;
+	    safi =  SAFI_MPLS_VPN;
 	    break;
 	case 'e':
 	    safi = SAFI_ENCAP;
@@ -16473,6 +16534,14 @@ bgp_route_init (void)
   install_element (BGP_IPV4_NODE, &bgp_damp_set3_cmd);
   install_element (BGP_IPV4_NODE, &bgp_damp_unset_cmd);
   install_element (BGP_IPV4_NODE, &bgp_damp_unset2_cmd);
+
+  /* IPv4 Multicast Mode */
+  install_element (BGP_IPV4M_NODE, &bgp_damp_set_cmd);
+  install_element (BGP_IPV4M_NODE, &bgp_damp_set2_cmd);
+  install_element (BGP_IPV4M_NODE, &bgp_damp_set3_cmd);
+  install_element (BGP_IPV4M_NODE, &bgp_damp_unset_cmd);
+  install_element (BGP_IPV4M_NODE, &bgp_damp_unset2_cmd);
+
   
   /* Deprecated AS-Pathlimit commands */
   install_element (BGP_NODE, &bgp_network_ttl_cmd);
@@ -16577,7 +16646,10 @@ bgp_route_init (void)
   install_element (VIEW_NODE, &show_ip_bgp_neighbor_received_prefix_filter_cmd);
   install_element (VIEW_NODE, &show_ip_bgp_ipv4_neighbor_received_prefix_filter_cmd);
   install_element (VIEW_NODE, &show_ip_bgp_dampening_params_cmd);
+  install_element (VIEW_NODE, &show_ip_bgp_ipv4_dampening_parameters_cmd);
   install_element (VIEW_NODE, &show_ip_bgp_dampened_paths_cmd);
+  install_element (VIEW_NODE, &show_ip_bgp_ipv4_dampening_dampd_paths_cmd);
+  install_element (VIEW_NODE, &show_ip_bgp_ipv4_dampening_flap_stats_cmd);
   install_element (VIEW_NODE, &show_ip_bgp_damp_dampened_paths_cmd);
   install_element (VIEW_NODE, &show_ip_bgp_flap_statistics_cmd);
   install_element (VIEW_NODE, &show_ip_bgp_damp_flap_statistics_cmd);
@@ -16691,6 +16763,9 @@ bgp_route_init (void)
   install_element (ENABLE_NODE, &show_ip_bgp_ipv4_neighbor_received_prefix_filter_cmd);
   install_element (ENABLE_NODE, &show_ip_bgp_dampening_params_cmd);
   install_element (ENABLE_NODE, &show_ip_bgp_dampened_paths_cmd);
+  install_element (ENABLE_NODE, &show_ip_bgp_ipv4_dampening_parameters_cmd);
+  install_element (ENABLE_NODE, &show_ip_bgp_ipv4_dampening_dampd_paths_cmd);
+  install_element (ENABLE_NODE, &show_ip_bgp_ipv4_dampening_flap_stats_cmd);
   install_element (ENABLE_NODE, &show_ip_bgp_damp_dampened_paths_cmd);
   install_element (ENABLE_NODE, &show_ip_bgp_flap_statistics_cmd);
   install_element (ENABLE_NODE, &show_ip_bgp_damp_flap_statistics_cmd);
