@@ -46,7 +46,6 @@ extern int agentx_enabled;
 #include <mach/mach_time.h>
 #endif
 
-
 /* Recent absolute time of day */
 struct timeval recent_time;
 static struct timeval last_recent_time;
@@ -754,28 +753,70 @@ thread_get (struct thread_master *m, u_char type,
   return thread;
 }
 
+#define fd_copy_fd_set(X) (X)
+
+static int
+fd_select (int size, thread_fd_set *read, thread_fd_set *write, thread_fd_set *except, struct timeval *t)
+{
+  return(select(size, read, write, except, t));
+}
+
+static int
+fd_is_set (int fd, thread_fd_set *fdset)
+{
+  return FD_ISSET (fd, fdset);
+}
+
+static int
+fd_clear_read_write (int fd, thread_fd_set *fdset)
+{
+  if (!FD_ISSET (fd, fdset))
+    return 0;
+
+  FD_CLR (fd, fdset);
+  return 1;
+}
+
+static struct thread *
+funcname_thread_add_read_write (int dir, struct thread_master *m, 
+		 int (*func) (struct thread *), void *arg, int fd,
+		 debugargdef)
+{
+  struct thread *thread = NULL;
+  thread_fd_set *fdset = NULL;
+
+  if (dir == THREAD_READ)
+    fdset = &m->readfd;
+  else
+    fdset = &m->writefd;
+
+  if (FD_ISSET (fd, fdset))
+    {
+      zlog (NULL, LOG_WARNING, "There is already %s fd [%d]",
+	    (dir = THREAD_READ) ? "read" : "write", fd);
+      return NULL;
+    }
+
+  FD_SET (fd, fdset);
+
+  thread = thread_get (m, dir, func, arg, debugargpass);
+  thread->u.fd = fd;
+  if (dir == THREAD_READ)
+    thread_add_fd (m->read, thread);
+  else
+    thread_add_fd (m->write, thread);
+
+  return thread;
+}
+
 /* Add new read thread. */
 struct thread *
 funcname_thread_add_read (struct thread_master *m, 
 		 int (*func) (struct thread *), void *arg, int fd,
 		 debugargdef)
 {
-  struct thread *thread;
-
-  assert (m != NULL);
-
-  if (FD_ISSET (fd, &m->readfd))
-    {
-      zlog (NULL, LOG_WARNING, "There is already read fd [%d]", fd);
-      return NULL;
-    }
-
-  thread = thread_get (m, THREAD_READ, func, arg, debugargpass);
-  FD_SET (fd, &m->readfd);
-  thread->u.fd = fd;
-  thread_add_fd (m->read, thread);
-
-  return thread;
+  return funcname_thread_add_read_write (THREAD_READ, m, func,
+                                         arg, fd, debugargpass);
 }
 
 /* Add new write thread. */
@@ -784,22 +825,8 @@ funcname_thread_add_write (struct thread_master *m,
 		 int (*func) (struct thread *), void *arg, int fd,
 		 debugargdef)
 {
-  struct thread *thread;
-
-  assert (m != NULL);
-
-  if (FD_ISSET (fd, &m->writefd))
-    {
-      zlog (NULL, LOG_WARNING, "There is already write fd [%d]", fd);
-      return NULL;
-    }
-
-  thread = thread_get (m, THREAD_WRITE, func, arg, debugargpass);
-  FD_SET (fd, &m->writefd);
-  thread->u.fd = fd;
-  thread_add_fd (m->write, thread);
-
-  return thread;
+  return funcname_thread_add_read_write (THREAD_WRITE, m, func, 
+                                         arg, fd, debugargpass);
 }
 
 static struct thread *
@@ -923,13 +950,11 @@ thread_cancel (struct thread *thread)
   switch (thread->type)
     {
     case THREAD_READ:
-      assert (FD_ISSET (thread->u.fd, &thread->master->readfd));
-      FD_CLR (thread->u.fd, &thread->master->readfd);
+      assert (fd_clear_read_write (thread->u.fd, &thread->master->readfd));
       thread_array = thread->master->read;
       break;
     case THREAD_WRITE:
-      assert (FD_ISSET (thread->u.fd, &thread->master->writefd));
-      FD_CLR (thread->u.fd, &thread->master->writefd);
+      assert (fd_clear_read_write (thread->u.fd, &thread->master->writefd));
       thread_array = thread->master->write;
       break;
     case THREAD_TIMER:
@@ -1039,25 +1064,45 @@ thread_run (struct thread_master *m, struct thread *thread,
 }
 
 static int
-thread_process_fd (struct thread **thread_array, fd_set *fdset, fd_set *mfdset, int num, int fd_limit)
+thread_process_fds_helper (struct thread_master *m, struct thread *thread, thread_fd_set *fdset)
 {
-  struct thread *thread;
+  thread_fd_set *mfdset = NULL;
+  struct thread **thread_array;
+
+  if (!thread)
+    return 0;
+
+  if (thread->type == THREAD_READ)
+    {
+      mfdset = &m->readfd;
+      thread_array = m->read;
+    }
+  else
+    {
+      mfdset = &m->writefd;
+      thread_array = m->write;
+    }
+
+  if (fd_is_set (THREAD_FD (thread), fdset))
+    {
+      fd_clear_read_write (THREAD_FD (thread), mfdset);
+      thread_delete_fd (thread_array, thread);
+      thread_list_add (&m->ready, thread);
+      thread->type = THREAD_READY;
+      return 1;
+    }
+  return 0;
+}
+
+static int
+thread_process_fds (struct thread_master *m, thread_fd_set *rset, thread_fd_set *wset, int num)
+{
   int ready = 0, index;
 
-  assert (thread_array);
-  
-  for (index = 0; index < fd_limit && ready < num; ++index)
+  for (index = 0; index < m->fd_limit && ready < num; ++index)
     {
-      thread = thread_array[index];
-      if (thread && FD_ISSET (THREAD_FD (thread), fdset))
-        {
-          assert (FD_ISSET (THREAD_FD (thread), mfdset));
-          FD_CLR(THREAD_FD (thread), mfdset);
-          thread_delete_fd (thread_array, thread);
-          thread_list_add (&thread->master->ready, thread);
-          thread->type = THREAD_READY;
-          ready++;
-        }
+      ready += thread_process_fds_helper (m, m->read[index], rset);
+      ready += thread_process_fds_helper (m, m->write[index], wset);
     }
   return num - ready;
 }
@@ -1107,9 +1152,9 @@ struct thread *
 thread_fetch (struct thread_master *m, struct thread *fetch)
 {
   struct thread *thread;
-  fd_set readfd;
-  fd_set writefd;
-  fd_set exceptfd;
+  thread_fd_set readfd;
+  thread_fd_set writefd;
+  thread_fd_set exceptfd;
   struct timeval timer_val = { .tv_sec = 0, .tv_usec = 0 };
   struct timeval timer_val_bg;
   struct timeval *timer_wait = &timer_val;
@@ -1142,9 +1187,9 @@ thread_fetch (struct thread_master *m, struct thread *fetch)
       thread_process (&m->event);
       
       /* Structure copy.  */
-      readfd = m->readfd;
-      writefd = m->writefd;
-      exceptfd = m->exceptfd;
+      readfd = fd_copy_fd_set(m->readfd);
+      writefd = fd_copy_fd_set(m->writefd);
+      exceptfd = fd_copy_fd_set(m->exceptfd);
       
       /* Calculate select wait timer if nothing else to do */
       if (m->ready.count == 0)
@@ -1178,7 +1223,7 @@ thread_fetch (struct thread_master *m, struct thread *fetch)
             timer_wait = &snmp_timer_wait;
         }
 #endif
-      num = select (FD_SETSIZE, &readfd, &writefd, &exceptfd, timer_wait);
+      num = fd_select (FD_SETSIZE, &readfd, &writefd, &exceptfd, timer_wait);
       
       /* Signals should get quick treatment */
       if (num < 0)
@@ -1186,7 +1231,7 @@ thread_fetch (struct thread_master *m, struct thread *fetch)
           if (errno == EINTR)
             continue; /* signal received - process it */
           zlog_warn ("select() error: %s", safe_strerror (errno));
-            return NULL;
+          return NULL;
         }
 
 #if defined HAVE_SNMP && defined SNMP_AGENTX
@@ -1211,12 +1256,7 @@ thread_fetch (struct thread_master *m, struct thread *fetch)
       
       /* Got IO, process it */
       if (num > 0)
-        {
-          /* Normal priority read thread. */
-          num = thread_process_fd (m->read, &readfd, &m->readfd, num, m->fd_limit);
-          /* Write thread. */
-          num = thread_process_fd (m->write, &writefd, &m->writefd, num, m->fd_limit);
-        }
+        thread_process_fds (m, &readfd, &writefd, num);
 
 #if 0
       /* If any threads were made ready above (I/O or foreground timer),
