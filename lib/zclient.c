@@ -710,6 +710,8 @@ zserv_vrf_id_update_free (struct zserv_vrf_id_update *vu)
 struct zserv_vrf_id_update *
 zebra_vrf_id_update_read (struct stream *s)
 {
+  int i;
+  
   struct zserv_vrf_id_update *vu 
     = XMALLOC(MTYPE_ZCLIENT_VRF_ID_UPDATE, sizeof (struct zserv_vrf_id_update));
   
@@ -742,7 +744,7 @@ zebra_vrf_id_update_read (struct stream *s)
   vu = XREALLOC(MTYPE_ZCLIENT_VRF_ID_UPDATE, vu,
                 sizeof (struct zserv_vrf_id_update) 
                 + (sizeof(vrf_id_t) * vu->num));
-  for (int i = 0; i < vu->num; i++)
+  for (i = 0; i < vu->num; i++)
     vu->vrf_ids[i] = stream_getw (s);
   return vu;
 }
