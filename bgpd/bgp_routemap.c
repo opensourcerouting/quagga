@@ -2389,7 +2389,7 @@ bgp_route_map_update (const char *unused)
 	      route_map_lookup_by_name (bgp->rmap[AFI_IP][i].name);
 	  if (bgp->rmap[AFI_IP6][i].name)
 	    bgp->rmap[AFI_IP6][i].map =
-	      route_map_lookup_by_name (bgp->rmap[AFI_IP][i].name);
+	      route_map_lookup_by_name (bgp->rmap[AFI_IP6][i].name);
 	}
     }
 }
@@ -2399,8 +2399,8 @@ DEFUN (match_peer,
        "match peer (A.B.C.D|X:X::X:X)",
        MATCH_STR
        "Match peer address\n"
-       "IPv6 address of peer\n"
-       "IP address of peer\n")
+       "IP address of peer\n"
+       "IPv6 address of peer\n")
 {
   return bgp_route_match_add (vty, vty->index, "peer", argv[0]);
 }
@@ -2434,8 +2434,8 @@ ALIAS (no_match_peer,
        NO_STR
        MATCH_STR
        "Match peer address\n"
-       "IPv6 address of peer\n"
-       "IP address of peer\n")
+       "IP address of peer\n"
+       "IPv6 address of peer\n")
 
 ALIAS (no_match_peer,
        no_match_peer_local_cmd,
