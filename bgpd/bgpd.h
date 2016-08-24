@@ -886,7 +886,8 @@ extern int bgp_flag_check (struct bgp *, int);
 extern void bgp_lock (struct bgp *);
 extern void bgp_unlock (struct bgp *);
 
-extern int bgp_router_id_set (struct bgp *, struct in_addr *);
+extern void bgp_router_id_zebra_bump (void);
+extern int bgp_router_id_static_set (struct bgp *, struct in_addr);
 
 extern int bgp_cluster_id_set (struct bgp *, struct in_addr *);
 extern int bgp_cluster_id_unset (struct bgp *);
@@ -898,7 +899,7 @@ extern int bgp_confederation_peers_check (struct bgp *, as_t);
 extern int bgp_confederation_peers_add (struct bgp *, as_t);
 extern int bgp_confederation_peers_remove (struct bgp *, as_t);
 
-extern int bgp_timers_set (struct bgp *, u_int32_t, u_int32_t);
+extern int bgp_timers_set (struct bgp *, u_int32_t keepalive, u_int32_t holdtime);
 extern int bgp_timers_unset (struct bgp *);
 
 extern int bgp_default_local_preference_set (struct bgp *, u_int32_t);
@@ -914,6 +915,7 @@ extern int peer_group_remote_as_delete (struct peer_group *);
 
 extern int peer_activate (struct peer *, afi_t, safi_t);
 extern int peer_deactivate (struct peer *, afi_t, safi_t);
+extern int peer_afc_set (struct peer *, afi_t, safi_t, int);
 
 extern int peer_group_bind (struct bgp *, union sockunion *, struct peer_group *,
 		     afi_t, safi_t, as_t *);
@@ -930,11 +932,11 @@ extern int peer_af_flag_check (struct peer *, afi_t, safi_t, u_int32_t);
 extern int peer_ebgp_multihop_set (struct peer *, int);
 extern int peer_ebgp_multihop_unset (struct peer *);
 
-extern int peer_description_set (struct peer *, char *);
+extern int peer_description_set (struct peer *, const char *);
 extern int peer_description_unset (struct peer *);
 
 extern int peer_update_source_if_set (struct peer *, const char *);
-extern int peer_update_source_addr_set (struct peer *, union sockunion *);
+extern int peer_update_source_addr_set (struct peer *, const union sockunion *);
 extern int peer_update_source_unset (struct peer *);
 
 extern int peer_default_originate_set (struct peer *, afi_t, safi_t, const char *);
@@ -946,7 +948,7 @@ extern int peer_port_unset (struct peer *);
 extern int peer_weight_set (struct peer *, u_int16_t);
 extern int peer_weight_unset (struct peer *);
 
-extern int peer_timers_set (struct peer *, u_int32_t, u_int32_t);
+extern int peer_timers_set (struct peer *, u_int32_t keepalive, u_int32_t holdtime);
 extern int peer_timers_unset (struct peer *);
 
 extern int peer_timers_connect_set (struct peer *, u_int32_t);

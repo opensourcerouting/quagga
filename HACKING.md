@@ -6,12 +6,65 @@ fontsize: 11pt
 toc: true
 date: \today
 include-before: 
-  \large This is a living document. Suggestions for updates, via the
+  \large This is a living document. 
+
+  \large This is a living document describing the processes and guidelines
+   for working on Quagga. You *must* read Section
+   ["REQUIRED READING"](#sec:required), before contributing to Quagga.
+
+   Suggestions for updates, via the
   [quagga-dev list](http://lists.quagga.net/mailman/listinfo/quagga-dev),
   are welcome. \newpage
 ...
 
 \newpage
+
+REQUIRED READING {#sec:required}
+================
+
+Note well: By proposing a change to Quagga, by whatever means, you are
+implicitly agreeing:
+                                                                              
+-   To licence your contribution according to the licence of any files in
+    Quagga being modified, _and_ according to the COPYING file in the
+    top-level directory of Quagga, other than where the contribution
+    explicitly and clearly indicates otherwise.
+
+-   That it is your responsibility to ensure you hold whatever rights are
+    required to be able to contribute your changes under the licenses of the
+    files in Quagga being modified, and the top-level COPYING file.
+                                                                              
+-   That it is your responsibility to give with the contribution a full
+    account of all interests held and claims in the contribution; such as
+    through copyright, trademark and patent laws or otherwise; that are known
+    to you or your associates (e.g.  your employer).
+
+Before contributing to Quagga, you *must*  also read 
+[Section COMMIT MESSAGES](#sec:commit-messages).  
+
+You _should_ ideally read the entire document, as it contains useful
+information on the community norms and how to implement them.
+
+Please note that authorship and any relevant other rights information should
+be _explicitly_ stated with the contribution.  A "Signed-off-by" line is
+_not_ sufficient.  The "Signed-off-by" line is not used by the Quagga
+project.
+
+You may document applicable copyright claims to files being modified or
+added by your contribution.  For new files, the standard way is to add a
+string in the following format near the beginning of the file:
+
+    Copyright (C) <Year> <name of person/entity>[, optional contact details]
+
+When adding copyright claims for modifications to an existing file, please
+preface the claim with "Portions: " on a line before it and indent the
+"Copyright ..." string. If such a case already exists, add your indented
+claim immediately after. E.g.:
+
+    Portions:
+      Copyright (C) <Year> <Entity A> ....
+      Copyright (C) <Year> <Your details> [optional brief change description]
+
 
 GUIDELINES FOR HACKING ON QUAGGA {#sec:guidelines}
 ================================
@@ -26,6 +79,13 @@ due to whitespace issues, to minimise merging conflicts.
 
 Be particularly careful not to break platforms/protocols that you
 cannot test.
+
+Parsers or packet-writers of data from untrusted parties, particularly
+remote ones, *MUST* use the lib/stream bounded-buffer abstraction, and use
+its checked getters and putters.  Twiddling of pointers based on contents of
+untrusted data is _strongly_ discouraged - any such code is not acceptable,
+unless there are very good reasons (e.g.  compatibility with external or old
+code that is not easily rewritten).
 
 New code should have good comments, which explain why the code is correct.
 Changes to existing code should in many cases upgrade the comments when
@@ -84,8 +144,7 @@ upgrade may cause daemons to fail to start because of unrecognised commands.
 Deprecated commands should be excised in the next unstable cycle.  A list of
 deprecated commands should be collated for each release.
 
-See also section [sec:dll-versioning] below regarding SHARED LIBRARY
-VERSIONING.
+See also [Section SHARED LIBRARY VERSIONING](#sec:dll-versioning) below.
 
 YOUR FIRST CONTRIBUTIONS
 ========================
@@ -167,8 +226,8 @@ rather than:
 Note that the former approach requires ensuring that SOME\_SYMBOL will
 be defined (watch your AC\_DEFINEs).
 
-COMMIT MESSAGES
-===============
+COMMIT MESSAGES {#sec:commit-messages}
+======================================
 
 The commit message requirements are:
 
@@ -198,6 +257,20 @@ The commit message requirements are:
     -   Information to allow reviewers to be able to tell which specific
         changes to the code are intended (and hence be able to spot any accidental
         unintended changes).
+
+-   The commit message *must* give details of all the authors of the change,
+    beyond the person listed in the Author field.  Any and all affiliations
+    which may have a bearing on copyright in any way should be clearly
+    stated, unless those affiliations are already obvious from other
+    details, e.g.  from the email address.  This would cover employment and
+    contracting obligations (give details).
+
+    Note: Do not rely on "Signed-off-by" for this, be explicit.
+    
+-   If the change introduces a new dependency on any code or other
+    copyrighted material, please explicitly note this.  Give details of what
+    that external material is, the copyright licence the material may be
+    used under, and the nature of the dependency.
 
 The one-line summary must be limited to 54 characters, and all other
 lines to 72 characters.
@@ -363,8 +436,8 @@ merge them together to one branch (potentially local and/or “throw-away”)
 for testing or use, while retaining smaller, independent branches that are
 easier to merge.
 
-All content guidelines in section [sec:patch-submission], PATCH
-SUBMISSION apply.
+All content guidelines in [Section PATCH SUBMISSION](#sec:patch-submission)
+apply.
 
 PATCH SUBMISSION {#sec:patch-submission}
 ================
@@ -381,8 +454,8 @@ PATCH SUBMISSION {#sec:patch-submission}
     git diff -up mybranch..remotes/quagga.net/master
 
     It is preferable to use git format-patch, and even more preferred to
-    publish a git repository (see GIT COMMIT SUBMISSION, section
-    [sec:git-submission]).
+    publish a git repository (see 
+    [Section GIT COMMIT SUBMISSION](#sec:git-submission)).
 
     If not using git format-patch, Include the commit message in the
     email.
@@ -498,3 +571,10 @@ from ‘master’:
 
 presuming ‘quagga’ corresponds to a file in your .git/remotes with
 configuration for the appropriate Quagga.net repository.
+
+USEFUL URLs
+===========
+
+* David Lamparter <equinox@diac24.net> runs a patchwork instance at
+  <http://patchwork.quagga.net/project/quagga/list/>
+
