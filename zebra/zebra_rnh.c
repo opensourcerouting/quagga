@@ -212,7 +212,8 @@ zebra_evaluate_rnh_table (vrf_id_t vrfid, int family)
     {
       if (!nrn->info)
 	  continue;
-
+      
+      rnh = nrn->info;
       prn = route_node_match(ptable, &nrn->p);
       if (!prn)
 	rib = NULL;
@@ -223,11 +224,18 @@ zebra_evaluate_rnh_table (vrf_id_t vrfid, int family)
 	      if (CHECK_FLAG (rib->status, RIB_ENTRY_REMOVED))
 		continue;
 	      if (CHECK_FLAG (rib->flags, ZEBRA_FLAG_SELECTED))
-		break;
+		{
+		  if (CHECK_FLAG(rnh->flags, ZEBRA_NHT_CONNECTED))
+		    {
+		      if (rib->type == ZEBRA_ROUTE_CONNECT)
+			break;
+		    }
+		  else
+		    break;
+		}
 	    }
 	}
 
-      rnh = nrn->info;
       if (compare_state(rib, rnh->state))
 	{
 	  if (IS_ZEBRA_DEBUG_NHT)
@@ -490,7 +498,9 @@ send_client (struct rnh *rnh, struct zserv *client, vrf_id_t vrf_id)
       nump = stream_get_endp(s);
       stream_putc (s, 0);
       for (nexthop = rib->nexthop; nexthop; nexthop = nexthop->next)
-	if (CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_FIB))
+	if ((CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_FIB) ||
+             CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_RECURSIVE)) &&
+	    CHECK_FLAG (nexthop->flags, NEXTHOP_FLAG_ACTIVE))
 	  {
 	    stream_putc (s, nexthop->type);
 	    switch (nexthop->type)
@@ -531,6 +541,9 @@ send_client (struct rnh *rnh, struct zserv *client, vrf_id_t vrf_id)
       stream_putc (s, 0);
     }
   stream_putw_at (s, 0, stream_get_endp (s));
+
+  client->nh_last_upd_time = quagga_time(NULL);
+  client->last_write_cmd = ZEBRA_NEXTHOP_UPDATE;
   return zebra_server_send_message(client);
 }
 
@@ -593,7 +606,9 @@ print_rnh (struct route_node *rn, struct vty *vty)
 	print_nh(nexthop, vty);
     }
   else
-    vty_out(vty, " unresolved%s", VTY_NEWLINE);
+    vty_out(vty, " unresolved%s%s",
+	    CHECK_FLAG(rnh->flags, ZEBRA_NHT_CONNECTED) ? "(Connected)" : "",
+	    VTY_NEWLINE);
 
   vty_out(vty, " Client list:");
   for (ALL_LIST_ELEMENTS_RO(rnh->client_list, node, client))

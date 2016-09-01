@@ -139,6 +139,10 @@ struct bgp_static
   u_char tag[3];
 };
 
+#define BGP_INFO_COUNTABLE(BI) \
+  (! CHECK_FLAG ((BI)->flags, BGP_INFO_HISTORY) \
+   && ! CHECK_FLAG ((BI)->flags, BGP_INFO_REMOVED))
+
 /* Flags which indicate a route is unuseable in some form */
 #define BGP_INFO_UNUSEABLE \
   (BGP_INFO_HISTORY|BGP_INFO_DAMPED|BGP_INFO_REMOVED)
@@ -221,7 +225,7 @@ extern int bgp_maximum_prefix_overflow (struct peer *, afi_t, safi_t, int);
 
 extern void bgp_redistribute_add (struct prefix *, const struct in_addr *,
 				  const struct in6_addr *,
-				  u_int32_t, u_char);
+				  u_int32_t, u_char, route_tag_t);
 extern void bgp_redistribute_delete (struct prefix *, u_char);
 extern void bgp_redistribute_withdraw (struct bgp *, afi_t, int);
 

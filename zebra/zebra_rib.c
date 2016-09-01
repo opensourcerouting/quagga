@@ -1910,6 +1910,7 @@ rib_add_ipv4_multipath (struct prefix_ipv4 *p, struct rib *rib, safi_t safi)
   struct route_node *rn;
   struct rib *same;
   struct nexthop *nexthop;
+  int ret = 0;
   
   /* Lookup table.  */
   table = zebra_vrf_table (AFI_IP, safi, rib->vrf_id);
@@ -1952,6 +1953,7 @@ rib_add_ipv4_multipath (struct prefix_ipv4 *p, struct rib *rib, safi_t safi)
 
   /* Link new rib to node.*/
   rib_addnode (rn, rib);
+  ret = 1;
   if (IS_ZEBRA_DEBUG_RIB)
   {
     zlog_debug ("%s: called rib_addnode (%p, %p) on new RIB entry",
@@ -1969,10 +1971,11 @@ rib_add_ipv4_multipath (struct prefix_ipv4 *p, struct rib *rib, safi_t safi)
       rib_dump (p, same);
     }
     rib_delnode (rn, same);
+    ret = -1;
   }
   
   route_unlock_node (rn);
-  return 0;
+  return ret;
 }
 
 /* XXX factor with rib_delete_ipv6 */
@@ -2147,6 +2150,10 @@ static_install_route (afi_t afi, safi_t safi, struct prefix *p, struct static_ro
 
   if (rib)
     {
+      /* if tag value changed , update old value in RIB */
+      if (rib->tag != si->tag)
+	rib->tag = si->tag;
+
       /* Same distance static route is there.  Update it with new
          nexthop. */
       route_unlock_node (rn);
@@ -2184,6 +2191,7 @@ static_install_route (afi_t afi, safi_t safi, struct prefix *p, struct static_ro
       rib->vrf_id = si->vrf_id;
       rib->table = zebrad.rtm_table_default;
       rib->nexthop_num = 0;
+      rib->tag = si->tag;
 
       switch (si->type)
         {
@@ -2269,7 +2277,8 @@ static_uninstall_route (afi_t afi, safi_t safi, struct prefix *p, struct static_
       if (CHECK_FLAG (rib->status, RIB_ENTRY_REMOVED))
         continue;
 
-      if (rib->type == ZEBRA_ROUTE_STATIC && rib->distance == si->distance)
+      if (rib->type == ZEBRA_ROUTE_STATIC && rib->distance == si->distance &&
+	  rib->tag == si->tag)
         break;
     }
 
@@ -2308,8 +2317,8 @@ static_uninstall_route (afi_t afi, safi_t safi, struct prefix *p, struct static_
 
 int
 static_add_ipv4_safi (safi_t safi, struct prefix *p, struct in_addr *gate,
-		      const char *ifname, u_char flags, u_char distance,
-		      vrf_id_t vrf_id)
+		      const char *ifname, u_char flags, route_tag_t tag,
+		      u_char distance, vrf_id_t vrf_id)
 {
   u_char type = 0;
   struct route_node *rn;
@@ -2341,7 +2350,8 @@ static_add_ipv4_safi (safi_t safi, struct prefix *p, struct in_addr *gate,
 	  && (! gate || IPV4_ADDR_SAME (gate, &si->addr.ipv4))
 	  && (! ifname || strcmp (ifname, si->ifname) == 0))
 	{
-	  if (distance == si->distance)
+	  if (distance == si->distance &&
+	      tag == si->tag)
 	    {
 	      route_unlock_node (rn);
 	      return 0;
@@ -2351,15 +2361,16 @@ static_add_ipv4_safi (safi_t safi, struct prefix *p, struct in_addr *gate,
 	}
     }
 
-  /* Distance changed.  */
+  /* Distance or tag changed. */
   if (update)
-    static_delete_ipv4_safi (safi, p, gate, ifname, update->distance, vrf_id);
+    static_delete_ipv4_safi (safi, p, gate, ifname, update->tag, update->distance, vrf_id);
 
   /* Make new static route structure. */
   si = XCALLOC (MTYPE_STATIC_ROUTE, sizeof (struct static_route));
 
   si->type = type;
   si->distance = distance;
+  si->tag = tag;
   si->flags = flags;
   si->vrf_id = vrf_id;
 
@@ -2403,7 +2414,8 @@ static_add_ipv4_safi (safi_t safi, struct prefix *p, struct in_addr *gate,
 
 int
 static_delete_ipv4_safi (safi_t safi, struct prefix *p, struct in_addr *gate,
-			 const char *ifname, u_char distance, vrf_id_t vrf_id)
+			 const char *ifname, route_tag_t tag, u_char distance,
+			 vrf_id_t vrf_id)
 {
   u_char type = 0;
   struct route_node *rn;
@@ -2432,7 +2444,8 @@ static_delete_ipv4_safi (safi_t safi, struct prefix *p, struct in_addr *gate,
   for (si = rn->info; si; si = si->next)
     if (type == si->type
 	&& (! gate || IPV4_ADDR_SAME (gate, &si->addr.ipv4))
-	&& (! ifname || strcmp (ifname, si->ifname) == 0))
+	&& (! ifname || strcmp (ifname, si->ifname) == 0)
+	&& (! tag || (tag == si->tag)))
       break;
 
   /* Can't find static route. */
@@ -2788,8 +2801,8 @@ rib_delete_ipv6 (int type, int flags, struct prefix_ipv6 *p,
 /* Add static route into static route configuration. */
 int
 static_add_ipv6 (struct prefix *p, u_char type, struct in6_addr *gate,
-		 const char *ifname, u_char flags, u_char distance,
-		 vrf_id_t vrf_id)
+		 const char *ifname, u_char flags, route_tag_t tag,
+		 u_char distance, vrf_id_t vrf_id)
 {
   struct route_node *rn;
   struct static_route *si;
@@ -2817,6 +2830,7 @@ static_add_ipv6 (struct prefix *p, u_char type, struct in6_addr *gate,
   for (si = rn->info; si; si = si->next)
     {
       if (type == si->type
+	  && tag == si->tag
 	  && (! gate || IPV6_ADDR_SAME (gate, &si->addr.ipv6))
 	  && (! ifname || strcmp (ifname, si->ifname) == 0))
 	{
@@ -2831,13 +2845,14 @@ static_add_ipv6 (struct prefix *p, u_char type, struct in6_addr *gate,
     }
 
   if (update)
-    static_delete_ipv6(p, type, gate, ifname, si->distance, vrf_id);
+    static_delete_ipv6(p, type, gate, ifname, tag, si->distance, vrf_id);
 
   /* Make new static route structure. */
   si = XCALLOC (MTYPE_STATIC_ROUTE, sizeof (struct static_route));
 
   si->type = type;
   si->distance = distance;
+  si->tag = tag;
   si->flags = flags;
   si->vrf_id = vrf_id;
 
@@ -2884,7 +2899,8 @@ static_add_ipv6 (struct prefix *p, u_char type, struct in6_addr *gate,
 /* Delete static route from static route configuration. */
 int
 static_delete_ipv6 (struct prefix *p, u_char type, struct in6_addr *gate,
-		    const char *ifname, u_char distance, vrf_id_t vrf_id)
+		    const char *ifname, route_tag_t tag, u_char distance,
+		    vrf_id_t vrf_id)
 {
   struct route_node *rn;
   struct static_route *si;
@@ -2905,7 +2921,8 @@ static_delete_ipv6 (struct prefix *p, u_char type, struct in6_addr *gate,
     if (distance == si->distance 
 	&& type == si->type
 	&& (! gate || IPV6_ADDR_SAME (gate, &si->addr.ipv6))
-	&& (! ifname || strcmp (ifname, si->ifname) == 0))
+	&& (! ifname || strcmp (ifname, si->ifname) == 0)
+	&& (! tag || (tag == si->tag)))
       break;
 
   /* Can't find static route. */

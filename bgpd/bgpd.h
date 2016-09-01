@@ -278,6 +278,8 @@ typedef enum
   BGP_PEER_CONFED,
 } bgp_peer_sort_t;
 
+#define BGP_MAX_PACKET_SIZE_OVERFLOW          1024
+
 /* BGP neighbor structure. */
 struct peer
 {
@@ -748,7 +750,7 @@ struct bgp_nlri
 #define BGP_EVENTS_MAX                          15
 
 /* BGP timers default value.  */
-#define BGP_INIT_START_TIMER                     5
+#define BGP_INIT_START_TIMER                     1
 #define BGP_DEFAULT_HOLDTIME                   180
 #define BGP_DEFAULT_KEEPALIVE                   60 
 #define BGP_DEFAULT_EBGP_ROUTEADV               30
@@ -995,4 +997,5 @@ extern int peer_clear_soft (struct peer *, afi_t, safi_t, enum bgp_clear_type);
 extern int peer_ttl_security_hops_set (struct peer *, int);
 extern int peer_ttl_security_hops_unset (struct peer *);
 
+extern void bgp_scan_finish (void);
 #endif /* _QUAGGA_BGPD_H */
