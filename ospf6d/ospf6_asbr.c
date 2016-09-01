@@ -680,6 +680,15 @@ DEFUN (no_ospf6_redistribute,
   return CMD_SUCCESS;
 }
 
+ALIAS (no_ospf6_redistribute,
+       no_ospf6_redistribute_route_map_cmd,
+       "no redistribute " QUAGGA_REDIST_STR_OSPF6D " route-map WORD",
+       NO_STR
+       "Redistribute\n"
+       QUAGGA_REDIST_HELP_STR_OSPF6D
+       "Route map reference\n"
+       "Route map name\n")
+
 int
 ospf6_redistribute_config_write (struct vty *vty)
 {
@@ -1291,6 +1300,8 @@ DEFUN (show_ipv6_ospf6_redistribute,
 {
   struct ospf6_route *route;
 
+  OSPF6_CMD_CHECK_RUNNING ();
+
   ospf6_redistribute_show_config (vty);
 
   for (route = ospf6_route_head (ospf6->external_table); route;
@@ -1321,6 +1332,7 @@ ospf6_asbr_init (void)
   install_element (OSPF6_NODE, &ospf6_redistribute_cmd);
   install_element (OSPF6_NODE, &ospf6_redistribute_routemap_cmd);
   install_element (OSPF6_NODE, &no_ospf6_redistribute_cmd);
+  install_element (OSPF6_NODE, &no_ospf6_redistribute_route_map_cmd);
 }
 
 void
