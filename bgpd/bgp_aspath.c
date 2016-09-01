@@ -427,7 +427,7 @@ aspath_count_confeds (struct aspath *aspath)
 }
 
 unsigned int
-aspath_count_hops (struct aspath *aspath)
+aspath_count_hops (const struct aspath *aspath)
 {
   int count = 0;
   struct assegment *seg = aspath->segments;
@@ -475,9 +475,8 @@ aspath_highest (struct aspath *aspath)
   while (seg)
     {
       for (i = 0; i < seg->length; i++)
-        if (seg->as[i] > highest
-            && (seg->as[i] < BGP_PRIVATE_AS_MIN
-                || seg->as[i] > BGP_PRIVATE_AS_MAX))
+        if (seg->as[i] > highest 
+            && !BGP_AS_IS_PRIVATE(seg->as[i]))
 	  highest = seg->as[i];
       seg = seg->next;
     }
@@ -1065,6 +1064,9 @@ aspath_aggregate (struct aspath *as1, struct aspath *as2)
       if (match != minlen || match != seg1->length 
 	  || seg1->length != seg2->length)
 	break;
+      /* We are moving on to the next segment to reset match */
+      else
+        match = 0;
       
       seg1 = seg1->next;
       seg2 = seg2->next;
@@ -1280,8 +1282,7 @@ aspath_private_as_check (struct aspath *aspath)
       
       for (i = 0; i < seg->length; i++)
 	{
-	  if ( (seg->as[i] < BGP_PRIVATE_AS_MIN)
-	      || (seg->as[i] > BGP_PRIVATE_AS_MAX) )
+	  if (!BGP_AS_IS_PRIVATE(seg->as[i]))
 	    return 0;
 	}
       seg = seg->next;
@@ -1378,7 +1379,18 @@ aspath_prepend (struct aspath *as1, struct aspath *as2)
   /* Delete any AS_CONFED_SEQUENCE segment from as2. */
   if (seg1->type == AS_SEQUENCE && seg2->type == AS_CONFED_SEQUENCE)
     as2 = aspath_delete_confed_seq (as2);
-
+  
+  /* as2 may have been updated */
+  seg2 = as2->segments;
+  
+  /* as2 may be empty now due to aspath_delete_confed_seq, recheck */
+  if (seg2 == NULL)
+    {
+      as2->segments = assegment_dup_all (as1->segments);
+      aspath_str_update (as2);
+      return as2;
+    }
+  
   /* Compare last segment type of as1 and first segment type of as2. */
   if (seg1->type != seg2->type)
     return aspath_merge (as1, as2);
@@ -1564,6 +1576,10 @@ aspath_cmp_left (const struct aspath *aspath1, const struct aspath *aspath2)
 
   seg1 = aspath1->segments;
   seg2 = aspath2->segments;
+
+  /* If both paths are originated in this AS then we do want to compare MED */
+  if (!seg1 && !seg2)
+    return 1;
 
   /* find first non-confed segments for each */
   while (seg1 && ((seg1->type == AS_CONFED_SEQUENCE)
