@@ -1275,14 +1275,13 @@ ospf6_intra_prefix_lsa_add (struct ospf6_lsa *lsa)
         break;
 
       /* Appendix A.4.1.1 */
-      if (CHECK_FLAG(op->prefix_options, OSPF6_PREFIX_OPTION_NU) ||
-	  CHECK_FLAG(op->prefix_options, OSPF6_PREFIX_OPTION_LA))
+      if (CHECK_FLAG(op->prefix_options, OSPF6_PREFIX_OPTION_NU))
 	{
 	  if (IS_OSPF6_DEBUG_EXAMIN (INTRA_PREFIX))
 	    {
 	      ospf6_linkstate_prefix2str ((struct prefix *)OSPF6_PREFIX_BODY(op),
 					  buf, sizeof (buf));
-	      zlog_debug ("%s: Skipping Prefix %s has NU/LA option set",
+	      zlog_debug ("%s: Skipping Prefix %s has NU option set",
 			  __func__, buf);
 	    }
 	  continue;
@@ -1339,7 +1338,7 @@ ospf6_intra_prefix_lsa_remove (struct ospf6_lsa *lsa)
   struct ospf6_area *oa;
   struct ospf6_intra_prefix_lsa *intra_prefix_lsa;
   struct prefix prefix;
-  struct ospf6_route *route;
+  struct ospf6_route *route, *nroute;
   int prefix_num;
   struct ospf6_prefix *op;
   char *start, *current, *end;
@@ -1377,8 +1376,9 @@ ospf6_intra_prefix_lsa_remove (struct ospf6_lsa *lsa)
 
       for (ospf6_route_lock (route);
            route && ospf6_route_is_prefix (&prefix, route);
-           route = ospf6_route_next (route))
+           route = nroute)
         {
+          nroute = ospf6_route_next (route);
           if (route->type != OSPF6_DEST_TYPE_NETWORK)
             continue;
           if (route->path.area_id != oa->area_id)
@@ -1408,7 +1408,7 @@ ospf6_intra_prefix_lsa_remove (struct ospf6_lsa *lsa)
 void
 ospf6_intra_route_calculation (struct ospf6_area *oa)
 {
-  struct ospf6_route *route;
+  struct ospf6_route *route, *nroute;
   u_int16_t type;
   struct ospf6_lsa *lsa;
   void (*hook_add) (struct ospf6_route *) = NULL;
@@ -1435,8 +1435,9 @@ ospf6_intra_route_calculation (struct ospf6_area *oa)
   oa->route_table->hook_remove = hook_remove;
 
   for (route = ospf6_route_head (oa->route_table); route;
-       route = ospf6_route_next (route))
+       route = nroute)
     {
+      nroute = ospf6_route_next (route);
       if (CHECK_FLAG (route->flag, OSPF6_ROUTE_REMOVE) &&
           CHECK_FLAG (route->flag, OSPF6_ROUTE_ADD))
         {
@@ -1516,7 +1517,7 @@ ospf6_brouter_debug_print (struct ospf6_route *brouter)
 void
 ospf6_intra_brouter_calculation (struct ospf6_area *oa)
 {
-  struct ospf6_route *brouter, *copy;
+  struct ospf6_route *brouter, *nbrouter, *copy;
   void (*hook_add) (struct ospf6_route *) = NULL;
   void (*hook_remove) (struct ospf6_route *) = NULL;
   u_int32_t brouter_id;
@@ -1585,8 +1586,9 @@ ospf6_intra_brouter_calculation (struct ospf6_area *oa)
   oa->ospf6->brouter_table->hook_remove = hook_remove;
 
   for (brouter = ospf6_route_head (oa->ospf6->brouter_table); brouter;
-       brouter = ospf6_route_next (brouter))
+       brouter = nbrouter)
     {
+      nbrouter = ospf6_route_next (brouter);
       brouter_id = ADV_ROUTER_IN_PREFIX (&brouter->prefix);
       inet_ntop (AF_INET, &brouter_id, brouter_name, sizeof (brouter_name));
       
