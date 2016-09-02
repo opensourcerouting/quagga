@@ -724,7 +724,8 @@ bgp_attr_default_intern (u_char origin)
 struct attr *
 bgp_attr_aggregate_intern (struct bgp *bgp, u_char origin,
 			   struct aspath *aspath,
-			   struct community *community, int as_set)
+			   struct community *community, int as_set,
+			   u_char atomic_aggregate)
 {
   struct attr attr;
   struct attr *new;
@@ -757,7 +758,7 @@ bgp_attr_aggregate_intern (struct bgp *bgp, u_char origin,
   attre.weight = BGP_ATTR_DEFAULT_WEIGHT;
   attre.mp_nexthop_len = IPV6_MAX_BYTELEN;
 
-  if (! as_set)
+  if (! as_set || atomic_aggregate)
     attr.flag |= ATTR_FLAG_BIT (BGP_ATTR_ATOMIC_AGGREGATE);
   attr.flag |= ATTR_FLAG_BIT (BGP_ATTR_AGGREGATOR);
   if (CHECK_FLAG (bgp->config, BGP_CONFIG_CONFEDERATION))
@@ -2156,9 +2157,11 @@ bgp_attr_parse (struct peer *peer, struct attr *attr, bgp_size_t size,
 	{
 	  zlog (peer->log, LOG_WARNING, 
 		"%s: BGP type %d length %d is too large, attribute total length is %d.  attr_endp is %p.  endp is %p", peer->host, type, length, size, attr_endp, endp);
-	  bgp_notify_send (peer, 
-			   BGP_NOTIFY_UPDATE_ERR, 
-			   BGP_NOTIFY_UPDATE_ATTR_LENG_ERR);
+	  zlog_warn ("%s: BGP type %d length %d is too large, attribute total length is %d.  attr_endp is %p.  endp is %p", peer->host, type, length, size, attr_endp, endp);
+          bgp_notify_send_with_data (peer,
+                                     BGP_NOTIFY_UPDATE_ERR,
+                                     BGP_NOTIFY_UPDATE_ATTR_LENG_ERR,
+                                     startp, attr_endp - startp);
 	  return BGP_ATTR_PARSE_ERROR;
 	}
 	
