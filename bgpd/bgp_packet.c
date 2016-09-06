@@ -103,8 +103,8 @@ bgp_packet_delete (struct peer *peer)
 }
 
 /* Check file descriptor whether connect is established. */
-static void
-bgp_connect_check (struct peer *peer)
+int
+bgp_connect_check (struct peer *peer, int change_state)
 {
   int status;
   socklen_t slen;
@@ -123,20 +123,23 @@ bgp_connect_check (struct peer *peer)
     {
       zlog (peer->log, LOG_INFO, "can't get sockopt for nonblocking connect");
       BGP_EVENT_ADD (peer, TCP_fatal_error);
-      return;
+      return -1;
     }      
 
   /* When status is 0 then TCP connection is established. */
   if (status == 0)
     {
       BGP_EVENT_ADD (peer, TCP_connection_open);
+      return 1;
     }
   else
     {
       if (BGP_DEBUG (events, EVENTS))
 	  plog_debug (peer->log, "%s [Event] Connect failed (%s)",
 		     peer->host, safe_strerror (errno));
-      BGP_EVENT_ADD (peer, TCP_connection_open_failed);
+      if (change_state)
+	BGP_EVENT_ADD (peer, TCP_connection_open_failed);
+      return 0;
     }
 }
 
@@ -153,6 +156,8 @@ bgp_update_packet (struct peer *peer, afi_t afi, safi_t safi)
   struct bgp_info *binfo = NULL;
   bgp_size_t total_attr_len = 0;
   unsigned long attrlen_pos = 0;
+  int space_remaining = 0;
+  int space_needed = 0;
   size_t mpattrlen_pos = 0;
   size_t mpattr_pos = 0;
 
@@ -171,9 +176,12 @@ bgp_update_packet (struct peer *peer, afi_t afi, safi_t safi)
       if (adv->binfo)
         binfo = adv->binfo;
 
+      space_remaining = STREAM_CONCAT_REMAIN (s, snlri, STREAM_SIZE(s)) -
+                        BGP_MAX_PACKET_SIZE_OVERFLOW;
+      space_needed = BGP_NLRI_LENGTH + bgp_packet_mpattr_prefix_size (afi, safi, &rn->p);
+
       /* When remaining space can't include NLRI and it's length.  */
-      if (STREAM_CONCAT_REMAIN (s, snlri, STREAM_SIZE(s)) <=
-	  (BGP_NLRI_LENGTH + bgp_packet_mpattr_prefix_size(afi,safi,&rn->p)))
+      if (space_remaining < space_needed)
 	break;
 
       /* If packet is empty, set attribute. */
@@ -217,6 +225,22 @@ bgp_update_packet (struct peer *peer, afi_t afi, safi_t safi)
                                                   &rn->p : NULL),
                                                  afi, safi,
 	                                         from, prd, tag);
+          space_remaining = STREAM_CONCAT_REMAIN (s, snlri, STREAM_SIZE(s)) -
+                            BGP_MAX_PACKET_SIZE_OVERFLOW;
+          space_needed = BGP_NLRI_LENGTH + bgp_packet_mpattr_prefix_size (afi, safi, &rn->p);;
+
+          /* If the attributes alone do not leave any room for NLRI then
+           * return */
+          if (space_remaining < space_needed)
+            {
+              zlog_err ("%s cannot send UPDATE, the attributes do not leave "
+                        "room for NLRI", peer->host);
+              /* Flush the FIFO update queue */
+              while (adv)
+                adv = bgp_advertise_clean (peer, adv->adj, afi, safi);
+              return NULL;
+            } 
+
 	}
 
       if (afi == AFI_IP && safi == SAFI_UNICAST)
@@ -347,6 +371,8 @@ bgp_withdraw_packet (struct peer *peer, afi_t afi, safi_t safi)
   size_t attrlen_pos = 0;
   size_t mplen_pos = 0;
   u_char first_time = 1;
+  int space_remaining = 0;
+  int space_needed = 0;
 
   s = peer->work;
   stream_reset (s);
@@ -357,8 +383,12 @@ bgp_withdraw_packet (struct peer *peer, afi_t afi, safi_t safi)
       adj = adv->adj;
       rn = adv->rn;
 
-      if (STREAM_REMAIN (s)
-	  < (BGP_NLRI_LENGTH + BGP_TOTAL_ATTR_LEN + PSIZE (rn->p.prefixlen)))
+      space_remaining = STREAM_REMAIN (s) -
+                        BGP_MAX_PACKET_SIZE_OVERFLOW;
+      space_needed = (BGP_NLRI_LENGTH + BGP_TOTAL_ATTR_LEN +
+                      bgp_packet_mpattr_prefix_size (afi, safi, &rn->p));
+
+      if (space_remaining < space_needed)
 	break;
 
       if (stream_empty (s))
@@ -688,7 +718,7 @@ bgp_write (struct thread *thread)
   /* For non-blocking IO check. */
   if (peer->status == Connect)
     {
-      bgp_connect_check (peer);
+      bgp_connect_check (peer, 1);
       return 0;
     }
 
@@ -2465,7 +2495,7 @@ bgp_read (struct thread *thread)
   /* For non-blocking IO check. */
   if (peer->status == Connect)
     {
-      bgp_connect_check (peer);
+      bgp_connect_check (peer, 1);
       goto done;
     }
   else
