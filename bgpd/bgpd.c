@@ -57,6 +57,10 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #include "bgpd/bgp_damp.h"
 #include "bgpd/bgp_mplsvpn.h"
 #include "bgpd/bgp_encap.h"
+#if ENABLE_BGP_VNC
+#include "bgpd/rfapi/bgp_rfapi_cfg.h"
+#include "bgpd/rfapi/rfapi_backend.h"
+#endif
 #include "bgpd/bgp_advertise.h"
 #include "bgpd/bgp_network.h"
 #include "bgpd/bgp_vty.h"
@@ -825,7 +829,7 @@ peer_unlock_with_caller (const char *name, struct peer *peer)
 }
   
 /* Allocate new peer object, implicitely locked.  */
-static struct peer *
+struct peer *
 peer_new (struct bgp *bgp)
 {
   afi_t afi;
@@ -2103,6 +2107,12 @@ bgp_create (as_t *as, const char *name)
   if (name)
     bgp->name = strdup (name);
 
+#if ENABLE_BGP_VNC
+  bgp->rfapi = bgp_rfapi_new(bgp);
+  assert(bgp->rfapi);
+  assert(bgp->rfapi_cfg);
+#endif /* ENABLE_BGP_VNC */
+
   THREAD_TIMER_ON (bm->master, bgp->t_startup, bgp_startup_timer_expire,
                    bgp, bgp->restart_time);
 
@@ -2285,6 +2295,11 @@ bgp_delete (struct bgp *bgp)
    * for the sake of valgrind.
    */
   bgp_process_queues_drain_immediate();
+
+#if ENABLE_BGP_VNC
+  rfapi_delete(bgp);
+  bgp_cleanup_routes();         /* rfapi cleanup can create route entries! */
+#endif
 
   /* Remove visibility via the master list - there may however still be
    * routes to be processed still referencing the struct bgp.
@@ -4042,6 +4057,9 @@ peer_distribute_update (struct access_list *access)
 		  }
 	      }
 	}
+#if ENABLE_BGP_VNC
+      vnc_prefix_list_update(bgp);
+#endif
     }
 }
 
@@ -5646,6 +5664,11 @@ bgp_config_write (struct vty *vty)
       /* ENCAPv6 configuration.  */
       write += bgp_config_write_family (vty, bgp, AFI_IP6, SAFI_ENCAP);
 
+
+#if ENABLE_BGP_VNC
+      write += bgp_rfapi_cfg_write(vty, bgp);
+#endif
+
       vty_out (vty, " exit%s", VTY_NEWLINE);
 
       write++;
@@ -5676,6 +5699,9 @@ bgp_init (void)
 
   /* Init zebra. */
   bgp_zebra_init (bm->master);
+#if ENABLE_BGP_VNC
+  vnc_zebra_init (bm->master);
+#endif
 
   /* BGP VTY commands installation.  */
   bgp_vty_init ();
@@ -5690,6 +5716,9 @@ bgp_init (void)
   bgp_scan_vty_init();
   bgp_mplsvpn_init ();
   bgp_encap_init ();
+#if ENABLE_BGP_VNC
+  rfapi_init ();
+#endif
 
   /* Access list initialize. */
   access_list_init ();
