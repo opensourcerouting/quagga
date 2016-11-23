@@ -48,10 +48,10 @@ struct ospf_neighbor
 
   /* Last sent Database Description packet. */
   struct ospf_packet *last_send;
-  /* Timestemp when last Database Description packet was sent */
+  /* Timestamp when last Database Description packet was sent */
   struct timeval last_send_ts;
 
-  /* Last received Databse Description packet. */
+  /* Last received Database Description packet. */
   struct
   {
     u_char options;

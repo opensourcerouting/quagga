@@ -271,7 +271,7 @@ ospf_apiserver_new (int fd_sync, int fd_async)
   /* list of registered opaque types that application uses */
   new->opaque_types = list_new ();
 
-  /* Initialize temporary strage for LSA instances to be refreshed. */
+  /* Initialize temporary storage for LSA instances to be refreshed. */
   memset (&new->reserve, 0, sizeof (struct ospf_lsdb));
   ospf_lsdb_init (&new->reserve);
 
@@ -386,7 +386,7 @@ ospf_apiserver_free (struct ospf_apiserver *apiserv)
   msg_fifo_free (apiserv->out_sync_fifo);
   msg_fifo_free (apiserv->out_async_fifo);
 
-  /* Clear temporary strage for LSA instances to be refreshed. */
+  /* Clear temporary storage for LSA instances to be refreshed. */
   ospf_lsdb_delete_all (&apiserv->reserve);
   ospf_lsdb_cleanup (&apiserv->reserve);
 

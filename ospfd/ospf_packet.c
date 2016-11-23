@@ -964,7 +964,7 @@ ospf_hello (struct ip *iph, struct ospf_header *ospfh,
 
   /* on NBMA network type, it happens to receive bidirectional Hello packet
      without advance 1-Way Received event.
-     To avoid incorrect DR-seletion, raise 1-Way Received event.*/
+     To avoid incorrect DR-selection, raise 1-Way Received event.*/
   if (oi->type == OSPF_IFTYPE_NBMA &&
       (old_state == NSM_Down || old_state == NSM_Attempt))
     {
@@ -1210,7 +1210,7 @@ ospf_db_desc (struct ip *iph, struct ospf_header *ospfh,
   /* 
    * XXX HACK by Hasso Tepper. Setting N/P bit in NSSA area DD packets is not
    * required. In fact at least JunOS sends DD packets with P bit clear. 
-   * Until proper solution is developped, this hack should help.
+   * Until proper solution is developed, this hack should help.
    *
    * Update: According to the RFCs, N bit is specified /only/ for Hello
    * options, unfortunately its use in DD options is not specified. Hence some
@@ -1723,7 +1723,7 @@ ospf_ls_upd (struct ospf *ospf, struct ip *iph, struct ospf_header *ospfh,
       return;
     }
 
-  /* Get list of LSAs from Link State Update packet. - Also perorms Stages 
+  /* Get list of LSAs from Link State Update packet. - Also performs Stages
    * 1 (validate LSA checksum) and 2 (check for LSA consistent type) 
    * of section 13. 
    */
@@ -3598,7 +3598,7 @@ ospf_ls_upd_send_lsa (struct ospf_neighbor *nbr, struct ospf_lsa *lsa,
   list_delete (update);
 }
 
-/* Determine size for packet. Must be at least big enough to accomodate next
+/* Determine size for packet. Must be at least big enough to accommodate next
  * LSA on list, which may be bigger than MTU size.
  *
  * Return pointer to new ospf_packet

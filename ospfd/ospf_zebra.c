@@ -83,7 +83,7 @@ ospf_router_id_update_zebra (int command, struct zclient *zclient,
   return 0;
 }
 
-/* Inteface addition message from zebra. */
+/* Interface addition message from zebra. */
 static int
 ospf_interface_add (int command, struct zclient *zclient, zebra_size_t length,
     vrf_id_t vrf_id)
@@ -788,12 +788,12 @@ ospf_redistribute_check (struct ospf *ospf,
     return 0;
 
   if (!DEFAULT_ROUTE_TYPE (type) && DISTRIBUTE_NAME (ospf, type))
-    /* distirbute-list exists, but access-list may not? */
+    /* distribute-list exists, but access-list may not? */
     if (DISTRIBUTE_LIST (ospf, type))
       if (access_list_apply (DISTRIBUTE_LIST (ospf, type), p) == FILTER_DENY)
         {
           if (IS_DEBUG_OSPF (zebra, ZEBRA_REDISTRIBUTE))
-            zlog_debug ("Redistribute[%s]: %s/%d filtered by ditribute-list.",
+            zlog_debug ("Redistribute[%s]: %s/%d filtered by distribute-list.",
                        ospf_redist_string(type),
                        inet_ntoa (p->prefix), p->prefixlen);
           return 0;
@@ -1077,7 +1077,7 @@ ospf_filter_update (struct access_list *access)
   struct ospf_area *area;
   struct listnode *node;
 
-  /* If OSPF instatnce does not exist, return right now. */
+  /* If OSPF instance does not exist, return right now. */
   ospf = ospf_lookup ();
   if (ospf == NULL)
     return;
@@ -1148,7 +1148,7 @@ ospf_prefix_list_update (struct prefix_list *plist)
   struct ospf_area *area;
   struct listnode *node;
 
-  /* If OSPF instatnce does not exist, return right now. */
+  /* If OSPF instance does not exist, return right now. */
   ospf = ospf_lookup ();
   if (ospf == NULL)
     return;

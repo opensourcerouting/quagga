@@ -109,7 +109,7 @@ struct ospf_lsa
   /* Related Route. */
   void *route;
 
-  /* Refreshement List or Queue */
+  /* Refreshment List or Queue */
   int refresh_list;
   
   /* For Type-9 Opaque-LSAs */

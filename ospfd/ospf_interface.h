@@ -51,7 +51,7 @@
 
 struct ospf_if_params
 {
-  DECLARE_IF_PARAM (u_int32_t, transmit_delay); /* Interface Transmisson Delay */
+  DECLARE_IF_PARAM (u_int32_t, transmit_delay); /* Interface Transmission Delay */
   DECLARE_IF_PARAM (u_int32_t, output_cost_cmd);/* Command Interface Output Cost */
   DECLARE_IF_PARAM (u_int32_t, retransmit_interval); /* Retransmission Interval */
   DECLARE_IF_PARAM (u_char, passive_interface);      /* OSPF Interface is passive: no sending or receiving (no need to join multicast groups) */
@@ -174,11 +174,11 @@ struct ospf_interface
   struct prefix *address;		/* Interface prefix */
   struct connected *connected;          /* Pointer to connected */ 
 
-  /* Configured varables. */
+  /* Configured variables. */
   struct ospf_if_params *params;
   
   u_int32_t crypt_seqnum;		/* Cryptographic Sequence Number */ 
-  u_int32_t output_cost;	        /* Acutual Interface Output Cost */
+  u_int32_t output_cost;	        /* Actual Interface Output Cost */
 
   /* Neighbor information. */
   struct route_table *nbrs;             /* OSPF Neighbor List */

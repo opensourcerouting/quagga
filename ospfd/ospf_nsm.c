@@ -91,7 +91,7 @@ ospf_db_desc_timer (struct thread *thread)
   return 0;
 }
 
-/* Hook function called after ospf NSM event is occured.
+/* Hook function called after ospf NSM event is occurred.
  *
  * Set/clear any timers whose condition is implicit to the neighbour
  * state. There may be other timers which are set/unset according to other
@@ -503,7 +503,7 @@ struct {
   {
     /* ExStart: */
     { NULL,                    NSM_DependUpon }, /* NoEvent           */
-    { nsm_packet_received,     NSM_ExStart    }, /* PacaketReceived   */
+    { nsm_packet_received,     NSM_ExStart    }, /* PacketReceived   */
     { NULL,                    NSM_ExStart    }, /* Start             */
     { NULL,                    NSM_ExStart    }, /* 2-WayReceived     */
     { nsm_negotiation_done,    NSM_Exchange   }, /* NegotiationDone   */

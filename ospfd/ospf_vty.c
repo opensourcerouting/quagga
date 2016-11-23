@@ -373,7 +373,7 @@ DEFUN (ospf_passive_interface,
    * work to determine this set, so we do this for every interface.
    * This is safe and reasonable because ospf_if_set_multicast uses a
    * record of joined groups to avoid systems calls if the desired
-   * memberships match the current memership.
+   * memberships match the current membership.
    */
 
   for (rn = route_top(IF_OIFS(ifp)); rn; rn = route_next (rn))
@@ -452,7 +452,7 @@ DEFUN (no_ospf_passive_interface,
    * work to determine this set, so we do this for every interface.
    * This is safe and reasonable because ospf_if_set_multicast uses a
    * record of joined groups to avoid systems calls if the desired
-   * memberships match the current memership.
+   * memberships match the current membership.
    */
   for (rn = route_top(IF_OIFS(ifp)); rn; rn = route_next (rn))
     {
@@ -742,7 +742,7 @@ DEFUN (no_ospf_area_range_substitute,
 	VLink configuration NOT being changed by a VLink command, and
 	special syntax is used within the command strings so that the
 	typed in command verbs can be seen in the configuration command
-	bacckend handler.  This is to drastically reduce the verbeage
+	backend handler.  This is to drastically reduce the verbiage
 	required to coe up with a reasonably compatible Cisco VLink command
 
 	- Matthew Grant <grantma@anathoth.gen.nz> 
@@ -757,7 +757,7 @@ struct ospf_vl_config_data {
   struct in_addr area_id;	/* area ID from command line */
   int format;			/* command line area ID format */
   struct in_addr vl_peer;	/* command line vl_peer */
-  int auth_type;		/* Authehntication type, if given */
+  int auth_type;		/* Authentication type, if given */
   char *auth_key;		/* simple password if present */
   int crypto_key_id;		/* Cryptographic key ID */
   char *md5_key;		/* MD5 authentication key */
@@ -1171,7 +1171,7 @@ DEFUN (no_ospf_area_vlink,
       return CMD_SUCCESS;
     }
 
-  /* If we are down here, we are reseting parameters */
+  /* If we are down here, we are resetting parameters */
 
   /* Deal with other parameters */
   for (i=2; i < argc; i++)
@@ -3377,7 +3377,7 @@ show_ip_ospf_neighbor_detail_sub (struct vty *vty, struct ospf_interface *oi,
   vty_out (vty, "    Thread Inactivity Timer %s%s", 
 	   nbr->t_inactivity != NULL ? "on" : "off", VTY_NEWLINE);
   /* Show Database Description retransmission thread. */
-  vty_out (vty, "    Thread Database Description Retransmision %s%s",
+  vty_out (vty, "    Thread Database Description Retransmission %s%s",
 	   nbr->t_db_desc != NULL ? "on" : "off", VTY_NEWLINE);
   /* Show Link State Request Retransmission thread. */
   vty_out (vty, "    Thread Link State Request Retransmission %s%s",
@@ -7674,7 +7674,7 @@ ospf_vty_if_init (void)
   install_element (INTERFACE_NODE, &ip_ospf_area_cmd);
   install_element (INTERFACE_NODE, &no_ip_ospf_area_cmd);
 
-  /* These commands are compatibitliy for previous version. */
+  /* These commands are compatibility for previous version. */
   install_element (INTERFACE_NODE, &ospf_authentication_key_cmd);
   install_element (INTERFACE_NODE, &no_ospf_authentication_key_cmd);
   install_element (INTERFACE_NODE, &ospf_message_digest_key_cmd);

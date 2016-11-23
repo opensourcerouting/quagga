@@ -422,7 +422,7 @@ router_lsa_flags (struct ospf_area *area)
     /* Just sanity check */
     UNSET_FLAG (flags, ROUTER_LSA_VIRTUAL);
 
-  /* Set Shortcut ABR behabiour flag. */
+  /* Set Shortcut ABR behaviour flag. */
   UNSET_FLAG (flags, ROUTER_LSA_SHORTCUT);
   if (area->ospf->abr_type == OSPF_ABR_SHORTCUT)
     if (!OSPF_IS_AREA_BACKBONE (area))
@@ -473,7 +473,7 @@ ospf_nbr_lookup_ptop (struct ospf_interface *oi)
 
   /* PtoP link must have only 1 neighbor. */
   if (ospf_nbr_count (oi, 0) > 1)
-    zlog_warn ("Point-to-Point link has more than 1 neighobrs.");
+    zlog_warn ("Point-to-Point link has more than 1 neighbors.");
 
   return nbr;
 }
@@ -498,7 +498,7 @@ link_info_set (struct stream *s, struct in_addr id,
 {
   /* LSA stream is initially allocated to OSPF_MAX_LSA_SIZE, suits
    * vast majority of cases. Some rare routers with lots of links need more.
-   * we try accomodate those here.
+   * we try accommodate those here.
    */
   if (STREAM_WRITEABLE(s) < OSPF_ROUTER_LSA_LINK_SIZE)
     {
@@ -1088,7 +1088,7 @@ ospf_network_lsa_new (struct ospf_interface *oi)
   
   /* Remember prior network LSA sequence numbers, even if we stop
    * originating one for this oi, to try avoid re-originating LSAs with a
-   * prior sequence number, and thus speed up adjency forming & convergence.
+   * prior sequence number, and thus speed up adjacency forming & convergence.
    */
   if ((oip = ospf_lookup_if_params (oi->ifp, oi->address->u.prefix4)))
     {
@@ -1183,7 +1183,7 @@ ospf_network_lsa_refresh (struct ospf_lsa *lsa)
   
   assert (new2 == new);
   
-  /* Flood LSA through aera. */
+  /* Flood LSA through area. */
   ospf_flood_through_area (area, NULL, new);
 
   if (IS_DEBUG_OSPF (lsa, LSA_GENERATE))
@@ -1299,7 +1299,7 @@ ospf_summary_lsa_originate (struct prefix_ipv4 *p, u_int32_t metric,
   if ( !(new = ospf_summary_lsa_new (area, (struct prefix *) p, metric, id)))
     return NULL;
 
-  /* Instlal LSA to LSDB. */
+  /* Install LSA to LSDB. */
   new = ospf_lsa_install (area->ospf, NULL, new);
 
   /* Update LSA origination count. */
@@ -1774,9 +1774,9 @@ ospf_install_flood_nssa (struct ospf *ospf,
 	  adjacent AS is advertised into OSPF as an internal OSPF route,
 	  the forwarding address should be the next op address as is cu
 	  currently done with type-5 LSAs.  If the intervening network is
-	  not adversited into OSPF as an internal OSPF route and the
+	  not advertised into OSPF as an internal OSPF route and the
 	  type-7 LSA's P-bit is set a forwarding address should be
-	  selected from one of the router's active OSPF inteface addresses
+	  selected from one of the router's active OSPF interface addresses
 	  which belong to the NSSA.  If no such addresses exist, then
 	  no type-7 LSA's with the P-bit set should originate from this
 	  router.   */
