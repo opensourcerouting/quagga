@@ -475,7 +475,7 @@ DEFUN (ip_route,
 
 DEFUN (ip_route_tag,
        ip_route_tag_cmd,
-       "ip route A.B.C.D/M (A.B.C.D|INTERFACE|null0) tag <1-65535>",
+       "ip route A.B.C.D/M (A.B.C.D|INTERFACE|null0) tag <1-4294967295>",
        IP_STR
        "Establish static routes\n"
        "IP destination prefix (e.g. 10.0.0.0/8)\n"
@@ -491,7 +491,7 @@ DEFUN (ip_route_tag,
 
 DEFUN (ip_route_tag_vrf,
        ip_route_tag_vrf_cmd,
-       "ip route A.B.C.D/M (A.B.C.D|INTERFACE|null0) tag <1-65535>" VRF_CMD_STR,
+       "ip route A.B.C.D/M (A.B.C.D|INTERFACE|null0) tag <1-4294967295>" VRF_CMD_STR,
        IP_STR
        "Establish static routes\n"
        "IP destination prefix (e.g. 10.0.0.0/8)\n"
@@ -523,7 +523,7 @@ DEFUN (ip_route_flags,
 
 DEFUN (ip_route_flags_tag,
        ip_route_flags_tag_cmd,
-       "ip route A.B.C.D/M (A.B.C.D|INTERFACE) (reject|blackhole) tag <1-65535>",
+       "ip route A.B.C.D/M (A.B.C.D|INTERFACE) (reject|blackhole) tag <1-4294967295>",
        IP_STR
        "Establish static routes\n"
        "IP destination prefix (e.g. 10.0.0.0/8)\n"
@@ -541,7 +541,7 @@ DEFUN (ip_route_flags_tag,
 
 DEFUN (ip_route_flags_tag_vrf,
        ip_route_flags_tag_vrf_cmd,
-       "ip route A.B.C.D/M (A.B.C.D|INTERFACE) (reject|blackhole) tag <1-65535>" VRF_CMD_STR,
+       "ip route A.B.C.D/M (A.B.C.D|INTERFACE) (reject|blackhole) tag <1-4294967295>" VRF_CMD_STR,
        IP_STR
        "Establish static routes\n"
        "IP destination prefix (e.g. 10.0.0.0/8)\n"
@@ -572,7 +572,7 @@ DEFUN (ip_route_flags2,
 
 DEFUN (ip_route_flags2_tag,
        ip_route_flags2_tag_cmd,
-       "ip route A.B.C.D/M (reject|blackhole) tag <1-65535>",
+       "ip route A.B.C.D/M (reject|blackhole) tag <1-4294967295>",
        IP_STR
        "Establish static routes\n"
        "IP destination prefix (e.g. 10.0.0.0/8)\n"
@@ -587,7 +587,7 @@ DEFUN (ip_route_flags2_tag,
 
 DEFUN (ip_route_flags2_tag_vrf,
        ip_route_flags2_tag_vrf_cmd,
-       "ip route A.B.C.D/M (reject|blackhole) tag <1-65535>",
+       "ip route A.B.C.D/M (reject|blackhole) tag <1-4294967295>",
        IP_STR
        "Establish static routes\n"
        "IP destination prefix (e.g. 10.0.0.0/8)\n"
@@ -619,7 +619,7 @@ DEFUN (ip_route_mask,
 
 DEFUN (ip_route_mask_tag,
        ip_route_mask_tag_cmd,
-       "ip route A.B.C.D A.B.C.D (A.B.C.D|INTERFACE|null0) tag <1-65535>",
+       "ip route A.B.C.D A.B.C.D (A.B.C.D|INTERFACE|null0) tag <1-4294967295>",
        IP_STR
        "Establish static routes\n"
        "IP destination prefix\n"
@@ -637,7 +637,7 @@ DEFUN (ip_route_mask_tag,
 
 DEFUN (ip_route_mask_tag_vrf,
        ip_route_mask_tag_vrf_cmd,
-       "ip route A.B.C.D A.B.C.D (A.B.C.D|INTERFACE|null0) tag <1-65535>" VRF_CMD_STR,
+       "ip route A.B.C.D A.B.C.D (A.B.C.D|INTERFACE|null0) tag <1-4294967295>" VRF_CMD_STR,
        IP_STR
        "Establish static routes\n"
        "IP destination prefix\n"
@@ -671,7 +671,7 @@ DEFUN (ip_route_mask_flags,
 
 DEFUN (ip_route_mask_flags_tag,
        ip_route_mask_flags_tag_cmd,
-       "ip route A.B.C.D A.B.C.D (A.B.C.D|INTERFACE) (reject|blackhole) tag <1-65535>",
+       "ip route A.B.C.D A.B.C.D (A.B.C.D|INTERFACE) (reject|blackhole) tag <1-4294967295>",
        IP_STR
        "Establish static routes\n"
        "IP destination prefix\n"
@@ -689,7 +689,7 @@ DEFUN (ip_route_mask_flags_tag,
 
 DEFUN (ip_route_mask_flags_tag_vrf,
        ip_route_mask_flags_tag_vrf_cmd,
-       "ip route A.B.C.D A.B.C.D (A.B.C.D|INTERFACE) (reject|blackhole) tag <1-65535>" VRF_CMD_STR,
+       "ip route A.B.C.D A.B.C.D (A.B.C.D|INTERFACE) (reject|blackhole) tag <1-4294967295>" VRF_CMD_STR,
        IP_STR
        "Establish static routes\n"
        "IP destination prefix\n"
@@ -722,7 +722,7 @@ DEFUN (ip_route_mask_flags2,
 
 DEFUN (ip_route_mask_flags2_tag,
        ip_route_mask_flags2_tag_cmd,
-       "ip route A.B.C.D A.B.C.D (reject|blackhole) tag <1-65535>",
+       "ip route A.B.C.D A.B.C.D (reject|blackhole) tag <1-4294967295>",
        IP_STR
        "Establish static routes\n"
        "IP destination prefix\n"
@@ -738,7 +738,7 @@ DEFUN (ip_route_mask_flags2_tag,
 
 DEFUN (ip_route_mask_flags2_tag_vrf,
        ip_route_mask_flags2_tag_vrf_cmd,
-       "ip route A.B.C.D A.B.C.D (reject|blackhole) tag <1-65535>" VRF_CMD_STR,
+       "ip route A.B.C.D A.B.C.D (reject|blackhole) tag <1-4294967295>" VRF_CMD_STR,
        IP_STR
        "Establish static routes\n"
        "IP destination prefix\n"
@@ -771,7 +771,7 @@ DEFUN (ip_route_distance,
 
 DEFUN (ip_route_tag_distance,
        ip_route_tag_distance_cmd,
-       "ip route A.B.C.D/M (A.B.C.D|INTERFACE|null0) tag <1-65535> <1-255>",
+       "ip route A.B.C.D/M (A.B.C.D|INTERFACE|null0) tag <1-4294967295> <1-255>",
        IP_STR
        "Establish static routes\n"
        "IP destination prefix (e.g. 10.0.0.0/8)\n"
@@ -788,7 +788,7 @@ DEFUN (ip_route_tag_distance,
 
 DEFUN (ip_route_tag_distance_vrf,
        ip_route_tag_distance_vrf_cmd,
-       "ip route A.B.C.D/M (A.B.C.D|INTERFACE|null0) tag <1-65535> <1-255>" VRF_CMD_STR,
+       "ip route A.B.C.D/M (A.B.C.D|INTERFACE|null0) tag <1-4294967295> <1-255>" VRF_CMD_STR,
        IP_STR
        "Establish static routes\n"
        "IP destination prefix (e.g. 10.0.0.0/8)\n"
@@ -822,7 +822,7 @@ DEFUN (ip_route_flags_distance,
 
 DEFUN (ip_route_flags_tag_distance,
        ip_route_flags_tag_distance_cmd,
-       "ip route A.B.C.D/M (A.B.C.D|INTERFACE) (reject|blackhole) tag <1-65535> <1-255>",
+       "ip route A.B.C.D/M (A.B.C.D|INTERFACE) (reject|blackhole) tag <1-4294967295> <1-255>",
        IP_STR
        "Establish static routes\n"
        "IP destination prefix (e.g. 10.0.0.0/8)\n"
@@ -840,7 +840,7 @@ DEFUN (ip_route_flags_tag_distance,
 
 DEFUN (ip_route_flags_tag_distance_vrf,
        ip_route_flags_tag_distance_vrf_cmd,
-       "ip route A.B.C.D/M (A.B.C.D|INTERFACE) (reject|blackhole) tag <1-65535> <1-255>" VRF_CMD_STR,
+       "ip route A.B.C.D/M (A.B.C.D|INTERFACE) (reject|blackhole) tag <1-4294967295> <1-255>" VRF_CMD_STR,
        IP_STR
        "Establish static routes\n"
        "IP destination prefix (e.g. 10.0.0.0/8)\n"
@@ -873,7 +873,7 @@ DEFUN (ip_route_flags_distance2,
 
 DEFUN (ip_route_flags_tag_distance2,
        ip_route_flags_tag_distance2_cmd,
-       "ip route A.B.C.D/M (reject|blackhole) tag <1-65535> <1-255>",
+       "ip route A.B.C.D/M (reject|blackhole) tag <1-4294967295> <1-255>",
        IP_STR
        "Establish static routes\n"
        "IP destination prefix (e.g. 10.0.0.0/8)\n"
@@ -889,7 +889,7 @@ DEFUN (ip_route_flags_tag_distance2,
 
 DEFUN (ip_route_flags_tag_distance2_vrf,
        ip_route_flags_tag_distance2_vrf_cmd,
-       "ip route A.B.C.D/M (reject|blackhole) tag <1-65535> <1-255>" VRF_CMD_STR,
+       "ip route A.B.C.D/M (reject|blackhole) tag <1-4294967295> <1-255>" VRF_CMD_STR,
        IP_STR
        "Establish static routes\n"
        "IP destination prefix (e.g. 10.0.0.0/8)\n"
@@ -922,7 +922,7 @@ DEFUN (ip_route_mask_distance,
 
 DEFUN (ip_route_mask_tag_distance,
        ip_route_mask_tag_distance_cmd,
-       "ip route A.B.C.D A.B.C.D (A.B.C.D|INTERFACE|null0) tag <1-65535> <1-255>",
+       "ip route A.B.C.D A.B.C.D (A.B.C.D|INTERFACE|null0) tag <1-4294967295> <1-255>",
        IP_STR
        "Establish static routes\n"
        "IP destination prefix\n"
@@ -940,7 +940,7 @@ DEFUN (ip_route_mask_tag_distance,
 
 DEFUN (ip_route_mask_tag_distance_vrf,
        ip_route_mask_tag_distance_vrf_cmd,
-       "ip route A.B.C.D A.B.C.D (A.B.C.D|INTERFACE|null0) tag <1-65535> <1-255>" VRF_CMD_STR,
+       "ip route A.B.C.D A.B.C.D (A.B.C.D|INTERFACE|null0) tag <1-4294967295> <1-255>" VRF_CMD_STR,
        IP_STR
        "Establish static routes\n"
        "IP destination prefix\n"
@@ -960,7 +960,7 @@ DEFUN (ip_route_mask_tag_distance_vrf,
 
 DEFUN (ip_route_mask_flags_tag_distance,
        ip_route_mask_flags_tag_distance_cmd,
-       "ip route A.B.C.D A.B.C.D (A.B.C.D|INTERFACE) (reject|blackhole)  tag <1-65535> <1-255>",
+       "ip route A.B.C.D A.B.C.D (A.B.C.D|INTERFACE) (reject|blackhole)  tag <1-4294967295> <1-255>",
        IP_STR
        "Establish static routes\n"
        "IP destination prefix\n"
@@ -979,7 +979,7 @@ DEFUN (ip_route_mask_flags_tag_distance,
 
 DEFUN (ip_route_mask_flags_tag_distance_vrf,
        ip_route_mask_flags_tag_distance_vrf_cmd,
-       "ip route A.B.C.D A.B.C.D (A.B.C.D|INTERFACE) (reject|blackhole)  tag <1-65535> <1-255>" VRF_CMD_STR,
+       "ip route A.B.C.D A.B.C.D (A.B.C.D|INTERFACE) (reject|blackhole)  tag <1-4294967295> <1-255>" VRF_CMD_STR,
        IP_STR
        "Establish static routes\n"
        "IP destination prefix\n"
@@ -1031,7 +1031,7 @@ DEFUN (ip_route_mask_flags_distance2,
 
 DEFUN (ip_route_mask_flags_tag_distance2,
        ip_route_mask_flags_tag_distance2_cmd,
-       "ip route A.B.C.D A.B.C.D (reject|blackhole) tag <1-65535> <1-255>",
+       "ip route A.B.C.D A.B.C.D (reject|blackhole) tag <1-4294967295> <1-255>",
        IP_STR
        "Establish static routes\n"
        "IP destination prefix\n"
@@ -1048,7 +1048,7 @@ DEFUN (ip_route_mask_flags_tag_distance2,
 
 DEFUN (ip_route_mask_flags_tag_distance2_vrf,
        ip_route_mask_flags_tag_distance2_vrf_cmd,
-       "ip route A.B.C.D A.B.C.D (reject|blackhole) tag <1-65535> <1-255>" VRF_CMD_STR,
+       "ip route A.B.C.D A.B.C.D (reject|blackhole) tag <1-4294967295> <1-255>" VRF_CMD_STR,
        IP_STR
        "Establish static routes\n"
        "IP destination prefix\n"
@@ -1081,7 +1081,7 @@ DEFUN (no_ip_route,
 
 DEFUN (no_ip_route_tag,
        no_ip_route_tag_cmd,
-       "no ip route A.B.C.D/M (A.B.C.D|INTERFACE|null0) tag <1-65535>",
+       "no ip route A.B.C.D/M (A.B.C.D|INTERFACE|null0) tag <1-4294967295>",
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -1098,7 +1098,7 @@ DEFUN (no_ip_route_tag,
 
 DEFUN (no_ip_route_tag_vrf,
        no_ip_route_tag_vrf_cmd,
-       "no ip route A.B.C.D/M (A.B.C.D|INTERFACE|null0) tag <1-65535>" VRF_CMD_STR,
+       "no ip route A.B.C.D/M (A.B.C.D|INTERFACE|null0) tag <1-4294967295>" VRF_CMD_STR,
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -1128,7 +1128,7 @@ ALIAS (no_ip_route,
 
 ALIAS (no_ip_route_tag,
        no_ip_route_flags_tag_cmd,
-       "no ip route A.B.C.D/M (A.B.C.D|INTERFACE) (reject|blackhole) tag <1-65535>",
+       "no ip route A.B.C.D/M (A.B.C.D|INTERFACE) (reject|blackhole) tag <1-4294967295>",
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -1156,7 +1156,7 @@ DEFUN (no_ip_route_flags2,
 
 DEFUN (no_ip_route_flags2_tag,
        no_ip_route_flags2_tag_cmd,
-       "no ip route A.B.C.D/M (reject|blackhole) tag <1-65535>",
+       "no ip route A.B.C.D/M (reject|blackhole) tag <1-4294967295>",
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -1172,7 +1172,7 @@ DEFUN (no_ip_route_flags2_tag,
 
 DEFUN (no_ip_route_flags2_tag_vrf,
        no_ip_route_flags2_tag_vrf_cmd,
-       "no ip route A.B.C.D/M (reject|blackhole) tag <1-65535>" VRF_CMD_STR,
+       "no ip route A.B.C.D/M (reject|blackhole) tag <1-4294967295>" VRF_CMD_STR,
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -1205,7 +1205,7 @@ DEFUN (no_ip_route_mask,
 
 DEFUN (no_ip_route_mask_tag,
        no_ip_route_mask_tag_cmd,
-       "no ip route A.B.C.D A.B.C.D (A.B.C.D|INTERFACE|null0) tag <1-65535>",
+       "no ip route A.B.C.D A.B.C.D (A.B.C.D|INTERFACE|null0) tag <1-4294967295>",
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -1236,7 +1236,7 @@ ALIAS (no_ip_route_mask,
 
 ALIAS (no_ip_route_mask_tag,
        no_ip_route_mask_flags_tag_cmd,
-       "no ip route A.B.C.D A.B.C.D (A.B.C.D|INTERFACE) (reject|blackhole) tag <1-65535>",
+       "no ip route A.B.C.D A.B.C.D (A.B.C.D|INTERFACE) (reject|blackhole) tag <1-4294967295>",
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -1266,7 +1266,7 @@ DEFUN (no_ip_route_mask_flags2,
 
 DEFUN (no_ip_route_mask_flags2_tag,
        no_ip_route_mask_flags2_tag_cmd,
-       "no ip route A.B.C.D A.B.C.D (reject|blackhole) tag <1-65535>",
+       "no ip route A.B.C.D A.B.C.D (reject|blackhole) tag <1-4294967295>",
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -1283,7 +1283,7 @@ DEFUN (no_ip_route_mask_flags2_tag,
 
 DEFUN (no_ip_route_mask_flags2_tag_vrf,
        no_ip_route_mask_flags2_tag_vrf_cmd,
-       "no ip route A.B.C.D A.B.C.D (reject|blackhole) tag <1-65535>" VRF_CMD_STR,
+       "no ip route A.B.C.D A.B.C.D (reject|blackhole) tag <1-4294967295>" VRF_CMD_STR,
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -1317,7 +1317,7 @@ DEFUN (no_ip_route_distance,
 
 DEFUN (no_ip_route_tag_distance,
        no_ip_route_tag_distance_cmd,
-       "no ip route A.B.C.D/M (A.B.C.D|INTERFACE|null0) tag <1-65535> <1-255>",
+       "no ip route A.B.C.D/M (A.B.C.D|INTERFACE|null0) tag <1-4294967295> <1-255>",
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -1335,7 +1335,7 @@ DEFUN (no_ip_route_tag_distance,
 
 DEFUN (no_ip_route_tag_distance_vrf,
        no_ip_route_tag_distance_vrf_cmd,
-       "no ip route A.B.C.D/M (A.B.C.D|INTERFACE|null0) tag <1-65535> <1-255>" VRF_CMD_STR,
+       "no ip route A.B.C.D/M (A.B.C.D|INTERFACE|null0) tag <1-4294967295> <1-255>" VRF_CMD_STR,
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -1371,7 +1371,7 @@ DEFUN (no_ip_route_flags_distance,
 
 DEFUN (no_ip_route_flags_tag_distance,
        no_ip_route_flags_tag_distance_cmd,
-       "no ip route A.B.C.D/M (A.B.C.D|INTERFACE) (reject|blackhole) tag <1-65535> <1-255>",
+       "no ip route A.B.C.D/M (A.B.C.D|INTERFACE) (reject|blackhole) tag <1-4294967295> <1-255>",
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -1390,7 +1390,7 @@ DEFUN (no_ip_route_flags_tag_distance,
 
 DEFUN (no_ip_route_flags_tag_distance_vrf,
        no_ip_route_flags_tag_distance_vrf_cmd,
-       "no ip route A.B.C.D/M (A.B.C.D|INTERFACE) (reject|blackhole) tag <1-65535> <1-255>" VRF_CMD_STR,
+       "no ip route A.B.C.D/M (A.B.C.D|INTERFACE) (reject|blackhole) tag <1-4294967295> <1-255>" VRF_CMD_STR,
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -1425,7 +1425,7 @@ DEFUN (no_ip_route_flags_distance2,
 
 DEFUN (no_ip_route_flags_tag_distance2,
        no_ip_route_flags_tag_distance2_cmd,
-       "no ip route A.B.C.D/M (reject|blackhole) tag <1-65535> <1-255>",
+       "no ip route A.B.C.D/M (reject|blackhole) tag <1-4294967295> <1-255>",
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -1442,7 +1442,7 @@ DEFUN (no_ip_route_flags_tag_distance2,
 
 DEFUN (no_ip_route_flags_tag_distance2_vrf,
        no_ip_route_flags_tag_distance2_vrf_cmd,
-       "no ip route A.B.C.D/M (reject|blackhole) tag <1-65535> <1-255>" VRF_CMD_STR,
+       "no ip route A.B.C.D/M (reject|blackhole) tag <1-4294967295> <1-255>" VRF_CMD_STR,
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -1477,7 +1477,7 @@ DEFUN (no_ip_route_mask_distance,
 
 DEFUN (no_ip_route_mask_tag_distance,
        no_ip_route_mask_tag_distance_cmd,
-       "no ip route A.B.C.D A.B.C.D (A.B.C.D|INTERFACE|null0) tag <1-65535> <1-255>",
+       "no ip route A.B.C.D A.B.C.D (A.B.C.D|INTERFACE|null0) tag <1-4294967295> <1-255>",
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -1496,7 +1496,7 @@ DEFUN (no_ip_route_mask_tag_distance,
 
 DEFUN (no_ip_route_mask_tag_distance_vrf,
        no_ip_route_mask_tag_distance_vrf_cmd,
-       "no ip route A.B.C.D A.B.C.D (A.B.C.D|INTERFACE|null0) tag <1-65535> <1-255>" VRF_CMD_STR,
+       "no ip route A.B.C.D A.B.C.D (A.B.C.D|INTERFACE|null0) tag <1-4294967295> <1-255>" VRF_CMD_STR,
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -1534,7 +1534,7 @@ DEFUN (no_ip_route_mask_flags_distance,
 
 DEFUN (no_ip_route_mask_flags_tag_distance,
        no_ip_route_mask_flags_tag_distance_cmd,
-       "no ip route A.B.C.D A.B.C.D (A.B.C.D|INTERFACE) (reject|blackhole) tag <1-65535> <1-255>",
+       "no ip route A.B.C.D A.B.C.D (A.B.C.D|INTERFACE) (reject|blackhole) tag <1-4294967295> <1-255>",
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -1554,7 +1554,7 @@ DEFUN (no_ip_route_mask_flags_tag_distance,
 
 DEFUN (no_ip_route_mask_flags_tag_distance_vrf,
        no_ip_route_mask_flags_tag_distance_vrf_cmd,
-       "no ip route A.B.C.D A.B.C.D (A.B.C.D|INTERFACE) (reject|blackhole) tag <1-65535> <1-255>" VRF_CMD_STR,
+       "no ip route A.B.C.D A.B.C.D (A.B.C.D|INTERFACE) (reject|blackhole) tag <1-4294967295> <1-255>" VRF_CMD_STR,
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -1983,7 +1983,7 @@ DEFUN (no_ip_route_mask_flags_distance2_vrf,
 
 DEFUN (no_ip_route_mask_flags_tag_distance2,
        no_ip_route_mask_flags_tag_distance2_cmd,
-       "no ip route A.B.C.D A.B.C.D (reject|blackhole) tag <1-65535> <1-255>",
+       "no ip route A.B.C.D A.B.C.D (reject|blackhole) tag <1-4294967295> <1-255>",
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -2001,7 +2001,7 @@ DEFUN (no_ip_route_mask_flags_tag_distance2,
 
 DEFUN (no_ip_route_mask_flags_tag_distance2_vrf,
        no_ip_route_mask_flags_tag_distance2_vrf_cmd,
-       "no ip route A.B.C.D A.B.C.D (reject|blackhole) tag <1-65535> <1-255>" VRF_CMD_STR,
+       "no ip route A.B.C.D A.B.C.D (reject|blackhole) tag <1-4294967295> <1-255>" VRF_CMD_STR,
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -2121,6 +2121,7 @@ vty_show_ip_route_detail (struct vty *vty, struct route_node *rn, int mcast)
           || rib->type == ZEBRA_ROUTE_OSPF6
           || rib->type == ZEBRA_ROUTE_BABEL
           || rib->type == ZEBRA_ROUTE_ISIS
+          || rib->type == ZEBRA_ROUTE_NHRP
           || rib->type == ZEBRA_ROUTE_BGP)
 	{
 	  time_t uptime;
@@ -2341,6 +2342,7 @@ vty_show_ip_route (struct vty *vty, struct route_node *rn, struct rib *rib)
           || rib->type == ZEBRA_ROUTE_OSPF6
           || rib->type == ZEBRA_ROUTE_BABEL
           || rib->type == ZEBRA_ROUTE_ISIS
+          || rib->type == ZEBRA_ROUTE_NHRP
           || rib->type == ZEBRA_ROUTE_BGP)
 	{
 	  time_t uptime;
@@ -2440,7 +2442,7 @@ DEFUN (show_ipv6_nht,
 
 DEFUN (show_ip_route_tag,
        show_ip_route_tag_cmd,
-       "show ip route tag <1-65535>",
+       "show ip route tag <1-4294967295>",
        SHOW_STR
        IP_STR
        "IP routing table\n"
@@ -2483,7 +2485,7 @@ DEFUN (show_ip_route_tag,
 
 ALIAS (show_ip_route_tag,
        show_ip_route_tag_vrf_cmd,
-       "show ip route tag <1-65535>" VRF_CMD_STR,
+       "show ip route tag <1-4294967295>" VRF_CMD_STR,
        SHOW_STR
        IP_STR
        "IP routing table\n"
@@ -3486,7 +3488,7 @@ DEFUN (ipv6_route,
 
 DEFUN (ipv6_route_tag,
        ipv6_route_tag_cmd,
-       "ipv6 route X:X::X:X/M (X:X::X:X|INTERFACE) tag <1-65535>",
+       "ipv6 route X:X::X:X/M (X:X::X:X|INTERFACE) tag <1-4294967295>",
        IP_STR
        "Establish static routes\n"
        "IPv6 destination prefix (e.g. 3ffe:506::/32)\n"
@@ -3500,7 +3502,7 @@ DEFUN (ipv6_route_tag,
 
 DEFUN (ipv6_route_tag_vrf,
        ipv6_route_tag_vrf_cmd,
-       "ipv6 route X:X::X:X/M (X:X::X:X|INTERFACE) tag <1-65535>" VRF_CMD_STR,
+       "ipv6 route X:X::X:X/M (X:X::X:X|INTERFACE) tag <1-4294967295>" VRF_CMD_STR,
        IP_STR
        "Establish static routes\n"
        "IPv6 destination prefix (e.g. 3ffe:506::/32)\n"
@@ -3530,7 +3532,7 @@ DEFUN (ipv6_route_flags,
 
 DEFUN (ipv6_route_flags_tag,
        ipv6_route_flags_tag_cmd,
-       "ipv6 route X:X::X:X/M (X:X::X:X|INTERFACE) (reject|blackhole) tag <1-65535>",
+       "ipv6 route X:X::X:X/M (X:X::X:X|INTERFACE) (reject|blackhole) tag <1-4294967295>",
        IP_STR
        "Establish static routes\n"
        "IPv6 destination prefix (e.g. 3ffe:506::/32)\n"
@@ -3546,7 +3548,7 @@ DEFUN (ipv6_route_flags_tag,
 
 DEFUN (ipv6_route_flags_tag_vrf,
        ipv6_route_flags_tag_vrf_cmd,
-       "ipv6 route X:X::X:X/M (X:X::X:X|INTERFACE) (reject|blackhole) tag <1-65535>" VRF_CMD_STR,
+       "ipv6 route X:X::X:X/M (X:X::X:X|INTERFACE) (reject|blackhole) tag <1-4294967295>" VRF_CMD_STR,
        IP_STR
        "Establish static routes\n"
        "IPv6 destination prefix (e.g. 3ffe:506::/32)\n"
@@ -3576,7 +3578,7 @@ DEFUN (ipv6_route_ifname,
 
 DEFUN (ipv6_route_ifname_tag,
        ipv6_route_ifname_tag_cmd,
-       "ipv6 route X:X::X:X/M X:X::X:X INTERFACE tag <1-65535>",
+       "ipv6 route X:X::X:X/M X:X::X:X INTERFACE tag <1-4294967295>",
        IP_STR
        "Establish static routes\n"
        "IPv6 destination prefix (e.g. 3ffe:506::/32)\n"
@@ -3590,7 +3592,7 @@ DEFUN (ipv6_route_ifname_tag,
 
 DEFUN (ipv6_route_ifname_tag_vrf,
        ipv6_route_ifname_tag_vrf_cmd,
-       "ipv6 route X:X::X:X/M X:X::X:X INTERFACE tag <1-65535>" VRF_CMD_STR,
+       "ipv6 route X:X::X:X/M X:X::X:X INTERFACE tag <1-4294967295>" VRF_CMD_STR,
        IP_STR
        "Establish static routes\n"
        "IPv6 destination prefix (e.g. 3ffe:506::/32)\n"
@@ -3620,7 +3622,7 @@ DEFUN (ipv6_route_ifname_flags,
 
 DEFUN (ipv6_route_ifname_flags_tag,
        ipv6_route_ifname_flags_tag_cmd,
-       "ipv6 route X:X::X:X/M X:X::X:X INTERFACE (reject|blackhole) tag <1-65535>",
+       "ipv6 route X:X::X:X/M X:X::X:X INTERFACE (reject|blackhole) tag <1-4294967295>",
        IP_STR
        "Establish static routes\n"
        "IPv6 destination prefix (e.g. 3ffe:506::/32)\n"
@@ -3636,7 +3638,7 @@ DEFUN (ipv6_route_ifname_flags_tag,
 
 DEFUN (ipv6_route_ifname_flags_tag_vrf,
        ipv6_route_ifname_flags_tag_vrf_cmd,
-       "ipv6 route X:X::X:X/M X:X::X:X INTERFACE (reject|blackhole) tag <1-65535>" VRF_CMD_STR,
+       "ipv6 route X:X::X:X/M X:X::X:X INTERFACE (reject|blackhole) tag <1-4294967295>" VRF_CMD_STR,
        IP_STR
        "Establish static routes\n"
        "IPv6 destination prefix (e.g. 3ffe:506::/32)\n"
@@ -3667,7 +3669,7 @@ DEFUN (ipv6_route_pref,
 
 DEFUN (ipv6_route_pref_tag,
        ipv6_route_pref_tag_cmd,
-       "ipv6 route X:X::X:X/M (X:X::X:X|INTERFACE) tag <1-65535> <1-255>",
+       "ipv6 route X:X::X:X/M (X:X::X:X|INTERFACE) tag <1-4294967295> <1-255>",
        IP_STR
        "Establish static routes\n"
        "IPv6 destination prefix (e.g. 3ffe:506::/32)\n"
@@ -3682,7 +3684,7 @@ DEFUN (ipv6_route_pref_tag,
 
 DEFUN (ipv6_route_pref_tag_vrf,
        ipv6_route_pref_tag_vrf_cmd,
-       "ipv6 route X:X::X:X/M (X:X::X:X|INTERFACE) tag <1-65535> <1-255>" VRF_CMD_STR,
+       "ipv6 route X:X::X:X/M (X:X::X:X|INTERFACE) tag <1-4294967295> <1-255>" VRF_CMD_STR,
        IP_STR
        "Establish static routes\n"
        "IPv6 destination prefix (e.g. 3ffe:506::/32)\n"
@@ -3714,7 +3716,7 @@ DEFUN (ipv6_route_flags_pref,
 
 DEFUN (ipv6_route_flags_pref_tag,
        ipv6_route_flags_pref_tag_cmd,
-       "ipv6 route X:X::X:X/M (X:X::X:X|INTERFACE) (reject|blackhole) tag <1-65535> <1-255>",
+       "ipv6 route X:X::X:X/M (X:X::X:X|INTERFACE) (reject|blackhole) tag <1-4294967295> <1-255>",
        IP_STR
        "Establish static routes\n"
        "IPv6 destination prefix (e.g. 3ffe:506::/32)\n"
@@ -3731,7 +3733,7 @@ DEFUN (ipv6_route_flags_pref_tag,
 
 DEFUN (ipv6_route_flags_pref_tag_vrf,
        ipv6_route_flags_pref_tag_vrf_cmd,
-       "ipv6 route X:X::X:X/M (X:X::X:X|INTERFACE) (reject|blackhole) tag <1-65535> <1-255>" VRF_CMD_STR,
+       "ipv6 route X:X::X:X/M (X:X::X:X|INTERFACE) (reject|blackhole) tag <1-4294967295> <1-255>" VRF_CMD_STR,
        IP_STR
        "Establish static routes\n"
        "IPv6 destination prefix (e.g. 3ffe:506::/32)\n"
@@ -3763,7 +3765,7 @@ DEFUN (ipv6_route_ifname_pref,
 
 DEFUN (ipv6_route_ifname_pref_tag,
        ipv6_route_ifname_pref_tag_cmd,
-       "ipv6 route X:X::X:X/M X:X::X:X INTERFACE tag <1-65535> <1-255>",
+       "ipv6 route X:X::X:X/M X:X::X:X INTERFACE tag <1-4294967295> <1-255>",
        IP_STR
        "Establish static routes\n"
        "IPv6 destination prefix (e.g. 3ffe:506::/32)\n"
@@ -3778,7 +3780,7 @@ DEFUN (ipv6_route_ifname_pref_tag,
 
 DEFUN (ipv6_route_ifname_pref_tag_vrf,
        ipv6_route_ifname_pref_tag_vrf_cmd,
-       "ipv6 route X:X::X:X/M X:X::X:X INTERFACE tag <1-65535> <1-255>" VRF_CMD_STR,
+       "ipv6 route X:X::X:X/M X:X::X:X INTERFACE tag <1-4294967295> <1-255>" VRF_CMD_STR,
        IP_STR
        "Establish static routes\n"
        "IPv6 destination prefix (e.g. 3ffe:506::/32)\n"
@@ -3810,7 +3812,7 @@ DEFUN (ipv6_route_ifname_flags_pref,
 
 DEFUN (ipv6_route_ifname_flags_pref_tag,
        ipv6_route_ifname_flags_pref_tag_cmd,
-       "ipv6 route X:X::X:X/M X:X::X:X INTERFACE (reject|blackhole) tag <1-65535> <1-255>",
+       "ipv6 route X:X::X:X/M X:X::X:X INTERFACE (reject|blackhole) tag <1-4294967295> <1-255>",
        IP_STR
        "Establish static routes\n"
        "IPv6 destination prefix (e.g. 3ffe:506::/32)\n"
@@ -3827,7 +3829,7 @@ DEFUN (ipv6_route_ifname_flags_pref_tag,
 
 DEFUN (ipv6_route_ifname_flags_pref_tag_vrf,
        ipv6_route_ifname_flags_pref_tag_vrf_cmd,
-       "ipv6 route X:X::X:X/M X:X::X:X INTERFACE (reject|blackhole) tag <1-65535> <1-255>" VRF_CMD_STR,
+       "ipv6 route X:X::X:X/M X:X::X:X INTERFACE (reject|blackhole) tag <1-4294967295> <1-255>" VRF_CMD_STR,
        IP_STR
        "Establish static routes\n"
        "IPv6 destination prefix (e.g. 3ffe:506::/32)\n"
@@ -3859,7 +3861,7 @@ DEFUN (no_ipv6_route,
 
 DEFUN (no_ipv6_route_tag,
        no_ipv6_route_tag_cmd,
-       "no ipv6 route X:X::X:X/M (X:X::X:X|INTERFACE) tag <1-65535>",
+       "no ipv6 route X:X::X:X/M (X:X::X:X|INTERFACE) tag <1-4294967295>",
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -3874,7 +3876,7 @@ DEFUN (no_ipv6_route_tag,
 
 DEFUN (no_ipv6_route_tag_vrf,
        no_ipv6_route_tag_vrf_cmd,
-       "no ipv6 route X:X::X:X/M (X:X::X:X|INTERFACE) tag <1-65535>" VRF_CMD_STR,
+       "no ipv6 route X:X::X:X/M (X:X::X:X|INTERFACE) tag <1-4294967295>" VRF_CMD_STR,
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -3902,7 +3904,7 @@ ALIAS (no_ipv6_route,
 
 ALIAS (no_ipv6_route_tag,
        no_ipv6_route_flags_tag_cmd,
-       "no ipv6 route X:X::X:X/M (X:X::X:X|INTERFACE) (reject|blackhole) tag <1-65535>",
+       "no ipv6 route X:X::X:X/M (X:X::X:X|INTERFACE) (reject|blackhole) tag <1-4294967295>",
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -3930,7 +3932,7 @@ DEFUN (no_ipv6_route_ifname,
 
 DEFUN (no_ipv6_route_ifname_tag,
        no_ipv6_route_ifname_tag_cmd,
-       "no ipv6 route X:X::X:X/M X:X::X:X INTERFACE tag <1-65535>",
+       "no ipv6 route X:X::X:X/M X:X::X:X INTERFACE tag <1-4294967295>",
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -3945,7 +3947,7 @@ DEFUN (no_ipv6_route_ifname_tag,
 
 DEFUN (no_ipv6_route_ifname_tag_vrf,
        no_ipv6_route_ifname_tag_vrf_cmd,
-       "no ipv6 route X:X::X:X/M X:X::X:X INTERFACE tag <1-65535>" VRF_CMD_STR,
+       "no ipv6 route X:X::X:X/M X:X::X:X INTERFACE tag <1-4294967295>" VRF_CMD_STR,
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -3973,7 +3975,7 @@ ALIAS (no_ipv6_route_ifname,
 
 ALIAS (no_ipv6_route_ifname_tag,
        no_ipv6_route_ifname_flags_tag_cmd,
-       "no ipv6 route X:X::X:X/M X:X::X:X INTERFACE (reject|blackhole) tag <1-65535>",
+       "no ipv6 route X:X::X:X/M X:X::X:X INTERFACE (reject|blackhole) tag <1-4294967295>",
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -4002,7 +4004,7 @@ DEFUN (no_ipv6_route_pref,
 
 DEFUN (no_ipv6_route_pref_tag,
        no_ipv6_route_pref_tag_cmd,
-       "no ipv6 route X:X::X:X/M (X:X::X:X|INTERFACE) tag <1-65535> <1-255>",
+       "no ipv6 route X:X::X:X/M (X:X::X:X|INTERFACE) tag <1-4294967295> <1-255>",
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -4018,7 +4020,7 @@ DEFUN (no_ipv6_route_pref_tag,
 
 DEFUN (no_ipv6_route_pref_tag_vrf,
        no_ipv6_route_pref_tag_vrf_cmd,
-       "no ipv6 route X:X::X:X/M (X:X::X:X|INTERFACE) tag <1-65535> <1-255>" VRF_CMD_STR,
+       "no ipv6 route X:X::X:X/M (X:X::X:X|INTERFACE) tag <1-4294967295> <1-255>" VRF_CMD_STR,
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -4053,7 +4055,7 @@ DEFUN (no_ipv6_route_flags_pref,
 
 DEFUN (no_ipv6_route_flags_pref_tag,
        no_ipv6_route_flags_pref_tag_cmd,
-       "no ipv6 route X:X::X:X/M (X:X::X:X|INTERFACE) (reject|blackhole) tag <1-65535> <1-255>",
+       "no ipv6 route X:X::X:X/M (X:X::X:X|INTERFACE) (reject|blackhole) tag <1-4294967295> <1-255>",
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -4072,7 +4074,7 @@ DEFUN (no_ipv6_route_flags_pref_tag,
 
 DEFUN (no_ipv6_route_flags_pref_tag_vrf,
        no_ipv6_route_flags_pref_tag_vrf_cmd,
-       "no ipv6 route X:X::X:X/M (X:X::X:X|INTERFACE) (reject|blackhole) tag <1-65535> <1-255>" VRF_CMD_STR,
+       "no ipv6 route X:X::X:X/M (X:X::X:X|INTERFACE) (reject|blackhole) tag <1-4294967295> <1-255>" VRF_CMD_STR,
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -4107,7 +4109,7 @@ DEFUN (no_ipv6_route_ifname_pref,
 
 DEFUN (no_ipv6_route_ifname_pref_tag,
        no_ipv6_route_ifname_pref_tag_cmd,
-       "no ipv6 route X:X::X:X/M X:X::X:X INTERFACE tag <1-65535> <1-255>",
+       "no ipv6 route X:X::X:X/M X:X::X:X INTERFACE tag <1-4294967295> <1-255>",
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -4123,7 +4125,7 @@ DEFUN (no_ipv6_route_ifname_pref_tag,
 
 DEFUN (no_ipv6_route_ifname_pref_tag_vrf,
        no_ipv6_route_ifname_pref_tag_vrf_cmd,
-       "no ipv6 route X:X::X:X/M X:X::X:X INTERFACE tag <1-65535> <1-255>" VRF_CMD_STR,
+       "no ipv6 route X:X::X:X/M X:X::X:X INTERFACE tag <1-4294967295> <1-255>" VRF_CMD_STR,
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -4157,7 +4159,7 @@ DEFUN (no_ipv6_route_ifname_flags_pref,
 
 DEFUN (no_ipv6_route_ifname_flags_pref_tag,
        no_ipv6_route_ifname_flags_pref_tag_cmd,
-       "no ipv6 route X:X::X:X/M X:X::X:X INTERFACE (reject|blackhole) tag <1-65535> <1-255>",
+       "no ipv6 route X:X::X:X/M X:X::X:X INTERFACE (reject|blackhole) tag <1-4294967295> <1-255>",
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -4175,7 +4177,7 @@ DEFUN (no_ipv6_route_ifname_flags_pref_tag,
 
 DEFUN (no_ipv6_route_ifname_flags_pref_tag_vrf,
        no_ipv6_route_ifname_flags_pref_tag_vrf_cmd,
-       "no ipv6 route X:X::X:X/M X:X::X:X INTERFACE (reject|blackhole) tag <1-65535> <1-255>" VRF_CMD_STR,
+       "no ipv6 route X:X::X:X/M X:X::X:X INTERFACE (reject|blackhole) tag <1-4294967295> <1-255>" VRF_CMD_STR,
        NO_STR
        IP_STR
        "Establish static routes\n"
@@ -4485,7 +4487,7 @@ ALIAS (show_ipv6_route,
 
 DEFUN (show_ipv6_route_tag,
        show_ipv6_route_tag_cmd,
-       "show ipv6 route tag <1-65535>",
+       "show ipv6 route tag <1-4294967295>",
        SHOW_STR
        IP_STR
        "IPv6 routing table\n"
@@ -4528,7 +4530,7 @@ DEFUN (show_ipv6_route_tag,
 
 ALIAS (show_ipv6_route_tag,
        show_ipv6_route_tag_vrf_cmd,
-       "show ipv6 route tag <1-65535>" VRF_CMD_STR,
+       "show ipv6 route tag <1-4294967295>" VRF_CMD_STR,
        SHOW_STR
        IP_STR
        "IPv6 routing table\n"

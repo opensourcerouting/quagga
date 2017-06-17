@@ -1,13 +1,11 @@
 ---
 title: Conventions for working on Quagga 
 papersize: a4paper
-geometry: scale=0.82
+geometry: a4paper,scale=0.82
 fontsize: 11pt
 toc: true
 date: \today
 include-before: 
-  \large This is a living document. 
-
   \large This is a living document describing the processes and guidelines
    for working on Quagga. You *must* read Section
    ["REQUIRED READING"](#sec:required), before contributing to Quagga.
@@ -18,6 +16,123 @@ include-before:
 ...
 
 \newpage
+
+OBJECTIVES {#sec:goals}
+==========
+
+The objectives of the Quagga project are to develop and implement high
+quality routing protocols and related software, maximising:
+
+* Free software:
+    * Quagga is and will remain a copyleft, free software project
+    * Some non-core parts may be available under compatible, permissive
+      licenses to facilitate code sharing, where contributors agree.
+    * The test and integration orchestration infrastructure shall be free
+      software, developed similarly to the rest of Quagga. Proprietary
+      conformance suites may be among the test tools orchestrated.
+* Openness and transparency
+    * The business of the project shall be conducted on its public email
+      lists, to the greatest extent possible.
+    * The design of the software will be governed by open discussion on
+      the public email lists.
+    * Participants shall endeavour to be transparent about their interests
+      in the project, and any associations likely to be relevant.
+* Ethical behaviour:
+    * The licenses of all copyright holders will be respected, and the
+      project will err in their favour where there is reasonable doubt or
+      legal advice to that effect.
+    * Participants will behave with respect for others, and in a manner that
+      builds and maintains the trust needed for productive collaboration.
+
+See also the Section on [CODE OF CONDUCT](#sec:codeconduct).
+
+Governance {#sec:governance}
+==========
+
+Quagga is a Sociocracy, as it has been since its earliest days.
+
+Quagga was forked from GNU Zebra by Paul Jakma, who holds the domain name. 
+Governance was soon devolved to a collective group, the maintainers,
+consisting of those who regularly contributed and reviewed code.  The
+details can easily be changed.
+
+You are free to use reason to _persuade_ others to adopt some alternative. 
+If, after that, you truly can not abide by what is mutually agreeable, you
+are asked to do the honourable thing: take your copy of the code, make your
+apologies, and be on your way with good grace.
+
+Those who repeatedly violate the [Code of Conduct](#sec:codeconduct) will be
+asked to leave.
+
+Holding of project assets
+-------------------------
+
+One or more mature, independent trustees, with technical and free software
+experience, will be appointed as the executor(s) for key assets of the
+project to ensure continuity, such as the domain name.
+
+Should a corporate vehicle ever be created to hold such assets it __must__:
+
+* Publish up to date accounts on a regular business.
+* Generally operate openly and transparently.
+* Have control distributed, with a significant degree of control held
+  independent of any contributors with business interests in the software.
+* Carry out no other business itself that may be seen to conflict or compete
+  with the business of others in the community.
+* Have all officers disclose all interests that could be
+  seen to have a bearing on the project, as far as is reasonable.
+
+It not clear at this time that the overheads and potential liabilities of
+such a vehicle would be appropriate for this project.  These principles
+should though still be applied, where possible, to any non-corporate body
+formed around the project.
+
+CODE OF CONDUCT {#sec:codeconduct}
+===============
+
+Participants will treat each other with respect and integrity.  Participants
+will build and treasure the trust that is required for parties to
+successfully collaborate together on free software.  Particularly when those
+parties may have competing interests.  The following principles and
+guidelines should be followed to foster that trust:
+
+* Participants should be open about their goals, and their interests.
+    - Business associations with other participants should be disclosed,
+      so far as is reasonable and where applicable. E.g., if there is voting
+      on matters, or in endorsements or objections to contributions.
+    - Other associations and interests that may be relevant should be
+      disclosed, to the degree necessary to avoid any perception
+      by others of conflicts of interests or of deception.
+    - Be open about your goals, so as to maximise the common understanding
+      and minimise any misunderstandings and disputes.
+* Design should be done in the open
+    -  Do your design on list, ahead of significant implementation.  Avoid
+      "Surprise!" development where possible.
+    - Where significant implementation work must be done behind closed
+      doors, accept that you may be asked to rework it, potentially from
+      scratch once you take it public.
+    - Get "buy in" from others ahead of time, to avoid disappointment.
+* Interaction 
+    - Feedback on design should be constructive, thoughtful and 
+      understanding.
+    - Avoid personalising matters. Discuss the idea, the code, the abstract
+      subject and avoid unnecessary personal pronouns.
+    - Avoid language that paints either party into a corner. Leave some room
+      for doubt. Ask questions, rather than make assertions, where possible.
+* Disputes should be resolved through calm, analytic discussion
+    - Separate out as much of the matter under dispute into principles that
+      can be agreed on, and into the objective domain (by measurement or
+      logic). 
+    - Seek ways to resolve any remaining subjective differences by alternate
+      paths that can accommodate both sides, e.g., through abstraction or
+      modularisation.
+    - Aim for Win-Win.
+* Respect others
+    - Avoid passive-aggressive behaviours. E.g., tit-for-tat
+      non-constructive behaviour. Be explicit.
+    - It is acceptable for management to allocate resources on development
+      according to their need.  It is not acceptable to try use external,
+      management intervention to over-turn positions held by participants.
 
 REQUIRED READING {#sec:required}
 ================
@@ -316,13 +431,15 @@ HACKING THE BUILD SYSTEM
 ========================
 
 If you change or add to the build system (configure.ac, any Makefile.am,
-etc.), try to check that the following things still work:
+etc.), please heck that the following things still work:
 
 -   make dist
 
 -   resulting dist tarball builds
 
 -   out-of-tree builds
+
+This can be achieved by running 'make distcheck'
 
 The quagga.net site relies on make dist to work to generate snapshots. It
 must work. Common problems are to forget to have some additional file
@@ -332,57 +449,58 @@ using the srcdir variable.
 RELEASE PROCEDURE
 =================
 
--   Tag the appropriate commit with a release tag (follow existing
-    conventions).
+To make a release:
 
-    [This enables recreating the release, and is just good CM practice.]
+-   Edit configure.ac, bump the version and commit the change with
+    a "release: <version" subject.
+
+The 'release.sh' script should then be used. It should be run with 2
+arguments, the release tag for the release to be carried, and the tag of the
+previous release, e.g.:
+
+	release.sh quagga-1.1.1 quagga-1.1.0
+
+The 'release.sh' will carry out these steps for you:
+
+-   Tag the appropriate commit with a release tag (follow existing
+    conventions), with:
+
+	git tag -u <release signing key id> <quagga-release-tag>
 
 -   Create a fresh tar archive of the quagga.net repository, and do a
-    test build:
+    test build.  Use git archive to ensure it consists of files in the
+    repository, and to carry out the keyword expansions.  Do NOT do this in
+    a subdirectory of the Quagga sources, autoconf will think it’s a
+    sub-package and fail to include neccessary files.
 
-            vim configure.ac
-            git commit -m "release: 0.99.99.99"
-            git tag -u 54CD2E60 quagga-0.99.99.99
-            git push savannah tag quagga-0.99.99.99
+            git archive ... <quagga-release-tag> | tar xC ..
 
-            git archive --prefix=quagga-release/ quagga-0.99.99.99 | tar xC /tmp
-            git log quagga-0.99.99.98..quagga-0.99.99.99 > \
-               /tmp/quagga-release/quagga-0.99.99.99.changelog.txt
-            cd /tmp/quagga-release
+            autoreconf -i && ./configure && make && make dist-gzip
 
-            autoreconf -i
-            ./configure
-            make
-            make dist-gzip
+-   Similarly test the dist tarball produced. This is the tarball to be
+    released. This is important.
 
-            gunzip < quagga-0.99.99.99.tar.gz > quagga-0.99.99.99.tar
-            xz -6e < quagga-0.99.99.99.tar > quagga-0.99.99.99.tar.xz
-            gpg -u 54CD2E60 -a --detach-sign quagga-0.99.99.99.tar
+-   Sign the dist tarball to be released
+            
+	    gpg -u 54CD2E60 -a --detach-sign quagga-0.99.99.99.tar
 
-            scp quagga-0.99.99.99.* username@dl.sv.nongnu.org:/releases/quagga
-          
+The 'release.sh' script, if finishes successfully,  will print out
+instructions on the files it has created and the details on remaining steps
+to be carried out to complete the release. Which roughly are:
 
-    Do NOT do this in a subdirectory of the Quagga sources, autoconf
-    will think it’s a sub-package and fail to include neccessary files.
+-   Upload the release tarball, its PGP signature, and the full changelog
+    to the public release area on Savannah
 
 -   Add the version number on https://bugzilla.quagga.net/, under
     Administration, Products, “Quagga”, Edit versions, Add a version.
-
--   Edit the wiki on
-    https://wiki.quagga.net/wiki/index.php/Release\_status
 
 -   Post a news entry on Savannah
 
 -   Send a mail to quagga-dev and quagga-users
 
-The tarball which ‘make dist’ creates is the tarball to be released! The
-git-archive step ensures you’re working with code corresponding to that in
-the official repository, and also carries out keyword expansion. If any
-errors occur, move tags as needed and start over from the fresh checkouts.
-Do not append to tarballs, as this has produced non-standards-conforming
-tarballs in the past.
-
-See also: <http://wiki.quagga.net/index.php/Main/Processes>
+If any errors occur, move tags as needed and start over again with the
+release.sh script.  Do not try to append stuff to tarballs, as this has
+produced non-standards-conforming tarballs in the past.
 
 [TODO: collation of a list of deprecated commands. Possibly can be
 scripted to extract from vtysh/vtysh\_cmd.c]
@@ -552,29 +670,72 @@ Daemons which are in a testing phase are
 
 -   watchquagga
 
-IMPORT OR UPDATE VENDOR SPECIFIC ROUTING PROTOCOLS
-==================================================
-
-The source code of Quagga is based on two vendors:
-
-`zebra_org` (<http://www.zebra.org/>) `isisd_sf`
-(<http://isisd.sf.net/>)
-
-To import code from further sources, e.g. for archival purposes without
-necessarily having to review and/or fix some changeset, create a branch
-from ‘master’:
-
-        git checkout -b archive/foo master
-        <apply changes>
-        git commit -a "Joe Bar <joe@example.com>"
-        git push quagga archive/foo
-
-presuming ‘quagga’ corresponds to a file in your .git/remotes with
-configuration for the appropriate Quagga.net repository.
-
 USEFUL URLs
 ===========
 
-* David Lamparter <equinox@diac24.net> runs a patchwork instance at
-  <http://patchwork.quagga.net/project/quagga/list/>
+*   The project homepage is at:
 
+    <https://www.quagga.net>
+
+
+*   Bugs can be reported via Bugzilla at:
+
+    <https://bugzilla.quagga.net>
+
+*   Buildbot runs CI tests, and is at:
+
+    <https://buildbot.quagga.net>
+
+    It tests commits and  jobs submitted on local changes via
+    'buildbot try ...' for developers.
+
+*   Patchwork tracks any patches emailed to the quagga-dev list, and is at:
+
+    <https://patchwork.quagga.net/project/quagga/list/>
+
+
+BUILDBOT
+========
+
+The buildbot client can be used to test changes before committing, with
+"buildbot try".
+
+-   Ask for a buildbot account
+
+-   Install the buildbot client
+
+-   Configure it, e.g.:
+
+    ~~~~~
+    $ cat ~/.buildbot/options
+    try_master = 'radia.quagga.net:8031'
+    try_username = 'paul'
+    try_password = 'password123'
+    try_vc = 'git'
+    try_branch = 'master'
+    try_wait = True
+    $ buildbot try -c pb --get-builder-names
+    using 'pb' connect method
+    The following builders are available for the try scheduler: 
+    build-fedora-24
+    ...
+    ~~~~~
+
+-   You can then submit your local changes to try build:
+
+    ~~~~
+    $ buildbot try -c pb
+    ~~~~
+
+    or use the -b argument to limit to a specific builder (recommended).
+
+    ~~~~~
+    $ buildbot try -c pb -b build-distcheck
+    ~~~~~
+
+-  To test a series of locally committed change use git diff:
+
+    ~~~~
+    git diff <base rev>.. | buildbot try -c pb --vc git \
+	 -b build-centos-7  --branch=volatile/next --diff=- -p 1
+    ~~~~

@@ -72,6 +72,7 @@ static const struct
   [ZEBRA_ROUTE_ISIS]    = {ZEBRA_ROUTE_ISIS,    115},
   [ZEBRA_ROUTE_BGP]     = {ZEBRA_ROUTE_BGP,      20  /* IBGP is 200. */},
   [ZEBRA_ROUTE_BABEL]   = {ZEBRA_ROUTE_BABEL,    95},
+  [ZEBRA_ROUTE_NHRP]    = {ZEBRA_ROUTE_NHRP,     10},
   /* no entry/default: 150 */
 };
 
@@ -1423,6 +1424,7 @@ static const u_char meta_queue_map[ZEBRA_ROUTE_MAX] = {
   [ZEBRA_ROUTE_BGP]     = 3,
   [ZEBRA_ROUTE_HSLS]    = 4,
   [ZEBRA_ROUTE_BABEL]   = 2,
+  [ZEBRA_ROUTE_NHRP]    = 2,
 };
 
 /* Look into the RN and queue it into one or more priority queues,
@@ -2845,7 +2847,7 @@ static_add_ipv6 (struct prefix *p, u_char type, struct in6_addr *gate,
     }
 
   if (update)
-    static_delete_ipv6(p, type, gate, ifname, tag, si->distance, vrf_id);
+    static_delete_ipv6(p, type, gate, ifname, tag, update->distance, vrf_id);
 
   /* Make new static route structure. */
   si = XCALLOC (MTYPE_STATIC_ROUTE, sizeof (struct static_route));
