@@ -132,7 +132,7 @@ ospf_router_id_update (struct ospf *ospf)
 	    if (ospf->external_origin & (1 << type))
 	      thread_add_event (master, ospf_external_lsa_originate_timer,
 				ospf, type);
-	  /* Originate Deafult. */
+	  /* Originate Default. */
 	  if (ospf->external_origin & (1 << ZEBRA_ROUTE_MAX))
 	    thread_add_event (master, ospf_default_originate_timer, ospf, 0);
 

@@ -35,7 +35,7 @@
 #define ISM_DR                            7
 #define OSPF_ISM_STATE_MAX   	          8
 
-/* Because DR/DROther values are exhanged wrt RFC */
+/* Because DR/DROther values are exchanged wrt RFC */
 #define ISM_SNMP(x) (((x) == ISM_DROther) ? ISM_DR : \
                      ((x) == ISM_DR) ? ISM_DROther : (x))
 

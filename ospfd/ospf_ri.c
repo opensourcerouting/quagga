@@ -1,6 +1,6 @@
 /*
  * This is an implementation of RFC4970 Router Information
- * with support of RFC5088 PCE Capabilites announcement
+ * with support of RFC5088 PCE Capabilities announcement
  *
  * Module name: Router Information
  * Version:     0.99.22

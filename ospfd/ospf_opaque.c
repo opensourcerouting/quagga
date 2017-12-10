@@ -1588,7 +1588,7 @@ ospf_opaque_lsa_install (struct ospf_lsa *lsa, int rt_recalc)
       if (lsa->area == NULL || (top = lsa->area->ospf) == NULL)
         {
           /* Above conditions must have passed. */
-          zlog_warn ("ospf_opaque_lsa_install: Sonmething wrong?");
+          zlog_warn ("ospf_opaque_lsa_install: Something wrong?");
           goto out;
         }
       break;
@@ -1597,7 +1597,7 @@ ospf_opaque_lsa_install (struct ospf_lsa *lsa, int rt_recalc)
       if (lsa->area != NULL && (top = lsa->area->ospf) == NULL)
         {
           /* Above conditions must have passed. */
-          zlog_warn ("ospf_opaque_lsa_install: Sonmething wrong?");
+          zlog_warn ("ospf_opaque_lsa_install: Something wrong?");
           goto out;
         }
       break;

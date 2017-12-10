@@ -46,7 +46,7 @@ ospf_route_map_update (const char *name)
   struct ospf *ospf;
   int type;
 
-  /* If OSPF instatnce does not exist, return right now. */
+  /* If OSPF instance does not exist, return right now. */
   ospf = ospf_lookup ();
   if (ospf == NULL)
     return;
@@ -79,7 +79,7 @@ ospf_route_map_event (route_map_event_t event, const char *name)
   struct ospf *ospf;
   int type;
 
-  /* If OSPF instatnce does not exist, return right now. */
+  /* If OSPF instance does not exist, return right now. */
   ospf = ospf_lookup ();
   if (ospf == NULL)
     return;
@@ -189,7 +189,7 @@ ospf_route_set_delete (struct vty *vty, struct route_map_index *index,
   return CMD_SUCCESS;
 }
 
-/* `match ip netxthop ' */
+/* `match ip nexthop ' */
 /* Match function return 1 if match is success else return zero. */
 static route_map_result_t
 route_match_ip_nexthop (void *rule, struct prefix *prefix,

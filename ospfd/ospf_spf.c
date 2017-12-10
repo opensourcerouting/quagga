@@ -96,7 +96,7 @@ static void ospf_vertex_free (void *);
  */
 static struct list vertex_list = { .del = ospf_vertex_free };
 
-/* Heap related functions, for the managment of the candidates, to
+/* Heap related functions, for the management of the candidates, to
  * be used with pqueue. */
 static int
 cmp (void * node1 , void * node2)
@@ -458,7 +458,7 @@ ospf_spf_flush_parents (struct vertex *w)
 
 /* 
  * Consider supplied next-hop for inclusion to the supplied list of
- * equal-cost next-hops, adjust list as neccessary.  
+ * equal-cost next-hops, adjust list as necessary.
  */
 static void
 ospf_spf_add_parent (struct vertex *v, struct vertex *w,
@@ -1422,7 +1422,7 @@ ospf_spf_calculate_timer (struct thread *thread)
   return 0;
 }
 
-/* Add schedule for SPF calculation.  To avoid frequenst SPF calc, we
+/* Add schedule for SPF calculation.  To avoid frequent SPF calc, we
    set timer for SPF calc. */
 void
 ospf_spf_calculate_schedule (struct ospf *ospf, ospf_spf_reason_t reason)

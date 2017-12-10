@@ -64,7 +64,7 @@ ospf_flood_delayed_lsa_ack (struct ospf_neighbor *inbr, struct ospf_lsa *lsa)
      RFC 2328 Section 13.5 */
 
   /* Whether LSA is more recent or not, and whether this is in
-     response to the LSA being sent out recieving interface has been 
+     response to the LSA being sent out receiving interface has been
      worked out previously */
 
   /* Deal with router as BDR */
@@ -345,7 +345,7 @@ ospf_flood_through_interface (struct ospf_interface *oi,
   if (!ospf_if_is_enable (oi))
     return 0;
 
-  /* Remember if new LSA is aded to a retransmit list. */
+  /* Remember if new LSA is added to a retransmit list. */
   retx_flag = 0;
 
   /* Each of the neighbors attached to this interface are examined,
@@ -605,7 +605,7 @@ ospf_flood_through_as (struct ospf *ospf, struct ospf_neighbor *inbr,
 	  /* Don't send AS externals into stub areas.  Various types
              of support for partial stub areas can be implemented
              here.  NSSA's will receive Type-7's that have areas
-             matching the originl LSA. */
+             matching the original LSA. */
 	case OSPF_AREA_NSSA:	/* Sending Type 5 or 7 into NSSA area */
 	  /* Type-7, flood NSSA area */
           if (lsa->data->type == OSPF_AS_NSSA_LSA
@@ -774,7 +774,7 @@ ospf_ls_request_delete (struct ospf_neighbor *nbr, struct ospf_lsa *lsa)
   ospf_lsdb_delete (&nbr->ls_req, lsa);
 }
 
-/* Remove all LSA from neighbor's ls-requenst list. */
+/* Remove all LSA from neighbor's ls-request list. */
 void
 ospf_ls_request_delete_all (struct ospf_neighbor *nbr)
 {
@@ -852,7 +852,7 @@ ospf_ls_retransmit_add (struct ospf_neighbor *nbr, struct ospf_lsa *lsa)
     }
 }
 
-/* Remove LSA from neibghbor's ls-retransmit list. */
+/* Remove LSA from neighbor's ls-retransmit list. */
 void
 ospf_ls_retransmit_delete (struct ospf_neighbor *nbr, struct ospf_lsa *lsa)
 {
@@ -941,8 +941,8 @@ ospf_ls_retransmit_delete_nbr_as (struct ospf *ospf, struct ospf_lsa *lsa)
 }
 
 
-/* Sets ls_age to MaxAge and floods throu the area. 
-   When we implement ASE routing, there will be anothe function
+/* Sets ls_age to MaxAge and floods through the area.
+   When we implement ASE routing, there will be another function
    flushing an LSA from the whole domain. */
 void
 ospf_lsa_flush_area (struct ospf_lsa *lsa, struct ospf_area *area)

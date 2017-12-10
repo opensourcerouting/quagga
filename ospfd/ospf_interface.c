@@ -60,7 +60,7 @@ ospf_if_get_output_cost (struct ospf_interface *oi)
   bw = oi->ifp->bandwidth ? oi->ifp->bandwidth : OSPF_DEFAULT_BANDWIDTH;
   refbw = oi->ospf->ref_bandwidth;
 
-  /* A specifed ip ospf cost overrides a calculated one. */
+  /* A specified ip ospf cost overrides a calculated one. */
   if (OSPF_IF_PARAM_CONFIGURED (IF_DEF_PARAMS (oi->ifp), output_cost_cmd) ||
       OSPF_IF_PARAM_CONFIGURED (oi->params, output_cost_cmd))
     cost = OSPF_IF_PARAM (oi, output_cost_cmd);
@@ -178,7 +178,7 @@ ospf_if_table_lookup (struct interface *ifp, struct prefix *prefix)
   p = *prefix;
   p.prefixlen = IPV4_MAX_PREFIXLEN;
   
-  /* route_node_get implicitely locks */
+  /* route_node_get implicitly locks */
   if ((rn = route_node_lookup (IF_OIFS (ifp), &p)))
     {
       rninfo = (struct ospf_interface *) rn->info;
@@ -305,7 +305,7 @@ ospf_if_cleanup (struct ospf_interface *oi)
       if (nbr != oi->nbr_self)
 	OSPF_NSM_EVENT_EXECUTE (nbr, NSM_KillNbr);
 
-  /* Cleanup Link State Acknowlegdment list. */
+  /* Cleanup Link State Acknowledgement list. */
   for (ALL_LIST_ELEMENTS (oi->ls_ack, node, nnode, lsa))
     ospf_lsa_unlock (&lsa); /* oi->ls_ack */
   list_delete_all_node (oi->ls_ack);
@@ -409,7 +409,7 @@ ospf_if_exists (struct ospf_interface *oic)
   return NULL;
 }
 
-/* Lookup OSPF interface by router LSA posistion */
+/* Lookup OSPF interface by router LSA position */
 struct ospf_interface *
 ospf_if_lookup_by_lsa_pos (struct ospf_area *area, int lsa_pos)
 {
